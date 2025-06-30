@@ -13,9 +13,9 @@
 
 # OpenESPI-Common
 
-This is the Common module of the OpenESPI Green Button Data Custodian and Third Party implementation. It is a modern Spring Boot 3.5 application written in Java 21 and built on top of JPA for database access.
+This is the Common module of the OpenESPI GreenButton Java monorepo. It is a modern Spring Boot 3.5 application written in Java 21 and built on top of JPA for database access.
 
-This Common run-time and test code is shared between stand-alone Data Custodian and Third Party applications. [OpenESPI-DataCustodian](https://github.com/greenbuttonalliance/OpenESPI-DataCustodian-java) and [OpenESPI-ThirdParty](https://github.com/greenbuttonalliance/OpenESPI-ThirdParty-java).
+This Common run-time and test code is shared between the `openespi-datacustodian` and `openespi-thirdparty` modules within the monorepo, as well as other modules in the OpenESPI ecosystem.
 
 ## Recent Modernization (2025)
 
@@ -35,22 +35,23 @@ An operational sandbox with these services operating may be found at:
 
 ## Setup
 
-First clone the project from github:
+As part of the OpenESPI GreenButton Java monorepo, this module is built together with other modules:
 
 ```bash
-git clone https://github.com/greenbuttonalliance/OpenESPI-Common-java.git
-cd OpenESPI-Common
-```
+# Clone the monorepo (contains this module)
+git clone https://github.com/GreenButtonAlliance/OpenESPI-GreenButton-Java.git
+cd OpenESPI-GreenButton-Java
 
-Then install the OpenESPI-Common JAR in your local repository:
-```bash
-# Build and install the project with tests
+# Build all modules including openespi-common
 mvn clean install
 
-# or for a specific profile
+# Build only this module and its dependencies
+mvn clean install -pl openespi-common -am
+
+# Build with specific profile
 mvn -P <profile name> clean install
 
-# Skip tests if needed (for development builds)
+# Development build (skip tests)
 mvn -Dmaven.test.skip=true clean install
 ```
 
@@ -58,15 +59,15 @@ mvn -Dmaven.test.skip=true clean install
 
 ### Eclipse Setup
 
-Open Eclipse and import a Maven project (File > Import... > Maven > Existing Maven Projects).
+Open Eclipse and import the root monorepo as a Maven project (File > Import... > Maven > Existing Maven Projects). All modules including openespi-common will be imported automatically.
 
 ### Spring Tool Suite Setup
 
-Open Spring Tool Suite and import a Maven project (File > Import... > Maven > Existing Maven Projects).
+Open Spring Tool Suite and import the root monorepo as a Maven project (File > Import... > Maven > Existing Maven Projects).
 
 ### IntelliJ Setup
 
-Open IntelliJ and open the project (File > Open...).
+Open IntelliJ and open the root monorepo directory (File > Open...). IntelliJ will automatically detect all Maven modules.
 
 ## Testing
 
@@ -99,26 +100,32 @@ The project includes comprehensive test classes to verify the Spring Boot 3.5 mi
 
 #### Run All Tests (Recommended)
 ```bash
-# Execute complete test suite
-mvn clean test
+# Execute test suite for this module only
+mvn clean test -pl openespi-common
 
 # Run tests with verbose output
-mvn clean test -X
+mvn clean test -X -pl openespi-common
 
 # Run specific test class
-mvn test -Dtest=MigrationVerificationTest
+mvn test -Dtest=MigrationVerificationTest -pl openespi-common
+
+# Run all tests in the monorepo
+mvn clean test
 ```
 
 #### Build with Tests
 ```bash
-# Full build with test execution
-mvn clean package
+# Full build with test execution (this module only)
+mvn clean package -pl openespi-common -am
 
-# Install to local repository with tests
+# Install to local repository with tests (this module only)
+mvn clean install -pl openespi-common -am
+
+# Verify build integrity (this module only)
+mvn clean verify -pl openespi-common -am
+
+# Build entire monorepo
 mvn clean install
-
-# Verify build integrity
-mvn clean verify
 ```
 
 #### Development Builds (Skip Tests)

@@ -1,4 +1,4 @@
-# OpenESPI Authorization Server
+# OpenESPI-AuthServer
 
 [![CI/CD Pipeline](https://github.com/GreenButtonAlliance/OpenESPI-AuthorizationServer-java/actions/workflows/ci.yml/badge.svg)](https://github.com/GreenButtonAlliance/OpenESPI-AuthorizationServer-java/actions/workflows/ci.yml)
 [![Java Version](https://img.shields.io/badge/Java-21-orange.svg)](https://www.oracle.com/java/technologies/javase/jdk21-archive-downloads.html)
@@ -7,13 +7,13 @@
 [![NAESB ESPI](https://img.shields.io/badge/NAESB-ESPI%204.0-green.svg)](https://www.naesb.org/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 
-Green Button Alliance OpenESPI OAuth2 Authorization Server built with Spring Boot 3.5 and Spring Authorization Server 1.3+.
+This is the AuthServer module of the OpenESPI GreenButton Java monorepo. It is a modern Spring Boot 3.5 OAuth2 Authorization Server built with Spring Authorization Server 1.3+, providing secure authentication and authorization services for the Green Button ecosystem.
 
-> **🚀 Migration Complete**: This project has been fully migrated to Spring Boot 3.5 with Java 21, featuring enterprise-grade CI/CD infrastructure, comprehensive testing suite, and NAESB ESPI 4.0 compliance with TLS 1.3 ONLY enforcement.
+> **🚀 Migration Complete**: This module has been fully migrated to Spring Boot 3.5 with Java 21, featuring enterprise-grade OAuth2 flows, comprehensive testing suite, and NAESB ESPI 4.0 compliance with TLS 1.3 enforcement.
 
 ## Overview
 
-This is the standalone OAuth2 Authorization Server component of the OpenESPI ecosystem, extracted and modernized from the legacy integrated DataCustodian implementation. It provides secure OAuth2 authorization flows compliant with Green Button Alliance ESPI standards.
+This module provides OAuth2 Authorization Server capabilities as part of the OpenESPI GreenButton Java monorepo. It offers secure OAuth2 authorization flows compliant with Green Button Alliance ESPI standards, working seamlessly with the `openespi-datacustodian` resource server module.
 
 **⚠️ ESPI Compliance Notice**: The ESPI standard requires **opaque access tokens**, not JWT tokens. This Authorization Server defaults to ESPI-compliant opaque tokens. JWT token support is experimental and may be considered for future ESPI versions.
 
@@ -131,12 +131,15 @@ This is the standalone OAuth2 Authorization Server component of the OpenESPI eco
 ### Local Development (H2 Database)
 
 ```bash
-# Clone the repository
-git clone https://github.com/greenbuttonalliance/OpenESPI-AuthorizationServer-java.git
-cd OpenESPI-AuthorizationServer-java
+# Clone the monorepo (contains this module)
+git clone https://github.com/GreenButtonAlliance/OpenESPI-GreenButton-Java.git
+cd OpenESPI-GreenButton-Java
 
-# Run with local H2 profile
-mvn spring-boot:run -P local
+# Build all modules including openespi-authserver
+mvn clean install
+
+# Run the AuthServer module with local H2 profile
+cd openespi-authserver && mvn spring-boot:run -P local
 
 # Access H2 Console: http://localhost:9999/h2-console
 # JDBC URL: jdbc:h2:mem:oauth2_authserver
@@ -153,8 +156,8 @@ CREATE DATABASE oauth2_authserver;
 CREATE USER 'openespi_user'@'localhost' IDENTIFIED BY 'openespi_password';
 GRANT ALL PRIVILEGES ON oauth2_authserver.* TO 'openespi_user'@'localhost';
 
-# Run with MySQL profile
-mvn spring-boot:run -P dev-mysql
+# Run the AuthServer module with MySQL profile
+cd openespi-authserver && mvn spring-boot:run -P dev-mysql
 ```
 
 ## Configuration
@@ -361,14 +364,17 @@ The client registration process validates:
 ## Testing
 
 ```bash
-# Run unit tests
-mvn test
+# Run unit tests for this module only
+mvn test -pl openespi-authserver
 
-# Run integration tests
-mvn verify
+# Run integration tests for this module
+mvn verify -pl openespi-authserver
 
 # Run with test coverage
-mvn test jacoco:report
+mvn test jacoco:report -pl openespi-authserver
+
+# Run all tests in the monorepo
+mvn clean test
 ```
 
 ## Database Schema

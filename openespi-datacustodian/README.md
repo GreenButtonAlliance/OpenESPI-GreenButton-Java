@@ -2,50 +2,74 @@
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=GreenButtonAlliance_OpenESPI-Common-java&metric=alert_status)](https://sonarcloud.io/dashboard?id=GreenButtonAlliance_OpenESPI-Common-java)
 
 
-# OpenESPI-Common -- Archived January 29, 2024
+# OpenESPI-DataCustodian
 
-NOTE: This repository is no longer maintained. The OpenESPI project has been archived and is no longer being maintained.
+This is the DataCustodian module of the OpenESPI GreenButton Java monorepo. It is a modern Spring Boot 3.5 OAuth2 resource server written in Java 21, providing Green Button energy data services.
 
-This is the Common module of the OpenESPI Green Button Data Custodian and Third Party implementation. It is a Spring application written in java and built on top of jpa for database access.
-
-This Common run-time and test code is shared between stand-alone Data Custodian and Third Party applications. [OpenESPI-DataCustodian](https://github.com/greenbuttonalliance/OpenESPI-DataCustodian-java) and [OpenESPI-ThirdParty](https://github.com/greenbuttonalliance/OpenESPI-ThirdParty-java).
+This module implements the NAESB ESPI 4.0 specification for retail customers and authorized third parties to access energy usage data through standardized RESTful APIs.
 
 An operational sandbox with these services operating may be found at:
 <a href="https://sandbox.greenbuttonalliance.org:8443">sandbox.greenbuttonalliance.org:8443</a>
 
 ## Setup
 
-First clone the project from github:
+As part of the OpenESPI GreenButton Java monorepo, this module is built together with other modules:
 
 ```bash
-git clone https://github.com/greenbuttonalliance/OpenESPI-Common-java.git
-cd OpenESPI-Common
-```
+# Clone the monorepo (contains this module)
+git clone https://github.com/GreenButtonAlliance/OpenESPI-GreenButton-Java.git
+cd OpenESPI-GreenButton-Java
 
-Then install the OpenESPI-Common JAR in your local repository:
-```bash
-# The JUnit test have not been maintained since the original creation of the repository. 
-# Any errors encountered here are due to not including the "-Dmaven.test.skip=true" portion of the command.
-mvn -Dmaven.test.skip=true clean install
+# Build all modules including openespi-datacustodian
+mvn clean install
 
-# or for a specific profile
-mvn -P <profile name> -Dmaven.test.skip=true clean install
+# Build only this module and its dependencies
+mvn clean install -pl openespi-datacustodian -am
+
+# Run the DataCustodian Spring Boot application
+cd openespi-datacustodian && mvn spring-boot:run
+
+# Access the application at http://localhost:8080
 ```
 
 ## IDE Setup
 
 ### Eclipse Setup
 
-Open Eclipse and import a Maven project (File > Import... > Maven > Existing Maven Projects).
+Open Eclipse and import the root monorepo as a Maven project (File > Import... > Maven > Existing Maven Projects). All modules including openespi-datacustodian will be imported automatically.
 
 ### Spring Tool Suite Setup
 
-Open Spring Tool Suite and import a Maven project (File > Import... > Maven > Existing Maven Projects).
+Open Spring Tool Suite and import the root monorepo as a Maven project (File > Import... > Maven > Existing Maven Projects).
 
 ### IntelliJ Setup
 
-Open IntelliJ and open the project (File > Open...).
+Open IntelliJ and open the root monorepo directory (File > Open...). IntelliJ will automatically detect all Maven modules.
 
 ## Testing
 
-All testing of OpenESPI is performed using the [Test Harness](https://github.com/greenbuttonalliance/OpenESPI-GreenButtonCMDTest.git) project. See the [README](https://github.com/greenbuttonalliance/OpenESPI-GreenButtonCMDTest/blob/master/README.md) file for instructions.
+### Unit Tests
+```bash
+# Run tests for this module only
+mvn clean test -pl openespi-datacustodian
+
+# Run tests with dependencies
+mvn clean test -pl openespi-datacustodian -am
+
+# Run all tests in the monorepo
+mvn clean test
+```
+
+### Integration Testing
+
+Integration testing is performed using the [Green Button CMD Test Harness](https://github.com/greenbuttonalliance/OpenESPI-GreenButtonCMDTest.git). See the [README](https://github.com/greenbuttonalliance/OpenESPI-GreenButtonCMDTest/blob/master/README.md) for instructions.
+
+## API Documentation
+
+The DataCustodian provides the following REST APIs:
+- **Green Button Download My Data (DMD)** - Customer energy data download
+- **Green Button Connect My Data (CMD)** - Third-party authorization and data access
+- **OAuth2 Resource Server** - Protected API endpoints with token validation
+- **ESPI 4.0 Resource APIs** - Usage points, meter readings, interval blocks
+
+For API reference documentation, start the application and visit `/swagger-ui` or `/api-docs`.
