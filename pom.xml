@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    
+    <groupId>org.greenbuttonalliance.espi</groupId>
+    <artifactId>openespi-parent</artifactId>
+    <version>3.5.0</version>
+    <packaging>pom</packaging>
+    
+    <name>OpenESPI GreenButton Java</name>
+    <description>Complete OpenESPI implementation for Green Button energy data standards</description>
+    
+    <!-- All modules included - ThirdParty partially migrated but buildable -->
+    <modules>
+        <module>openespi-common</module>
+        <module>openespi-datacustodian</module>
+        <module>openespi-authserver</module>
+        <module>openespi-thirdparty</module>
+    </modules>
+    
+    <properties>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <spring.boot.version>3.5.0</spring.boot.version>
+    </properties>
+    
+    <profiles>
+        <!-- Build only fully-migrated Spring Boot 3.5 modules -->
+        <profile>
+            <id>spring-boot-only</id>
+            <modules>
+                <module>openespi-common</module>
+                <module>openespi-datacustodian</module>
+                <module>openespi-authserver</module>
+            </modules>
+        </profile>
+    </profiles>
+    
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring.boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+    
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <version>${spring.boot.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.13.0</version>
+                    <configuration>
+                        <source>21</source>
+                        <target>21</target>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+</project>
