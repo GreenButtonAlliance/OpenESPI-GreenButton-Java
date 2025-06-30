@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Authorization Consent - Green Button Alliance</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/consent.css" rel="stylesheet">
+    <link rel="icon" type="image/png" href="/assets/images/green-button-favicon.png">
+</head>
+<body class="bg-light">
+    <div class="consent-container">
+        <div class="green-button-header">
+            <div class="d-flex align-items-center justify-content-center">
+                <img th:if="${greenButtonLogo}" th:src="${greenButtonLogo}" 
+                     alt="Green Button" class="green-button-logo">
+                <div>
+                    <h2 class="mb-1">Authorization Request</h2>
+                    <p class="mb-0" th:if="${isEspiClient}">Green Button Alliance ESPI v<span th:text="${espiVersion}">1.1</span></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="consent-body">
+            <div class="alert alert-info" th:if="${isEspiClient}">
+                <h6><i class="fas fa-info-circle"></i> Energy Data Access Request</h6>
+                <p class="mb-0">This application is requesting access to your energy usage data through the Green Button Alliance standard.</p>
+            </div>
+
+            <h4>Application Permission Request</h4>
+            <p>
+                <strong th:text="${clientName}">Application Name</strong> is requesting permission to access your account.
+            </p>
+
+            <form method="post" th:action="@{/oauth2/consent}">
+                <input type="hidden" name="client_id" th:value="${clientId}">
+                <input type="hidden" name="state" th:value="${state}">
+                <input type="hidden" name="user_code" th:value="${userCode}" th:if="${userCode}">
+
+                <!-- Previously Approved Scopes -->
+                <div th:if="${not #lists.isEmpty(previouslyApprovedScopes)}" class="mb-4">
+                    <h6 class="text-success">Previously Approved Permissions:</h6>
+                    <div th:each="scope : ${previouslyApprovedScopes}" 
+                         th:class="'scope-item ' + ${scope.category}" 
+                         class="scope-item">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" 
+                                   th:id="'approved-' + ${scope.scope}" 
+                                   checked disabled>
+                            <label class="form-check-label fw-bold" 
+                                   th:for="'approved-' + ${scope.scope}" 
+                                   th:text="${scope.scope}">Scope</label>
+                            <div class="text-muted small" th:text="${scope.description}">Description</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- New Scopes Requiring Approval -->
+                <div th:if="${not #lists.isEmpty(scopes)}">
+                    <h6>New Permissions Being Requested:</h6>
+                    
+                    <!-- Energy Data Scopes -->
+                    <div class="scope-category" 
+                         th:if="${#lists.size(#lists.select(scopes, 'category == \"energy_data\"')) > 0}">
+                        <h6 class="text-success"><i class="fas fa-bolt"></i> Energy Usage Data</h6>
+                        <div th:each="scope : ${#lists.select(scopes, 'category == \"energy_data\"')}" 
+                             class="scope-item energy-data">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" 
+                                       th:name="'scope.' + ${scope.scope}" 
+                                       th:id="'scope-' + ${scope.scope}" 
+                                       th:value="${scope.scope}">
+                                <label class="form-check-label fw-bold" 
+                                       th:for="'scope-' + ${scope.scope}" 
+                                       th:text="${scope.scope}">Scope</label>
+                                <div class="text-muted small" th:text="${scope.description}">Description</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Profile Scopes -->
+                    <div class="scope-category" 
+                         th:if="${#lists.size(#lists.select(scopes, 'category == \"profile\"')) > 0}">
+                        <h6 class="text-primary"><i class="fas fa-user"></i> Profile Information</h6>
+                        <div th:each="scope : ${#lists.select(scopes, 'category == \"profile\"')}" 
+                             class="scope-item profile">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" 
+                                       th:name="'scope.' + ${scope.scope}" 
+                                       th:id="'scope-' + ${scope.scope}" 
+                                       th:value="${scope.scope}">
+                                <label class="form-check-label fw-bold" 
+                                       th:for="'scope-' + ${scope.scope}" 
+                                       th:text="${scope.scope}">Scope</label>
+                                <div class="text-muted small" th:text="${scope.description}">Description</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Admin Scopes -->
+                    <div class="scope-category" 
+                         th:if="${#lists.size(#lists.select(scopes, 'category == \"admin\"')) > 0}">
+                        <h6 class="text-danger"><i class="fas fa-shield-alt"></i> Administrative Access</h6>
+                        <div th:each="scope : ${#lists.select(scopes, 'category == \"admin\"')}" 
+                             class="scope-item admin">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" 
+                                       th:name="'scope.' + ${scope.scope}" 
+                                       th:id="'scope-' + ${scope.scope}" 
+                                       th:value="${scope.scope}">
+                                <label class="form-check-label fw-bold" 
+                                       th:for="'scope-' + ${scope.scope}" 
+                                       th:text="${scope.scope}">Scope</label>
+                                <div class="text-muted small" th:text="${scope.description}">Description</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Other Scopes -->
+                    <div class="scope-category" 
+                         th:if="${#lists.size(#lists.select(scopes, 'category == \"other\"')) > 0}">
+                        <h6><i class="fas fa-cog"></i> Other Permissions</h6>
+                        <div th:each="scope : ${#lists.select(scopes, 'category == \"other\"')}" 
+                             class="scope-item">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" 
+                                       th:name="'scope.' + ${scope.scope}" 
+                                       th:id="'scope-' + ${scope.scope}" 
+                                       th:value="${scope.scope}">
+                                <label class="form-check-label fw-bold" 
+                                       th:for="'scope-' + ${scope.scope}" 
+                                       th:text="${scope.scope}">Scope</label>
+                                <div class="text-muted small" th:text="${scope.description}">Description</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- No new scopes message -->
+                <div th:if="${#lists.isEmpty(scopes)}" class="alert alert-info">
+                    <p class="mb-0">This application is not requesting any new permissions.</p>
+                </div>
+
+                <!-- ESPI Information -->
+                <div th:if="${isEspiClient}" class="espi-info">
+                    <h6><i class="fas fa-shield-alt"></i> Green Button Alliance Security</h6>
+                    <ul class="mb-0 small">
+                        <li>Your data will be accessed according to Green Button Alliance standards</li>
+                        <li>You can revoke this access at any time</li>
+                        <li>The application will only access the specific data you approve</li>
+                        <li>All data transfers are encrypted and secure</li>
+                    </ul>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                    <button type="submit" name="action" value="deny" 
+                            class="btn btn-deny text-white me-md-2">
+                        <i class="fas fa-times"></i> Deny
+                    </button>
+                    <button type="submit" name="action" value="approve" 
+                            class="btn btn-approve text-white">
+                        <i class="fas fa-check"></i> Approve
+                    </button>
+                </div>
+            </form>
+
+            <!-- Footer Information -->
+            <div class="mt-4 pt-3 border-top">
+                <p class="text-muted small mb-1">
+                    Logged in as: <strong th:text="${principalName}">User</strong>
+                </p>
+                <p class="text-muted small mb-0">
+                    By approving, you authorize <span th:text="${clientName}">this application</span> 
+                    to access the selected information on your behalf.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://kit.fontawesome.com/your-fontawesome-kit.js" crossorigin="anonymous"></script>
+    <script>
+        // Consent page functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('form');
+            const approveBtn = document.querySelector('button[value="approve"]');
+            const denyBtn = document.querySelector('button[value="deny"]');
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]:not([disabled])');
+            
+            // Select all functionality
+            function addSelectAllButton() {
+                if (checkboxes.length > 1) {
+                    const selectAllContainer = document.createElement('div');
+                    selectAllContainer.className = 'mb-3 d-flex justify-content-between align-items-center';
+                    
+                    const selectAllBtn = document.createElement('button');
+                    selectAllBtn.type = 'button';
+                    selectAllBtn.className = 'btn btn-outline-secondary btn-sm';
+                    selectAllBtn.innerHTML = '<i class="fas fa-check-double"></i> Select All';
+                    
+                    const clearAllBtn = document.createElement('button');
+                    clearAllBtn.type = 'button';
+                    clearAllBtn.className = 'btn btn-outline-secondary btn-sm';
+                    clearAllBtn.innerHTML = '<i class="fas fa-times"></i> Clear All';
+                    
+                    selectAllContainer.appendChild(selectAllBtn);
+                    selectAllContainer.appendChild(clearAllBtn);
+                    
+                    const firstScopeCategory = document.querySelector('.scope-category');
+                    if (firstScopeCategory) {
+                        firstScopeCategory.parentNode.insertBefore(selectAllContainer, firstScopeCategory);
+                    }
+                    
+                    selectAllBtn.addEventListener('click', function() {
+                        checkboxes.forEach(cb => cb.checked = true);
+                        updateApproveButton();
+                    });
+                    
+                    clearAllBtn.addEventListener('click', function() {
+                        checkboxes.forEach(cb => cb.checked = false);
+                        updateApproveButton();
+                    });
+                }
+            }
+            
+            // Update approve button state
+            function updateApproveButton() {
+                const checkedBoxes = document.querySelectorAll('input[type="checkbox"]:not([disabled]):checked');
+                if (checkedBoxes.length === 0) {
+                    approveBtn.disabled = true;
+                    approveBtn.innerHTML = '<i class="fas fa-check"></i> Select permissions to approve';
+                } else {
+                    approveBtn.disabled = false;
+                    approveBtn.innerHTML = `<i class="fas fa-check"></i> Approve (${checkedBoxes.length} permission${checkedBoxes.length === 1 ? '' : 's'})`;
+                }
+            }
+            
+            // Add loading state on form submission
+            function addLoadingState() {
+                form.addEventListener('submit', function() {
+                    const container = document.querySelector('.consent-container');
+                    container.classList.add('consent-loading');
+                    
+                    // Disable all form elements
+                    const formElements = form.querySelectorAll('input, button');
+                    formElements.forEach(el => el.disabled = true);
+                });
+            }
+            
+            // Add confirmation for deny action
+            function addDenyConfirmation() {
+                denyBtn.addEventListener('click', function(e) {
+                    if (!confirm('Are you sure you want to deny access? The application will not be able to access your data.')) {
+                        e.preventDefault();
+                    }
+                });
+            }
+            
+            // Initialize functionality
+            if (checkboxes.length > 0) {
+                addSelectAllButton();
+                
+                // Add event listeners to checkboxes
+                checkboxes.forEach(cb => {
+                    cb.addEventListener('change', updateApproveButton);
+                });
+                
+                // Initial button state
+                updateApproveButton();
+            }
+            
+            addLoadingState();
+            addDenyConfirmation();
+            
+            // Add smooth scrolling for long forms
+            if (document.body.scrollHeight > window.innerHeight) {
+                const scrollToTopBtn = document.createElement('button');
+                scrollToTopBtn.className = 'btn btn-primary position-fixed';
+                scrollToTopBtn.style.cssText = 'bottom: 20px; right: 20px; z-index: 1000; border-radius: 50%; width: 50px; height: 50px; display: none;';
+                scrollToTopBtn.innerHTML = '<i class="fas fa-arrow-up"></i>';
+                scrollToTopBtn.onclick = () => window.scrollTo({top: 0, behavior: 'smooth'});
+                document.body.appendChild(scrollToTopBtn);
+                
+                window.addEventListener('scroll', function() {
+                    scrollToTopBtn.style.display = window.pageYOffset > 100 ? 'block' : 'none';
+                });
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+# OpenESPI Authorization Server Testcontainers Configuration
+# Profile for running integration tests with Testcontainers
+
+server:
+  port: 0  # Random port for tests
+
+spring:
+  application:
+    name: openespi-authorization-server-testcontainers
+  
+  # Database configuration will be set dynamically by Testcontainers
+  datasource:
+    # These will be overridden by @DynamicPropertySource
+    url: placeholder
+    username: placeholder  
+    password: placeholder
+    driver-class-name: placeholder
+  
+  # JPA Configuration for Testcontainers
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate  # Use Flyway for schema management
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: UTC
+  
+  # Flyway Configuration (location set dynamically by test)
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    schemas: public
+  
+  # Security Configuration for Tests
+  security:
+    oauth2:
+      authorizationserver:
+        issuer: http://localhost:9999
+
+# ESPI Configuration for Tests
+espi:
+  token:
+    format: opaque  # Test with ESPI-compliant opaque tokens
+  datacustodian:
+    endpoint: http://localhost:8080
+
+# Logging Configuration for Tests
+logging:
+  level:
+    org.springframework.security.oauth2: INFO
+    org.greenbuttonalliance.espi: DEBUG
+    org.springframework.web: WARN
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN
+    org.testcontainers: INFO
+    org.flywaydb: INFO
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# Management Endpoints for Tests
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always

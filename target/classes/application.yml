@@ -1,0 +1,87 @@
+# OpenESPI Authorization Server Configuration
+# Spring Boot 3.5 OAuth2 Authorization Server
+
+server:
+  port: 9999
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: openespi-authorization-server
+  
+  profiles:
+    active: dev-mysql
+  
+  # Security Configuration
+  security:
+    oauth2:
+      authorizationserver:
+        issuer: http://localhost:9999
+        endpoint:
+          authorization-uri: /oauth2/authorize
+          token-uri: /oauth2/token
+          jwk-set-uri: /oauth2/jwks
+          token-revocation-uri: /oauth2/revoke
+          token-introspection-uri: /oauth2/introspect
+  
+  # Thymeleaf Configuration for OAuth2 consent pages
+  thymeleaf:
+    cache: false
+    prefix: classpath:/templates/
+    suffix: .html
+    
+  # JPA Configuration
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+        jdbc:
+          time_zone: UTC
+  
+  # Flyway Database Migration
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+    schemas: oauth2_authserver
+
+# Logging Configuration
+logging:
+  level:
+    org.springframework.security: INFO
+    org.springframework.security.oauth2: INFO
+    org.springframework.security.oauth2.server.authorization: DEBUG
+    org.greenbuttonalliance.espi: DEBUG
+    org.hibernate.SQL: INFO
+    org.hibernate.orm.jdbc.bind: INFO
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# Management Endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,env
+  endpoint:
+    health:
+      show-details: when_authorized
+  info:
+    env:
+      enabled: true
+
+# Application Information
+info:
+  app:
+    name: OpenESPI Authorization Server
+    description: Green Button Alliance OAuth2 Authorization Server
+    version: 1.0.0-SNAPSHOT
+    spring-boot-version: 3.5.0
+    java-version: 17

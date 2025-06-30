@@ -1,0 +1,81 @@
+# MySQL Configuration for OpenESPI Authorization Server
+# Optimized for ESPI workloads with proper UTF-8 support
+
+[mysql]
+default-character-set = utf8mb4
+
+[mysqld]
+# Basic Settings
+bind-address = 0.0.0.0
+port = 3306
+datadir = /var/lib/mysql
+socket = /var/run/mysqld/mysqld.sock
+pid-file = /var/run/mysqld/mysqld.pid
+
+# Character Set and Collation
+character-set-server = utf8mb4
+collation-server = utf8mb4_unicode_ci
+init-connect = 'SET NAMES utf8mb4'
+
+# Storage Engine
+default-storage-engine = InnoDB
+
+# InnoDB Settings
+innodb_buffer_pool_size = 256M
+innodb_log_file_size = 64M
+innodb_log_buffer_size = 16M
+innodb_flush_log_at_trx_commit = 1
+innodb_lock_wait_timeout = 50
+innodb_file_per_table = 1
+
+# Connection Settings
+max_connections = 100
+max_connect_errors = 10
+table_open_cache = 2000
+max_allowed_packet = 64M
+binlog_cache_size = 1M
+max_heap_table_size = 64M
+read_buffer_size = 2M
+read_rnd_buffer_size = 16M
+sort_buffer_size = 8M
+join_buffer_size = 8M
+thread_cache_size = 8
+thread_stack = 256K
+query_cache_type = 1
+query_cache_size = 64M
+query_cache_limit = 2M
+
+# Logging
+log-error = /var/log/mysql/error.log
+general_log = 0
+slow_query_log = 1
+slow_query_log_file = /var/log/mysql/slow.log
+long_query_time = 2
+
+# Binary Logging (for replication)
+log-bin = mysql-bin
+binlog_format = ROW
+expire_logs_days = 7
+max_binlog_size = 100M
+
+# Security
+local-infile = 0
+
+# MyISAM Settings
+key_buffer_size = 32M
+
+# ESPI-specific optimizations
+# Optimize for OAuth2 token operations
+tmp_table_size = 64M
+max_tmp_tables = 32
+
+[mysqldump]
+quick
+quote-names
+max_allowed_packet = 64M
+
+[mysql]
+no-auto-rehash
+
+[myisamchk]
+key_buffer_size = 32M
