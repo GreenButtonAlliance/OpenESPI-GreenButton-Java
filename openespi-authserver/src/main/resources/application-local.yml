@@ -1,0 +1,76 @@
+# Local Development Profile Configuration
+# OpenESPI Authorization Server - H2 In-Memory Database
+
+spring:
+  # H2 In-Memory Database Configuration
+  datasource:
+    url: jdbc:h2:mem:oauth2_authserver;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password: 
+    driver-class-name: org.h2.Driver
+    hikari:
+      connection-timeout: 20000
+      maximum-pool-size: 10
+      minimum-idle: 2
+  
+  # H2 Console for Development
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+      settings:
+        web-allow-others: true
+  
+  # JPA/Hibernate Configuration for H2
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: UTC
+  
+  # Flyway Configuration for H2
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration/h2
+    schemas: oauth2_authserver
+
+# Local Development Logging
+logging:
+  level:
+    org.springframework.security.oauth2: DEBUG
+    org.greenbuttonalliance.espi: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE
+    com.h2database: INFO
+  file:
+    name: logs/authserver-local.log
+
+# Local Server Configuration
+server:
+  error:
+    include-stacktrace: always
+    include-message: always
+
+# OAuth2 Local Development Settings
+espi:
+  oauth2:
+    # Local development clients
+    clients:
+      datacustodian:
+        client-id: data_custodian_admin
+        client-secret: local_secret_dc
+        base-url: http://localhost:8080
+      thirdparty:
+        client-id: third_party
+        client-secret: local_secret_tp
+        base-url: http://localhost:9090
+    # JWT Local Settings
+    jwt:
+      access-token-validity: PT1H     # 1 hour for testing
+      refresh-token-validity: PT6H    # 6 hours for testing

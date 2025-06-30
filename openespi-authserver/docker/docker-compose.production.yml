@@ -1,0 +1,402 @@
+# Docker Compose for OpenESPI Authorization Server - Production Environment
+# This configuration is optimized for production deployment with high availability,
+# security, and monitoring features enabled.
+
+version: '3.8'
+
+services:
+  # OpenESPI Authorization Server - Production Configuration
+  authserver:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: espi-authserver-prod
+    ports:
+      - "8080:8080"   # Application port
+      - "8081:8081"   # Management port (restricted access)
+    environment:
+      # Spring Profile
+      SPRING_PROFILES_ACTIVE: prod
+      
+      # Database Configuration - Use external database in production
+      SPRING_DATASOURCE_URL: ${DATABASE_URL}
+      SPRING_DATASOURCE_USERNAME: ${DATABASE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${DATABASE_PASSWORD}
+      
+      # Connection Pool Settings
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: 20
+      SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: 5
+      SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT: 30000
+      SPRING_DATASOURCE_HIKARI_IDLE_TIMEOUT: 600000
+      SPRING_DATASOURCE_HIKARI_MAX_LIFETIME: 1800000
+      
+      # JPA Configuration
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      SPRING_JPA_SHOW_SQL: false
+      SPRING_JPA_PROPERTIES_HIBERNATE_JDBC_BATCH_SIZE: 20
+      SPRING_JPA_PROPERTIES_HIBERNATE_ORDER_INSERTS: true
+      SPRING_JPA_PROPERTIES_HIBERNATE_ORDER_UPDATES: true
+      
+      # Flyway Configuration
+      SPRING_FLYWAY_ENABLED: true
+      SPRING_FLYWAY_VALIDATE_ON_MIGRATE: true
+      SPRING_FLYWAY_CLEAN_DISABLED: true
+      
+      # Security Configuration - Production Settings
+      ESPI_SECURITY_REQUIRE_HTTPS: true
+      ESPI_SECURITY_CERTIFICATE_ENABLE_CERTIFICATE_AUTHENTICATION: true
+      ESPI_SECURITY_CERTIFICATE_TRUST_STORE_PATH: file:/app/certificates/production-truststore.jks
+      ESPI_SECURITY_CERTIFICATE_TRUST_STORE_PASSWORD: ${TRUST_STORE_PASSWORD}
+      
+      # OAuth2 Configuration
+      SPRING_SECURITY_OAUTH2_AUTHORIZATIONSERVER_ISSUER: ${ISSUER_URL}
+      
+      # DataCustodian Integration
+      ESPI_DATACUSTODIAN_BASE_URL: ${DATACUSTODIAN_URL}
+      ESPI_DATACUSTODIAN_ADMIN_CLIENT_SECRET: ${DATACUSTODIAN_CLIENT_SECRET}
+      
+      # Logging Configuration
+      LOGGING_LEVEL_ORG_GREENBUTTONALLIANCE: INFO
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY: WARN
+      LOGGING_LEVEL_ROOT: WARN
+      LOGGING_PATTERN_CONSOLE: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+      LOGGING_PATTERN_FILE: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+      
+      # Management Configuration
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,info,metrics,prometheus
+      MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS: when-authorized
+      MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED: true
+      
+      # JVM Options - Production Tuned
+      JAVA_OPTS: >-
+        -Xms1024m 
+        -Xmx2048m 
+        -XX:+UseG1GC 
+        -XX:MaxGCPauseMillis=200 
+        -XX:+UseContainerSupport 
+        -XX:MaxRAMPercentage=75.0
+        -XX:+HeapDumpOnOutOfMemoryError 
+        -XX:HeapDumpPath=/app/logs/
+        -XX:+UseStringDeduplication
+        -XX:+OptimizeStringConcat
+        -Djava.security.egd=file:/dev/./urandom
+        -Dspring.profiles.active=prod
+        
+      # Application Configuration
+      SERVER_SHUTDOWN: graceful
+      SPRING_LIFECYCLE_TIMEOUT_PER_SHUTDOWN_PHASE: 30s
+      
+      # External Service URLs
+      ESPI_EXTERNAL_URLS_AUTHORIZATION_SERVER: ${AUTHORIZATION_SERVER_URL}
+      ESPI_EXTERNAL_URLS_DATA_CUSTODIAN: ${DATACUSTODIAN_URL}
+      
+    volumes:
+      - authserver-logs-prod:/app/logs
+      - authserver-config-prod:/app/config:ro
+      - authserver-certificates-prod:/app/certificates:ro
+      - /etc/ssl/certs:/etc/ssl/certs:ro  # System CA certificates
+    networks:
+      - espi-network-prod
+    restart: unless-stopped
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 30s
+        order: start-first
+      restart_policy:
+        condition: unless-stopped
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+      resources:
+        limits:
+          memory: 2.5G
+          cpus: '1.5'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "https://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+  # NGINX Load Balancer with SSL Termination
+  nginx:
+    image: nginx:alpine
+    container_name: espi-nginx-prod
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - NGINX_HOST=${DOMAIN_NAME}
+      - NGINX_PORT=443
+    volumes:
+      - ./nginx/production.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - nginx-logs-prod:/var/log/nginx
+      - nginx-cache-prod:/var/cache/nginx
+    depends_on:
+      - authserver
+    networks:
+      - espi-network-prod
+    restart: unless-stopped
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  # Redis for Session Storage and Caching
+  redis:
+    image: redis:7-alpine
+    container_name: espi-redis-prod
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    volumes:
+      - redis-data-prod:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    networks:
+      - espi-network-prod
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  # Prometheus for Metrics Collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: espi-prometheus-prod
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/production.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/rules:/etc/prometheus/rules:ro
+      - prometheus-data-prod:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=365d'
+      - '--storage.tsdb.retention.size=50GB'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+    networks:
+      - espi-network-prod
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  # Grafana for Metrics Visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: espi-grafana-prod
+    ports:
+      - "3000:3000"
+    environment:
+      # Security Configuration
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+      GF_SECURITY_SECRET_KEY: ${GRAFANA_SECRET_KEY}
+      GF_USERS_ALLOW_SIGN_UP: false
+      GF_USERS_ALLOW_ORG_CREATE: false
+      
+      # Database Configuration
+      GF_DATABASE_TYPE: postgres
+      GF_DATABASE_HOST: ${GRAFANA_DB_HOST}
+      GF_DATABASE_NAME: ${GRAFANA_DB_NAME}
+      GF_DATABASE_USER: ${GRAFANA_DB_USER}
+      GF_DATABASE_PASSWORD: ${GRAFANA_DB_PASSWORD}
+      
+      # SMTP Configuration
+      GF_SMTP_ENABLED: true
+      GF_SMTP_HOST: ${SMTP_HOST}
+      GF_SMTP_USER: ${SMTP_USER}
+      GF_SMTP_PASSWORD: ${SMTP_PASSWORD}
+      GF_SMTP_FROM_ADDRESS: ${SMTP_FROM_ADDRESS}
+      
+      # Server Configuration
+      GF_SERVER_DOMAIN: ${GRAFANA_DOMAIN}
+      GF_SERVER_ROOT_URL: https://${GRAFANA_DOMAIN}
+      
+    volumes:
+      - grafana-data-prod:/var/lib/grafana
+      - ./grafana/provisioning/production:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    networks:
+      - espi-network-prod
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  # Log Aggregation (ELK Stack - Elasticsearch)
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: espi-elasticsearch-prod
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - xpack.security.enabled=false
+    volumes:
+      - elasticsearch-data-prod:/usr/share/elasticsearch/data
+    networks:
+      - espi-network-prod
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
+    profiles:
+      - logging
+
+  # Log Aggregation (ELK Stack - Logstash)
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.11.0
+    container_name: espi-logstash-prod
+    volumes:
+      - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
+      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+      - authserver-logs-prod:/var/log/authserver:ro
+    depends_on:
+      - elasticsearch
+    networks:
+      - espi-network-prod
+    restart: unless-stopped
+    profiles:
+      - logging
+
+  # Log Aggregation (ELK Stack - Kibana)
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: espi-kibana-prod
+    ports:
+      - "5601:5601"
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+    networks:
+      - espi-network-prod
+    restart: unless-stopped
+    profiles:
+      - logging
+
+networks:
+  espi-network-prod:
+    driver: bridge
+    name: espi-network-prod
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  # Application volumes
+  authserver-logs-prod:
+    name: espi-authserver-logs-prod
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /var/log/espi/authserver
+      
+  authserver-config-prod:
+    name: espi-authserver-config-prod
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /etc/espi/authserver
+      
+  authserver-certificates-prod:
+    name: espi-authserver-certificates-prod
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /etc/ssl/espi
+  
+  # Database volumes
+  redis-data-prod:
+    name: espi-redis-data-prod
+  
+  # Monitoring volumes
+  prometheus-data-prod:
+    name: espi-prometheus-data-prod
+  grafana-data-prod:
+    name: espi-grafana-data-prod
+  
+  # Logging volumes
+  elasticsearch-data-prod:
+    name: espi-elasticsearch-data-prod
+  
+  # Infrastructure volumes
+  nginx-logs-prod:
+    name: espi-nginx-logs-prod
+  nginx-cache-prod:
+    name: espi-nginx-cache-prod

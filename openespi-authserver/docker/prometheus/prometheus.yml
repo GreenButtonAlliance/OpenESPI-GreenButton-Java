@@ -1,0 +1,108 @@
+# Prometheus configuration for OpenESPI Authorization Server monitoring
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'espi-authserver'
+    environment: 'docker'
+
+rule_files:
+  - "rules/*.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - alertmanager:9093
+
+scrape_configs:
+  # OpenESPI Authorization Server metrics
+  - job_name: 'authserver'
+    static_configs:
+      - targets: ['authserver:8081']
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    honor_labels: true
+    params:
+      format: ['prometheus']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: authserver:8081
+
+  # JVM metrics from Authorization Server
+  - job_name: 'authserver-jvm'
+    static_configs:
+      - targets: ['authserver:8081']
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 30s
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'jvm_.*|process_.*|system_.*'
+        action: keep
+
+  # Database metrics (MySQL)
+  - job_name: 'mysql'
+    static_configs:
+      - targets: ['mysql:3306']
+    scrape_interval: 30s
+    # Note: Requires mysql_exporter to be configured
+    # metrics_path: '/metrics'
+
+  # NGINX metrics (if nginx_exporter is configured)
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx:9113']
+    scrape_interval: 30s
+    # Note: Requires nginx_exporter to be configured
+
+  # Redis metrics (if redis_exporter is configured)
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+    scrape_interval: 30s
+    # Note: Requires redis_exporter to be configured
+
+  # Node exporter for system metrics
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 30s
+    # Note: Requires node_exporter to be configured
+
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+
+  # Custom ESPI business metrics
+  - job_name: 'authserver-business'
+    static_configs:
+      - targets: ['authserver:8081']
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 60s
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'espi_.*|oauth2_.*|cert_.*'
+        action: keep
+
+# Remote write configuration (optional)
+# remote_write:
+#   - url: "https://prometheus-remote-write-endpoint/api/v1/write"
+#     queue_config:
+#       max_samples_per_send: 1000
+#       max_shards: 200
+#       capacity: 2500
+
+# Storage configuration
+storage:
+  tsdb:
+    retention.time: 15d
+    retention.size: 10GB

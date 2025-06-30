@@ -1,0 +1,42 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.eclipse/
+
+# Build artifacts
+target/
+!target/*.jar
+
+# Logs
+logs/
+*.log
+
+# Test files
+src/test/
+
+# Documentation
+README.md
+*.md
+
+# CI/CD
+.github/
+
+# Maven
+.mvn/wrapper/maven-wrapper.jar
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+
+# Spring Boot
+application-local.yml
+application-dev-*.yml

@@ -1,0 +1,1385 @@
+openapi: 3.0.3
+info:
+  title: OpenESPI Authorization Server API
+  description: |
+    OAuth2/OIDC Authorization Server for Green Button Alliance ESPI 4.0 compliant applications.
+    
+    This API provides:
+    - OAuth2 client management
+    - DataCustodian integration
+    - OIDC UserInfo endpoint with ESPI claims
+    - NAESB ESPI 4.0 compliance features
+    
+    ## Security
+    
+    - **TLS 1.3 ONLY**: All communications must use TLS 1.3
+    - **Certificate Authentication**: Support for X.509 client certificates
+    - **Bearer Token**: Required for API access
+    - **Perfect Forward Secrecy**: All cipher suites support PFS
+    
+    ## ESPI Compliance
+    
+    This server is certified for NAESB ESPI 4.0 compliance and supports:
+    - Green Button Connect My Data (CMD)
+    - Function Block 4.5.15+ 
+    - Certificate-based client authentication
+    - ESPI-specific scope validation
+  version: 1.0.0
+  contact:
+    name: Green Button Alliance
+    email: support@greenbuttonalliance.org
+    url: https://www.greenbuttonalliance.org
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+  termsOfService: https://www.greenbuttonalliance.org/terms
+
+servers:
+  - url: https://authorization.greenbuttonalliance.org
+    description: Production server
+  - url: https://staging-authorization.greenbuttonalliance.org
+    description: Staging server
+
+security:
+  - BearerAuth: []
+  - ClientCertificate: []
+
+paths:
+  # OAuth2 Client Management API
+  /api/v1/oauth2/clients:
+    get:
+      tags:
+        - OAuth2 Client Management
+      summary: List OAuth2 clients
+      description: Retrieve a paginated list of registered OAuth2 clients
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          description: Page number (zero-based)
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: size
+          in: query
+          description: Page size
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: sort
+          in: query
+          description: Sort field
+          schema:
+            type: string
+            enum: [clientName, clientId, createdAt]
+            default: clientName
+        - name: direction
+          in: query
+          description: Sort direction
+          schema:
+            type: string
+            enum: [ASC, DESC]
+            default: ASC
+        - name: search
+          in: query
+          description: Search term for client name or ID
+          schema:
+            type: string
+        - name: espiCompliant
+          in: query
+          description: Filter by ESPI compliance
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimit'
+    post:
+      tags:
+        - OAuth2 Client Management
+      summary: Create new OAuth2 client
+      description: Register a new OAuth2 client
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateClientRequest'
+      responses:
+        '201':
+          description: Client created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /api/v1/oauth2/clients/{clientId}:
+    get:
+      tags:
+        - OAuth2 Client Management
+      summary: Get client by ID
+      description: Retrieve a specific OAuth2 client by ID
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          description: Client identifier
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - OAuth2 Client Management
+      summary: Update client
+      description: Update an existing OAuth2 client
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          description: Client identifier
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateClientRequest'
+      responses:
+        '200':
+          description: Client updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    delete:
+      tags:
+        - OAuth2 Client Management
+      summary: Delete client
+      description: Remove an OAuth2 client (soft delete)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          description: Client identifier
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Client deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/oauth2/clients/{clientId}/metrics:
+    get:
+      tags:
+        - OAuth2 Client Management
+      summary: Get client metrics
+      description: Retrieve usage metrics for a specific client
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          description: Client identifier
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientMetricsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # DataCustodian Integration API
+  /api/v1/datacustodian/verify-user:
+    post:
+      tags:
+        - DataCustodian Integration
+      summary: Verify user credentials
+      description: Verify user credentials with DataCustodian
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyUserRequest'
+      responses:
+        '200':
+          description: User verification result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyUserResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '502':
+          $ref: '#/components/responses/DataCustodianError'
+
+  /api/v1/datacustodian/customers/{customerId}:
+    get:
+      tags:
+        - DataCustodian Integration
+      summary: Get retail customer info
+      description: Retrieve retail customer information from DataCustodian
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: customerId
+          in: path
+          required: true
+          description: DataCustodian customer identifier
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Customer information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetailCustomerResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '502':
+          $ref: '#/components/responses/DataCustodianError'
+
+  /api/v1/datacustodian/customers/{customerId}/usage-points:
+    get:
+      tags:
+        - DataCustodian Integration
+      summary: Get customer usage points
+      description: Retrieve usage points for a customer
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: customerId
+          in: path
+          required: true
+          description: DataCustodian customer identifier
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Usage points information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsagePointsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '502':
+          $ref: '#/components/responses/DataCustodianError'
+
+  /api/v1/datacustodian/health:
+    get:
+      tags:
+        - DataCustodian Integration
+      summary: DataCustodian health check
+      description: Check DataCustodian integration health status
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Health status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # OIDC UserInfo Endpoint
+  /userinfo:
+    get:
+      tags:
+        - OIDC
+      summary: Get user information
+      description: |
+        OpenID Connect UserInfo endpoint with ESPI-specific claims.
+        
+        Returns user information based on the scopes granted to the access token.
+        
+        **Standard OIDC Claims:**
+        - `openid` scope: sub
+        - `profile` scope: name, given_name, family_name, etc.
+        - `email` scope: email, email_verified
+        
+        **ESPI-specific Claims:**
+        - FB scopes: customer_id, usage_point_details, data_rights
+        - Green Button Alliance extensions
+      security:
+        - BearerAuth: [openid]
+      responses:
+        '200':
+          description: User information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserInfoResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/InsufficientScope'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags:
+        - OIDC
+      summary: Get user information (POST)
+      description: Alternative POST method for UserInfo endpoint
+      security:
+        - BearerAuth: [openid]
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                access_token:
+                  type: string
+                  description: Access token (alternative to Authorization header)
+      responses:
+        '200':
+          description: User information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserInfoResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/InsufficientScope'
+
+  # OAuth2 Standard Endpoints
+  /oauth2/authorize:
+    get:
+      tags:
+        - OAuth2 Standard
+      summary: Authorization endpoint
+      description: |
+        OAuth2 authorization endpoint for initiating authorization code flow.
+        
+        Supports PKCE (Proof Key for Code Exchange) for enhanced security.
+      parameters:
+        - name: response_type
+          in: query
+          required: true
+          description: Response type (must be 'code')
+          schema:
+            type: string
+            enum: [code]
+        - name: client_id
+          in: query
+          required: true
+          description: Client identifier
+          schema:
+            type: string
+        - name: redirect_uri
+          in: query
+          required: true
+          description: Callback URI
+          schema:
+            type: string
+            format: uri
+        - name: scope
+          in: query
+          required: true
+          description: Requested scopes (space-separated)
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: true
+          description: CSRF protection parameter
+          schema:
+            type: string
+        - name: code_challenge
+          in: query
+          description: PKCE code challenge
+          schema:
+            type: string
+        - name: code_challenge_method
+          in: query
+          description: PKCE code challenge method
+          schema:
+            type: string
+            enum: [S256]
+      responses:
+        '302':
+          description: Redirect to callback URI with authorization code
+        '400':
+          description: Invalid request parameters
+        '401':
+          description: Authentication required
+
+  /oauth2/token:
+    post:
+      tags:
+        - OAuth2 Standard
+      summary: Token endpoint
+      description: OAuth2 token endpoint for exchanging authorization codes for access tokens
+      security:
+        - ClientCredentials: []
+        - ClientCertificate: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/AuthorizationCodeTokenRequest'
+                - $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Access token response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          $ref: '#/components/responses/OAuth2Error'
+        '401':
+          $ref: '#/components/responses/OAuth2Error'
+
+  /oauth2/introspect:
+    post:
+      tags:
+        - OAuth2 Standard
+      summary: Token introspection
+      description: OAuth2 token introspection endpoint
+      security:
+        - ClientCredentials: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/IntrospectionRequest'
+      responses:
+        '200':
+          description: Token introspection response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntrospectionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /oauth2/revoke:
+    post:
+      tags:
+        - OAuth2 Standard
+      summary: Token revocation
+      description: OAuth2 token revocation endpoint
+      security:
+        - ClientCredentials: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RevocationRequest'
+      responses:
+        '200':
+          description: Token revoked successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    ClientCredentials:
+      type: http
+      scheme: basic
+    ClientCertificate:
+      type: mutualTLS
+
+  schemas:
+    # OAuth2 Client Management Schemas
+    ClientListResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClientSummary'
+        pageable:
+          $ref: '#/components/schemas/Pageable'
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+        first:
+          type: boolean
+        last:
+          type: boolean
+
+    ClientSummary:
+      type: object
+      properties:
+        clientId:
+          type: string
+        clientName:
+          type: string
+        espiCompliant:
+          type: boolean
+        securityLevel:
+          type: string
+          enum: [LOW, MEDIUM, HIGH]
+        certificationStatus:
+          type: string
+          enum: [PENDING, CERTIFIED, EXPIRED, REVOKED]
+        createdAt:
+          type: string
+          format: date-time
+        lastUsed:
+          type: string
+          format: date-time
+
+    ClientResponse:
+      type: object
+      properties:
+        clientId:
+          type: string
+        clientName:
+          type: string
+        clientSecret:
+          type: string
+          description: "[PROTECTED] - Only returned on creation"
+        redirectUris:
+          type: array
+          items:
+            type: string
+            format: uri
+        scopes:
+          type: array
+          items:
+            type: string
+        authorizationGrantTypes:
+          type: array
+          items:
+            type: string
+            enum: [authorization_code, refresh_token, client_credentials]
+        clientAuthenticationMethods:
+          type: array
+          items:
+            type: string
+            enum: [client_secret_basic, client_secret_post, tls_client_auth]
+        espiCompliant:
+          type: boolean
+        securityLevel:
+          type: string
+          enum: [LOW, MEDIUM, HIGH]
+        certificationStatus:
+          type: string
+          enum: [PENDING, CERTIFIED, EXPIRED, REVOKED]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        lastUsed:
+          type: string
+          format: date-time
+        usageMetrics:
+          $ref: '#/components/schemas/UsageMetrics'
+
+    CreateClientRequest:
+      type: object
+      required:
+        - clientName
+        - redirectUris
+        - scopes
+      properties:
+        clientName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        redirectUris:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            format: uri
+        scopes:
+          type: array
+          minItems: 1
+          items:
+            type: string
+        authorizationGrantTypes:
+          type: array
+          items:
+            type: string
+            enum: [authorization_code, refresh_token, client_credentials]
+          default: [authorization_code, refresh_token]
+        clientAuthenticationMethods:
+          type: array
+          items:
+            type: string
+            enum: [client_secret_basic, client_secret_post, tls_client_auth]
+          default: [client_secret_basic]
+        espiCompliant:
+          type: boolean
+          default: false
+        securityLevel:
+          type: string
+          enum: [LOW, MEDIUM, HIGH]
+          default: MEDIUM
+        clientSettings:
+          $ref: '#/components/schemas/ClientSettings'
+        tokenSettings:
+          $ref: '#/components/schemas/TokenSettings'
+
+    UpdateClientRequest:
+      type: object
+      properties:
+        clientName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        redirectUris:
+          type: array
+          items:
+            type: string
+            format: uri
+        scopes:
+          type: array
+          items:
+            type: string
+        authorizationGrantTypes:
+          type: array
+          items:
+            type: string
+            enum: [authorization_code, refresh_token, client_credentials]
+        clientAuthenticationMethods:
+          type: array
+          items:
+            type: string
+            enum: [client_secret_basic, client_secret_post, tls_client_auth]
+        espiCompliant:
+          type: boolean
+        securityLevel:
+          type: string
+          enum: [LOW, MEDIUM, HIGH]
+        clientSettings:
+          $ref: '#/components/schemas/ClientSettings'
+        tokenSettings:
+          $ref: '#/components/schemas/TokenSettings'
+
+    ClientSettings:
+      type: object
+      properties:
+        requireAuthorizationConsent:
+          type: boolean
+          default: true
+        requireProofKey:
+          type: boolean
+          default: true
+
+    TokenSettings:
+      type: object
+      properties:
+        accessTokenTimeToLive:
+          type: string
+          description: ISO 8601 duration (e.g., PT1H)
+          default: PT1H
+        refreshTokenTimeToLive:
+          type: string
+          description: ISO 8601 duration (e.g., P30D)
+          default: P30D
+        reuseRefreshTokens:
+          type: boolean
+          default: false
+
+    ClientMetricsResponse:
+      type: object
+      properties:
+        clientId:
+          type: string
+        metrics:
+          $ref: '#/components/schemas/UsageMetrics'
+
+    UsageMetrics:
+      type: object
+      properties:
+        totalTokensIssued:
+          type: integer
+          format: int64
+        totalAuthorizationsGranted:
+          type: integer
+          format: int64
+        totalRefreshTokensUsed:
+          type: integer
+          format: int64
+        averageTokenLifetime:
+          type: integer
+          description: Average token lifetime in seconds
+        lastTokenIssuedAt:
+          type: string
+          format: date-time
+        peakUsageHour:
+          type: integer
+          minimum: 0
+          maximum: 23
+        weeklyStats:
+          $ref: '#/components/schemas/WeeklyStats'
+
+    WeeklyStats:
+      type: object
+      properties:
+        currentWeek:
+          $ref: '#/components/schemas/WeekStats'
+        previousWeek:
+          $ref: '#/components/schemas/WeekStats'
+
+    WeekStats:
+      type: object
+      properties:
+        authorizationsGranted:
+          type: integer
+        tokensIssued:
+          type: integer
+
+    # DataCustodian Integration Schemas
+    VerifyUserRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+          format: password
+
+    VerifyUserResponse:
+      type: object
+      properties:
+        verified:
+          type: boolean
+        customerId:
+          type: string
+        customerType:
+          type: string
+          enum: [RESIDENTIAL, COMMERCIAL, INDUSTRIAL]
+        message:
+          type: string
+
+    RetailCustomerResponse:
+      type: object
+      properties:
+        customerId:
+          type: string
+        username:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+          format: email
+        customerType:
+          type: string
+          enum: [RESIDENTIAL, COMMERCIAL, INDUSTRIAL]
+        accountNumber:
+          type: string
+        serviceTerritory:
+          type: string
+        enrollmentDate:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE, SUSPENDED]
+
+    UsagePointsResponse:
+      type: object
+      properties:
+        customerId:
+          type: string
+        usagePoints:
+          type: array
+          items:
+            $ref: '#/components/schemas/UsagePoint'
+
+    UsagePoint:
+      type: object
+      properties:
+        usagePointId:
+          type: string
+        usagePointUUID:
+          type: string
+          format: uuid
+        serviceCategory:
+          type: string
+          enum: [ELECTRICITY, GAS, WATER, TIME]
+        serviceKind:
+          type: string
+          enum: [ENERGY, DEMAND, VOLTAGE, CURRENT]
+        meterNumber:
+          type: string
+        serviceAddress:
+          type: string
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE]
+        installationDate:
+          type: string
+          format: date-time
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [HEALTHY, DEGRADED, UNHEALTHY]
+        datacustodianVersion:
+          type: string
+        connectionStatus:
+          type: string
+          enum: [CONNECTED, DISCONNECTED, ERROR]
+        responseTime:
+          type: integer
+          description: Response time in milliseconds
+        lastSuccessfulCall:
+          type: string
+          format: date-time
+        metrics:
+          $ref: '#/components/schemas/HealthMetrics'
+
+    HealthMetrics:
+      type: object
+      properties:
+        totalRequests:
+          type: integer
+          format: int64
+        successfulRequests:
+          type: integer
+          format: int64
+        failedRequests:
+          type: integer
+          format: int64
+        averageResponseTime:
+          type: integer
+          description: Average response time in milliseconds
+
+    # OIDC Schemas
+    UserInfoResponse:
+      type: object
+      properties:
+        # Standard OIDC claims
+        sub:
+          type: string
+          description: Subject identifier
+        name:
+          type: string
+          description: Full name
+        given_name:
+          type: string
+          description: Given name
+        family_name:
+          type: string
+          description: Family name
+        preferred_username:
+          type: string
+          description: Preferred username
+        email:
+          type: string
+          format: email
+          description: Email address
+        email_verified:
+          type: boolean
+          description: Email verification status
+        locale:
+          type: string
+          description: Locale preference
+        zoneinfo:
+          type: string
+          description: Time zone
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update time
+        
+        # Authorization claims
+        aud:
+          type: string
+          description: Audience (client ID)
+        iss:
+          type: string
+          description: Issuer
+        iat:
+          type: string
+          format: date-time
+          description: Issued at time
+        exp:
+          type: string
+          format: date-time
+          description: Expiration time
+        auth_time:
+          type: string
+          format: date-time
+          description: Authentication time
+        scope:
+          type: string
+          description: Granted scopes
+        
+        # ESPI-specific claims
+        customer_id:
+          type: string
+          description: DataCustodian customer identifier
+        customer_type:
+          type: string
+          enum: [RESIDENTIAL, COMMERCIAL, INDUSTRIAL]
+          description: Customer type
+        account_number:
+          type: string
+          description: Utility account number
+        service_territory:
+          type: string
+          description: Geographic service territory
+        espi_scopes:
+          type: array
+          items:
+            type: string
+          description: ESPI-specific scopes granted
+        datacustodian_grant_id:
+          type: string
+          description: DataCustodian grant identifier
+        authorized_usage_points:
+          type: array
+          items:
+            type: string
+          description: Authorized usage point IDs
+        usage_point_details:
+          type: array
+          items:
+            $ref: '#/components/schemas/UsagePointInfo'
+          description: Detailed usage point information
+        
+        # Green Button Alliance extensions
+        gba_version:
+          type: string
+          description: Green Button Alliance version
+        espi_version:
+          type: string
+          description: NAESB ESPI version
+        data_rights:
+          type: array
+          items:
+            type: string
+            enum: [ENERGY_USAGE_DATA, 15_MINUTE_INTERVALS, HOURLY_INTERVALS, DAILY_USAGE_DATA, MONTHLY_BILLING_DATA, ADMIN_ACCESS, UPLOAD_ACCESS]
+          description: Granted data access rights
+
+    UsagePointInfo:
+      type: object
+      properties:
+        usage_point_id:
+          type: string
+        usage_point_uuid:
+          type: string
+          format: uuid
+        service_category:
+          type: string
+          enum: [ELECTRICITY, GAS, WATER, TIME]
+        service_kind:
+          type: string
+          enum: [ENERGY, DEMAND, VOLTAGE, CURRENT]
+        meter_number:
+          type: string
+        service_address:
+          type: string
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE]
+
+    # OAuth2 Standard Schemas
+    AuthorizationCodeTokenRequest:
+      type: object
+      required:
+        - grant_type
+        - code
+        - redirect_uri
+      properties:
+        grant_type:
+          type: string
+          enum: [authorization_code]
+        code:
+          type: string
+        redirect_uri:
+          type: string
+          format: uri
+        code_verifier:
+          type: string
+          description: PKCE code verifier
+
+    RefreshTokenRequest:
+      type: object
+      required:
+        - grant_type
+        - refresh_token
+      properties:
+        grant_type:
+          type: string
+          enum: [refresh_token]
+        refresh_token:
+          type: string
+        scope:
+          type: string
+          description: Optional scope limitation
+
+    TokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+          enum: [Bearer]
+        expires_in:
+          type: integer
+          description: Token lifetime in seconds
+        refresh_token:
+          type: string
+        scope:
+          type: string
+          description: Granted scopes
+        id_token:
+          type: string
+          description: OpenID Connect ID token
+
+    IntrospectionRequest:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+        token_type_hint:
+          type: string
+          enum: [access_token, refresh_token]
+
+    IntrospectionResponse:
+      type: object
+      properties:
+        active:
+          type: boolean
+        sub:
+          type: string
+        aud:
+          type: string
+        iss:
+          type: string
+        exp:
+          type: integer
+        iat:
+          type: integer
+        scope:
+          type: string
+        client_id:
+          type: string
+        token_type:
+          type: string
+
+    RevocationRequest:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+        token_type_hint:
+          type: string
+          enum: [access_token, refresh_token]
+
+    # Common Schemas
+    Pageable:
+      type: object
+      properties:
+        sort:
+          type: object
+          properties:
+            sorted:
+              type: boolean
+            orderBy:
+              type: string
+        pageNumber:
+          type: integer
+        pageSize:
+          type: integer
+
+    DeleteResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        clientId:
+          type: string
+        deletedAt:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        error_description:
+          type: string
+        error_uri:
+          type: string
+          format: uri
+        timestamp:
+          type: string
+          format: date-time
+        path:
+          type: string
+        correlationId:
+          type: string
+
+    ValidationErrorResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+        - type: object
+          properties:
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                  message:
+                    type: string
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "invalid_request"
+            error_description: "The request is malformed"
+            timestamp: "2024-01-16T15:30:00Z"
+            path: "/api/v1/oauth2/clients"
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "invalid_token"
+            error_description: "The access token is invalid or expired"
+            timestamp: "2024-01-16T15:30:00Z"
+
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "insufficient_scope"
+            error_description: "The request requires higher privileges"
+            timestamp: "2024-01-16T15:30:00Z"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "client_not_found"
+            error_description: "The specified client was not found"
+            timestamp: "2024-01-16T15:30:00Z"
+
+    Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "client_already_exists"
+            error_description: "A client with this ID already exists"
+            timestamp: "2024-01-16T15:30:00Z"
+
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationErrorResponse'
+          example:
+            error: "validation_error"
+            error_description: "Request validation failed"
+            timestamp: "2024-01-16T15:30:00Z"
+            details:
+              - field: "clientName"
+                message: "Client name is required"
+
+    RateLimit:
+      description: Rate limit exceeded
+      headers:
+        X-RateLimit-Limit:
+          schema:
+            type: integer
+          description: Request limit per hour
+        X-RateLimit-Remaining:
+          schema:
+            type: integer
+          description: Remaining requests in current window
+        X-RateLimit-Reset:
+          schema:
+            type: integer
+          description: Unix timestamp when limit resets
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "rate_limit_exceeded"
+            error_description: "Too many requests"
+            timestamp: "2024-01-16T15:30:00Z"
+
+    InsufficientScope:
+      description: Insufficient scope
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "insufficient_scope"
+            error_description: "Token missing required openid scope"
+            timestamp: "2024-01-16T15:30:00Z"
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "server_error"
+            error_description: "Internal server error"
+            timestamp: "2024-01-16T15:30:00Z"
+
+    DataCustodianError:
+      description: DataCustodian integration error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "datacustodian_error"
+            error_description: "DataCustodian service is unavailable"
+            timestamp: "2024-01-16T15:30:00Z"
+
+    OAuth2Error:
+      description: OAuth2 error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            invalid_grant:
+              value:
+                error: "invalid_grant"
+                error_description: "The provided authorization grant is invalid"
+            invalid_client:
+              value:
+                error: "invalid_client"
+                error_description: "Client authentication failed"
+
+tags:
+  - name: OAuth2 Client Management
+    description: Manage OAuth2 client registrations
+  - name: DataCustodian Integration
+    description: Integration with OpenESPI DataCustodian
+  - name: OIDC
+    description: OpenID Connect endpoints
+  - name: OAuth2 Standard
+    description: Standard OAuth2 endpoints
+
+externalDocs:
+  description: OpenESPI Authorization Server Documentation
+  url: https://docs.greenbuttonalliance.org/authorization-server

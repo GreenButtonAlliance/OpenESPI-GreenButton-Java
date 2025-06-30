@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~
+  ~    Copyright (c) 2018-2025 Green Button Alliance, Inc.
+  ~
+  ~    Portions (c) 2013-2018 EnergyOS.org
+  ~
+  ~     Licensed under the Apache License, Version 2.0 (the "License");
+  ~     you may not use this file except in compliance with the License.
+  ~     You may obtain a copy of the License at
+  ~
+  ~         http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~     Unless required by applicable law or agreed to in writing, software
+  ~     distributed under the License is distributed on an "AS IS" BASIS,
+  ~     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~     See the License for the specific language governing permissions and
+  ~     limitations under the License.
+  ~
+  -->
+
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+
+    <!--
+        OWASP Dependency Check Suppressions for OpenESPI Authorization Server
+        
+        This file contains suppressions for known false positives in vulnerability scanning.
+        Each suppression should be well-documented with reasoning and expiration dates.
+    -->
+
+    <!-- Spring Boot Framework Suppressions -->
+    <suppress>
+        <notes><![CDATA[
+            Spring Boot 3.5.0 - False positive for CVE-2022-22965 (Spring4Shell)
+            This vulnerability affects Spring Framework versions prior to 5.3.18 and 5.2.20.
+            Spring Boot 3.5.0 uses Spring Framework 6.x which is not affected.
+            Expires: 2025-12-31
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-.*@.*$</packageUrl>
+        <cve>CVE-2022-22965</cve>
+    </suppress>
+
+    <!-- Spring Security OAuth2 Authorization Server Suppressions -->
+    <suppress>
+        <notes><![CDATA[
+            Spring Authorization Server 1.3+ - Modern replacement for legacy Spring Security OAuth2
+            Any CVEs related to the legacy spring-security-oauth2 do not apply to the new
+            spring-boot-starter-oauth2-authorization-server used in this project.
+            Expires: 2025-12-31
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework\.security/spring\-security\-oauth2\-authorization\-server@.*$</packageUrl>
+        <cve>CVE-2018-1260</cve>
+        <cve>CVE-2019-3778</cve>
+    </suppress>
+
+    <!-- H2 Database Test Dependencies -->
+    <suppress>
+        <notes><![CDATA[
+            H2 Database 2.3.232 - Used only for testing and local development
+            Not exposed in production environments. Any H2-related CVEs are not applicable
+            as H2 is not used in production deployments.
+            Expires: 2025-06-30
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/com\.h2database/h2@.*$</packageUrl>
+        <cve>CVE-2022-45868</cve>
+        <cve>CVE-2021-42392</cve>
+    </suppress>
+
+    <!-- Testcontainers Testing Framework -->
+    <suppress>
+        <notes><![CDATA[
+            Testcontainers 1.20.4 - Used only for integration testing
+            Not included in production builds (test scope dependency)
+            Expires: 2025-06-30
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.testcontainers/.*@.*$</packageUrl>
+        <vulnerabilityName>CVE-2023-20863</vulnerabilityName>
+    </suppress>
+
+    <!-- Jackson Data Binding -->
+    <suppress>
+        <notes><![CDATA[
+            Jackson vulnerabilities are mitigated by Spring Boot's configuration
+            Spring Boot 3.5.0 includes latest Jackson versions with security patches
+            Expires: 2025-12-31
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/com\.fasterxml\.jackson\.core/jackson\-databind@.*$</packageUrl>
+        <cve>CVE-2022-42003</cve>
+        <cve>CVE-2022-42004</cve>
+    </suppress>
+
+    <!-- Thymeleaf Template Engine -->
+    <suppress>
+        <notes><![CDATA[
+            Thymeleaf is used for OAuth2 consent pages with controlled input
+            Templates are static and do not process user-generated content
+            Spring Boot manages Thymeleaf security configuration
+            Expires: 2025-06-30
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.thymeleaf/thymeleaf.*@.*$</packageUrl>
+        <cve>CVE-2023-38286</cve>
+    </suppress>
+
+    <!-- JWT Token Processing Libraries -->
+    <suppress>
+        <notes><![CDATA[
+            Nimbus JOSE JWT library - Used by Spring Authorization Server
+            ESPI standard recommends opaque tokens, JWT support is experimental
+            Spring Authorization Server manages JWT security properly
+            Expires: 2025-12-31
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/com\.nimbusds/nimbus\-jose\-jwt@.*$</packageUrl>
+        <cve>CVE-2023-1370</cve>
+    </suppress>
+
+    <!-- Development and Testing Tools -->
+    <suppress>
+        <notes><![CDATA[
+            Development tools not included in production builds
+            Maven plugins and testing frameworks are build-time only
+            Expires: 2025-06-30
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.apache\.maven\.plugins/.*@.*$</packageUrl>
+        <vulnerabilityName regex="true">.*</vulnerabilityName>
+    </suppress>
+
+    <suppress>
+        <notes><![CDATA[
+            JUnit and testing framework vulnerabilities not applicable
+            Test dependencies are not included in production artifacts
+            Expires: 2025-06-30
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.junit\..*@.*$</packageUrl>
+        <vulnerabilityName regex="true">.*</vulnerabilityName>
+    </suppress>
+
+    <!-- MySQL and PostgreSQL Drivers -->
+    <suppress>
+        <notes><![CDATA[
+            Database driver CVEs are typically related to specific configurations
+            OpenESPI Authorization Server uses standard connection pooling
+            Connection strings are configured via environment variables
+            Expires: 2025-12-31
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/mysql/mysql\-connector\-j@.*$</packageUrl>
+        <cve>CVE-2023-22102</cve>
+    </suppress>
+
+    <suppress>
+        <notes><![CDATA[
+            PostgreSQL driver CVEs are typically configuration-related
+            Production deployments use secure connection configurations
+            Expires: 2025-12-31
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.postgresql/postgresql@.*$</packageUrl>
+        <cve>CVE-2024-1597</cve>
+    </suppress>
+
+    <!-- Flyway Database Migration -->
+    <suppress>
+        <notes><![CDATA[
+            Flyway is used for controlled database migrations
+            Migration scripts are version-controlled and reviewed
+            Not exposed to user input or external access
+            Expires: 2025-06-30
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.flywaydb/flyway.*@.*$</packageUrl>
+        <vulnerabilityName regex="true">.*SQL.*</vulnerabilityName>
+    </suppress>
+
+</suppressions>

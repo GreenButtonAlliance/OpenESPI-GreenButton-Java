@@ -1,0 +1,248 @@
+# Docker-specific configuration for OpenESPI Authorization Server
+# This configuration is optimized for containerized deployment
+
+spring:
+  profiles:
+    active: docker
+    include:
+      - espi40  # Include ESPI 4.0 configuration
+  
+  # Application Configuration
+  application:
+    name: OpenESPI Authorization Server
+    
+  # Database Configuration (MySQL by default for Docker)
+  datasource:
+    url: jdbc:mysql://mysql:3306/espi_authserver?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=utf8&useUnicode=true
+    username: espi_user
+    password: espi_password
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    
+    # Connection Pool Configuration
+    hikari:
+      pool-name: ESPIAuthServerPool
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 20000
+      idle-timeout: 300000
+      max-lifetime: 1200000
+      leak-detection-threshold: 60000
+      connection-test-query: SELECT 1
+      
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: validate
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+        implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: false
+        use_sql_comments: false
+        jdbc:
+          batch_size: 20
+          fetch_size: 50
+        order_inserts: true
+        order_updates: true
+        connection:
+          provider_disables_autocommit: true
+        
+  # Flyway Configuration
+  flyway:
+    enabled: true
+    locations: classpath:db/migration/mysql
+    baseline-on-migrate: true
+    validate-on-migrate: true
+    out-of-order: false
+    clean-disabled: true
+    
+  # Redis Configuration (if enabled)
+  data:
+    redis:
+      host: redis
+      port: 6379
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
+    
+  # Session Configuration
+  session:
+    store-type: none  # Use memory by default, enable Redis with profile
+    timeout: 30m
+    
+  # Cache Configuration
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=1000,expireAfterWrite=1h
+    cache-names:
+      - clientCertificates
+      - userInfo
+      - clientMetrics
+      
+# Server Configuration
+server:
+  port: 8080
+  servlet:
+    context-path: /
+    session:
+      timeout: 30m
+      cookie:
+        name: ESPI_SESSION
+        http-only: true
+        secure: false  # Set to true when using HTTPS
+        same-site: strict
+        max-age: 1800
+  shutdown: graceful
+  
+  # Error handling
+  error:
+    whitelabel:
+      enabled: false
+    include-stacktrace: never
+    include-message: always
+    include-binding-errors: never
+    
+# Management Endpoints
+management:
+  server:
+    port: 8081
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,flyway,env
+      base-path: /actuator
+      cors:
+        allowed-origins: "*"
+        allowed-methods: GET,POST
+  endpoint:
+    health:
+      show-details: when-authorized
+      show-components: always
+      probes:
+        enabled: true
+    info:
+      enabled: true
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+    flyway:
+      enabled: true
+  health:
+    defaults:
+      enabled: true
+    db:
+      enabled: true
+    redis:
+      enabled: false  # Enable with Redis profile
+    diskspace:
+      enabled: true
+      threshold: 10GB
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+        step: 30s
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.5,0.9,0.95,0.99
+    tags:
+      application: ${spring.application.name}
+      environment: docker
+      
+# Logging Configuration
+logging:
+  level:
+    org.greenbuttonalliance: INFO
+    org.springframework.security: INFO
+    org.springframework.web: INFO
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
+    com.zaxxer.hikari: INFO
+    org.flywaydb: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{requestId:-}] %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{requestId:-}] %logger{36} - %msg%n"
+  file:
+    name: /app/logs/authserver.log
+    max-size: 100MB
+    max-history: 10
+    total-size-cap: 1GB
+    
+# ESPI Configuration
+espi:
+  # Token Configuration
+  token:
+    format: opaque  # ESPI standard compliance
+    
+  # Security Configuration
+  security:
+    require-https: false  # Enable in production
+    certificate:
+      enable-certificate-authentication: false
+      require-client-certificate: false
+      trust-store-path: classpath:certificates/docker-truststore.jks
+      trust-store-password: ${TRUST_STORE_PASSWORD:changeit}
+      certificate-cache-expiration: 3600
+      
+  # DataCustodian Integration
+  datacustodian:
+    base-url: ${ESPI_DATACUSTODIAN_BASE_URL:http://datacustodian:8080/DataCustodian}
+    admin-client-id: data_custodian_admin
+    admin-client-secret: ${DATACUSTODIAN_CLIENT_SECRET:datacustodian_secret}
+    connection-timeout: 5000
+    read-timeout: 10000
+    max-retries: 3
+    health-check-interval: 300
+    enable-health-checks: true
+    enable-api-logging: true
+    
+  # OAuth2 Client Management
+  oauth2:
+    client-management:
+      default-rate-limit-per-minute: 100
+      default-max-concurrent-sessions: 5
+      max-failures-before-lock: 10
+      default-lock-duration-minutes: 60
+      metrics-retention-days: 365
+      enable-automatic-metrics-calculation: true
+      enable-automatic-cleanup: true
+      enable-security-monitoring: true
+      
+# External URLs (for production deployment)
+espi:
+  external-urls:
+    authorization-server: ${AUTHORIZATION_SERVER_URL:http://localhost:8080}
+    data-custodian: ${DATACUSTODIAN_URL:http://localhost:8082}
+    
+# Application Information
+info:
+  app:
+    name: ${spring.application.name}
+    description: Green Button Alliance OAuth2 Authorization Server
+    version: '@project.version@'
+    spring-boot-version: '@spring-boot.version@'
+    java-version: '@java.version@'
+    build-time: '@maven.build.timestamp@'
+    environment: docker
+  espi:
+    version: 4.0
+    token-format: opaque
+    compliance: NAESB ESPI 4.0 Standard
+    features:
+      - OAuth2 Authorization Server
+      - OIDC Provider
+      - Certificate Authentication
+      - DataCustodian Integration
+      - Client Management APIs
+      - Comprehensive Monitoring

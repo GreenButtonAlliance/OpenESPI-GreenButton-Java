@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Authorization Error - Green Button Alliance</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .error-container {
+            max-width: 500px;
+            margin: 3rem auto;
+            padding: 2rem;
+        }
+        .green-button-header {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+            padding: 2rem;
+            border-radius: 10px 10px 0 0;
+            text-align: center;
+        }
+        .error-body {
+            background: white;
+            padding: 2rem;
+            border: 1px solid #dee2e6;
+            border-radius: 0 0 10px 10px;
+        }
+        .error-icon {
+            font-size: 3rem;
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="error-container">
+        <div class="green-button-header">
+            <div class="error-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h2 class="mb-1">Authorization Error</h2>
+            <p class="mb-0">Green Button Alliance ESPI Authorization Server</p>
+        </div>
+
+        <div class="error-body text-center">
+            <h4 class="text-danger mb-3">
+                <i class="fas fa-times-circle"></i> 
+                Authorization Failed
+            </h4>
+            
+            <p class="text-muted mb-4" th:text="${error}">
+                An error occurred during the authorization process.
+            </p>
+            
+            <div class="alert alert-danger" role="alert">
+                <h6><i class="fas fa-info-circle"></i> What happened?</h6>
+                <p class="mb-0">
+                    The authorization request could not be processed. This may be due to:
+                    <ul class="text-start mt-2 mb-0">
+                        <li>Invalid client application</li>
+                        <li>Missing or incorrect parameters</li>
+                        <li>Server configuration error</li>
+                    </ul>
+                </p>
+            </div>
+
+            <div class="d-grid gap-2">
+                <a href="/" class="btn btn-primary">
+                    <i class="fas fa-home"></i> Return to Home
+                </a>
+                <button onclick="history.back()" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Go Back
+                </button>
+            </div>
+
+            <div class="mt-4 pt-3 border-top">
+                <p class="text-muted small mb-0">
+                    If you continue to experience issues, please contact your system administrator.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://kit.fontawesome.com/your-fontawesome-kit.js" crossorigin="anonymous"></script>
+</body>
+</html>
