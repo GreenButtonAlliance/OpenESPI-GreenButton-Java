@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
   ~
   ~    Copyright (c) 2018-2025 Green Button Alliance, Inc.
@@ -18,118 +19,91 @@
   ~
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <!-- Spring Boot Parent POM for dependency management -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>3.5.0</version>
-        <relativePath/>
+        <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
-    <groupId>org.greenbuttonalliance</groupId>
-    <artifactId>OpenESPI-Common</artifactId>
-    <version>1.4-BUILD-SNAPSHOT</version>
+    <groupId>org.greenbuttonalliance.espi</groupId>
+    <artifactId>OpenESPI-DataCustodian</artifactId>
+    <version>1.4.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>OpenESPI-Common</name>
+    <name>OpenESPI DataCustodian</name>
     <description>
-        North American Energy Standards Board (NAESB) Retail Electric Quadrant (REQ.21) Energy Service Provider
-        Interface (ESPI) 1.0 combined Data Custodian (Utility) Authorization and Resource Web Server implementation
-        common services.
+        North American Energy Standards Board (NAESB) Energy Service Provider Interface (ESPI) 1.0 
+        Data Custodian (Utility) Resource Server implementation with Spring Boot 3.5
     </description>
 
-    <url>https://github.com/greenbuttonalliance/OpenESPI-Common-java</url>
+    <url>https://github.com/greenbuttonalliance/OpenESPI-GreenButton-Java-Workspace</url>
 
     <organization>
-    	<name>Green Button Alliance, Inc.</name>
-    	<url>http://www.greenbuttonalliance.org</url>
+        <name>Green Button Alliance, Inc.</name>
+        <url>https://www.greenbuttonalliance.org</url>
     </organization>
 
-    <licenses>
-    	<license>
-    		<name>The Apache Software License, Version 2.0</name>
-    		<url>http://www.apache.org/licenses/LICENSE-2.o.txt</url>
-    	</license>
-    </licenses>
-
-    <scm>
-       <connection>scm:git:https://github.com/greenbuttonalliance/OpenESPI-Common-java.git/</connection>
-       <developerConnection>scm:git:git@github.com:greenbuttonalliance/OpenESPI-Common-java.git</developerConnection>
-       <url>https://github.com/greenbuttonalliance/OpenESPI-Common-java.git</url>
-       <tag>v1.4-SNAPSHOT</tag>
-    </scm>
-
     <developers>
-    	<developer>
-    		<id>jteeter</id>
-    		<name>John Teeter</name>
-    		<email>john.teeter@energyos.org</email>
-    	</developer>
-    	<developer>
-    		<id>dcoffin</id>
-    		<name>Donald F. Coffin</name>
-    		<email>donald.coffin@reminetworks.com</email>
-    	</developer>
-    	<developer>
-    		<id>mburns</id>
-    		<name>Dr. Martin J. Burns</name>
-    		<email>marty@hypertek.us</email>
-    	</developer>
-    	<developer>
-    		<id>apliszka</id>
-    		<name>Andy Pliszka</name>
-    		<email>apliska@pivotal.io</email>
-    	</developer>
-    	<developer>
-    		<id>rclutton</id>
-    		<name>Robbie Clutton</name>
-    		<email>rclutton@pivotal.io</email>
-    	</developer>
-    	<developer>
-    		<id>wramsey</id>
-    		<name>William Ramsey</name>
-    		<email>wramsey@pivotal.io</email>
-    	</developer>
+        <developer>
+            <id>jteeter</id>
+            <name>John Teeter</name>
+            <email>john.teeter@energyos.org</email>
+        </developer>
+        <developer>
+            <id>dcoffin</id>
+            <name>Donald F. Coffin</name>
+            <email>donald.coffin@reminetworks.com</email>
+        </developer>
+        <developer>
+            <id>mburns</id>
+            <name>Dr. Martin J. Burns</name>
+            <email>marty@hypertek.us</email>
+        </developer>
     </developers>
 
+    <inceptionYear>2013</inceptionYear>
+
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+
     <properties>
-        <!-- Spring Boot parent manages version compatibility -->
         <java.version>21</java.version>
-        <project.scm.id>github</project.scm.id>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <!-- Modern Dependencies for Spring Boot 3.5.0 -->
-        <lombok.version>1.18.34</lombok.version>
-        <mapstruct.version>1.6.0</mapstruct.version>
-        <testcontainers.version>1.20.1</testcontainers.version>
+        <!-- OpenESPI Dependencies -->
+        <openespi-common.version>1.4-BUILD-SNAPSHOT</openespi-common.version>
 
-        <!-- Legacy support for compatibility -->
-        <commons-lang.version>2.6</commons-lang.version>
-        <commons-codec.version>1.9</commons-codec.version>
-        <joda-time.version>2.3</joda-time.version>
-        <rome.version>1.0</rome.version>
-        <xmlunit.version>1.4</xmlunit.version>
+        <!-- Database Versions -->
+        <mysql.version>9.1.0</mysql.version>
+        <postgresql.version>42.7.4</postgresql.version>
+        <h2.version>2.3.232</h2.version>
+
+        <!-- Testing -->
+        <testcontainers.version>1.20.4</testcontainers.version>
+        <cucumber.version>7.20.1</cucumber.version>
+
+        <!-- Maven Plugin Versions -->
+        <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
+        <maven-surefire-plugin.version>3.5.2</maven-surefire-plugin.version>
+        <maven-failsafe-plugin.version>3.5.2</maven-failsafe-plugin.version>
+        <jacoco-maven-plugin.version>0.8.12</jacoco-maven-plugin.version>
+        <maven-checkstyle-plugin.version>3.5.0</maven-checkstyle-plugin.version>
+        <spotbugs-maven-plugin.version>4.8.6.4</spotbugs-maven-plugin.version>
+        <owasp-dependency-check.version>10.0.4</owasp-dependency-check.version>
     </properties>
 
     <profiles>
-        <!-- Legacy profile maintained for backward compatibility -->
-        <profile>
-            <id>dev</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <properties>
-                <spring.profiles.active>local</spring.profiles.active>
-                <profile>local</profile>
-                <database>h2</database>
-            </properties>
-        </profile>
-        
-        <!-- Modern Spring Boot 3.5 profiles -->
+        <!-- Development MySQL Profile -->
         <profile>
             <id>dev-mysql</id>
             <activation>
@@ -137,427 +111,301 @@
             </activation>
             <properties>
                 <spring.profiles.active>dev-mysql</spring.profiles.active>
-                <profile>dev-mysql</profile>
-                <database>mysql</database>
+                <datacustodian.base.url>http://localhost:8080</datacustodian.base.url>
+                <authorization.server.url>http://localhost:8080</authorization.server.url>
             </properties>
         </profile>
-        
+
+        <!-- Development PostgreSQL Profile -->
         <profile>
             <id>dev-postgresql</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
             <properties>
                 <spring.profiles.active>dev-postgresql</spring.profiles.active>
-                <profile>dev-postgresql</profile>
-                <database>postgresql</database>
+                <datacustodian.base.url>http://localhost:8080</datacustodian.base.url>
+                <authorization.server.url>http://localhost:8080</authorization.server.url>
             </properties>
         </profile>
-        
+
+        <!-- Local Development Profile with H2 -->
         <profile>
             <id>local</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
             <properties>
                 <spring.profiles.active>local</spring.profiles.active>
-                <profile>local</profile>
-                <database>h2</database>
+                <datacustodian.base.url>http://localhost:8080</datacustodian.base.url>
+                <authorization.server.url>http://localhost:8080</authorization.server.url>
             </properties>
         </profile>
-        
+
+        <!-- Production Profile -->
         <profile>
             <id>prod</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
             <properties>
                 <spring.profiles.active>prod</spring.profiles.active>
-                <profile>prod</profile>
-                <database>mysql</database>
+                <datacustodian.base.url>https://datacustodian.greenbuttonalliance.org</datacustodian.base.url>
+                <authorization.server.url>https://auth.greenbuttonalliance.org</authorization.server.url>
             </properties>
         </profile>
-        
+
+        <!-- Docker Profile -->
         <profile>
             <id>docker</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
             <properties>
                 <spring.profiles.active>docker</spring.profiles.active>
-                <profile>docker</profile>
-                <database>mysql</database>
+                <datacustodian.base.url>http://datacustodian:8080</datacustodian.base.url>
+                <authorization.server.url>http://authorization-server:8080</authorization.server.url>
             </properties>
         </profile>
-        
+
+        <!-- AWS GBA Sandbox Profile -->
         <profile>
             <id>aws-sandbox</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
             <properties>
                 <spring.profiles.active>aws-sandbox</spring.profiles.active>
-                <profile>aws-sandbox</profile>
-                <database>mysql</database>
+                <datacustodian.base.url>https://sandbox.greenbuttonalliance.org:8443/DataCustodian</datacustodian.base.url>
+                <authorization.server.url>https://sandbox.greenbuttonalliance.org:8443/Authorization</authorization.server.url>
             </properties>
         </profile>
-        
-        <!-- Legacy profile maintained for backward compatibility -->
+
+        <!-- TestContainers Testing Profiles -->
         <profile>
-            <id>devmysql</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
+            <id>testcontainers-mysql</id>
             <properties>
-                <spring.profiles.active>dev-mysql</spring.profiles.active>
-                <profile>dev-mysql</profile>
-                <database>mysql</database>
+                <spring.profiles.active>testcontainers-mysql</spring.profiles.active>
             </properties>
         </profile>
-        
-        <!-- Legacy profile maintained for backward compatibility -->
+
         <profile>
-			<!-- Green Button Alliance AWS Green Button Sandbox -->
-        	<id>awsgbasandbox</id>
-        	<properties>
-        		<spring.profiles.active>aws-sandbox</spring.profiles.active>
-        		<profile>aws-sandbox</profile>
-        		<database>mysql</database>
-        	</properties>
-        </profile>
-        <profile>
-            <!-- Profile for running only entity tests without mapper compilation issues -->
-            <id>entity-tests-only</id>
+            <id>testcontainers-postgresql</id>
             <properties>
-                <profile>entity-tests-only</profile>
-                <database>hsql</database>
+                <spring.profiles.active>testcontainers-postgresql</spring.profiles.active>
             </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-compiler-plugin</artifactId>
-                        <configuration>
-                            <excludes>
-                                <!-- Temporarily exclude mapper classes with compilation issues -->
-                                <exclude>**/mapper/**/*.java</exclude>
-                                <!-- Exclude legacy classes causing annotation issues -->
-                                <exclude>**/domain/UsagePoint.java</exclude>
-                                <exclude>**/service/customer/impl/*ServiceImpl.java</exclude>
-                                <!-- Exclude legacy support classes with missing dependencies -->
-                                <exclude>**/support/Asserts.java</exclude>
-                                <exclude>**/support/BaseStepUtils.java</exclude>
-                                <exclude>**/support/IsEmpty.java</exclude>
-                                <exclude>**/support/WebDriverSingleton.java</exclude>
-                                <!-- Exclude classes depending on deprecated types -->
-                                <exclude>**/support/EspiFactory.java</exclude>
-                            </excludes>
-                            <testExcludes>
-                                <!-- Exclude legacy test files that depend on excluded support classes -->
-                                <exclude>**/repositories/**/*Test*.java</exclude>
-                                <exclude>**/service/**/*Test*.java</exclude>
-                                <exclude>**/utils/**/*Test*.java</exclude>
-                                <exclude>**/support/Asserts*Test*.java</exclude>
-                                <exclude>**/support/BaseStepUtils*Test*.java</exclude>
-                                <exclude>**/support/IsEmpty*Test*.java</exclude>
-                                <exclude>**/support/WebDriverSingleton*Test*.java</exclude>
-                                <exclude>**/support/EspiFactory*Test*.java</exclude>
-                                <exclude>**/domain/usage/*Tests.java</exclude>
-                                <exclude>**/*ValidationTests.java</exclude>
-                                <exclude>**/*MarshallerTests.java</exclude>
-                                <exclude>**/*UnmarshallerTests.java</exclude>
-                                <exclude>**/*PersistenceTests.java</exclude>
-                            </testExcludes>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <includes>
-                                <!-- Only run modern entity tests -->
-                                <include>**/domain/usage/*EntityTest.java</include>
-                                <include>**/domain/*EntityTest.java</include>
-                                <include>**/support/TestDataBuilder*Test.java</include>
-                            </includes>
-                            <excludes>
-                                <!-- Exclude legacy tests that depend on excluded support classes -->
-                                <exclude>**/domain/usage/*Tests.java</exclude>
-                                <exclude>**/*ValidationTests.java</exclude>
-                                <exclude>**/*MarshallerTests.java</exclude>
-                                <exclude>**/*UnmarshallerTests.java</exclude>
-                                <exclude>**/*PersistenceTests.java</exclude>
-                                <exclude>**/repositories/**/*Test*.java</exclude>
-                                <exclude>**/service/**/*Test*.java</exclude>
-                                <exclude>**/utils/**/*Test*.java</exclude>
-                                <exclude>**/support/Asserts*Test*.java</exclude>
-                                <exclude>**/support/BaseStepUtils*Test*.java</exclude>
-                                <exclude>**/support/IsEmpty*Test*.java</exclude>
-                                <exclude>**/support/WebDriverSingleton*Test*.java</exclude>
-                                <exclude>**/support/EspiFactory*Test*.java</exclude>
-                            </excludes>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
         </profile>
     </profiles>
 
-    <repositories>
-<!--        <repository>-->
-<!--            <id>spring-maven-release</id>-->
-<!--            <name>Spring Maven Release Repository</name>-->
-<!--            <url>http://maven.springframework.org/release</url>-->
-<!--        </repository>-->
-<!--        <repository>-->
-<!--            <id>spring-maven-milestone</id>-->
-<!--            <name>Spring Maven Milestone Repository</name>-->
-<!--            <url>http://maven.springframework.org/milestone</url>-->
-<!--        </repository>-->
-<!--        <repository>-->
-<!--            <id>spring-maven-snapshot</id>-->
-<!--            <url>http://maven.springframework.org/snapshot</url>-->
-<!--            <name>Spring Maven Snapshot Repository</name>-->
-<!--            <snapshots>-->
-<!--                <enabled>true</enabled>-->
-<!--            </snapshots>-->
-<!--        </repository>-->
-        <!-- Nexus Maven repositories -->
-        <repository>
-            <id>nexus-snapshot</id>
-            <url>http://localhost:8081/repository/greenbuttonalliance-snapshot</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-        <repository>
-            <id>nexus-release</id>
-            <url>http://localhost:8081/repository/greenbuttonalliance-release</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-        </repository>
-    </repositories>
-
     <dependencies>
-        <!-- Spring Boot Starters for Common Library -->
+        <!-- OpenESPI Common Dependency -->
+        <dependency>
+            <groupId>org.greenbuttonalliance</groupId>
+            <artifactId>OpenESPI-Common</artifactId>
+            <version>${openespi-common.version}</version>
+        </dependency>
+
+        <!-- Spring Boot Starters -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-thymeleaf</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.thymeleaf.extras</groupId>
+            <artifactId>thymeleaf-extras-springsecurity6</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-cache</artifactId>
+        </dependency>
+
+        <!-- Database Drivers -->
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <version>${mysql.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>${postgresql.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>${h2.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Flyway for Database Migrations -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-mysql</artifactId>
+        </dependency>
+
+        <!-- XML Processing (JAXB for ESPI) -->
+        <dependency>
+            <groupId>jakarta.xml.bind</groupId>
+            <artifactId>jakarta.xml.bind-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.glassfish.jaxb</groupId>
+            <artifactId>jaxb-runtime</artifactId>
+        </dependency>
+
+        <!-- JSON Processing -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-xml</artifactId>
+        </dependency>
+
+        <!-- HTTP Client -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
+
+        <!-- Observability -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Development Tools -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-devtools</artifactId>
+            <scope>runtime</scope>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- Testing Dependencies -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-oxm</artifactId>
-        </dependency>
-        <!-- Jackson for OAuth2 JSON handling -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
-        </dependency>
 
-        <!-- Jakarta Validation API -->
-        <dependency>
-            <groupId>jakarta.validation</groupId>
-            <artifactId>jakarta.validation-api</artifactId>
-        </dependency>
-
-        <!-- Spring Security Core (RetailCustomer implements UserDetails) -->
         <dependency>
             <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-core</artifactId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
         </dependency>
 
-        <!-- Core utilities needed for domain logic -->
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>32.1.3-jre</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
-        </dependency>
-
-        <!-- Spring Web for RestTemplate and web components -->
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-web</artifactId>
-        </dependency>
-
-        <!-- Legacy OAuth2 support (will be modernized to Spring Security 6.x later) -->
-        <dependency>
-            <groupId>org.springframework.security.oauth</groupId>
-            <artifactId>spring-security-oauth2</artifactId>
-            <version>2.5.2.RELEASE</version>
-        </dependency>
-
-        <!-- Xerces for XML utility classes (temporary - should be refactored) -->
-        <dependency>
-            <groupId>xerces</groupId>
-            <artifactId>xercesImpl</artifactId>
-            <version>2.12.2</version>
-        </dependency>
-        <dependency>
-            <groupId>jakarta.servlet</groupId>
-            <artifactId>jakarta.servlet-api</artifactId>
-            <version>6.0.0</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>xmlunit</groupId>
-            <artifactId>xmlunit</artifactId>
-            <version>1.4</version>
-        </dependency>
-        <!-- Databases - HSQL -->
-        <dependency>
-            <groupId>org.hsqldb</groupId>
-            <artifactId>hsqldb</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <!--Databases - MySQL default database -->
-        <dependency>
-            <groupId>com.mysql</groupId>
-            <artifactId>mysql-connector-j</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-            <version>2.4</version>
-        </dependency>
-        <dependency>
-            <groupId>commons-lang</groupId>
-            <artifactId>commons-lang</artifactId>
-            <version>2.6</version>
-        </dependency>
-        <dependency>
-            <groupId>commons-codec</groupId>
-            <artifactId>commons-codec</artifactId>
-            <version>1.9</version>
-        </dependency>
-        <dependency>
-            <groupId>joda-time</groupId>
-            <artifactId>joda-time</artifactId>
-            <version>2.3</version>
-        </dependency>
-        <dependency>
-            <groupId>rome</groupId>
-            <artifactId>rome</artifactId>
-            <version>1.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-            <version>1.7.5</version>
-        </dependency>
-        <!-- Jakarta XML Binding Dependencies -->
-        <dependency>
-            <groupId>jakarta.xml.bind</groupId>
-            <artifactId>jakarta.xml.bind-api</artifactId>
-            <version>4.0.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.glassfish.jaxb</groupId>
-            <artifactId>jaxb-runtime</artifactId>
-            <version>4.0.2</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jetbrains</groupId>
-            <artifactId>annotations</artifactId>
-            <version>18.0.0</version>
-            <scope>compile</scope>
-        </dependency>
-
-        <!-- Lombok for boilerplate reduction -->
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>${lombok.version}</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <!-- MapStruct for DTO-Entity mapping -->
-        <dependency>
-            <groupId>org.mapstruct</groupId>
-            <artifactId>mapstruct</artifactId>
-            <version>${mapstruct.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.mapstruct</groupId>
-            <artifactId>mapstruct-processor</artifactId>
-            <version>${mapstruct.version}</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <!-- Flyway for database migrations -->
-        <dependency>
-            <groupId>org.flywaydb</groupId>
-            <artifactId>flyway-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.flywaydb</groupId>
-            <artifactId>flyway-mysql</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-
-        <!-- PostgreSQL driver for multi-database support -->
-        <dependency>
-            <groupId>org.postgresql</groupId>
-            <artifactId>postgresql</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-
-        <!-- TestContainers for integration testing -->
+        <!-- TestContainers -->
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>junit-jupiter</artifactId>
             <version>${testcontainers.version}</version>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>mysql</artifactId>
             <version>${testcontainers.version}</version>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>postgresql</artifactId>
             <version>${testcontainers.version}</version>
             <scope>test</scope>
         </dependency>
+
+        <!-- Cucumber BDD Testing -->
         <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>testcontainers</artifactId>
-            <version>${testcontainers.version}</version>
+            <groupId>io.cucumber</groupId>
+            <artifactId>cucumber-java</artifactId>
+            <version>${cucumber.version}</version>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.cucumber</groupId>
+            <artifactId>cucumber-junit-platform-engine</artifactId>
+            <version>${cucumber.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.cucumber</groupId>
+            <artifactId>cucumber-spring</artifactId>
+            <version>${cucumber.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- API Documentation -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.7.0</version>
         </dependency>
     </dependencies>
 
     <build>
-        <!-- Packagecloud repository configuration -->
-<!--        <extensions>-->
-<!--            <extension>-->
-<!--                <groupId>io.packagecloud.maven.wagon</groupId>-->
-<!--                <artifactId>maven-packagecloud-wagon</artifactId>-->
-<!--                <version>0.0.6</version>-->
-<!--            </extension>-->
-<!--        </extensions>-->
+        <finalName>OpenESPI-DataCustodian</finalName>
+
         <resources>
             <resource>
-<!--                <directory>src/main/resources</directory>-->
-                <directory>src/test/resources/fixtures</directory>
+                <directory>src/main/resources</directory>
                 <filtering>true</filtering>
-<!--                <includes>-->
-<!--                    <include>/*.xml</include>-->
-<!--                </includes>-->
+                <includes>
+                    <include>**/*.yml</include>
+                    <include>**/*.yaml</include>
+                    <include>**/*.properties</include>
+                    <include>**/*.xml</include>
+                    <include>**/*.sql</include>
+                    <include>**/*.json</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
                 <excludes>
-                    <exclude>/10.xml</exclude>
+                    <exclude>**/*.yml</exclude>
+                    <exclude>**/*.yaml</exclude>
+                    <exclude>**/*.properties</exclude>
                 </excludes>
             </resource>
         </resources>
@@ -567,63 +415,79 @@
                 <directory>src/test/resources</directory>
                 <filtering>true</filtering>
                 <includes>
-                    <include>**/*.xml</include>
+                    <include>**/*.yml</include>
+                    <include>**/*.yaml</include>
                     <include>**/*.properties</include>
+                    <include>**/*.xml</include>
                     <include>**/*.sql</include>
+                    <include>**/*.feature</include>
                 </includes>
             </testResource>
         </testResources>
 
         <plugins>
+            <!-- Spring Boot Plugin -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.springframework.boot</groupId>
+                            <artifactId>spring-boot-configuration-processor</artifactId>
+                        </exclude>
+                    </excludes>
+                    <executable>true</executable>
+                </configuration>
+            </plugin>
+
+            <!-- Maven Compiler Plugin -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>${maven-compiler-plugin.version}</version>
                 <configuration>
-                    <excludes>
-                        <!-- Exclude testing support classes (should be in src/test) -->
-                        <exclude>**/support/**</exclude>
-                        <!-- Exclude classes with missing Xerces dependencies -->
-                        <exclude>**/utils/DurationImpl.java</exclude>
-                        <exclude>**/utils/XMLGregorianCalendarImpl.java</exclude>
-                    </excludes>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                            <version>${lombok.version}</version>
-                        </path>
-                        <path>
-                            <groupId>org.mapstruct</groupId>
-                            <artifactId>mapstruct-processor</artifactId>
-                            <version>${mapstruct.version}</version>
-                        </path>
-                        <path>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok-mapstruct-binding</artifactId>
-                            <version>0.2.0</version>
-                        </path>
-                    </annotationProcessorPaths>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                    <parameters>true</parameters>
                 </configuration>
             </plugin>
+
+            <!-- Surefire Plugin for Unit Tests -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
+                <version>${maven-surefire-plugin.version}</version>
                 <configuration>
                     <includes>
+                        <include>**/*Test.java</include>
                         <include>**/*Tests.java</include>
                     </includes>
-                    <useSystemClassLoader>false</useSystemClassLoader>
+                    <excludes>
+                        <exclude>**/*IntegrationTest.java</exclude>
+                        <exclude>**/*IT.java</exclude>
+                    </excludes>
+                    <systemPropertyVariables>
+                        <spring.profiles.active>test</spring.profiles.active>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
+
+            <!-- Failsafe Plugin for Integration Tests -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
-<!--                <scope>test</scope>-->
-<!--                <configuration>-->
-<!--                    <argline>-->
-<!--                        &#45;&#45;illegal-access=permit-->
-<!--                    </argline>-->
-<!--                </configuration>-->
+                <version>${maven-failsafe-plugin.version}</version>
+                <configuration>
+                    <includes>
+                        <include>**/*IntegrationTest.java</include>
+                        <include>**/*IT.java</include>
+                        <include>**/CucumberTest.java</include>
+                    </includes>
+                    <systemPropertyVariables>
+                        <spring.profiles.active>test</spring.profiles.active>
+                    </systemPropertyVariables>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>
@@ -633,42 +497,49 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <!-- JaCoCo Plugin for Code Coverage -->
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-site-plugin</artifactId>
-                <version>3.3</version>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.apache.maven.wagon</groupId>
-                        <artifactId>wagon-webdav-jackrabbit</artifactId>
-                        <version>2.9</version>
-                    </dependency>
-                </dependencies>
-                <configuration>
-                    <locales>en</locales>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-release-plugin</artifactId>
-                <version>2.5.3</version>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>integration-test-coverage</id>
+                        <goals>
+                            <goal>prepare-agent-integration</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>integration-test-report</id>
+                        <phase>post-integration-test</phase>
+                        <goals>
+                            <goal>report-integration</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
-            <!-- OWASP Dependency Check for security vulnerability scanning -->
+            <!-- OWASP Dependency Check -->
             <plugin>
                 <groupId>org.owasp</groupId>
                 <artifactId>dependency-check-maven</artifactId>
-                <version>11.1.0</version>
+                <version>${owasp-dependency-check.version}</version>
                 <configuration>
-                    <format>ALL</format>
-                    <failBuildOnCVSS>0</failBuildOnCVSS>
-                    <!-- Don't fail build during migration period, just report -->
-                    <skipSystemScope>false</skipSystemScope>
-                    <skipTestScope>false</skipTestScope>
-                    <!-- Suppress false positives if needed -->
-                    <suppressionFiles>
-                        <suppressionFile>owasp-suppressions.xml</suppressionFile>
-                    </suppressionFiles>
+                    <suppressionFile>owasp-suppressions.xml</suppressionFile>
+                    <failBuildOnCVSS>7</failBuildOnCVSS>
                 </configuration>
                 <executions>
                     <execution>
@@ -679,42 +550,47 @@
                 </executions>
             </plugin>
 
-            <!-- Versions Maven Plugin for dependency updates -->
+            <!-- Git Build Information -->
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>versions-maven-plugin</artifactId>
-                <version>2.18.0</version>
+                <groupId>io.github.git-commit-id</groupId>
+                <artifactId>git-commit-id-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>get-the-git-infos</id>
+                        <goals>
+                            <goal>revision</goal>
+                        </goals>
+                        <phase>initialize</phase>
+                    </execution>
+                </executions>
                 <configuration>
-                    <generateBackupPoms>false</generateBackupPoms>
-                </configuration>
-            </plugin>
-
-            <!-- SpotBugs for static code analysis -->
-            <plugin>
-                <groupId>com.github.spotbugs</groupId>
-                <artifactId>spotbugs-maven-plugin</artifactId>
-                <version>4.8.6.4</version>
-                <configuration>
-                    <effort>Max</effort>
-                    <threshold>Low</threshold>
-                    <failOnError>false</failOnError>
-                    <!-- Don't fail build during migration -->
+                    <dotGitDirectory>${project.basedir}/../../.git</dotGitDirectory>
+                    <generateGitPropertiesFile>true</generateGitPropertiesFile>
+                    <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties</generateGitPropertiesFilename>
+                    <includeOnlyProperties>
+                        <includeOnlyProperty>^git.build.(time|version)$</includeOnlyProperty>
+                        <includeOnlyProperty>^git.commit.id.(abbrev|full)$</includeOnlyProperty>
+                    </includeOnlyProperties>
+                    <commitIdGenerationMode>full</commitIdGenerationMode>
                 </configuration>
             </plugin>
         </plugins>
     </build>
 
-    <distributionManagement>
-        <!-- Sonatype Maven Repository configuration -->
-        <snapshotRepository>
-            <id>sonatype-snapshot</id>
-            <name>Sonatype Maven Snapshot Repository</name>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-        <repository>
-            <id>sonatype-release</id>
-            <name>Sonatype Maven Snapshot Repository</name>
-            <url>https://oss.sonatype.org/content/repositories/releases</url>
-        </repository>
-    </distributionManagement>
+    <scm>
+        <connection>scm:git:https://github.com/greenbuttonalliance/OpenESPI-GreenButton-Java-Workspace.git</connection>
+        <developerConnection>scm:git:git@github.com:greenbuttonalliance/OpenESPI-GreenButton-Java-Workspace.git</developerConnection>
+        <url>https://github.com/greenbuttonalliance/OpenESPI-GreenButton-Java-Workspace</url>
+        <tag>HEAD</tag>
+    </scm>
+
+    <issueManagement>
+        <system>GitHub</system>
+        <url>https://github.com/greenbuttonalliance/OpenESPI-GreenButton-Java-Workspace/issues</url>
+    </issueManagement>
+
+    <ciManagement>
+        <system>GitHub Actions</system>
+        <url>https://github.com/greenbuttonalliance/OpenESPI-GreenButton-Java-Workspace/actions</url>
+    </ciManagement>
 </project>
