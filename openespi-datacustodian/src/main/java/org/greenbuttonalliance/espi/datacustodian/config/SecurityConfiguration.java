@@ -29,44 +29,37 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
-import org.springframework.security.oauth2.core.OAuth2TokenValidator;
-import org.springframework.security.oauth2.jwt.*;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
-import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 
 /**
  * Security configuration for the OpenESPI Data Custodian Resource Server.
  * 
- * This configuration implements OAuth2 Resource Server security using JWT tokens
+ * This configuration implements OAuth2 Resource Server security using opaque tokens
  * from the separate OpenESPI Authorization Server. It replaces the legacy Spring
- * Security OAuth 2.0.2.RELEASE XML configuration with modern Spring Security 6.5.
+ * Security configuration replacing legacy Spring XML with modern Spring Security 6.5.
  * 
  * Key Features:
- * - OAuth2 Resource Server with JWT validation
- * - ESPI-specific authorization rules
+ * - OAuth2 Resource Server with opaque token introspection
+ * - ESPI-specific authorization rules  
  * - CORS configuration for web clients
  * - Method-level security for service layers
- * - Multi-environment JWT configuration
+ * 
+ * Note: ESPI standard uses opaque OAuth2 tokens. JWT support will be added
+ * in future enhancement for dynamic client registration.
  */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true, securedEnabled = true, jsr250Enabled = true)
 public class SecurityConfiguration {
 
-    @Value("${espi.authorization-server.issuer-uri}")
-    private String issuerUri;
-
-    @Value("${espi.authorization-server.jwk-set-uri}")
-    private String jwkSetUri;
+    // TODO: Add opaque token introspection configuration for ESPI OAuth2
+    // ESPI standard uses opaque tokens, not JWT tokens
 
     /**
      * Main security filter chain for ESPI Resource Server endpoints.
@@ -182,13 +175,14 @@ public class SecurityConfiguration {
                 .anyRequest().authenticated()
             )
             
-            // Configure OAuth2 Resource Server
-            .oauth2ResourceServer(oauth2 -> oauth2
-                .jwt(jwt -> jwt
-                    .decoder(jwtDecoder())
-                    .jwtAuthenticationConverter(jwtAuthenticationConverter())
-                )
-            )
+            // TODO: Configure OAuth2 Resource Server with opaque token introspection
+            // ESPI standard requires opaque tokens, not JWT tokens
+            // .oauth2ResourceServer(oauth2 -> oauth2
+            //     .opaqueToken(opaque -> opaque
+            //         .introspectionUri("${espi.authorization-server.introspection-endpoint}")
+            //         .introspectionClientCredentials("client-id", "client-secret")
+            //     )
+            // )
             
             // Allow H2 console in local development
             .headers(headers -> headers
@@ -198,37 +192,9 @@ public class SecurityConfiguration {
             .build();
     }
 
-    /**
-     * JWT Decoder with validation for the Authorization Server.
-     */
-    @Bean
-    public JwtDecoder jwtDecoder() {
-        NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder
-            .withJwkSetUri(jwkSetUri)
-            .jwsAlgorithm(org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.RS256)
-            .build();
-
-        OAuth2TokenValidator<Jwt> withIssuer = new JwtIssuerValidator(issuerUri);
-        OAuth2TokenValidator<Jwt> withTimestamp = new JwtTimestampValidator();
-        OAuth2TokenValidator<Jwt> validator = new DelegatingOAuth2TokenValidator<>(withIssuer, withTimestamp);
-        
-        jwtDecoder.setJwtValidator(validator);
-        return jwtDecoder;
-    }
-
-    /**
-     * JWT Authentication Converter for ESPI scope authorities.
-     */
-    @Bean
-    public JwtAuthenticationConverter jwtAuthenticationConverter() {
-        JwtGrantedAuthoritiesConverter authoritiesConverter = new JwtGrantedAuthoritiesConverter();
-        authoritiesConverter.setAuthorityPrefix("SCOPE_");
-        authoritiesConverter.setAuthoritiesClaimName("scope");
-
-        JwtAuthenticationConverter jwtConverter = new JwtAuthenticationConverter();
-        jwtConverter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
-        return jwtConverter;
-    }
+    // TODO: Implement opaque token introspection configuration
+    // ESPI standard requires opaque OAuth2 tokens, not JWT tokens
+    // Future enhancement: Add JWT support for dynamic client registration
 
     /**
      * CORS configuration for web clients.
