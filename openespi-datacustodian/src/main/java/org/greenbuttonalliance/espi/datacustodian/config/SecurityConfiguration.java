@@ -206,7 +206,6 @@ public class SecurityConfiguration {
         NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder
             .withJwkSetUri(jwkSetUri)
             .jwsAlgorithm(org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.RS256)
-            .cache(Duration.ofMinutes(10))
             .build();
 
         OAuth2TokenValidator<Jwt> withIssuer = new JwtIssuerValidator(issuerUri);

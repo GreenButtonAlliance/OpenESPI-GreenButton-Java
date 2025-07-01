@@ -153,15 +153,8 @@ public class TestUtils {
 		usagePointService.associateByUUID(customer, uuid);
 	}
 
-	public static <T extends org.greenbuttonalliance.espi.datacustodian.atom.EspiEntry<?>> String findRelatedHref(T entry,
-																									   String type) {
-		for (Link link : entry.getRelatedLinks()) {
-			if (link.getHref().contains(type)) {
-				return link.getHref();
-			}
-		}
-		return null;
-	}
+	// TODO: Use AtomEntryDto.links() from openespi-common for link operations
+	// Legacy findRelatedHref method removed - use modern DTO classes instead
 
 	public static void assertFieldNotMarshallable(Class clazz, String field) {
 		assertAnnotationPresent(clazz, field, XmlTransient.class);
