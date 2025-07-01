@@ -81,7 +81,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
         <!-- OpenESPI Dependencies -->
-        <openespi-common.version>1.4-BUILD-SNAPSHOT</openespi-common.version>
+        <openespi-common.version>Spring-Boot-3.5-BUILD-SNAPSHOT</openespi-common.version>
 
         <!-- Database Versions -->
         <mysql.version>9.1.0</mysql.version>

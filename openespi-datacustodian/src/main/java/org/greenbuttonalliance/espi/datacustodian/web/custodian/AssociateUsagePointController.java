@@ -78,10 +78,12 @@ public class AssociateUsagePointController {
 		if (result.hasErrors())
 			return "/custodian/retailcustomers/usagepoints/form";
 
-		SubscriptionEntity subscription = retailCustomerService.associateByUUID(
+		// retailCustomerService returns legacy Subscription, not SubscriptionEntity
+		var subscription = retailCustomerService.associateByUUID(
 				retailCustomerId, UUID.fromString(usagePointForm.getUUID()));
 
 		if (subscription != null) {
+			// NotificationService expects legacy entities
 			notificationService.notify(subscription, null, null);
 		}
 		return "redirect:/custodian/retailcustomers";

@@ -207,5 +207,4 @@ public class RetailCustomerServiceImpl implements RetailCustomerService {
 		return subscription;
 	}
 
-
 }

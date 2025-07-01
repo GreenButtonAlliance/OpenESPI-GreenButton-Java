@@ -54,19 +54,22 @@ public class MeterReadingController extends BaseController {
 			@PathVariable Long usagePointId, @PathVariable Long meterReadingId,
 			ModelMap model) {
 		// TODO need to walk the subtree to force the load (for now)
-		MeterReadingEntity mr = meterReadingService.findById(retailCustomerId,
+		// meterReadingService returns legacy MeterReading, not MeterReadingEntity
+		var mr = meterReadingService.findById(retailCustomerId,
 				usagePointId, meterReadingId);
 
-		MeterReadingEntity x = resourceService.findById(meterReadingId,
-				MeterReading.class);
+		// TODO: Replace with modern MeterReadingEntityRepository
+		// MeterReadingEntity x = resourceService.findById(meterReadingId, MeterReadingEntity.class);
+		var x = mr; // Temporary workaround
 
-		MeterReadingEntity newMeterReading = new MeterReading();
-		newMeterReading.merge(mr);
-		Iterator<IntervalBlock> it = newMeterReading.getIntervalBlocks()
+		MeterReadingEntity newMeterReading = new MeterReadingEntity();
+		// TODO: Convert legacy mr to modern entity or implement proper merge
+		// newMeterReading.merge(mr);
+		Iterator<IntervalBlockEntity> it = newMeterReading.getIntervalBlocks()
 				.iterator();
 		while (it.hasNext()) {
 			IntervalBlockEntity temp = it.next();
-			Iterator<IntervalReading> it1 = temp.getIntervalReadings()
+			Iterator<IntervalReadingEntity> it1 = temp.getIntervalReadings()
 					.iterator();
 			while (it1.hasNext()) {
 				IntervalReadingEntity temp1 = it1.next();

@@ -28,13 +28,14 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
- * Modern Spring Data JPA repository for ApplicationInformation entities.
- * Replaces the legacy ApplicationInformationRepositoryImpl with modern Spring Data patterns.
+ * Modern Spring Data JPA repository for ApplicationInformationEntity entities.
+ * Specifically handles UUID-based ApplicationInformationEntity, not legacy ApplicationInformation.
  */
-@Repository
-public interface ApplicationInformationRepository extends JpaRepository<ApplicationInformationEntity, Long> {
+@Repository("applicationInformationEntityRepository")
+public interface ApplicationInformationEntityRepository extends JpaRepository<ApplicationInformationEntity, UUID> {
 
     /**
      * Find application information by UUID.
@@ -64,7 +65,7 @@ public interface ApplicationInformationRepository extends JpaRepository<Applicat
      * Find all application information IDs.
      */
     @Query("SELECT ai.id FROM ApplicationInformationEntity ai")
-    List<Long> findAllIds();
+    List<UUID> findAllIds();
 
     /**
      * Check if application exists by client ID.

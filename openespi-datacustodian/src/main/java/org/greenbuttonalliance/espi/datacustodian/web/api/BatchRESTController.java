@@ -122,13 +122,15 @@ public class BatchRESTController {
 			throws IOException, FeedException {
 
 		try {
-			RetailCustomerEntity retailCustomer = retailCustomerService
+			// retailCustomerService returns legacy RetailCustomer
+			var retailCustomer = retailCustomerService
 					.findById(retailCustomerId);
 
 			importService.importData(stream, retailCustomerId);
 
 			// do any notifications
 
+			// NotificationService expects legacy entities
 			notificationService.notify(retailCustomer,
 					importService.getMinUpdated(),
 					importService.getMaxUpdated());
@@ -595,9 +597,11 @@ public class BatchRESTController {
 
 		if (token != null) {
 			token = token.replace("Bearer ", "");
-			AuthorizationEntity authorization = authorizationService
+			// authorizationService returns legacy Authorization
+			var authorization = authorizationService
 					.findByAccessToken(token);
-			ApplicationInformationEntity applicationInformation = authorization
+			// authorization returns legacy ApplicationInformation
+			var applicationInformation = authorization
 					.getApplicationInformation();
 			// note that ApplicationInformation.clientId is a String
 			//

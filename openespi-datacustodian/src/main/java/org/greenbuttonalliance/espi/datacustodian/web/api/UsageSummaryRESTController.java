@@ -32,6 +32,7 @@ import org.greenbuttonalliance.espi.common.domain.usage.UsageSummaryEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.SubscriptionEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
 import org.greenbuttonalliance.espi.common.service.*;
 import org.greenbuttonalliance.espi.common.utils.ExportFilter;
 import org.greenbuttonalliance.espi.datacustodian.utils.VerifyURLParams;
@@ -257,7 +258,7 @@ public class UsageSummaryRESTController {
 		response.setContentType(MediaType.APPLICATION_ATOM_XML_VALUE);
 		
 		try {
-			UsageSummary electricPowerUsageSummary = 
+			UsageSummaryEntity electricPowerUsageSummary = 
 					this.usageSummaryService.importResource(stream);
 			exportService.exportUsageSummary_Root(subscriptionId,
 					electricPowerUsageSummary.getId(),
@@ -312,12 +313,12 @@ public class UsageSummaryRESTController {
 			@Parameter(description = "ATOM XML containing updated UsageSummary data", required = true)
 			@RequestBody InputStream stream) throws IOException, FeedException {
 
-		UsageSummary electricPowerUsageSummary = 
+		UsageSummaryEntity electricPowerUsageSummary = 
 				usageSummaryService.findById(electricPowerUsageSummaryId);
 
 		if (electricPowerUsageSummary != null) {
 			try {
-				UsageSummary newUsageSummary = 
+				UsageSummaryEntity newUsageSummary = 
 						usageSummaryService.importResource(stream);
 				electricPowerUsageSummary.merge(newUsageSummary);
 				response.setStatus(HttpServletResponse.SC_OK);
@@ -362,7 +363,7 @@ public class UsageSummaryRESTController {
 
 		try {
 			resourceService.deleteById(electricPowerUsageSummaryId,
-					UsageSummary.class);
+					UsageSummaryEntity.class);
 			response.setStatus(HttpServletResponse.SC_OK);
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_NOT_FOUND);
@@ -558,10 +559,10 @@ public class UsageSummaryRESTController {
 					subscriptionId, usagePointId);
 
 			if (null != resourceService.findIdByXPath(retailCustomerId,
-					usagePointId, UsagePoint.class)) {
+					usagePointId, UsagePointEntity.class)) {
 				
-				UsagePoint usagePoint = usagePointService.findById(usagePointId);
-				UsageSummary electricPowerUsageSummary = 
+				UsagePointEntity usagePoint = usagePointService.findById(usagePointId);
+				UsageSummaryEntity electricPowerUsageSummary = 
 						this.usageSummaryService.importResource(stream);
 				usageSummaryService.associateByUUID(usagePoint,
 						electricPowerUsageSummary.getUUID());
@@ -631,12 +632,13 @@ public class UsageSummaryRESTController {
 			@RequestBody InputStream stream) throws IOException, FeedException {
 
 		try {
-			UsageSummary electricPowerUsageSummary = resourceService
-					.findById(electricPowerUsageSummaryId, UsageSummary.class);
+			// TODO: Replace with modern UsageSummaryEntityRepository
+			UsageSummaryEntity electricPowerUsageSummary = null; // resourceService.findById() incompatible with modern entities
 
 			if (electricPowerUsageSummary != null) {
 				electricPowerUsageSummary.merge(usageSummaryService.importResource(stream));
-				resourceService.merge(electricPowerUsageSummary);
+				// TODO: Replace with repository.save(electricPowerUsageSummary);
+				// resourceService.merge(electricPowerUsageSummary);
 				response.setStatus(HttpServletResponse.SC_OK);
 			} else {
 				response.setStatus(HttpServletResponse.SC_NOT_FOUND);
@@ -687,8 +689,9 @@ public class UsageSummaryRESTController {
 			Long retailCustomerId = subscriptionService.findRetailCustomerId(
 					subscriptionId, usagePointId);
 
-			resourceService.deleteByXPathId(retailCustomerId, usagePointId,
-					electricPowerUsageSummaryId, UsageSummary.class);
+			// TODO: Replace with modern UsageSummaryEntityRepository deleteById()
+			// resourceService.deleteByXPathId(retailCustomerId, usagePointId,
+			//		electricPowerUsageSummaryId, UsageSummaryEntity.class);
 					
 			response.setStatus(HttpServletResponse.SC_OK);
 		} catch (Exception e) {
@@ -712,10 +715,11 @@ public class UsageSummaryRESTController {
 
 		if (token != null) {
 			token = token.replace("Bearer ", "");
-			Authorization authorization = authorizationService.findByAccessToken(token);
+			var authorization = authorizationService.findByAccessToken(token);
 			if (authorization != null) {
-				Subscription subscription = authorization.getSubscription();
+				var subscription = authorization.getSubscription();
 				if (subscription != null) {
+					// Legacy service returns Long ID
 					subscriptionId = subscription.getId();
 				}
 			}

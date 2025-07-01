@@ -20,21 +20,16 @@
 
 package org.greenbuttonalliance.espi.datacustodian.web.api;
 
-import com.sun.syndication.io.FeedException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.greenbuttonalliance.espi.common.domain.usage.ApplicationInformationEntity;
-import org.greenbuttonalliance.espi.common.service.ApplicationInformationService;
-import org.greenbuttonalliance.espi.common.service.ExportService;
-import org.greenbuttonalliance.espi.common.service.ResourceService;
-import org.greenbuttonalliance.espi.common.utils.ExportFilter;
+import org.greenbuttonalliance.espi.common.repositories.usage.ApplicationInformationEntityRepository;
 import org.greenbuttonalliance.espi.datacustodian.utils.VerifyURLParams;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -42,6 +37,7 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -49,26 +45,19 @@ import java.util.UUID;
  * RESTful controller for managing ApplicationInformation resources according to the 
  * Green Button Alliance ESPI (Energy Services Provider Interface) specification.
  * 
- * Provides CRUD operations for OAuth2 application registration and management
- * in compliance with NAESB REQ.21 standards.
+ * This controller uses modern UUID-based ApplicationInformationEntity and repository patterns.
  */
 @RestController
 @RequestMapping("/espi/1_1/resource")
 @Tag(name = "Application Information", description = "OAuth2 Application Registration and Management API")
 public class ApplicationInformationRESTController {
 
-    private final ApplicationInformationService applicationInformationService;
-    private final ExportService exportService;
-    private final ResourceService resourceService;
+    private final ApplicationInformationEntityRepository applicationInformationRepository;
 
     @Autowired
     public ApplicationInformationRESTController(
-            ApplicationInformationService applicationInformationService,
-            ExportService exportService,
-            ResourceService resourceService) {
-        this.applicationInformationService = applicationInformationService;
-        this.exportService = exportService;
-        this.resourceService = resourceService;
+            ApplicationInformationEntityRepository applicationInformationRepository) {
+        this.applicationInformationRepository = applicationInformationRepository;
     }
 
     @ExceptionHandler(Exception.class)
@@ -78,151 +67,105 @@ public class ApplicationInformationRESTController {
     }
 
     /**
-     * Retrieves a collection of ApplicationInformation resources.
+     * Gets all ApplicationInformation resources.
      * 
-     * @param response HTTP response for streaming ATOM XML content
-     * @param params Query parameters for filtering and pagination
-     * @throws IOException if output stream cannot be written
-     * @throws FeedException if ATOM feed generation fails
+     * @param response HTTP response for returning data
+     * @param params Query parameters for filtering
+     * @throws IOException if input/output stream operations fail
      */
-    @GetMapping(value = "/ApplicationInformation", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
+    @GetMapping(value = "/ApplicationInformation", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
-        summary = "Get ApplicationInformation Collection",
-        description = "Retrieves all registered OAuth2 applications with optional filtering and pagination. " +
-                     "Returns an ATOM feed containing ApplicationInformation entries."
+        summary = "Get All ApplicationInformation", 
+        description = "Returns a list of all registered applications"
     )
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200", 
-            description = "Successfully retrieved ApplicationInformation collection",
-            content = @Content(mediaType = MediaType.APPLICATION_ATOM_XML_VALUE, 
-                             schema = @Schema(description = "ATOM feed containing ApplicationInformation entries"))
-        ),
-        @ApiResponse(
-            responseCode = "400", 
-            description = "Invalid query parameters provided"
-        )
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved ApplicationInformation list"),
+        @ApiResponse(responseCode = "400", description = "Invalid request parameters")
     })
-    public void getApplicationInformationCollection(
+    public List<ApplicationInformationEntity> getAllApplicationInformation(
             HttpServletResponse response,
-            @Parameter(description = "Query parameters for filtering (published-max, published-min, updated-max, updated-min, max-results, start-index)")
-            @RequestParam Map<String, String> params) throws IOException, FeedException {
+            @Parameter(description = "Query parameters for filtering")
+            @RequestParam Map<String, String> params) throws IOException {
 
         // Verify request contains valid query parameters
         if (!VerifyURLParams.verifyEntries("/espi/1_1/resource/ApplicationInformation", params)) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, 
                              "Request contains invalid query parameter values!");
-            return;
+            return null;
         }
 
-        response.setContentType(MediaType.APPLICATION_ATOM_XML_VALUE);
-        exportService.exportApplicationInformations(response.getOutputStream(),
-                new ExportFilter(params));
+        return applicationInformationRepository.findAll();
     }
 
     /**
-     * Retrieves a specific ApplicationInformation resource by ID.
+     * Gets a specific ApplicationInformation resource by ID.
      * 
      * @param applicationInformationId Unique identifier for the ApplicationInformation
-     * @param response HTTP response for streaming ATOM XML content  
-     * @param params Query parameters for export filtering
-     * @throws IOException if output stream cannot be written
-     * @throws FeedException if ATOM entry generation fails
+     * @param response HTTP response for returning data
+     * @param params Query parameters for filtering
+     * @throws IOException if input/output stream operations fail
      */
-    @GetMapping(value = "/ApplicationInformation/{applicationInformationId}", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
+    @GetMapping(value = "/ApplicationInformation/{applicationInformationId}", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
-        summary = "Get ApplicationInformation by ID",
-        description = "Retrieves a specific OAuth2 application registration by its unique identifier. " +
-                     "Returns an ATOM entry containing the ApplicationInformation details."
+        summary = "Get ApplicationInformation by ID", 
+        description = "Returns a specific ApplicationInformation resource"
     )
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200", 
-            description = "Successfully retrieved ApplicationInformation",
-            content = @Content(mediaType = MediaType.APPLICATION_ATOM_XML_VALUE,
-                             schema = @Schema(description = "ATOM entry containing ApplicationInformation details"))
-        ),
-        @ApiResponse(
-            responseCode = "400", 
-            description = "Invalid applicationInformationId or query parameters"
-        ),
-        @ApiResponse(
-            responseCode = "404", 
-            description = "ApplicationInformation not found"
-        )
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved ApplicationInformation"),
+        @ApiResponse(responseCode = "404", description = "ApplicationInformation not found"),
+        @ApiResponse(responseCode = "400", description = "Invalid request parameters")
     })
-    public void getApplicationInformation(
+    public ApplicationInformationEntity getApplicationInformation(
             @Parameter(description = "Unique identifier of the ApplicationInformation", required = true)
             @PathVariable UUID applicationInformationId,
             HttpServletResponse response,
-            @Parameter(description = "Query parameters for export filtering")
-            @RequestParam Map<String, String> params) throws IOException, FeedException {
+            @Parameter(description = "Query parameters for filtering")
+            @RequestParam Map<String, String> params) throws IOException {
 
         // Verify request contains valid query parameters
         if (!VerifyURLParams.verifyEntries("/espi/1_1/resource/ApplicationInformation/{applicationInformationId}", params)) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, 
                              "Request contains invalid query parameter values!");
-            return;
+            return null;
         }
 
-        response.setContentType(MediaType.APPLICATION_ATOM_XML_VALUE);
-        try {
-            exportService.exportApplicationInformation(
-                    applicationInformationId, response.getOutputStream(),
-                    new ExportFilter(params));
-        } catch (Exception e) {
-            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+        ApplicationInformationEntity entity = applicationInformationRepository.findById(applicationInformationId).orElse(null);
+        if (entity == null) {
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
         }
+        return entity;
     }
 
     /**
      * Creates a new ApplicationInformation resource.
      * 
+     * @param entity ApplicationInformationEntity to create
      * @param response HTTP response for returning created resource
-     * @param params Query parameters for export filtering
-     * @param stream Input stream containing ATOM XML data
-     * @throws IOException if input/output stream operations fail
+     * @return created ApplicationInformationEntity
      */
     @PostMapping(value = "/ApplicationInformation", 
-                consumes = MediaType.APPLICATION_ATOM_XML_VALUE, 
-                produces = MediaType.APPLICATION_ATOM_XML_VALUE)
+                consumes = MediaType.APPLICATION_JSON_VALUE, 
+                produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
-        summary = "Create ApplicationInformation",
-        description = "Creates a new OAuth2 application registration. The request body should contain " +
-                     "an ATOM entry with ApplicationInformation details including client credentials, " +
-                     "redirect URIs, and scopes."
+        summary = "Create ApplicationInformation", 
+        description = "Creates a new ApplicationInformation resource"
     )
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "201", 
-            description = "Successfully created ApplicationInformation",
-            content = @Content(mediaType = MediaType.APPLICATION_ATOM_XML_VALUE,
-                             schema = @Schema(description = "ATOM entry containing the created ApplicationInformation"))
-        ),
-        @ApiResponse(
-            responseCode = "400", 
-            description = "Invalid ATOM XML format or ApplicationInformation data"
-        )
+        @ApiResponse(responseCode = "201", description = "Successfully created ApplicationInformation"),
+        @ApiResponse(responseCode = "400", description = "Invalid ApplicationInformation data")
     })
-    public void createApplicationInformation(
-            HttpServletResponse response,
-            @Parameter(description = "Query parameters for export filtering")
-            @RequestParam Map<String, String> params, 
-            @Parameter(description = "ATOM XML containing ApplicationInformation data", required = true)
-            @RequestBody InputStream stream) throws IOException {
+    public ApplicationInformationEntity createApplicationInformation(
+            @Parameter(description = "ApplicationInformation data to create", required = true)
+            @RequestBody ApplicationInformationEntity entity,
+            HttpServletResponse response) {
 
-        response.setContentType(MediaType.APPLICATION_ATOM_XML_VALUE);
         try {
-            ApplicationInformationEntity applicationInformation = this.applicationInformationService
-                    .importResource(stream);
-            // TODO: Implement UUID-based export in DtoExportService
-            // Current exportService.exportApplicationInformation() only accepts Long IDs
-            response.getWriter().write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-            response.getWriter().write("<feed>ApplicationInformation created with UUID: " + 
-                    applicationInformation.getId() + "</feed>");
+            ApplicationInformationEntity savedEntity = applicationInformationRepository.save(entity);
             response.setStatus(HttpServletResponse.SC_CREATED);
+            return savedEntity;
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            return null;
         }
     }
 
@@ -230,56 +173,44 @@ public class ApplicationInformationRESTController {
      * Updates an existing ApplicationInformation resource.
      * 
      * @param applicationInformationId Unique identifier for the ApplicationInformation to update
+     * @param entity Updated ApplicationInformationEntity data
      * @param response HTTP response for returning updated resource
-     * @param params Query parameters for export filtering  
-     * @param stream Input stream containing updated ATOM XML data
-     * @throws IOException if input/output stream operations fail
+     * @return updated ApplicationInformationEntity
      */
     @PutMapping(value = "/ApplicationInformation/{applicationInformationId}", 
-               consumes = MediaType.APPLICATION_ATOM_XML_VALUE, 
-               produces = MediaType.APPLICATION_ATOM_XML_VALUE)
+               consumes = MediaType.APPLICATION_JSON_VALUE,
+               produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
-        summary = "Update ApplicationInformation",
-        description = "Updates an existing OAuth2 application registration. The request body should contain " +
-                     "an ATOM entry with updated ApplicationInformation details."
+        summary = "Update ApplicationInformation", 
+        description = "Updates an existing ApplicationInformation resource"
     )
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200", 
-            description = "Successfully updated ApplicationInformation",
-            content = @Content(mediaType = MediaType.APPLICATION_ATOM_XML_VALUE,
-                             schema = @Schema(description = "ATOM entry containing the updated ApplicationInformation"))
-        ),
-        @ApiResponse(
-            responseCode = "400", 
-            description = "Invalid ATOM XML format or ApplicationInformation data"
-        ),
-        @ApiResponse(
-            responseCode = "404", 
-            description = "ApplicationInformation not found"
-        )
+        @ApiResponse(responseCode = "200", description = "Successfully updated ApplicationInformation"),
+        @ApiResponse(responseCode = "404", description = "ApplicationInformation not found"),
+        @ApiResponse(responseCode = "400", description = "Invalid ApplicationInformation data")
     })
-    public void updateApplicationInformation(
+    public ApplicationInformationEntity updateApplicationInformation(
             @Parameter(description = "Unique identifier of the ApplicationInformation to update", required = true)
             @PathVariable UUID applicationInformationId,
-            HttpServletResponse response,
-            @Parameter(description = "Query parameters for export filtering")
-            @RequestParam Map<String, String> params,
-            @Parameter(description = "ATOM XML containing updated ApplicationInformation data", required = true)
-            @RequestBody InputStream stream) throws IOException {
+            @Parameter(description = "Updated ApplicationInformation data", required = true)
+            @RequestBody ApplicationInformationEntity entity,
+            HttpServletResponse response) {
 
-        response.setContentType(MediaType.APPLICATION_ATOM_XML_VALUE);
         try {
-            ApplicationInformationEntity applicationInformation = applicationInformationService
-                    .importResource(stream);
-            applicationInformation.setId(applicationInformationId);
-            applicationInformationService.save(applicationInformation);
+            // Check if entity exists first
+            if (!applicationInformationRepository.existsById(applicationInformationId)) {
+                response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                return null;
+            }
             
-            exportService.exportApplicationInformation(
-                    applicationInformationId, response.getOutputStream(),
-                    new ExportFilter(params));
+            // Set the ID to ensure we're updating the correct entity
+            entity.setId(applicationInformationId);
+            ApplicationInformationEntity updatedEntity = applicationInformationRepository.save(entity);
+            response.setStatus(HttpServletResponse.SC_OK);
+            return updatedEntity;
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            return null;
         }
     }
 
@@ -292,18 +223,11 @@ public class ApplicationInformationRESTController {
     @DeleteMapping("/ApplicationInformation/{applicationInformationId}")
     @Operation(
         summary = "Delete ApplicationInformation", 
-        description = "Removes an OAuth2 application registration. This will revoke all associated " +
-                     "access tokens and authorizations."
+        description = "Deletes an ApplicationInformation resource"
     )
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200", 
-            description = "Successfully deleted ApplicationInformation"
-        ),
-        @ApiResponse(
-            responseCode = "404", 
-            description = "ApplicationInformation not found"
-        )
+        @ApiResponse(responseCode = "200", description = "Successfully deleted ApplicationInformation"),
+        @ApiResponse(responseCode = "404", description = "ApplicationInformation not found")
     })
     public void deleteApplicationInformation(
             @Parameter(description = "Unique identifier of the ApplicationInformation to delete", required = true)
@@ -311,10 +235,14 @@ public class ApplicationInformationRESTController {
             HttpServletResponse response) {
         
         try {
-            applicationInformationService.deleteById(applicationInformationId);
-            response.setStatus(HttpServletResponse.SC_OK);
+            if (applicationInformationRepository.existsById(applicationInformationId)) {
+                applicationInformationRepository.deleteById(applicationInformationId);
+                response.setStatus(HttpServletResponse.SC_OK);
+            } else {
+                response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            }
         } catch (Exception e) {
-            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
     }
 }

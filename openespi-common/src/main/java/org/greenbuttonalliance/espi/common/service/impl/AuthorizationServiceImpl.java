@@ -294,28 +294,4 @@ public class AuthorizationServiceImpl implements AuthorizationService {
 		return authorizationRepository.findAllIdsByBulkId(thirdParty, bulkId.toString());
 	}
 
-	/**
-	 * Converts legacy Authorization to modern AuthorizationEntity.
-	 * This is a bridge method to support legacy interface while using modern implementation.
-	 */
-	private AuthorizationEntity convertLegacyToEntity(Authorization legacy) {
-		AuthorizationEntity entity = new AuthorizationEntity();
-		
-		// Map common fields that exist in both legacy and modern entities
-		entity.setAccessToken(legacy.getAccessToken());
-		entity.setRefreshToken(legacy.getRefreshToken());
-		entity.setScope(legacy.getScope());
-		entity.setResourceURI(legacy.getResourceURI());
-		entity.setAuthorizationURI(legacy.getAuthorizationURI()); // Correct field name
-		entity.setThirdParty(legacy.getThirdParty());
-		entity.setStatus(legacy.getStatus());
-		entity.setExpiresIn(legacy.getExpiresIn());
-		entity.setCode(legacy.getCode());
-		
-		// Note: Some fields like applicationInformationId, retailCustomerId, ppid 
-		// may not have direct getters in legacy Authorization - skipping for now
-		
-		return entity;
-	}
-
 }

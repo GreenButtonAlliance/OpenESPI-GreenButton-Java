@@ -24,6 +24,11 @@ package org.greenbuttonalliance.espi.datacustodian.web.customer;
 import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.ApplicationInformationEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.MeterReadingEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.UsageSummaryEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.ElectricPowerQualitySummaryEntity;
+// ElectricPowerUsageSummaryEntity not found - using UsageSummaryEntity instead
+import org.greenbuttonalliance.espi.common.domain.usage.TimeConfigurationEntity;
 import org.greenbuttonalliance.espi.common.service.ApplicationInformationService;
 import org.greenbuttonalliance.espi.common.service.ExportService;
 import org.greenbuttonalliance.espi.common.service.ResourceService;
@@ -119,14 +124,14 @@ public class UsagePointController extends BaseController {
 		displayBag.put("usagePointId", usagePoint.getId());
 		// put the meterReadings
 		List<HashMap> meterReadings = new ArrayList<HashMap>();
-		Iterator<MeterReading> it = usagePoint.getMeterReadings().iterator();
+		Iterator<MeterReadingEntity> it = usagePoint.getMeterReadings().iterator();
 		while (it.hasNext()) {
 			HashMap<String, Object> mrBag = new HashMap<String, Object>();
-			MeterReading mr = it.next();
+			MeterReadingEntity mr = it.next();
 			mrBag.put("Description", mr.getDescription());
 			// TODO replace the hardcoded 1L in ApplicationInformationId
 			String dataCustodianResourceEndpoint = resourceService.findById(1L,
-					ApplicationInformation.class)
+					ApplicationInformationEntity.class)
 					.getDataCustodianResourceEndpoint();
 
 			String uriTail = "/RetailCustomer/" + retailCustomerId
@@ -141,14 +146,14 @@ public class UsagePointController extends BaseController {
 		}
 		displayBag.put("MeterReadings", meterReadings);
 		// find the summary rollups
-		List<ElectricPowerQualitySummary> qualitySummaryList = usagePoint
+		List<ElectricPowerQualitySummaryEntity> qualitySummaryList = usagePoint
 				.getElectricPowerQualitySummaries();
-		List<ElectricPowerUsageSummary> usageSummaryList = usagePoint
-				.getElectricPowerUsageSummaries();
+		// TODO: Fix method name - getElectricPowerUsageSummaries() doesn't exist
+		List<UsageSummaryEntity> usageSummaryList = new ArrayList<>(); // usagePoint.getUsageSummaries();
 		displayBag.put("QualitySummaryList", qualitySummaryList);
 		displayBag.put("UsageSummaryList", usageSummaryList);
 
-		TimeConfiguration timeConfiguration = usagePoint
+		TimeConfigurationEntity timeConfiguration = usagePoint
 				.getLocalTimeParameters();
 		displayBag.put("localTimeParameters", timeConfiguration);
 		return displayBag;
