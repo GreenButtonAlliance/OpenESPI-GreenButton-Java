@@ -25,9 +25,9 @@ import org.custommonkey.xmlunit.XMLUnit;
 import org.xml.sax.InputSource;
 
 import javax.xml.namespace.NamespaceContext;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
+import jakarta.xml.xpath.XPath;
+import jakarta.xml.xpath.XPathExpressionException;
+import jakarta.xml.xpath.XPathFactory;
 import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Iterator;

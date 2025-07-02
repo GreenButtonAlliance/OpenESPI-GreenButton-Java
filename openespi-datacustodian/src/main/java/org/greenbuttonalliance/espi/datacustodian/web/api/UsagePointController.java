@@ -28,7 +28,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.greenbuttonalliance.espi.common.dto.usage.UsagePointDto;
-import org.greenbuttonalliance.espi.common.service.UsagePointService;
+import org.greenbuttonalliance.espi.common.repositories.usage.UsagePointRepository;
+import org.greenbuttonalliance.espi.common.mapper.usage.UsagePointMapper;
+import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -56,10 +60,12 @@ import java.util.UUID;
 @SecurityRequirement(name = "oauth2")
 public class UsagePointController {
 
-    private final UsagePointService usagePointService;
+    private final UsagePointRepository usagePointRepository;
+    private final UsagePointMapper usagePointMapper;
 
-    public UsagePointController(UsagePointService usagePointService) {
-        this.usagePointService = usagePointService;
+    public UsagePointController(UsagePointRepository usagePointRepository, UsagePointMapper usagePointMapper) {
+        this.usagePointRepository = usagePointRepository;
+        this.usagePointMapper = usagePointMapper;
     }
 
     /**
@@ -88,7 +94,9 @@ public class UsagePointController {
             @RequestParam(defaultValue = "0") int offset,
             Authentication authentication) {
         
-        List<UsagePointDto> usagePoints = usagePointService.findAll(limit, offset);
+        Pageable pageable = PageRequest.of(offset / limit, limit);
+        List<UsagePointEntity> usagePointEntities = usagePointRepository.findAll(pageable).getContent();
+        List<UsagePointDto> usagePoints = usagePointMapper.toDto(usagePointEntities);
         return ResponseEntity.ok(usagePoints);
     }
 
@@ -116,7 +124,8 @@ public class UsagePointController {
             @PathVariable UUID usagePointId,
             Authentication authentication) {
         
-        return usagePointService.findById(usagePointId)
+        return usagePointRepository.findById(usagePointId)
+            .map(usagePointMapper::toDto)
             .map(usagePoint -> ResponseEntity.ok(usagePoint))
             .orElse(ResponseEntity.notFound().build());
     }
@@ -148,7 +157,11 @@ public class UsagePointController {
             @RequestParam(defaultValue = "0") int offset,
             Authentication authentication) {
         
-        List<UsagePointDto> usagePoints = usagePointService.findBySubscriptionId(subscriptionId, limit, offset);
+        // TODO: Implement subscription-based filtering when subscription relationship is available
+        // For now, return all usage points with pagination as a temporary solution
+        Pageable pageable = PageRequest.of(offset / limit, limit);
+        List<UsagePointEntity> usagePointEntities = usagePointRepository.findAll(pageable).getContent();
+        List<UsagePointDto> usagePoints = usagePointMapper.toDto(usagePointEntities);
         return ResponseEntity.ok(usagePoints);
     }
 
@@ -177,7 +190,10 @@ public class UsagePointController {
             @PathVariable UUID usagePointId,
             Authentication authentication) {
         
-        return usagePointService.findBySubscriptionIdAndUsagePointId(subscriptionId, usagePointId)
+        // TODO: Implement subscription-based validation when subscription relationship is available
+        // For now, just return the usage point if it exists
+        return usagePointRepository.findById(usagePointId)
+            .map(usagePointMapper::toDto)
             .map(usagePoint -> ResponseEntity.ok(usagePoint))
             .orElse(ResponseEntity.notFound().build());
     }

@@ -58,8 +58,14 @@ import java.util.List;
 @EnableMethodSecurity(prePostEnabled = true, securedEnabled = true, jsr250Enabled = true)
 public class SecurityConfiguration {
 
-    // TODO: Add opaque token introspection configuration for ESPI OAuth2
-    // ESPI standard uses opaque tokens, not JWT tokens
+    @Value("${espi.authorization-server.introspection-endpoint:http://localhost:8080/oauth2/introspect}")
+    private String introspectionUri;
+    
+    @Value("${espi.authorization-server.client-id:datacustodian}")
+    private String clientId;
+    
+    @Value("${espi.authorization-server.client-secret:datacustodian-secret}")
+    private String clientSecret;
 
     /**
      * Main security filter chain for ESPI Resource Server endpoints.
@@ -175,26 +181,43 @@ public class SecurityConfiguration {
                 .anyRequest().authenticated()
             )
             
-            // TODO: Configure OAuth2 Resource Server with opaque token introspection
+            // Configure OAuth2 Resource Server with opaque token introspection
             // ESPI standard requires opaque tokens, not JWT tokens
-            // .oauth2ResourceServer(oauth2 -> oauth2
-            //     .opaqueToken(opaque -> opaque
-            //         .introspectionUri("${espi.authorization-server.introspection-endpoint}")
-            //         .introspectionClientCredentials("client-id", "client-secret")
-            //     )
-            // )
+            .oauth2ResourceServer(oauth2 -> oauth2
+                .opaqueToken(opaque -> opaque
+                    .introspectionUri(introspectionUri)
+                    .introspectionClientCredentials(clientId, clientSecret)
+                )
+            )
             
-            // Allow H2 console in local development
+            // Security headers configuration
             .headers(headers -> headers
+                .frameOptions().deny()
+                .contentTypeOptions().and()
+                .httpStrictTransportSecurity(hstsConfig -> hstsConfig
+                    .maxAgeInSeconds(31536000)
+                    .includeSubdomains(true)
+                    .preload(true))
+                .and()
+                // Allow H2 console in development only
                 .frameOptions().sameOrigin()
             )
             
             .build();
     }
 
-    // TODO: Implement opaque token introspection configuration
-    // ESPI standard requires opaque OAuth2 tokens, not JWT tokens
-    // Future enhancement: Add JWT support for dynamic client registration
+    /**
+     * OAuth2 Resource Server configuration notes:
+     * 
+     * The DataCustodian acts as an OAuth2 Resource Server that validates opaque tokens
+     * issued by the separate OpenESPI Authorization Server. This configuration:
+     * 
+     * 1. Uses opaque token introspection (ESPI standard requirement)
+     * 2. Connects to the Authorization Server's introspection endpoint
+     * 3. Uses client credentials for introspection authentication
+     * 
+     * Future enhancement: Add JWT support for dynamic client registration scenarios
+     */
 
     /**
      * CORS configuration for web clients.

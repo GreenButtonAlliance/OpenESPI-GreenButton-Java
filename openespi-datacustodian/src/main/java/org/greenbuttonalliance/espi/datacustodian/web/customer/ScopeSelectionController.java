@@ -23,7 +23,7 @@ package org.greenbuttonalliance.espi.datacustodian.web.customer;
 
 import org.greenbuttonalliance.espi.common.domain.usage.ApplicationInformationEntity;
 import org.greenbuttonalliance.espi.common.domain.legacy.Routes;
-import org.greenbuttonalliance.espi.common.service.ApplicationInformationService;
+import org.greenbuttonalliance.espi.common.repositories.usage.ApplicationInformationEntityRepository;
 import org.greenbuttonalliance.espi.datacustodian.web.BaseController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -42,7 +42,7 @@ import static org.greenbuttonalliance.espi.datacustodian.utils.URLHelper.newScop
 public class ScopeSelectionController extends BaseController {
 
 	@Autowired
-	private ApplicationInformationService applicationInformationService;
+	private ApplicationInformationEntityRepository applicationInformationRepository;
 
 	@ExceptionHandler(Exception.class)
 	@ResponseStatus(value = HttpStatus.FORBIDDEN, reason = "Access Not Authorized")
@@ -55,8 +55,12 @@ public class ScopeSelectionController extends BaseController {
 			throws Exception {
 
 		try {
-			ApplicationInformationEntity applicationInformation = applicationInformationService
-					.findByClientId(thirdPartyClientId);
+			ApplicationInformationEntity applicationInformation = applicationInformationRepository
+					.findByClientId(thirdPartyClientId).orElse(null);
+			
+			if (applicationInformation == null) {
+				throw new NoResultException("ApplicationInformation not found for client: " + thirdPartyClientId);
+			}
 
 			return "redirect:"
 					+ applicationInformation
@@ -72,8 +76,8 @@ public class ScopeSelectionController extends BaseController {
 		}
 	}
 
-	public void setApplicationInformationService(
-			ApplicationInformationService applicationInformationService) {
-		this.applicationInformationService = applicationInformationService;
+	public void setApplicationInformationRepository(
+			ApplicationInformationEntityRepository applicationInformationRepository) {
+		this.applicationInformationRepository = applicationInformationRepository;
 	}
 }

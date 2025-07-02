@@ -81,13 +81,15 @@ spring:
       suffix: .html
     static-path-pattern: /**
   
-  # Security Configuration
+  # Security Configuration - ESPI uses opaque tokens
   security:
     oauth2:
       resourceserver:
-        jwt:
-          issuer-uri: ${espi.authorization-server.issuer-uri:http://localhost:8080}
-          jwk-set-uri: ${espi.authorization-server.jwk-set-uri:http://localhost:8080/.well-known/jwks.json}
+        # ESPI standard requires opaque token introspection, not JWT
+        opaquetoken:
+          introspection-uri: ${espi.authorization-server.introspection-endpoint}
+          client-id: ${espi.authorization-server.client-id:datacustodian}
+          client-secret: ${espi.authorization-server.client-secret:datacustodian-secret}
 
 # Server Configuration  
 server:
@@ -137,9 +139,9 @@ espi:
   
   authorization-server:
     issuer-uri: ${AUTHORIZATION_SERVER_ISSUER_URI:http://localhost:8080}
-    jwk-set-uri: ${AUTHORIZATION_SERVER_JWK_SET_URI:http://localhost:8080/.well-known/jwks.json}
-    token-endpoint: ${AUTHORIZATION_SERVER_TOKEN_ENDPOINT:http://localhost:8080/oauth/token}
-    introspection-endpoint: ${AUTHORIZATION_SERVER_INTROSPECTION_ENDPOINT:http://localhost:8080/oauth/introspect}
+    introspection-endpoint: ${AUTHORIZATION_SERVER_INTROSPECTION_ENDPOINT:http://localhost:8080/oauth2/introspect}
+    client-id: ${AUTHORIZATION_SERVER_CLIENT_ID:datacustodian}
+    client-secret: ${AUTHORIZATION_SERVER_CLIENT_SECRET:datacustodian-secret}
   
   # ESPI Resource Configuration
   resources:
