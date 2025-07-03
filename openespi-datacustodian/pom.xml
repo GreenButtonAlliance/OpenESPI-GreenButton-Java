@@ -90,7 +90,6 @@
 
         <!-- Testing -->
         <testcontainers.version>1.20.4</testcontainers.version>
-        <cucumber.version>7.20.1</cucumber.version>
 
         <!-- Maven Plugin Versions -->
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
@@ -353,27 +352,6 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Cucumber BDD Testing -->
-        <dependency>
-            <groupId>io.cucumber</groupId>
-            <artifactId>cucumber-java</artifactId>
-            <version>${cucumber.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>io.cucumber</groupId>
-            <artifactId>cucumber-junit-platform-engine</artifactId>
-            <version>${cucumber.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>io.cucumber</groupId>
-            <artifactId>cucumber-spring</artifactId>
-            <version>${cucumber.version}</version>
-            <scope>test</scope>
-        </dependency>
 
         <!-- API Documentation -->
         <dependency>
@@ -482,7 +460,6 @@
                     <includes>
                         <include>**/*IntegrationTest.java</include>
                         <include>**/*IT.java</include>
-                        <include>**/CucumberTest.java</include>
                     </includes>
                     <systemPropertyVariables>
                         <spring.profiles.active>test</spring.profiles.active>
