@@ -21,42 +21,36 @@
 package org.greenbuttonalliance.espi.datacustodian.web.customer;
 
 import org.greenbuttonalliance.espi.common.domain.usage.ApplicationInformationEntity;
-import org.greenbuttonalliance.espi.common.domain.legacy.Routes;
 import org.greenbuttonalliance.espi.common.service.ApplicationInformationService;
-import org.greenbuttonalliance.espi.common.service.ResourceService;
 import org.greenbuttonalliance.espi.datacustodian.utils.URLHelper;
-import org.greenbuttonalliance.espi.datacustodian.web.BaseController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
-@RequestMapping(Routes.THIRD_PARTY_LIST)
-public class ThirdPartyController extends BaseController {
+@RequestMapping("/RetailCustomer/{retailCustomerId}/ThirdPartyList")
+public class ThirdPartyController {
 
 	@Autowired
 	private ApplicationInformationService applicationInformationService;
 
-	@Autowired
-	private ResourceService resourceService;
-
-	@RequestMapping(method = RequestMethod.GET)
+	@GetMapping
 	public String index(ModelMap model) {
-		// note that we are only looking at "THIRD_PARTY" relationships here.
 		model.put("applicationInformationList",
 				applicationInformationService.findByKind("THIRD_PARTY"));
 		return "/customer/thirdparties/index";
 	}
 
-	@RequestMapping(method = RequestMethod.POST)
+	@PostMapping
 	public String selectThirdParty(
 			@RequestParam("Third_party") Long thirdPartyId,
 			@RequestParam("Third_party_URL") String thirdPartyURL) {
-		ApplicationInformationEntity applicationInformation = resourceService
-				.findById(thirdPartyId, ApplicationInformationEntity.class);
+		ApplicationInformationEntity applicationInformation = applicationInformationService
+				.findById(thirdPartyId);
 		return "redirect:" + thirdPartyURL + "?"
 				+ URLHelper.newScopeParams(applicationInformation.getScope())
 				+ "&DataCustodianID="

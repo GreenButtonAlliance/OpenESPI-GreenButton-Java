@@ -21,10 +21,8 @@
 
 package org.greenbuttonalliance.espi.datacustodian.web.custodian;
 
-import org.greenbuttonalliance.espi.common.domain.legacy.RetailCustomer;
-import org.greenbuttonalliance.espi.common.domain.legacy.Routes;
+import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.greenbuttonalliance.espi.common.service.RetailCustomerService;
-import org.greenbuttonalliance.espi.datacustodian.web.BaseController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -40,7 +38,7 @@ import jakarta.validation.Valid;
 
 @Controller
 @PreAuthorize("hasRole('ROLE_CUSTODIAN')")
-public class RetailCustomerController extends BaseController {
+public class RetailCustomerController {
 
 	@Autowired
 	private RetailCustomerService service;
@@ -54,23 +52,23 @@ public class RetailCustomerController extends BaseController {
 		binder.setValidator(new RetailCustomerValidator());
 	}
 
-	@RequestMapping(value = Routes.DATA_CUSTODIAN_RETAIL_CUSTOMER_INDEX, method = RequestMethod.GET)
+	@GetMapping("/custodian/retailcustomers")
 	public String index(ModelMap model) {
 		model.put("customers", service.findAll());
 
 		return "retailcustomers/index";
 	}
 
-	@RequestMapping(value = Routes.DATA_CUSTODIAN_RETAIL_CUSTOMER_FORM, method = RequestMethod.GET)
+	@GetMapping("/custodian/retailcustomers/form")
 	public String form(ModelMap model) {
-		model.put("retailCustomer", new RetailCustomer());
+		model.put("retailCustomer", new RetailCustomerEntity());
 
 		return "retailcustomers/form";
 	}
 
-	@RequestMapping(value = Routes.DATA_CUSTODIAN_RETAIL_CUSTOMER_CREATE, method = RequestMethod.POST)
+	@PostMapping("/custodian/retailcustomers/create")
 	public String create(
-			@ModelAttribute("retailCustomer") @Valid RetailCustomer retailCustomer,
+			@ModelAttribute("retailCustomer") @Valid RetailCustomerEntity retailCustomer,
 			BindingResult result) {
 		if (result.hasErrors()) {
 			return "retailcustomers/form";
@@ -84,9 +82,9 @@ public class RetailCustomerController extends BaseController {
 		}
 	}
 
-	@RequestMapping(value = Routes.DATA_CUSTODIAN_RETAIL_CUSTOMER_SHOW, method = RequestMethod.GET)
+	@GetMapping("/custodian/retailcustomers/{retailCustomerId}/show")
 	public String show(@PathVariable Long retailCustomerId, ModelMap model) {
-		RetailCustomer retailCustomer = service.findById(retailCustomerId);
+		RetailCustomerEntity retailCustomer = service.findById(retailCustomerId);
 		model.put("retailCustomer", retailCustomer);
 		return "/custodian/retailcustomers/show";
 	}
@@ -94,7 +92,7 @@ public class RetailCustomerController extends BaseController {
 	public static class RetailCustomerValidator implements Validator {
 
 		public boolean supports(@SuppressWarnings("rawtypes") Class clazz) {
-			return RetailCustomer.class.isAssignableFrom(clazz);
+			return RetailCustomerEntity.class.isAssignableFrom(clazz);
 		}
 
 		public void validate(Object target, Errors errors) {

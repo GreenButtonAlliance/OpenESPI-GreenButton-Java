@@ -21,18 +21,14 @@
 
 package org.greenbuttonalliance.espi.datacustodian.web.customer;
 
-import com.sun.syndication.io.FeedException;
-import org.greenbuttonalliance.espi.common.domain.legacy.Routes;
 import org.greenbuttonalliance.espi.common.service.ExportService;
 import org.greenbuttonalliance.espi.common.utils.ExportFilter;
-import org.greenbuttonalliance.espi.datacustodian.web.BaseController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import jakarta.servlet.http.HttpServletResponse;
@@ -41,18 +37,17 @@ import java.util.Map;
 
 @Controller
 @PreAuthorize("hasRole('ROLE_USER')")
-public class CustomerDownloadMyDataController extends BaseController {
+public class CustomerDownloadMyDataController {
 
 	@Autowired
 	private ExportService exportService;
 
-	@RequestMapping(value = Routes.RETAIL_CUSTOMER_DOWNLOAD_MY_DATA, method = RequestMethod.GET)
+	@GetMapping("/RetailCustomer/{retailCustomerId}/DownloadMyData/UsagePoint/{usagePointId}")
 	public void downloadMyData(HttpServletResponse response,
 			@PathVariable Long retailCustomerId,
 			@PathVariable Long usagePointId,
-			@RequestParam Map<String, String> params) throws IOException,
-			FeedException {
-		response.setContentType(MediaType.TEXT_HTML_VALUE);
+			@RequestParam Map<String, String> params) throws IOException {
+		response.setContentType(MediaType.APPLICATION_XML_VALUE);
 		response.addHeader("Content-Disposition",
 				"attachment; filename=GreenButtonDownload.xml");
 		try {
@@ -66,17 +61,15 @@ public class CustomerDownloadMyDataController extends BaseController {
 		}
 	}
 
-	@RequestMapping(value = Routes.RETAIL_CUSTOMER_DOWNLOAD_MY_DATA_COLLECTION, method = RequestMethod.GET)
+	@GetMapping("/RetailCustomer/{retailCustomerId}/DownloadMyData/UsagePoint")
 	public void downloadMyDataCollection(HttpServletResponse response,
 			@PathVariable Long retailCustomerId,
-			@RequestParam Map<String, String> params) throws IOException,
-			FeedException {
+			@RequestParam Map<String, String> params) throws IOException {
 
-		response.setContentType(MediaType.TEXT_HTML_VALUE);
+		response.setContentType(MediaType.APPLICATION_XML_VALUE);
 		response.addHeader("Content-Disposition",
 				"attachment; filename=GreenButtonDownload.xml");
 		try {
-			// TODO -- need authorization hook
 			exportService.exportUsagePointsFull(0L, retailCustomerId,
 					response.getOutputStream(), new ExportFilter(params));
 

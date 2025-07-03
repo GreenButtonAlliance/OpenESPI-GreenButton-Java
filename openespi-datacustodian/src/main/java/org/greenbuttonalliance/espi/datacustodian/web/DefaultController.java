@@ -20,25 +20,35 @@
 
 package org.greenbuttonalliance.espi.datacustodian.web;
 
-import org.greenbuttonalliance.espi.common.domain.legacy.RetailCustomer;
-import org.greenbuttonalliance.espi.common.domain.legacy.Routes;
+import org.greenbuttonalliance.espi.common.service.RetailCustomerService;
+import org.greenbuttonalliance.espi.datacustodian.web.constants.Routes;
+import org.greenbuttonalliance.espi.datacustodian.web.constants.UserRoles;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.security.Principal;
 
 @Controller
-public class DefaultController extends BaseController {
+public class DefaultController {
 
-	@RequestMapping(Routes.DEFAULT)
+	@Autowired
+	private RetailCustomerService retailCustomerService;
+
+	@GetMapping(Routes.DEFAULT)
 	public String defaultAfterLogin(HttpServletRequest request,
 			Principal principal) {
-		if (request.isUserInRole(RetailCustomer.ROLE_CUSTODIAN)) {
+		if (request.isUserInRole(UserRoles.ROLE_CUSTODIAN)) {
 			return "redirect:/custodian/home";
-		} else if (request.isUserInRole(RetailCustomer.ROLE_USER)) {
-			return "redirect:/RetailCustomer/"
-					+ currentCustomer(principal).getId() + "/home";
+		} else if (request.isUserInRole(UserRoles.ROLE_USER)) {
+			if (principal instanceof Authentication auth) {
+				var customer = retailCustomerService.findByUsername(auth.getName());
+				if (customer != null) {
+					return "redirect:/RetailCustomer/" + customer.getId() + "/home";
+				}
+			}
 		}
 		return "redirect:/home";
 	}

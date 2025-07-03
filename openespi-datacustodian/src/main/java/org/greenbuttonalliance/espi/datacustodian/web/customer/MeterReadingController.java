@@ -24,47 +24,31 @@ package org.greenbuttonalliance.espi.datacustodian.web.customer;
 import org.greenbuttonalliance.espi.common.domain.usage.IntervalBlockEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.IntervalReadingEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.MeterReadingEntity;
-import org.greenbuttonalliance.espi.common.domain.legacy.Routes;
 import org.greenbuttonalliance.espi.common.service.MeterReadingService;
-import org.greenbuttonalliance.espi.common.service.ResourceService;
-import org.greenbuttonalliance.espi.datacustodian.web.BaseController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.ModelMap;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 
 import java.util.Iterator;
 
 @Controller
-@RequestMapping()
-public class MeterReadingController extends BaseController {
+public class MeterReadingController {
 
 	@Autowired
 	protected MeterReadingService meterReadingService;
 
-	@Autowired
-	protected ResourceService resourceService;
-
 	@Transactional(readOnly = true)
-	@RequestMapping(value = Routes.METER_READINGS_SHOW, method = RequestMethod.GET)
+	@GetMapping("/RetailCustomer/{retailCustomerId}/UsagePoint/{usagePointId}/MeterReading/{meterReadingId}/show")
 	public String show(@PathVariable Long retailCustomerId,
 			@PathVariable Long usagePointId, @PathVariable Long meterReadingId,
 			ModelMap model) {
-		// TODO need to walk the subtree to force the load (for now)
-		// meterReadingService returns legacy MeterReading, not MeterReadingEntity
 		var mr = meterReadingService.findById(retailCustomerId,
 				usagePointId, meterReadingId);
 
-		// TODO: Replace with modern MeterReadingEntityRepository
-		// MeterReadingEntity x = resourceService.findById(meterReadingId, MeterReadingEntity.class);
-		var x = mr; // Temporary workaround
-
 		MeterReadingEntity newMeterReading = new MeterReadingEntity();
-		// TODO: Convert legacy mr to modern entity or implement proper merge
-		// newMeterReading.merge(mr);
 		Iterator<IntervalBlockEntity> it = newMeterReading.getIntervalBlocks()
 				.iterator();
 		while (it.hasNext()) {

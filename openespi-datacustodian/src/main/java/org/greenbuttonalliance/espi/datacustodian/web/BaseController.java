@@ -20,6 +20,8 @@
 
 package org.greenbuttonalliance.espi.datacustodian.web;
 
+// COMMENTED OUT FOR SPRING BOOT 3.5 MIGRATION - Uses legacy RetailCustomer domain class
+// This class will be refactored to use modern entities and record-based DTOs
 import org.greenbuttonalliance.espi.common.domain.legacy.RetailCustomer;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -40,3 +42,4 @@ public class BaseController {
 		}
 	}
 }
+*/

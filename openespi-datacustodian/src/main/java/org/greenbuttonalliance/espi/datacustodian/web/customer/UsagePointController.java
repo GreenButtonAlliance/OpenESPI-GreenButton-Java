@@ -27,23 +27,21 @@ import org.greenbuttonalliance.espi.common.domain.usage.ApplicationInformationEn
 import org.greenbuttonalliance.espi.common.domain.usage.MeterReadingEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.UsageSummaryEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.ElectricPowerQualitySummaryEntity;
-// ElectricPowerUsageSummaryEntity not found - using UsageSummaryEntity instead
 import org.greenbuttonalliance.espi.common.domain.usage.TimeConfigurationEntity;
 import org.greenbuttonalliance.espi.common.service.ApplicationInformationService;
 import org.greenbuttonalliance.espi.common.service.ExportService;
 import org.greenbuttonalliance.espi.common.service.ResourceService;
 import org.greenbuttonalliance.espi.common.service.UsagePointService;
-import org.greenbuttonalliance.espi.datacustodian.web.BaseController;
+import org.greenbuttonalliance.espi.common.service.RetailCustomerService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.ModelMap;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 
-import java.lang.Object;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -51,7 +49,7 @@ import java.util.Iterator;
 import java.util.List;
 
 @Controller
-public class UsagePointController extends BaseController {
+public class UsagePointController {
 
 	@Autowired
 	private UsagePointService usagePointService;
@@ -65,28 +63,30 @@ public class UsagePointController extends BaseController {
 	@Autowired
 	private ApplicationInformationService applicationInformationService;
 
+	@Autowired
+	private RetailCustomerService retailCustomerService;
+
 	@ModelAttribute
 	public List<UsagePointEntity> usagePoints(Principal principal) {
-		return usagePointService
-				.findAllByRetailCustomer(currentCustomer(principal));
+		if (principal instanceof Authentication auth) {
+			var customer = retailCustomerService.findByUsername(auth.getName());
+			if (customer != null) {
+				return usagePointService.findAllByRetailCustomer(customer);
+			}
+		}
+		return new ArrayList<>();
 	}
 
-	@RequestMapping(value = "/RetailCustomer/{retailCustomerId}/UsagePoint", method = RequestMethod.GET)
+	@GetMapping("/RetailCustomer/{retailCustomerId}/UsagePoint")
 	public String index() {
 		return "/customer/usagepoints/index";
 	}
 
 	@Transactional(readOnly = true)
-	@RequestMapping(value = "/RetailCustomer/{retailCustomerId}/UsagePoint/{usagePointId}/show", method = RequestMethod.GET)
+	@GetMapping("/RetailCustomer/{retailCustomerId}/UsagePoint/{usagePointId}/show")
 	public String show(@PathVariable Long retailCustomerId,
 			@PathVariable Long usagePointId, ModelMap model) {
 		try {
-
-			// because of the lazy loading from DB it's easier to build a bag
-			// and hand it off
-			// in a separate transaction, fill up a display bag lazily - do it
-			// in a private method
-			// so the transaction is scoped appropriately.
 
 			HashMap<String, Object> displayBag = buildDisplayBag(
 					retailCustomerId, usagePointId);
@@ -95,14 +95,8 @@ public class UsagePointController extends BaseController {
 
 			return "/customer/usagepoints/show";
 		} catch (Exception e) {
-			// go to do a dummy DB access to satify the transaction rollback
-			// needs ...
-			// TODO: may not be necessary
-			resourceService.findById(1L, ApplicationInformation.class);
-			System.out.printf("UX Error: %s\n", e.toString());
 			model.put("errorString", e.toString());
 			try {
-				// try again (and maybe we can catch the rollback error ...
 				return "/customer/error";
 			} catch (Exception ex) {
 				return "/customer/error";
