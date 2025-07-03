@@ -27,6 +27,7 @@ import lombok.ToString;
 import org.greenbuttonalliance.espi.common.domain.legacy.GrantType;
 import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
 import org.greenbuttonalliance.espi.common.domain.legacy.ResponseType;
+import org.greenbuttonalliance.espi.common.utils.encryption.FieldEncryptionConverter;
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
 import jakarta.validation.constraints.NotEmpty;
@@ -181,8 +182,10 @@ public class ApplicationInformationEntity extends IdentifiedObject {
 
     /**
      * Client secret for OAuth2 authentication.
+     * Encrypted at rest using AES-256-GCM.
      */
     @Column(name = "client_secret")
+    @Convert(converter = FieldEncryptionConverter.class)
     private String clientSecret;
 
     /**
@@ -331,8 +334,10 @@ public class ApplicationInformationEntity extends IdentifiedObject {
 
     /**
      * Registration access token.
+     * Encrypted at rest using AES-256-GCM.
      */
-    @Column(name = "registration_access_token")
+    @Column(name = "registration_access_token") 
+    @Convert(converter = FieldEncryptionConverter.class)
     private String registrationAccessToken;
 
     /**

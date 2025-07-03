@@ -25,13 +25,12 @@ import org.greenbuttonalliance.espi.common.domain.legacy.UsagePoint;
 import org.greenbuttonalliance.espi.common.domain.legacy.atom.EntryType;
 import org.greenbuttonalliance.espi.common.repositories.usage.SubscriptionRepository;
 import org.greenbuttonalliance.espi.common.utils.EntryTypeIterator;
-import org.springframework.security.oauth2.provider.OAuth2Authentication;
-
 import java.util.List;
+import java.util.Set;
 
 public interface SubscriptionService {
 
-	Subscription createSubscription(OAuth2Authentication retailCustomer);
+	Subscription createSubscription(String username, Set<String> roles, String clientId);
 
 	Subscription findByHashedId(String hashedId);
 

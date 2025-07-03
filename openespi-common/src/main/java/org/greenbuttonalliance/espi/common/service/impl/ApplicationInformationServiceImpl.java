@@ -26,7 +26,10 @@ import org.greenbuttonalliance.espi.common.service.ImportService;
 import org.greenbuttonalliance.espi.common.service.ResourceService;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+// Spring Security removed - authentication moved to DataCustodian/ThirdParty
+// import org.greenbuttonalliance.espi.common.security.EspiSecurityExpressions;
 import org.springframework.beans.factory.annotation.Autowired;
+// import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
@@ -91,7 +94,7 @@ public class ApplicationInformationServiceImpl implements
 			// Legacy getContent().getApplicationInformation() no longer supported
 			applicationInformation = null; // Placeholder
 		} catch (Exception e) {
-
+			logger.error("Failed to import ApplicationInformation resource", e);
  		}
 		return applicationInformation;
 	}

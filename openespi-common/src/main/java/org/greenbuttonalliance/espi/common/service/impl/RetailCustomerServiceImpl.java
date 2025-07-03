@@ -27,9 +27,9 @@ import org.greenbuttonalliance.espi.common.domain.legacy.Subscription;
 import org.greenbuttonalliance.espi.common.domain.legacy.UsagePoint;
 import org.greenbuttonalliance.espi.common.repositories.usage.RetailCustomerRepository;
 import org.greenbuttonalliance.espi.common.service.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +39,8 @@ import java.util.UUID;
 
 @Service
 public class RetailCustomerServiceImpl implements RetailCustomerService {
+
+	private static final Logger logger = LoggerFactory.getLogger(RetailCustomerServiceImpl.class);
 
 	private final RetailCustomerRepository retailCustomerRepository;
 	private final ResourceService resourceService;
@@ -95,12 +97,12 @@ public class RetailCustomerServiceImpl implements RetailCustomerService {
 	}
 
 	@Override
-	public UserDetails loadUserByUsername(String username)
-			throws UsernameNotFoundException {
+	public RetailCustomer findByUsername(String username) {
 		try {
 			return retailCustomerRepository.findByUsername(username).orElse(null);
 		} catch (EmptyResultDataAccessException x) {
-			throw new UsernameNotFoundException("Unable to find user");
+			logger.warn("Unable to find user with username: {}", username);
+			return null;
 		}
 	}
 
@@ -129,9 +131,9 @@ public class RetailCustomerServiceImpl implements RetailCustomerService {
 			// entry.getContent().getRetailCustomer();
 			// persist(retailCustomer);
 		} catch (Exception e) {
-			System.out.printf(
-					"**** RetailCustomerService:importResource Failed %s\n",
-					e.toString());
+			// Security: Log error without exposing sensitive customer data
+			logger.error("RetailCustomerService.importResource failed: {}", e.getMessage());
+			logger.debug("RetailCustomerService.importResource stack trace", e);
 		}
 		return retailCustomer;
 	}
@@ -200,8 +202,11 @@ public class RetailCustomerServiceImpl implements RetailCustomerService {
 			}
 
 		} catch (Exception e) {
-			System.out.printf("****Error Associating UsagePoint: %s - %s\n",
-					retailCustomer.toString(), usagePoint.toString());
+			// Security: Log error without exposing sensitive customer or usage point data
+			logger.error("Error associating UsagePoint for customer ID: {} with usage point UUID: {}", 
+				retailCustomer != null ? retailCustomer.getId() : "null",
+				usagePoint != null && usagePoint.getUUID() != null ? usagePoint.getUUID() : "null");
+			logger.debug("AssociateByUUID error details", e);
 		}
 
 		return subscription;

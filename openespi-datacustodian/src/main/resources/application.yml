@@ -153,6 +153,11 @@ espi:
   xml:
     pretty-print: true
     include-namespaces: true
+  
+  # Field Encryption Configuration
+  field:
+    encryption:
+      key: ${ESPI_FIELD_ENCRYPTION_KEY:}
 
 # Logging Configuration
 logging:

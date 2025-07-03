@@ -35,6 +35,8 @@ import org.greenbuttonalliance.espi.common.service.ResourceService;
 import org.greenbuttonalliance.espi.common.utils.EntryTypeIterator;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+// Spring Security removed - authentication moved to DataCustodian/ThirdParty
+// import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;

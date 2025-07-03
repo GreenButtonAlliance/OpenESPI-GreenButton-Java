@@ -22,6 +22,7 @@ package org.greenbuttonalliance.espi.common.support;
 
 import org.greenbuttonalliance.espi.common.domain.legacy.*;
 import org.greenbuttonalliance.espi.common.domain.legacy.atom.LinkType;
+// TODO: Replace with modern Spring Security 6.x OAuth2 when support classes are updated
 import org.springframework.security.oauth2.provider.OAuth2Request;
 
 import java.math.BigInteger;

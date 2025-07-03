@@ -7,7 +7,6 @@
       "Bash(sed:*)",
       "Bash(mvn clean compile:*)",
       "Bash(git add:*)",
-      "Bash(git push:*)",
       "Bash(git commit:*)",
       "Bash(ls:*)",
       "Bash(mvn compile:*)",

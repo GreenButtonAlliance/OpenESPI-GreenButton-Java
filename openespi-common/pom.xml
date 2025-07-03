@@ -366,11 +366,6 @@
             <artifactId>jakarta.validation-api</artifactId>
         </dependency>
 
-        <!-- Spring Security Core (RetailCustomer implements UserDetails) -->
-        <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-core</artifactId>
-        </dependency>
 
         <!-- Core utilities needed for domain logic -->
         <dependency>
@@ -389,12 +384,6 @@
             <artifactId>spring-web</artifactId>
         </dependency>
 
-        <!-- Legacy OAuth2 support (will be modernized to Spring Security 6.x later) -->
-        <dependency>
-            <groupId>org.springframework.security.oauth</groupId>
-            <artifactId>spring-security-oauth2</artifactId>
-            <version>2.5.2.RELEASE</version>
-        </dependency>
 
         <!-- Xerces for XML utility classes (temporary - should be refactored) -->
         <dependency>
@@ -585,6 +574,10 @@
                         <!-- Exclude classes with missing Xerces dependencies -->
                         <exclude>**/utils/DurationImpl.java</exclude>
                         <exclude>**/utils/XMLGregorianCalendarImpl.java</exclude>
+                        <!-- Exclude legacy deprecated classes with Spring Security dependencies -->
+                        <exclude>**/legacy_deprecated/**</exclude>
+                        <!-- Exclude repository interface with Spring Security UserDetails -->
+                        <exclude>**/repositories/usage/RetailCustomerRepository.java</exclude>
                     </excludes>
                     <annotationProcessorPaths>
                         <path>

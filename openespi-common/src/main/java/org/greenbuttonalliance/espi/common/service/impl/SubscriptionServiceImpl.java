@@ -30,8 +30,6 @@ import org.greenbuttonalliance.espi.common.repositories.usage.UsagePointReposito
 import org.greenbuttonalliance.espi.common.service.*;
 import org.greenbuttonalliance.espi.common.utils.EntryTypeIterator;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.authority.AuthorityUtils;
-import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,45 +59,44 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 	@Transactional(rollbackFor = { jakarta.xml.bind.JAXBException.class }, noRollbackFor = {
 			jakarta.persistence.NoResultException.class,
 			org.springframework.dao.EmptyResultDataAccessException.class })
-	public Subscription createSubscription(OAuth2Authentication authentication) {
+	public Subscription createSubscription(String username, Set<String> roles, String clientId) {
 		Subscription subscription = new Subscription();
 		subscription.setUUID(UUID.randomUUID());
 
-		// Determine requestor's Role
-		Set<String> role = AuthorityUtils.authorityListToSet(authentication.getAuthorities());
-
-		if (role.contains("ROLE_USER")) {
-
-			subscription.setApplicationInformation(applicationInformationService
-					.findByClientId(authentication.getOAuth2Request().getClientId()));
-			subscription.setRetailCustomer((RetailCustomer) authentication.getPrincipal());
-			subscription.setUsagePoints(new ArrayList<UsagePoint>());
-			// set up the subscription's usagePoints list. Keep in mind that right
-			// now this is ALL usage points belonging to the RetailCustomer.
-			// TODO - scope this to only a selected (proper) subset of the
-			// usagePoints as passed
-			// through from the UX or a restful call.
-			List<Long> upIds = resourceService.findAllIdsByXPath(subscription
-				.getRetailCustomer().getId(), UsagePoint.class);
-			Iterator<Long> it = upIds.iterator();
-			while (it.hasNext()) {
-				UsagePoint usagePoint = resourceService.findById(it.next(),
-					UsagePoint.class);
-				subscription.getUsagePoints().add(usagePoint);
-			}
-		} else {
-			String clientId = authentication.getOAuth2Request().getClientId();
-			String ci = clientId;
-			if (ci.indexOf("REGISTRATION_") != -1) {
-				if (ci.substring(0, "REGISTRATION_".length()).equals(
-						"REGISTRATION_")) {
-					ci = ci.substring("REGISTRATION_".length());
+		if (roles.contains("ROLE_USER")) {
+			// For user-based subscriptions, find the retail customer by username
+			RetailCustomer retailCustomer = retailCustomerService.findByUsername(username);
+			if (retailCustomer != null) {
+				subscription.setRetailCustomer(retailCustomer);
+				subscription.setUsagePoints(new ArrayList<UsagePoint>());
+				// set up the subscription's usagePoints list. Keep in mind that right
+				// now this is ALL usage points belonging to the RetailCustomer.
+				// TODO - scope this to only a selected (proper) subset of the
+				// usagePoints as passed
+				// through from the UX or a restful call.
+				List<Long> upIds = resourceService.findAllIdsByXPath(retailCustomer.getId(), UsagePoint.class);
+				Iterator<Long> it = upIds.iterator();
+				while (it.hasNext()) {
+					UsagePoint usagePoint = resourceService.findById(it.next(),
+						UsagePoint.class);
+					subscription.getUsagePoints().add(usagePoint);
 				}
 			}
-			if (ci.indexOf("_admin") != -1) {
-				ci = ci.substring(0, ci.indexOf("_admin"));
+		} else {
+			// For client-based subscriptions, process the client ID
+			String ci = clientId;
+			if (ci != null) {
+				if (ci.indexOf("REGISTRATION_") != -1) {
+					if (ci.substring(0, "REGISTRATION_".length()).equals(
+							"REGISTRATION_")) {
+						ci = ci.substring("REGISTRATION_".length());
+					}
+				}
+				if (ci.indexOf("_admin") != -1) {
+					ci = ci.substring(0, ci.indexOf("_admin"));
+				}
+				subscription.setApplicationInformation(applicationInformationService.findByClientId(ci));
 			}
-			subscription.setApplicationInformation(applicationInformationService.findByClientId(ci));
 			subscription.setRetailCustomer(retailCustomerService.findById((long) 0));
 		}
 		subscription.setLastUpdate(new GregorianCalendar());

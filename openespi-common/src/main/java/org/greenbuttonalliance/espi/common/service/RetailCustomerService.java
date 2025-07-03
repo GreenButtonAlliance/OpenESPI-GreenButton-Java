@@ -22,13 +22,11 @@ package org.greenbuttonalliance.espi.common.service;
 
 import org.greenbuttonalliance.espi.common.domain.legacy.RetailCustomer;
 import org.greenbuttonalliance.espi.common.domain.legacy.Subscription;
-import org.springframework.security.core.userdetails.UserDetailsService;
-
 import java.io.InputStream;
 import java.util.List;
 import java.util.UUID;
 
-public interface RetailCustomerService extends UserDetailsService {
+public interface RetailCustomerService {
 
 	List<RetailCustomer> findAll();
 
@@ -47,5 +45,7 @@ public interface RetailCustomerService extends UserDetailsService {
 	RetailCustomer importResource(InputStream stream);
 
 	Subscription associateByUUID(Long retailCustomerId, UUID uuId);
+
+	RetailCustomer findByUsername(String username);
 
 }

@@ -27,6 +27,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.greenbuttonalliance.espi.common.domain.legacy.DateTimeInterval;
 import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
 
@@ -74,10 +75,11 @@ public class IntervalBlockEntity extends IdentifiedObject {
     /**
      * Collection of interval readings within this block.
      * One-to-many relationship with cascade operations.
-     * Uses eager loading for performance.
+     * Optimized with lazy loading and batch size to prevent N+1 queries.
+     * Large batch size due to potential high volume of interval readings.
      */
-    @OneToMany(mappedBy = "intervalBlock", cascade = CascadeType.ALL, orphanRemoval = true)
-    @LazyCollection(LazyCollectionOption.FALSE)
+    @OneToMany(mappedBy = "intervalBlock", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @BatchSize(size = 100)
     private List<IntervalReadingEntity> intervalReadings = new ArrayList<>();
 
     /**
