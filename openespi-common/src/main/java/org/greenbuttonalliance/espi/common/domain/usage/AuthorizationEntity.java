@@ -24,12 +24,12 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-import org.greenbuttonalliance.espi.common.domain.legacy.DateTimeInterval;
+import org.greenbuttonalliance.espi.common.domain.common.DateTimeInterval;
 import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
-import org.greenbuttonalliance.espi.common.domain.legacy.GrantType;
-import org.greenbuttonalliance.espi.common.domain.legacy.OAuthError;
-import org.greenbuttonalliance.espi.common.domain.legacy.ResponseType;
-import org.greenbuttonalliance.espi.common.domain.legacy.TokenType;
+import org.greenbuttonalliance.espi.common.domain.common.GrantType;
+import org.greenbuttonalliance.espi.common.domain.common.OAuthError;
+import org.greenbuttonalliance.espi.common.domain.common.ResponseType;
+import org.greenbuttonalliance.espi.common.domain.common.TokenType;
 import org.greenbuttonalliance.espi.common.utils.encryption.FieldEncryptionConverter;
 
 import jakarta.persistence.*;
