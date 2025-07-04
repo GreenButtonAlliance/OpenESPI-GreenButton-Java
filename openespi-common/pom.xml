@@ -72,6 +72,8 @@
         </developer>
     </developers>
 
+    <inceptionYear>2025</inceptionYear>
+
     <properties>
         <!-- Spring Boot parent manages version compatibility -->
         <java.version>21</java.version>
