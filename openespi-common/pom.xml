@@ -301,6 +301,21 @@
                 </plugins>
             </build>
         </profile>
+
+        <!-- TestContainers Testing Profiles -->
+        <profile>
+            <id>testcontainers-mysql</id>
+            <properties>
+                <spring.profiles.active>testcontainers-mysql</spring.profiles.active>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>testcontainers-postgresql</id>
+            <properties>
+                <spring.profiles.active>testcontainers-postgresql</spring.profiles.active>
+            </properties>
+        </profile>
     </profiles>
 
     <repositories>

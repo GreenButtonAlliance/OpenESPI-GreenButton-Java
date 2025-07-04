@@ -108,12 +108,98 @@
     </properties>
 
     <profiles>
+        <!-- Development MySQL Profile -->
         <profile>
-            <id>devmysql</id>
+            <id>dev-mysql</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
+                <spring.profiles.active>dev-mysql</spring.profiles.active>
+                <datacustodian.base.url>http://localhost:8080/DataCustodian</datacustodian.base.url>
+                <thirdparty.base.url>http://localhost:8080/ThirdParty</thirdparty.base.url>
+                <authorization.server.url>http://localhost:8080</authorization.server.url>
+            </properties>
+        </profile>
+
+        <!-- Development PostgreSQL Profile -->
+        <profile>
+            <id>dev-postgresql</id>
+            <properties>
+                <spring.profiles.active>dev-postgresql</spring.profiles.active>
+                <datacustodian.base.url>http://localhost:8080/DataCustodian</datacustodian.base.url>
+                <thirdparty.base.url>http://localhost:8080/ThirdParty</thirdparty.base.url>
+                <authorization.server.url>http://localhost:8080</authorization.server.url>
+            </properties>
+        </profile>
+
+        <!-- Local Development Profile with H2 -->
+        <profile>
+            <id>local</id>
+            <properties>
+                <spring.profiles.active>local</spring.profiles.active>
+                <datacustodian.base.url>http://localhost:8080/DataCustodian</datacustodian.base.url>
+                <thirdparty.base.url>http://localhost:8080/ThirdParty</thirdparty.base.url>
+                <authorization.server.url>http://localhost:8080</authorization.server.url>
+            </properties>
+        </profile>
+
+        <!-- Production Profile -->
+        <profile>
+            <id>prod</id>
+            <properties>
+                <spring.profiles.active>prod</spring.profiles.active>
+                <datacustodian.base.url>https://datacustodian.greenbuttonalliance.org</datacustodian.base.url>
+                <thirdparty.base.url>https://thirdparty.greenbuttonalliance.org</thirdparty.base.url>
+                <authorization.server.url>https://auth.greenbuttonalliance.org</authorization.server.url>
+            </properties>
+        </profile>
+
+        <!-- Docker Profile -->
+        <profile>
+            <id>docker</id>
+            <properties>
+                <spring.profiles.active>docker</spring.profiles.active>
+                <datacustodian.base.url>http://datacustodian:8080</datacustodian.base.url>
+                <thirdparty.base.url>http://thirdparty:8080</thirdparty.base.url>
+                <authorization.server.url>http://authorization-server:8080</authorization.server.url>
+            </properties>
+        </profile>
+
+        <!-- AWS GBA Sandbox Profile -->
+        <profile>
+            <id>aws-sandbox</id>
+            <properties>
+                <spring.profiles.active>aws-sandbox</spring.profiles.active>
+                <datacustodian.base.url>https://sandbox.greenbuttonalliance.org:8443/DataCustodian</datacustodian.base.url>
+                <thirdparty.base.url>https://sandbox.greenbuttonalliance.org:8443/ThirdParty</thirdparty.base.url>
+                <authorization.server.url>https://sandbox.greenbuttonalliance.org:8443/Authorization</authorization.server.url>
+            </properties>
+        </profile>
+
+        <!-- TestContainers Testing Profiles -->
+        <profile>
+            <id>testcontainers-mysql</id>
+            <properties>
+                <spring.profiles.active>testcontainers-mysql</spring.profiles.active>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>testcontainers-postgresql</id>
+            <properties>
+                <spring.profiles.active>testcontainers-postgresql</spring.profiles.active>
+            </properties>
+        </profile>
+
+        <!-- Legacy profile maintained for backward compatibility -->
+        <profile>
+            <id>devmysql</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <spring.profiles.active>dev-mysql</spring.profiles.active>
                 <datacustodian.base.url>http://localhost:8080/DataCustodian</datacustodian.base.url>
                 <thirdparty.base.url>http://localhost:8080/ThirdParty</thirdparty.base.url>
                 <template>oauthTemplate</template>
@@ -123,10 +209,12 @@
             </properties>
         </profile>
 
+        <!-- Legacy profile maintained for backward compatibility -->
         <profile>
             <!-- Green Button Alliance AWS Green Button Sandbox -->
             <id>awsgbasandbox</id>
             <properties>
+                <spring.profiles.active>aws-sandbox</spring.profiles.active>
                 <datacustodian.base.url>https://sandbox.greenbuttonalliance.org:8443/DataCustodian</datacustodian.base.url>
                 <thirdparty.base.url>https://sandbox.greenbuttonalliance.org:8443/ThirdParty</thirdparty.base.url>
                 <template>oauthTemplate</template>
