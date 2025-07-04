@@ -21,7 +21,7 @@
 package org.greenbuttonalliance.espi.common.service;
 
 import org.greenbuttonalliance.espi.common.domain.legacy.IntervalBlock;
-import org.greenbuttonalliance.espi.common.domain.legacy.MeterReading;
+import org.greenbuttonalliance.espi.common.domain.usage.MeterReadingEntity;
 import org.greenbuttonalliance.espi.common.domain.legacy.atom.EntryType;
 import org.greenbuttonalliance.espi.common.repositories.usage.IntervalBlockRepository;
 import org.greenbuttonalliance.espi.common.utils.EntryTypeIterator;

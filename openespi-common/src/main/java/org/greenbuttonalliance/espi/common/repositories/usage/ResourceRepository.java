@@ -22,7 +22,7 @@ package org.greenbuttonalliance.espi.common.repositories.usage;
 
 import org.greenbuttonalliance.espi.common.domain.legacy.IdentifiedObject;
 import org.greenbuttonalliance.espi.common.domain.legacy.Linkable;
-import org.greenbuttonalliance.espi.common.domain.legacy.UsagePoint;
+import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;

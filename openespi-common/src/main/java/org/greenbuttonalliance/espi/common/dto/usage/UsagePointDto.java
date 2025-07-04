@@ -20,7 +20,7 @@
 
 package org.greenbuttonalliance.espi.common.dto.usage;
 
-import org.greenbuttonalliance.espi.common.domain.legacy.ServiceCategory;
+import org.greenbuttonalliance.espi.common.domain.common.ServiceCategory;
 import org.greenbuttonalliance.espi.common.dto.SummaryMeasurementDto;
 
 import jakarta.xml.bind.annotation.*;
