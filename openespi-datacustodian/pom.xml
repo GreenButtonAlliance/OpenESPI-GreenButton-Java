@@ -50,19 +50,9 @@
 
     <developers>
         <developer>
-            <id>jteeter</id>
-            <name>John Teeter</name>
-            <email>john.teeter@energyos.org</email>
-        </developer>
-        <developer>
             <id>dcoffin</id>
             <name>Donald F. Coffin</name>
-            <email>donald.coffin@reminetworks.com</email>
-        </developer>
-        <developer>
-            <id>mburns</id>
-            <name>Dr. Martin J. Burns</name>
-            <email>marty@hypertek.us</email>
+            <email>dcoffin@greenbuttonalliance.org</email>
         </developer>
     </developers>
 

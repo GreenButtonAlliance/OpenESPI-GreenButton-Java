@@ -65,36 +65,11 @@
     </scm>
 
     <developers>
-    	<developer>
-    		<id>jteeter</id>
-    		<name>John Teeter</name>
-    		<email>john.teeter@energyos.org</email>
-    	</developer>
-    	<developer>
-    		<id>dcoffin</id>
-    		<name>Donald F. Coffin</name>
-    		<email>donald.coffin@reminetworks.com</email>
-    	</developer>
-    	<developer>
-    		<id>mburns</id>
-    		<name>Dr. Martin J. Burns</name>
-    		<email>marty@hypertek.us</email>
-    	</developer>
-    	<developer>
-    		<id>apliszka</id>
-    		<name>Andy Pliszka</name>
-    		<email>apliska@pivotal.io</email>
-    	</developer>
-    	<developer>
-    		<id>rclutton</id>
-    		<name>Robbie Clutton</name>
-    		<email>rclutton@pivotal.io</email>
-    	</developer>
-    	<developer>
-    		<id>wramsey</id>
-    		<name>William Ramsey</name>
-    		<email>wramsey@pivotal.io</email>
-    	</developer>
+        <developer>
+            <id>dcoffin</id>
+            <name>Donald F. Coffin</name>
+            <email>dcoffin@greenbuttonalliance.org</email>
+        </developer>
     </developers>
 
     <properties>
