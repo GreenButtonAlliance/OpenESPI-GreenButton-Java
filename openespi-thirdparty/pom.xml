@@ -192,37 +192,6 @@
             </properties>
         </profile>
 
-        <!-- Legacy profile maintained for backward compatibility -->
-        <profile>
-            <id>devmysql</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <properties>
-                <spring.profiles.active>dev-mysql</spring.profiles.active>
-                <datacustodian.base.url>http://localhost:8080/DataCustodian</datacustodian.base.url>
-                <thirdparty.base.url>http://localhost:8080/ThirdParty</thirdparty.base.url>
-                <template>oauthTemplate</template>
-                <profile>devmysql</profile>
-                <database>mysql</database>
-                <hbm2ddl_auto>none</hbm2ddl_auto>
-            </properties>
-        </profile>
-
-        <!-- Legacy profile maintained for backward compatibility -->
-        <profile>
-            <!-- Green Button Alliance AWS Green Button Sandbox -->
-            <id>awsgbasandbox</id>
-            <properties>
-                <spring.profiles.active>aws-sandbox</spring.profiles.active>
-                <datacustodian.base.url>https://sandbox.greenbuttonalliance.org:8443/DataCustodian</datacustodian.base.url>
-                <thirdparty.base.url>https://sandbox.greenbuttonalliance.org:8443/ThirdParty</thirdparty.base.url>
-                <template>oauthTemplate</template>
-                <profile>awsgbasandbox</profile>
-                <database>mysql</database>
-                <hbm2ddl_auto>none</hbm2ddl_auto>
-            </properties>
-        </profile>
     </profiles>
 
     <dependencies>

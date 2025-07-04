@@ -116,18 +116,6 @@
     </properties>
 
     <profiles>
-        <!-- Legacy profile maintained for backward compatibility -->
-        <profile>
-            <id>dev</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <properties>
-                <spring.profiles.active>local</spring.profiles.active>
-                <profile>local</profile>
-                <database>h2</database>
-            </properties>
-        </profile>
         
         <!-- Modern Spring Boot 3.5 profiles -->
         <profile>
@@ -202,29 +190,6 @@
             </properties>
         </profile>
         
-        <!-- Legacy profile maintained for backward compatibility -->
-        <profile>
-            <id>devmysql</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <properties>
-                <spring.profiles.active>dev-mysql</spring.profiles.active>
-                <profile>dev-mysql</profile>
-                <database>mysql</database>
-            </properties>
-        </profile>
-        
-        <!-- Legacy profile maintained for backward compatibility -->
-        <profile>
-			<!-- Green Button Alliance AWS Green Button Sandbox -->
-        	<id>awsgbasandbox</id>
-        	<properties>
-        		<spring.profiles.active>aws-sandbox</spring.profiles.active>
-        		<profile>aws-sandbox</profile>
-        		<database>mysql</database>
-        	</properties>
-        </profile>
         <profile>
             <!-- Profile for running only entity tests without mapper compilation issues -->
             <id>entity-tests-only</id>
