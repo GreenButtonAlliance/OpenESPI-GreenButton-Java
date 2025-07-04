@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="utf-8">
+    <title>Error - OpenESPI Third Party</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+
+<body class="bg-light">
+
+<!-- Navigation -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+        <a class="navbar-brand" href="/">
+            <i class="bi bi-lightning-charge-fill"></i>
+            OpenESPI Third Party
+        </a>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-8 col-lg-6">
+            <div class="text-center">
+                <i class="bi bi-exclamation-triangle text-danger" style="font-size: 5rem;"></i>
+                <h1 class="mt-3" th:text="${status} ?: 'Error'">Error</h1>
+                <p class="lead text-muted" th:text="${error} ?: 'An unexpected error occurred'">
+                    An unexpected error occurred
+                </p>
+                
+                <div class="mt-4" th:if="${message}">
+                    <div class="alert alert-danger" role="alert">
+                        <strong>Error Details:</strong>
+                        <span th:text="${message}"></span>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <a href="/" class="btn btn-primary">
+                        <i class="bi bi-house"></i>
+                        Return to Home
+                    </a>
+                    <button onclick="history.back()" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i>
+                        Go Back
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Footer -->
+<footer class="bg-dark text-light mt-5 py-4">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6">
+                <h5>Green Button Alliance</h5>
+                <p class="mb-0">Advancing energy data standardization and interoperability.</p>
+            </div>
+            <div class="col-md-6 text-md-end">
+                <small>&copy; 2024 Green Button Alliance, Inc. All rights reserved.</small>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

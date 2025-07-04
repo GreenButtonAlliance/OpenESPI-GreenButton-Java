@@ -54,6 +54,5 @@ public interface DateTimeIntervalMapper {
      */
     @Mapping(target = "start", source = "start")
     @Mapping(target = "duration", source = "duration")
-    @Mapping(target = "extension", ignore = true) // Extension field not present in DTO
     DateTimeInterval toEntity(DateTimeIntervalDto dto);
 }

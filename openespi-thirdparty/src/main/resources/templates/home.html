@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <meta charset="utf-8">
+    <title>OpenESPI Third Party - Green Button Alliance</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Green Button Third Party Reference Implementation">
+    <meta name="author" content="Green Button Alliance">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+
+<body>
+
+<!-- Navigation -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+        <a class="navbar-brand" href="/">
+            <i class="bi bi-lightning-charge-fill"></i>
+            OpenESPI Third Party
+        </a>
+        
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link active" href="/">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/about">About</a>
+                </li>
+            </ul>
+            
+            <ul class="navbar-nav">
+                <li class="nav-item" sec:authorize="!isAuthenticated()">
+                    <a class="nav-link" href="/login">
+                        <i class="bi bi-person-circle"></i>
+                        Login
+                    </a>
+                </li>
+                <li class="nav-item dropdown" sec:authorize="isAuthenticated()">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-person-circle"></i>
+                        <span sec:authentication="name">User</span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="/logout">Logout</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <!-- Hero Section -->
+    <div class="hero-section bg-light rounded p-5 mb-4">
+        <div class="row">
+            <div class="col-lg-8">
+                <h1 class="display-5 fw-bold">Welcome to the Green Button Third Party</h1>
+                <p class="lead">
+                    The Green Button Alliance has prepared a reference Green Button Third Party implementation.
+                    This implementation supports a full complement of Green Button facilities and, as an 
+                    <a href="https://github.com/GreenButtonAlliance" target="_blank">Open Source project</a>, 
+                    is freely available for download by any interested parties.
+                </p>
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="http://www.greenbuttondata.org" target="_blank" class="btn btn-primary btn-lg">
+                        Learn more about Green Button
+                    </a>
+                    <a href="https://github.com/GreenButtonAlliance" target="_blank" class="btn btn-outline-primary btn-lg">
+                        Open Source Projects
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-4 text-center">
+                <i class="bi bi-lightning-charge-fill text-primary" style="font-size: 8rem;"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Features Row -->
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <i class="bi bi-cloud-arrow-down text-primary" style="font-size: 3rem;"></i>
+                    </div>
+                    <h3 class="card-title">Third Party Services</h3>
+                    <p class="card-text">
+                        Green Button Third Parties may, with the authorization of the Retail Customer, 
+                        subscribe to receive energy and resource usage information from certified 
+                        Green Button Data Custodians. Subscriptions, using Atom Publishing, allow 
+                        the Third Party to provide new and innovative consumer services!
+                    </p>
+                    <a href="#" class="btn btn-outline-primary">View details</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <i class="bi bi-book text-primary" style="font-size: 3rem;"></i>
+                    </div>
+                    <h3 class="card-title">Developers Guide</h3>
+                    <p class="card-text">
+                        The Green Button Developers Guide provides both overview and detailed 
+                        information on the mechanisms of Green Button. You can learn about Atom 
+                        feeds and the OData standard from which Green Button was derived, as well 
+                        as the details of the Energy Usage Information.
+                    </p>
+                    <a href="http://energyos.github.io/OpenESPI-GreenButton-API-Documentation/" 
+                       target="_blank" class="btn btn-outline-primary">View details</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <i class="bi bi-code-slash text-primary" style="font-size: 3rem;"></i>
+                    </div>
+                    <h3 class="card-title">API Reference</h3>
+                    <p class="card-text">
+                        Green Button services are available via RESTful APIs. APIs allow developers 
+                        to use the Green Button Data Custodian and Third Party servers to develop 
+                        new applications, providing services and features to better engage Retail 
+                        Customers to understand their energy usage.
+                    </p>
+                    <a href="http://energyos.github.io/OpenESPI-GreenButton-API-Documentation/API/" 
+                       target="_blank" class="btn btn-outline-primary">View details</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Footer -->
+<footer class="bg-dark text-light mt-5 py-4">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6">
+                <h5>Green Button Alliance</h5>
+                <p class="mb-0">Advancing energy data standardization and interoperability.</p>
+            </div>
+            <div class="col-md-6 text-md-end">
+                <small>&copy; 2024 Green Button Alliance, Inc. All rights reserved.</small>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

@@ -20,39 +20,50 @@
 
 package org.greenbuttonalliance.espi.thirdparty.web;
 
-import org.greenbuttonalliance.espi.common.domain.Routes;
+import org.greenbuttonalliance.espi.common.constants.Routes;
+import org.greenbuttonalliance.espi.common.constants.UserRoles;
+import org.greenbuttonalliance.espi.common.service.RetailCustomerService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.GetMapping;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.security.Principal;
 
 @Controller
-public class HomeController extends BaseController {
+public class HomeController {
 
-	@RequestMapping(value = Routes.ROOT, method = RequestMethod.GET)
-	public String index(Principal principal) {
-		if (isUserCustodian(principal)) {
+	@Autowired
+	private RetailCustomerService retailCustomerService;
+
+	@GetMapping(Routes.ROOT)
+	public String index(HttpServletRequest request, Principal principal) {
+		if (request.isUserInRole(UserRoles.ROLE_CUSTODIAN)) {
 			return "redirect:/custodian/home";
-		} else if (isUserUserRole(principal)) {
-			return "redirect:/RetailCustomer/"
-					+ currentCustomer(principal).getId() + "/home";
+		} else if (request.isUserInRole(UserRoles.ROLE_USER)) {
+			if (principal instanceof Authentication auth) {
+				var customer = retailCustomerService.findByUsername(auth.getName());
+				if (customer != null) {
+					return "redirect:/RetailCustomer/" + customer.getId() + "/home";
+				}
+			}
 		}
 
 		return "home";
 	}
 
-	@RequestMapping(value = Routes.HOME, method = RequestMethod.GET)
-	public String home(Principal principal) {
-		return index(principal);
+	@GetMapping(Routes.HOME)
+	public String home(HttpServletRequest request, Principal principal) {
+		return index(request, principal);
 	}
 
-	@RequestMapping(value = Routes.TERMS_OF_SERVICE, method = RequestMethod.GET)
+	@GetMapping("/TermsOfService")
 	public String termsOfService() {
 		return "/TermsOfService";
 	}
 
-	@RequestMapping(value = Routes.USAGE_POLICY, method = RequestMethod.GET)
+	@GetMapping("/UsagePolicy")
 	public String usagePolicy() {
 		return "/UsagePolicy";
 	}
