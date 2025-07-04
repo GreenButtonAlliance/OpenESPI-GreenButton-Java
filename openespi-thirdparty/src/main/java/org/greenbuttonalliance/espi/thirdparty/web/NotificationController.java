@@ -20,29 +20,34 @@
 
 package org.greenbuttonalliance.espi.thirdparty.web;
 
-import org.greenbuttonalliance.espi.common.domain.Authorization;
-import org.greenbuttonalliance.espi.common.domain.BatchList;
-import org.greenbuttonalliance.espi.common.domain.RetailCustomer;
-import org.greenbuttonalliance.espi.common.domain.Routes;
+import org.greenbuttonalliance.espi.common.domain.legacy_deprecated.Authorization;
+import org.greenbuttonalliance.espi.common.domain.legacy_deprecated.BatchList;
+import org.greenbuttonalliance.espi.common.domain.legacy_deprecated.RetailCustomer;
+import org.greenbuttonalliance.espi.common.domain.legacy_deprecated.Routes;
 import org.greenbuttonalliance.espi.common.service.*;
+import org.greenbuttonalliance.espi.thirdparty.service.WebClientService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
+import org.springframework.http.*;
 import org.springframework.oxm.jaxb.Jaxb2Marshaller;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
-import javax.servlet.http.HttpServletResponse;
-import javax.xml.transform.stream.StreamSource;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.xml.transform.stream.StreamSource;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.concurrent.CompletableFuture;
 
 @Controller
 public class NotificationController extends BaseController {
@@ -60,7 +65,9 @@ public class NotificationController extends BaseController {
 	private ImportService importService;
 
 	@Autowired
-	private RestTemplate restTemplate;
+	private WebClientService webClientService;
+
+	private static final Logger logger = LoggerFactory.getLogger(NotificationController.class);
 
 	@Autowired
 	private AuthorizationService authorizationService;
@@ -69,20 +76,25 @@ public class NotificationController extends BaseController {
 	@Qualifier(value = "atomMarshaller")
 	public Jaxb2Marshaller marshaller;
 
-	@RequestMapping(value = Routes.THIRD_PARTY_NOTIFICATION, method = RequestMethod.POST)
-	public void notification(HttpServletResponse response,
-			InputStream inputStream) throws IOException {
+	@PostMapping(Routes.THIRD_PARTY_NOTIFICATION)
+	public ResponseEntity<Void> notification(@RequestBody String xmlPayload) {
 
-		BatchList batchList = (BatchList) marshaller
-				.unmarshal(new StreamSource(inputStream));
+		try {
+			ByteArrayInputStream inputStream = new ByteArrayInputStream(xmlPayload.getBytes());
+			BatchList batchList = (BatchList) marshaller.unmarshal(new StreamSource(inputStream));
 
-		batchListService.persist(batchList);
+			batchListService.persist(batchList);
 
-		for (String resourceUri : batchList.getResources()) {
-			doImportAsynchronously(resourceUri);
+			for (String resourceUri : batchList.getResources()) {
+				doImportAsynchronously(resourceUri);
+			}
+
+			logger.info("Successfully processed notification with {} resources", batchList.getResources().size());
+			return ResponseEntity.ok().build();
+		} catch (Exception e) {
+			logger.error("Error processing notification", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 		}
-
-		response.setStatus(HttpServletResponse.SC_OK);
 	}
 
 	@Async
@@ -92,8 +104,7 @@ public class NotificationController extends BaseController {
 		// thread)
 		// This must be provably secure b/c the access_token is visible here
 		String threadName = Thread.currentThread().getName();
-		System.out.printf("Start Asynchronous Input: %s: %s\n  ", threadName,
-				subscriptionUri);
+		logger.debug("Start Asynchronous Input: {}: {}", threadName, subscriptionUri);
 
 		String resourceUri = subscriptionUri;
 		String accessToken = "";
@@ -112,8 +123,8 @@ public class NotificationController extends BaseController {
 				String command = "sftp mget "
 						+ resourceUri.substring(resourceUri.indexOf("sftp://"));
 
-				System.out.println("[Manage] Restricted Management Interface");
-				System.out.println("[Manage] Request: " + command);
+				logger.info("[Manage] Restricted Management Interface");
+				logger.info("[Manage] Request: {}", command);
 
 				Process p = Runtime.getRuntime().exec(command);
 
@@ -121,10 +132,10 @@ public class NotificationController extends BaseController {
 				// to add it into the workspace.
 
 			} catch (IOException e1) {
-				System.out.printf("**** [Manage] Error: %s\n", e1.toString());
+				logger.error("**** [Manage] IO Error: {}", e1.toString());
 
 			} catch (Exception e) {
-				System.out.printf("**** [Manage] Error: %s\n", e.toString());
+				logger.error("**** [Manage] Error: {}", e.toString());
 			}
 
 		} else {
@@ -159,10 +170,9 @@ public class NotificationController extends BaseController {
 						Authorization.class);
 
 				if (x.getResourceURI().equals(resourceUri)) {
-					System.out.println("ResourceURIs Equal:" + resourceUri);
+					logger.debug("ResourceURIs Equal: {}", resourceUri);
 				} else {
-					System.out.println("ResourceURIs Not - Equal:"
-							+ resourceUri);
+					logger.debug("ResourceURIs Not Equal: {}", resourceUri);
 				}
 				authorization = resourceService.findByResourceUri(resourceUri,
 						Authorization.class);
@@ -170,46 +180,36 @@ public class NotificationController extends BaseController {
 				accessToken = authorization.getAccessToken();
 
 				try {
+					// Create authenticated WebClient for resource access
+					WebClient authenticatedClient = webClientService.createAuthenticatedWebClient(accessToken);
 
-					HttpHeaders requestHeaders = new HttpHeaders();
-					requestHeaders
-							.set("Authorization", "Bearer " + accessToken);
-					@SuppressWarnings({ "unchecked", "rawtypes" })
-					HttpEntity<?> requestEntity = new HttpEntity(requestHeaders);
+					// Get the subscription data using WebClient
+					String responseBody = webClientService.getForObject(
+						authenticatedClient, subscriptionUri, String.class);
 
-					// get the subscription
+					if (responseBody != null) {
+						// Import data into the repository
+						ByteArrayInputStream bs = new ByteArrayInputStream(responseBody.getBytes());
+						importService.importData(bs, retailCustomer.getId());
+						logger.debug("Successfully imported data from subscription: {}", subscriptionUri);
+					} else {
+						logger.warn("No data received from subscription: {}", subscriptionUri);
+					}
 
-					HttpEntity<String> httpResult = restTemplate.exchange(
-							subscriptionUri, HttpMethod.GET, requestEntity,
-							String.class);
-
-					// import it into the repository
-					ByteArrayInputStream bs = new ByteArrayInputStream(
-							httpResult.getBody().toString().getBytes());
-
-					importService.importData(bs, retailCustomer.getId());
-
+				} catch (WebClientResponseException e) {
+					logger.error("HTTP error during subscription import: {} - {}", 
+						e.getStatusCode(), e.getResponseBodyAsString());
 				} catch (Exception e) {
-					// Log exception so that issue can be investigated include
-					// stack trace to help locate issue
-
-					System.out
-							.printf("\nNotificationController -- Asynchronous Input:\n     Cause = %s\n     Description = %s\n\n",
-									e.getClass(), e.getMessage());
-					e.printStackTrace();
+					logger.error("Error during asynchronous import from subscription: {}", subscriptionUri, e);
 				}
 
 			} catch (EmptyResultDataAccessException e) {
-				// No authorization, so log the fact and move on. It will
-				// get imported later
-				System.out
-						.printf("\nNotificationController -- Asynchronous Input:\n     Cause = %s\n     Description = %s\n\n",
-								e.getClass(), e.getMessage());
+				// No authorization found - data will be imported later when authorization is available
+				logger.info("No authorization found for resource URI: {} - will import later", resourceUri);
 			}
 		}
 
-		System.out.printf("Asynchronous Input Completed %s: %s\n", threadName,
-				resourceUri);
+		logger.debug("Asynchronous import completed for thread {}: {}", threadName, resourceUri);
 	}
 
 	public void setBatchListService(BatchListService batchListService) {

@@ -20,48 +20,51 @@
 
 package org.greenbuttonalliance.espi.thirdparty.web;
 
-import org.greenbuttonalliance.espi.common.domain.*;
+import org.greenbuttonalliance.espi.common.domain.usage.entity.AuthorizationEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.entity.ApplicationInformationEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.entity.RetailCustomerEntity;
 import org.greenbuttonalliance.espi.common.service.AuthorizationService;
+import org.greenbuttonalliance.espi.common.service.RetailCustomerService;
 import org.greenbuttonalliance.espi.thirdparty.repository.UsagePointRESTRepository;
+import org.greenbuttonalliance.espi.thirdparty.service.WebClientService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.common.exceptions.UserDeniedAuthorizationException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
-import javax.persistence.NoResultException;
-import javax.xml.bind.JAXBException;
+import jakarta.persistence.NoResultException;
+import jakarta.xml.bind.JAXBException;
 import java.security.Principal;
-import java.util.GregorianCalendar;
+import java.time.LocalDateTime;
 
 @Controller
-public class AuthorizationController extends BaseController {
+public class AuthorizationController {
+
+	private static final Logger logger = LoggerFactory.getLogger(AuthorizationController.class);
 
 	@Autowired
 	private AuthorizationService authorizationService;
-
-	// TODO The following is legacy code that will do the import of a
-	// subscription
-	// from a DC. Needs to be separated out of the "repository" level and be
-	// callable as a TP specific service level.
+	
+	@Autowired
+	private RetailCustomerService retailCustomerService;
 
 	@Autowired
 	private UsagePointRESTRepository usagePointRESTRepository;
 
 	@Autowired
-	@Qualifier("clientRestTemplateFactory")
-	private ClientRestTemplateFactory templateFactory;
+	private WebClientService webClientService;
 
-	@RequestMapping(value = Routes.THIRD_PARTY_OAUTH_CODE_CALLBACK, method = RequestMethod.GET)
+	@GetMapping("/oauth/callback")
 	public String authorization(
-			String code,
-			String state,
+			@RequestParam(required = false) String code,
+			@RequestParam(required = false) String state,
 			ModelMap model,
 			Principal principal,
 			@RequestParam(value = "error", required = false) String error,

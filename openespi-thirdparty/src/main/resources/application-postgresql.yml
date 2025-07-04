@@ -1,0 +1,27 @@
+# OpenESPI Third Party PostgreSQL Configuration
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/openespi_thirdparty}
+    username: ${DB_USERNAME:espi_user}
+    password: ${DB_PASSWORD:espi_password}
+    driver-class-name: org.postgresql.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+    show-sql: false
+
+# Logging for PostgreSQL debugging
+logging:
+  level:
+    org.postgresql: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE

@@ -103,7 +103,6 @@
 
         <!-- Spring Boot 3.5 provides all Spring and security versions -->
         <openespi-common.version>1.3-SNAPSHOT</openespi-common.version>
-        <mysql.version>8.0.33</mysql.version>
 
         <maven.build.timestamp.format>yyyy/MM/dd hh:mm:ss a,z</maven.build.timestamp.format>
     </properties>
@@ -175,6 +174,10 @@
             <groupId>org.thymeleaf.extras</groupId>
             <artifactId>thymeleaf-extras-springsecurity6</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
 
         <!-- Databases -->
         <dependency>
@@ -185,7 +188,20 @@
         <dependency>
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
-            <version>${mysql.version}</version>
+            <version>9.1.0</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.7.4</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>2.3.232</version>
+            <scope>runtime</scope>
         </dependency>
 
         <!-- XML processing -->
