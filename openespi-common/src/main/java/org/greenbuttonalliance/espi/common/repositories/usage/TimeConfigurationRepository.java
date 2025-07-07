@@ -19,7 +19,7 @@
 
 package org.greenbuttonalliance.espi.common.repositories.usage;
 
-import org.greenbuttonalliance.espi.common.domain.legacy.TimeConfiguration;
+import org.greenbuttonalliance.espi.common.domain.usage.TimeConfigurationEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -32,27 +32,27 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface TimeConfigurationRepository extends JpaRepository<TimeConfiguration, Long> {
+public interface TimeConfigurationRepository extends JpaRepository<TimeConfigurationEntity, UUID> {
 
 	// JpaRepository provides: save(), findById(), findAll(), deleteById(), etc.
 
 	@Modifying
 	@Transactional
-	@Query("DELETE FROM TimeConfiguration t WHERE t.id = :id")
-	void deleteById(@Param("id") Long id);
+	@Query("DELETE FROM TimeConfigurationEntity t WHERE t.id = :id")
+	void deleteById(@Param("id") UUID id);
 
-	Optional<TimeConfiguration> findByUuid(UUID uuid);
+	Optional<TimeConfigurationEntity> findByUuid(UUID uuid);
 
-	@Query("SELECT t.id FROM TimeConfiguration t")
-	List<Long> findAllIds();
+	@Query("SELECT t.id FROM TimeConfigurationEntity t")
+	List<UUID> findAllIds();
 
-	@Query("SELECT usagePoint.localTimeParameters.id FROM UsagePoint usagePoint WHERE usagePoint.id = :usagePointId")
-	List<Long> findAllIdsByUsagePointId(@Param("usagePointId") Long usagePointId);
+	@Query("SELECT usagePoint.localTimeParameters.id FROM UsagePointEntity usagePoint WHERE usagePoint.id = :usagePointId")
+	List<UUID> findAllIdsByUsagePointId(@Param("usagePointId") UUID usagePointId);
 
-	@Query("SELECT DISTINCT t.id FROM TimeConfiguration t")
-	List<Long> findAllIdsByXpath0();
+	@Query("SELECT DISTINCT t.id FROM TimeConfigurationEntity t")
+	List<UUID> findAllIdsByXpath0();
 
-	@Query("SELECT DISTINCT t.id FROM TimeConfiguration t WHERE t.id = :o1Id")
-	Optional<Long> findIdsByXpath(@Param("o1Id") Long o1Id);
+	@Query("SELECT DISTINCT t.id FROM TimeConfigurationEntity t WHERE t.id = :o1Id")
+	Optional<UUID> findIdsByXpath(@Param("o1Id") UUID o1Id);
 
 }

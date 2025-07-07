@@ -19,7 +19,7 @@
 
 package org.greenbuttonalliance.espi.common.repositories.usage;
 
-import org.greenbuttonalliance.espi.common.domain.legacy.ServiceDeliveryPoint;
+import org.greenbuttonalliance.espi.common.domain.usage.ServiceDeliveryPointEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -28,34 +28,35 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Repository
-public interface ServiceDeliveryPointRepository extends JpaRepository<ServiceDeliveryPoint, Long> {
+public interface ServiceDeliveryPointRepository extends JpaRepository<ServiceDeliveryPointEntity, UUID> {
 
 	// JpaRepository provides: save(), findById(), findAll(), deleteById(), etc.
 
 	@Modifying
 	@Transactional
-	@Query("DELETE FROM ServiceDeliveryPoint s WHERE s.id = :id")
-	void deleteById(@Param("id") Long id);
+	@Query("DELETE FROM ServiceDeliveryPointEntity s WHERE s.id = :id")
+	void deleteById(@Param("id") UUID id);
 
-	@Query("SELECT s.id FROM ServiceDeliveryPoint s")
-	List<Long> findAllIds();
+	@Query("SELECT s.id FROM ServiceDeliveryPointEntity s")
+	List<UUID> findAllIds();
 
-	@Query("SELECT s FROM ServiceDeliveryPoint s WHERE s.name = :name")
-	List<ServiceDeliveryPoint> findByName(@Param("name") String name);
+	@Query("SELECT s FROM ServiceDeliveryPointEntity s WHERE s.name = :name")
+	List<ServiceDeliveryPointEntity> findByName(@Param("name") String name);
 
-	@Query("SELECT s FROM ServiceDeliveryPoint s WHERE s.tariffProfile = :tariffProfile")
-	List<ServiceDeliveryPoint> findByTariffProfile(@Param("tariffProfile") String tariffProfile);
+	@Query("SELECT s FROM ServiceDeliveryPointEntity s WHERE s.tariffProfile = :tariffProfile")
+	List<ServiceDeliveryPointEntity> findByTariffProfile(@Param("tariffProfile") String tariffProfile);
 
-	@Query("SELECT s FROM ServiceDeliveryPoint s WHERE s.customerAgreement = :customerAgreement")
-	List<ServiceDeliveryPoint> findByCustomerAgreement(@Param("customerAgreement") String customerAgreement);
+	@Query("SELECT s FROM ServiceDeliveryPointEntity s WHERE s.customerAgreement = :customerAgreement")
+	List<ServiceDeliveryPointEntity> findByCustomerAgreement(@Param("customerAgreement") String customerAgreement);
 
-	@Query("SELECT s FROM ServiceDeliveryPoint s WHERE LOWER(s.name) LIKE LOWER(CONCAT('%', :searchText, '%'))")
-	List<ServiceDeliveryPoint> findByNameContaining(@Param("searchText") String searchText);
+	@Query("SELECT s FROM ServiceDeliveryPointEntity s WHERE LOWER(s.name) LIKE LOWER(CONCAT('%', :searchText, '%'))")
+	List<ServiceDeliveryPointEntity> findByNameContaining(@Param("searchText") String searchText);
 
 	// Additional utility methods
-	@Query("SELECT COUNT(s) FROM ServiceDeliveryPoint s WHERE s.tariffProfile = :tariffProfile")
+	@Query("SELECT COUNT(s) FROM ServiceDeliveryPointEntity s WHERE s.tariffProfile = :tariffProfile")
 	Long countByTariffProfile(@Param("tariffProfile") String tariffProfile);
 
 }

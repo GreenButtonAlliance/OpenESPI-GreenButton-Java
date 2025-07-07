@@ -21,8 +21,6 @@ package org.greenbuttonalliance.espi.common.service;
 
 import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.UsageSummaryEntity;
-import org.greenbuttonalliance.espi.common.domain.legacy.atom.EntryType;
-import org.greenbuttonalliance.espi.common.utils.EntryTypeIterator;
 
 import java.io.InputStream;
 import java.util.List;
@@ -33,29 +31,23 @@ import java.util.UUID;
  */
 public interface UsageSummaryService {
 
-    UsageSummary findByUUID(UUID uuid);
+    UsageSummaryEntity findByUUID(UUID uuid);
 
-    List<UsageSummary> findAllByUsagePoint(UsagePoint usagePoint);
+    List<UsageSummaryEntity> findAllByUsagePoint(UsagePointEntity usagePoint);
 
-    String feedFor(List<UsageSummary> usageSummaries);
+    String feedFor(List<UsageSummaryEntity> usageSummaries);
 
-    String entryFor(UsageSummary usageSummary);
+    String entryFor(UsageSummaryEntity usageSummary);
 
-    void associateByUUID(UsagePoint usagePoint, UUID uuid);
+    void associateByUUID(UsagePointEntity usagePoint, UUID uuid);
 
-    void persist(UsageSummary usageSummary);
+    void persist(UsageSummaryEntity usageSummary);
 
-    UsageSummary findById(Long usageSummaryId);
+    UsageSummaryEntity findById(Long usageSummaryId);
 
-    EntryType findEntryType(Long retailCustomerId, Long usagePointId,
-                            Long usageSummaryId);
+    void add(UsageSummaryEntity usageSummary);
 
-    EntryTypeIterator findEntryTypeIterator(Long retailCustomerId,
-                                            Long usagePointId);
+    void delete(UsageSummaryEntity usageSummary);
 
-    void add(UsageSummary usageSummary);
-
-    void delete(UsageSummary usageSummary);
-
-    UsageSummary importResource(InputStream stream);
+    UsageSummaryEntity importResource(InputStream stream);
 }

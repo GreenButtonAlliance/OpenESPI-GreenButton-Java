@@ -19,8 +19,7 @@
 
 package org.greenbuttonalliance.espi.common.repositories.usage;
 
-import org.greenbuttonalliance.espi.common.domain.legacy.IdentifiedObject;
-import org.greenbuttonalliance.espi.common.domain.legacy.Linkable;
+import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
 import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,61 +32,61 @@ public interface ResourceRepository {
 	void flush();
 
 	List<IdentifiedObject> findAllParentsByRelatedHref(String href,
-			Linkable linkable);
+			IdentifiedObject linkable);
 
-	List<IdentifiedObject> findAllRelated(Linkable linkable);
+	List<IdentifiedObject> findAllRelated(IdentifiedObject linkable);
 
 	<T> T findByUUID(UUID uuid, Class<T> clazz);
 
-	UsagePoint findByUUID(UUID uuid);
+	UsagePointEntity findByUUID(UUID uuid);
 
 	@Transactional(rollbackFor = { jakarta.xml.bind.JAXBException.class }, noRollbackFor = {
 			jakarta.persistence.NoResultException.class,
 			org.springframework.dao.EmptyResultDataAccessException.class })
-	void update(UsagePoint resource);
+	void update(UsagePointEntity resource);
 
 	<T extends IdentifiedObject> T findById(Long id, Class<T> clazz);
 
-	<T extends IdentifiedObject> List<Long> findAllIds(Class<T> clazz);
+	<T extends IdentifiedObject> List<UUID> findAllIds(Class<T> clazz);
 
-	<T extends IdentifiedObject> List<Long> findAllIdsByUsagePointId(
-			Long usagePointId, Class<T> clazz);
+	<T extends IdentifiedObject> List<UUID> findAllIdsByUsagePointId(
+			UUID usagePointId, Class<T> clazz);
 
-	<T extends IdentifiedObject> List<Long> findAllIdsByXPath(Long id1,
+	<T extends IdentifiedObject> List<UUID> findAllIdsByXPath(UUID id1,
 			Class<T> clazz);
 
-	<T extends IdentifiedObject> List<Long> findAllIdsByXPath(Long id1,
-			Long id2, Class<T> clazz);
+	<T extends IdentifiedObject> List<UUID> findAllIdsByXPath(UUID id1,
+			UUID id2, Class<T> clazz);
 
-	<T extends IdentifiedObject> List<Long> findAllIdsByXPath(Long id1,
-			Long id2, Long id3, Class<T> clazz);
+	<T extends IdentifiedObject> List<UUID> findAllIdsByXPath(UUID id1,
+			UUID id2, UUID id3, Class<T> clazz);
 
-	<T extends IdentifiedObject> List<Long> findAllIdsByXPath(Class<T> clazz);
+	<T extends IdentifiedObject> List<UUID> findAllIdsByXPath(Class<T> clazz);
 
-	<T extends IdentifiedObject> Long findIdByXPath(Long id1, Class<T> clazz);
+	<T extends IdentifiedObject> UUID findIdByXPath(UUID id1, Class<T> clazz);
 
-	<T extends IdentifiedObject> Long findIdByXPath(Long id1, Long id2,
+	<T extends IdentifiedObject> UUID findIdByXPath(UUID id1, UUID id2,
 			Class<T> clazz);
 
-	<T extends IdentifiedObject> Long findIdByXPath(Long id1, Long id2,
-			Long id3, Class<T> clazz);
+	<T extends IdentifiedObject> UUID findIdByXPath(UUID id1, UUID id2,
+			UUID id3, Class<T> clazz);
 
-	<T extends IdentifiedObject> Long findIdByXPath(Long id1, Long id2,
-			Long id3, Long id4, Class<T> clazz);
+	<T extends IdentifiedObject> UUID findIdByXPath(UUID id1, UUID id2,
+			UUID id3, UUID id4, Class<T> clazz);
 
 	<T extends IdentifiedObject> T findByResourceUri(String uri, Class<T> clazz);
 
 	@Transactional
-	<T extends IdentifiedObject> void deleteById(Long id, Class<T> clazz);
+	<T extends IdentifiedObject> void deleteById(UUID id, Class<T> clazz);
 
-	<T extends IdentifiedObject> void deleteByXPathId(Long id1, Long id2,
+	<T extends IdentifiedObject> void deleteByXPathId(UUID id1, UUID id2,
 			Class<T> clazz);
 
-	<T extends IdentifiedObject> void deleteByXPathId(Long id1, Long id2,
-			Long id3, Class<T> clazz);
+	<T extends IdentifiedObject> void deleteByXPathId(UUID id1, UUID id2,
+			UUID id3, Class<T> clazz);
 
-	<T extends IdentifiedObject> void deleteByXPathId(Long id1, Long id2,
-			Long id3, Long id4, Class<T> clazz);
+	<T extends IdentifiedObject> void deleteByXPathId(UUID id1, UUID id2,
+			UUID id3, UUID id4, Class<T> clazz);
 
 	<T extends IdentifiedObject> T merge(IdentifiedObject resource);
 

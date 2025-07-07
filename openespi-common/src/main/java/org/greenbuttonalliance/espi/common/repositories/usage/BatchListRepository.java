@@ -19,12 +19,14 @@
 
 package org.greenbuttonalliance.espi.common.repositories.usage;
 
-import org.greenbuttonalliance.espi.common.domain.legacy.BatchList;
+import org.greenbuttonalliance.espi.common.domain.usage.BatchListEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.UUID;
+
 @Repository
-public interface BatchListRepository extends JpaRepository<BatchList, Long> {
+public interface BatchListRepository extends JpaRepository<BatchListEntity, UUID> {
 	// JpaRepository provides: save(), findAll(), findById(), deleteById(), etc.
 	// BatchList entity has no NamedQueries, so no additional methods are needed
 	// Standard CRUD operations are sufficient for this simple entity

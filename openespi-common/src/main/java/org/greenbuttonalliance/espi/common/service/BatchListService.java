@@ -19,13 +19,13 @@
 
 package org.greenbuttonalliance.espi.common.service;
 
-import org.greenbuttonalliance.espi.common.domain.legacy.BatchList;
+import org.greenbuttonalliance.espi.common.domain.usage.BatchListEntity;
 
 import java.util.List;
 
 public interface BatchListService {
 
-	void persist(BatchList batchList);
+	void persist(BatchListEntity batchList);
 
-	List<BatchList> findAll();
+	List<BatchListEntity> findAll();
 }

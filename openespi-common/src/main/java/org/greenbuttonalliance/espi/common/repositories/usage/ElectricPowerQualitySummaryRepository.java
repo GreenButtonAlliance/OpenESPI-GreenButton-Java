@@ -19,7 +19,7 @@
 
 package org.greenbuttonalliance.espi.common.repositories.usage;
 
-import org.greenbuttonalliance.espi.common.domain.legacy.ElectricPowerQualitySummary;
+import org.greenbuttonalliance.espi.common.domain.usage.ElectricPowerQualitySummaryEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -32,34 +32,34 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface ElectricPowerQualitySummaryRepository extends JpaRepository<ElectricPowerQualitySummary, Long> {
+public interface ElectricPowerQualitySummaryRepository extends JpaRepository<ElectricPowerQualitySummaryEntity, UUID> {
 
 	// JpaRepository provides: save(), findById(), findAll(), deleteById(), etc.
 
-	Optional<ElectricPowerQualitySummary> findByUuid(UUID uuid);
+	Optional<ElectricPowerQualitySummaryEntity> findByUuid(UUID uuid);
 
-	@Query("SELECT e.id FROM ElectricPowerQualitySummary e")
-	List<Long> findAllIds();
-
-	@Modifying
-	@Transactional
-	@Query("DELETE FROM ElectricPowerQualitySummary e WHERE e.id = :id")
-	void deleteById(@Param("id") Long id);
+	@Query("SELECT e.id FROM ElectricPowerQualitySummaryEntity e")
+	List<UUID> findAllIds();
 
 	@Modifying
 	@Transactional
-	@Query("DELETE FROM ElectricPowerQualitySummary e WHERE e.uuid = :uuid")
+	@Query("DELETE FROM ElectricPowerQualitySummaryEntity e WHERE e.id = :id")
+	void deleteById(@Param("id") UUID id);
+
+	@Modifying
+	@Transactional
+	@Query("DELETE FROM ElectricPowerQualitySummaryEntity e WHERE e.id = :uuid")
 	void deleteByUuid(@Param("uuid") UUID uuid);
 
 	// Custom method for createOrReplaceByUUID - should be implemented in service layer
 
-	@Query("SELECT e.id FROM ElectricPowerQualitySummary e WHERE e.usagePoint.id = :usagePointId")
-	List<Long> findAllIdsByUsagePointId(@Param("usagePointId") Long usagePointId);
+	@Query("SELECT e.id FROM ElectricPowerQualitySummaryEntity e WHERE e.usagePoint.id = :usagePointId")
+	List<UUID> findAllIdsByUsagePointId(@Param("usagePointId") UUID usagePointId);
 
-	@Query("SELECT e.id FROM UsagePoint u, ElectricPowerQualitySummary e WHERE u.retailCustomer.id = :o1Id AND e.usagePoint.id = :o2Id")
-	List<Long> findAllIdsByXpath2(@Param("o1Id") Long o1Id, @Param("o2Id") Long o2Id);
+	@Query("SELECT e.id FROM UsagePointEntity u, ElectricPowerQualitySummaryEntity e WHERE u.retailCustomer.id = :o1Id AND e.usagePoint.id = :o2Id")
+	List<UUID> findAllIdsByXpath2(@Param("o1Id") UUID o1Id, @Param("o2Id") UUID o2Id);
 
-	@Query("SELECT e.id FROM UsagePoint u, ElectricPowerQualitySummary e WHERE u.retailCustomer.id = :o1Id AND e.usagePoint.id = :o2Id AND e.id = :o3Id")
-	Optional<Long> findIdByXpath(@Param("o1Id") Long o1Id, @Param("o2Id") Long o2Id, @Param("o3Id") Long o3Id);
+	@Query("SELECT e.id FROM UsagePointEntity u, ElectricPowerQualitySummaryEntity e WHERE u.retailCustomer.id = :o1Id AND e.usagePoint.id = :o2Id AND e.id = :o3Id")
+	Optional<UUID> findIdByXpath(@Param("o1Id") UUID o1Id, @Param("o2Id") UUID o2Id, @Param("o3Id") UUID o3Id);
 
 }

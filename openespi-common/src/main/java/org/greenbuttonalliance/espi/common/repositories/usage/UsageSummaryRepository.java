@@ -35,33 +35,33 @@ import java.util.UUID;
  * Created by Donald F. Coffin on 06/28/2019 at 22:35
  */
 @Repository
-public interface UsageSummaryRepository extends JpaRepository<UsageSummary, Long> {
+public interface UsageSummaryRepository extends JpaRepository<UsageSummaryEntity, UUID> {
     // JpaRepository provides: save(), findById(), findAll(), deleteById(), etc.
 
-    Optional<UsageSummary> findByUuid(UUID uuid);
+    Optional<UsageSummaryEntity> findByUuid(UUID uuid);
 
-    @Query("SELECT u.id FROM UsageSummary u")
-    List<Long> findAllIds();
-
-    @Modifying
-    @Transactional
-    @Query("DELETE FROM UsageSummary u WHERE u.id = :id")
-    void deleteById(@Param("id") Long id);
+    @Query("SELECT u.id FROM UsageSummaryEntity u")
+    List<UUID> findAllIds();
 
     @Modifying
     @Transactional
-    @Query("DELETE FROM UsageSummary u WHERE u.uuid = :uuid")
+    @Query("DELETE FROM UsageSummaryEntity u WHERE u.id = :id")
+    void deleteById(@Param("id") UUID id);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM UsageSummaryEntity u WHERE u.uuid = :uuid")
     void deleteByUuid(@Param("uuid") UUID uuid);
 
     // Custom method for createOrReplaceByUUID - should be implemented in service layer
 
-    @Query("SELECT u.id FROM UsageSummary u WHERE u.usagePoint.id = :usagePointId")
-    List<Long> findAllIdsByUsagePointId(@Param("usagePointId") Long usagePointId);
+    @Query("SELECT u.id FROM UsageSummaryEntity u WHERE u.usagePoint.id = :usagePointId")
+    List<UUID> findAllIdsByUsagePointId(@Param("usagePointId") UUID usagePointId);
 
-    @Query("SELECT e.id FROM UsagePoint u, UsageSummary e WHERE u.retailCustomer.id = :o1Id AND e.usagePoint.id = :o2Id")
-    List<Long> findAllIdsByXpath2(@Param("o1Id") Long o1Id, @Param("o2Id") Long o2Id);
+    @Query("SELECT e.id FROM UsagePointEntity u, UsageSummaryEntity e WHERE u.retailCustomer.id = :o1Id AND e.usagePoint.id = :o2Id")
+    List<UUID> findAllIdsByXpath2(@Param("o1Id") UUID o1Id, @Param("o2Id") UUID o2Id);
 
-    @Query("SELECT e.id FROM UsagePoint u, UsageSummary e WHERE u.retailCustomer.id = :o1Id AND e.usagePoint.id = :o2Id AND e.id = :o3Id")
-    Optional<Long> findIdByXpath(@Param("o1Id") Long o1Id, @Param("o2Id") Long o2Id, @Param("o3Id") Long o3Id);
+    @Query("SELECT e.id FROM UsagePointEntity u, UsageSummaryEntity e WHERE u.retailCustomer.id = :o1Id AND e.usagePoint.id = :o2Id AND e.id = :o3Id")
+    Optional<UUID> findIdByXpath(@Param("o1Id") UUID o1Id, @Param("o2Id") UUID o2Id, @Param("o3Id") UUID o3Id);
 
 }
