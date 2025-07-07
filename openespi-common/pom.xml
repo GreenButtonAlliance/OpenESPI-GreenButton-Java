@@ -322,6 +322,21 @@
             <groupId>jakarta.validation</groupId>
             <artifactId>jakarta.validation-api</artifactId>
         </dependency>
+        
+        <!-- Hibernate Validator Implementation -->
+        <dependency>
+            <groupId>org.hibernate.validator</groupId>
+            <artifactId>hibernate-validator</artifactId>
+            <scope>test</scope>
+        </dependency>
+        
+        <!-- Jakarta EL for Hibernate Validator -->
+        <dependency>
+            <groupId>org.glassfish.expressly</groupId>
+            <artifactId>expressly</artifactId>
+            <version>5.0.0</version>
+            <scope>test</scope>
+        </dependency>
 
 
         <!-- Core utilities needed for domain logic -->

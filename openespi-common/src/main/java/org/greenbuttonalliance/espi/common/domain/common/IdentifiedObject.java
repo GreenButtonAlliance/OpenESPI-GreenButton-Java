@@ -48,7 +48,6 @@ import java.util.UUID;
  */
 @MappedSuperclass
 @Data
-@NoArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @ToString
 public abstract class IdentifiedObject implements Serializable {
@@ -293,7 +292,15 @@ public abstract class IdentifiedObject implements Serializable {
         }
     }
 
-    // Removed @PrePersist and @PreUpdate methods - Spring Boot handles lifecycle automatically
+    /**
+     * Protected constructor that ensures all entities have a UUID.
+     * This maintains domain integrity while keeping persistence concerns separate.
+     */
+    protected IdentifiedObject() {
+        if (this.id == null) {
+            this.id = UUID.randomUUID();
+        }
+    }
 
     /**
      * Manual setter for description field (Lombok issue workaround).
