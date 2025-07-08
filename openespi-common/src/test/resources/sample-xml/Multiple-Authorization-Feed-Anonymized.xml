@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:espi="http://naesb.org/espi">
+	<id>urn:uuid:99999999-9999-9999-9999-999999999999</id>
+	<title>Test Multiple Authorization Feed</title>
+	<updated>2025-01-01T00:00:00Z</updated>
+	<link href="https://test-datacustodian.example.com/espi/1_1/resource/Authorization" rel="self" type="espi-feed/Authorization"/>
+	<link href="https://cert.greenbuttonalliance.org/certificate/test-certificate-id" rel="related" type="text/xml"/>
+	<entry>
+		<id>urn:uuid:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa</id>
+		<link href="https://test-datacustodian.example.com/espi/1_1/resource/Authorization" rel="up" type="espi-feed/Authorization"/>
+		<link href="https://test-datacustodian.example.com/espi/1_1/resource/Authorization/test-auth-id-1" rel="self" type="espi-entry/Authorization"/>
+		<title>Test Authorization 1</title>
+		<content>
+			<espi:Authorization>
+				<espi:authorizedPeriod>
+					<espi:duration>31536000</espi:duration>
+					<espi:start>1600000000</espi:start>
+				</espi:authorizedPeriod>
+				<espi:publishedPeriod>
+					<espi:duration>31536000</espi:duration>
+					<espi:start>1600000000</espi:start>
+				</espi:publishedPeriod>
+				<espi:status>1</espi:status>
+				<espi:expires_at>1631536000</espi:expires_at>
+				<espi:grant_type>authorization_code</espi:grant_type>
+				<espi:scope>FB=1_3_4_5</espi:scope>
+				<espi:token_type>Bearer</espi:token_type>
+				<espi:resourceURI>https://test-api.example.com/espi/1_1/resource/Batch/Subscription/test-subscription-id-1</espi:resourceURI>
+				<espi:authorizationURI>https://test-api.example.com/espi/1_1/resource/Authorization/test-auth-id-1</espi:authorizationURI>
+			</espi:Authorization>
+		</content>
+		<published>2025-01-01T00:00:00Z</published>
+		<updated>2025-01-01T00:00:00Z</updated>
+	</entry>
+	<entry>
+		<id>urn:uuid:bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb</id>
+		<link href="https://test-datacustodian.example.com/espi/1_1/resource/Authorization" rel="up" type="espi-feed/Authorization"/>
+		<link href="https://test-datacustodian.example.com/espi/1_1/resource/Authorization/test-auth-id-2" rel="self" type="espi-entry/Authorization"/>
+		<title>Test Authorization 2</title>
+		<content>
+			<espi:Authorization>
+				<espi:authorizedPeriod>
+					<espi:duration>31536000</espi:duration>
+					<espi:start>1600000000</espi:start>
+				</espi:authorizedPeriod>
+				<espi:publishedPeriod>
+					<espi:duration>31536000</espi:duration>
+					<espi:start>1600000000</espi:start>
+				</espi:publishedPeriod>
+				<espi:status>1</espi:status>
+				<espi:expires_at>1631536000</espi:expires_at>
+				<espi:grant_type>authorization_code</espi:grant_type>
+				<espi:scope>FB=1_3_4_5_13_15</espi:scope>
+				<espi:token_type>Bearer</espi:token_type>
+				<espi:resourceURI>https://test-api.example.com/espi/1_1/resource/Batch/Subscription/test-subscription-id-2</espi:resourceURI>
+				<espi:authorizationURI>https://test-api.example.com/espi/1_1/resource/Authorization/test-auth-id-2</espi:authorizationURI>
+			</espi:Authorization>
+		</content>
+		<published>2025-01-01T00:00:00Z</published>
+		<updated>2025-01-01T00:00:00Z</updated>
+	</entry>
+</feed>

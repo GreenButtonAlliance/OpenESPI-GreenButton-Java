@@ -1,0 +1,29 @@
+<entry xmlns:espi="http://naesb.org/espi" xmlns="http://www.w3.org/2005/Atom">
+	<id>urn:uuid:22222222-2222-2222-2222-222222222222</id>
+	<link href="https://test-datacustodian.example.com/espi/1_1/resource/Authorization" rel="up" type="espi-feed/Authorization"/>
+	<link href="https://test-datacustodian.example.com/espi/1_1/resource/Authorization/test-auth-id" rel="self" type="espi-entry/Authorization"/>
+	<link href="https://cert.greenbuttonalliance.org/certificate/test-certificate-id" rel="related" type="text/xml"/>
+	<title>Authorization</title>
+	<content>
+		<espi:Authorization>
+			<espi:authorizedPeriod>
+				<espi:duration>31604340</espi:duration>
+				<espi:start>1600000000</espi:start>
+			</espi:authorizedPeriod>
+			<espi:publishedPeriod>
+				<espi:duration>31604340</espi:duration>
+				<espi:start>1600000000</espi:start>
+			</espi:publishedPeriod>
+			<espi:status>1</espi:status>
+			<espi:expires_at>1600000000</espi:expires_at>
+			<espi:grant_type>authorization_code</espi:grant_type>
+			<espi:scope>FB=1_3_4_5_13_15_16_28_31_37_39_51_53_54_55_56_57_58_59_60_61_64_65_69</espi:scope>
+			<espi:token_type>Bearer</espi:token_type>
+			<espi:resourceURI>https://test-api.example.com/espi/1_1/resource/Batch/Subscription/test-subscription-id</espi:resourceURI>
+			<espi:authorizationURI>https://test-api.example.com/espi/1_1/resource/Authorization/test-auth-id</espi:authorizationURI>
+			<espi:customerResourceURI>https://test-api.example.com/customer/espi/1_1/resource/Batch/RetailCustomer/test-customer-id</espi:customerResourceURI>
+		</espi:Authorization>
+	</content>
+	<published>2025-01-01T00:00:00Z</published>
+	<updated>2025-01-01T00:00:00Z</updated>
+</entry>

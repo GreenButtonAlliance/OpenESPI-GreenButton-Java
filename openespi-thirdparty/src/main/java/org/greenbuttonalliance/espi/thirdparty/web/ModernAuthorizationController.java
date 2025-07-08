@@ -19,9 +19,9 @@
 
 package org.greenbuttonalliance.espi.thirdparty.web;
 
-import org.greenbuttonalliance.espi.common.domain.usage.entity.AuthorizationEntity;
-import org.greenbuttonalliance.espi.common.domain.usage.entity.ApplicationInformationEntity;
-import org.greenbuttonalliance.espi.common.domain.usage.entity.RetailCustomerEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.ApplicationInformationEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.greenbuttonalliance.espi.common.service.AuthorizationService;
 import org.greenbuttonalliance.espi.common.service.RetailCustomerService;
 import org.greenbuttonalliance.espi.thirdparty.repository.UsagePointRESTRepository;

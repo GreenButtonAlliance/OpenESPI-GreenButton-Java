@@ -12,7 +12,10 @@
       "Bash(mvn compile:*)",
       "Bash(jar tf:*)",
       "Bash(javap:*)",
-      "Bash(rg:*)"
+      "Bash(rg:*)",
+      "Bash(mvn clean:*)",
+      "Bash(mkdir:*)",
+      "Bash(mv:*)"
     ],
     "deny": []
   }

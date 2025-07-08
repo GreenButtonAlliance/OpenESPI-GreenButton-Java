@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<id>urn:uuid:33333333-3333-3333-3333-333333333333</id>
+	<link href="https://cert.greenbuttonalliance.org/certificate/test-certificate-id" type="text/xml" rel="related"/>
+	<title>Test Green Button Usage Feed</title>
+	<updated>2025-01-01T00:00:00Z</updated>
+	<link href="https://test-datacustodian.example.com/espi/1_1/resource/Batch/Subscription/test-subscription-id" type="espi-entry/Subscription" rel="self"/>
+	<entry xmlns:espi="http://naesb.org/espi">
+		<id>urn:uuid:44444444-4444-4444-4444-444444444444</id>
+		<link href="https://test-datacustodian.example.com/espi/1_1/resource/Subscription/test-subscription-id/UsagePoint" rel="up" type="espi-feed/UsagePoint"/>
+		<link href="https://test-datacustodian.example.com/espi/1_1/resource/Subscription/test-subscription-id/UsagePoint/test-usage-point-id" rel="self" type="espi-entry/UsagePoint"/>
+		<link href="https://test-datacustodian.example.com/espi/1_1/resource/Subscription/test-subscription-id/UsagePoint/test-usage-point-id/MeterReading/test-meter-reading-id" rel="related" type="espi-entry/MeterReading"/>
+		<link href="https://test-datacustodian.example.com/espi/1_1/resource/Subscription/test-subscription-id/UsagePoint/test-usage-point-id/UsageSummary/test-usage-summary-id-1" rel="related" type="espi-entry/UsageSummary"/>
+		<link href="https://test-datacustodian.example.com/espi/1_1/resource/LocalTimeParameters/test-time-params-id" rel="related" type="espi-entry/LocalTimeParameters"/>
+		<title>Test Usage Point</title>
+		<content>
+			<espi:UsagePoint>
+				<espi:ServiceCategory>
+					<espi:kind>0</espi:kind>
+				</espi:ServiceCategory>
+				<espi:status>1</espi:status>
+			</espi:UsagePoint>
+		</content>
+		<published>2025-01-01T00:00:00Z</published>
+		<updated>2025-01-01T00:00:00Z</updated>
+	</entry>
+	<entry xmlns:espi="http://naesb.org/espi">
+		<id>urn:uuid:55555555-5555-5555-5555-555555555555</id>
+		<link href="https://test-datacustodian.example.com/espi/1_1/resource/LocalTimeParameters" rel="up" type="espi-feed/LocalTimeParameters"/>
+		<link href="https://test-datacustodian.example.com/espi/1_1/resource/LocalTimeParameters/test-time-params-id" rel="self" type="espi-entry/LocalTimeParameters"/>
+		<link href="https://test-datacustodian.example.com/espi/1_1/resource/Subscription/test-subscription-id/UsagePoint/test-usage-point-id" rel="related" type="espi-entry/UsagePoint"/>
+		<title>EST</title>
+		<content>
+			<espi:LocalTimeParameters>
+				<espi:dstEndRule>B40E2000</espi:dstEndRule>
+				<espi:dstOffset>3600</espi:dstOffset>
+				<espi:dstStartRule>360E2000</espi:dstStartRule>
+				<espi:tzOffset>-18000</espi:tzOffset>
+			</espi:LocalTimeParameters>
+		</content>
+		<published>2025-01-01T00:00:00Z</published>
+		<updated>2025-01-01T00:00:00Z</updated>
+	</entry>
+	<entry xmlns:espi="http://naesb.org/espi">
+		<id>urn:uuid:66666666-6666-6666-6666-666666666666</id>
+		<link href="https://test-datacustodian.example.com/espi/1_1/resource/Subscription/test-subscription-id/UsagePoint/test-usage-point-id/MeterReading" rel="up" type="espi-feed/MeterReading"/>
+		<link href="https://test-datacustodian.example.com/espi/1_1/resource/Subscription/test-subscription-id/UsagePoint/test-usage-point-id/MeterReading/test-meter-reading-id" rel="self" type="espi-entry/MeterReading"/>
+		<title>Test Meter Reading</title>
+		<content>
+			<espi:MeterReading>
+				<espi:ReadingType>
+					<espi:accumulationBehaviour>4</espi:accumulationBehaviour>
+					<espi:commodity>1</espi:commodity>
+					<espi:flowDirection>1</espi:flowDirection>
+					<espi:intervalLength>3600</espi:intervalLength>
+					<espi:kind>12</espi:kind>
+					<espi:phase>769</espi:phase>
+					<espi:powerOfTenMultiplier>0</espi:powerOfTenMultiplier>
+					<espi:timeAttribute>0</espi:timeAttribute>
+					<espi:uom>72</espi:uom>
+				</espi:ReadingType>
+			</espi:MeterReading>
+		</content>
+		<published>2025-01-01T00:00:00Z</published>
+		<updated>2025-01-01T00:00:00Z</updated>
+	</entry>
+</feed>

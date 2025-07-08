@@ -19,127 +19,74 @@
 
 package org.greenbuttonalliance.espi.thirdparty.web;
 
-import com.sun.syndication.io.FeedException;
-import org.greenbuttonalliance.espi.common.domain.Routes;
-import org.greenbuttonalliance.espi.common.service.*;
-import org.greenbuttonalliance.espi.common.utils.ExportFilter;
+import org.greenbuttonalliance.espi.common.dto.usage.UsagePointDto;
+import org.greenbuttonalliance.espi.thirdparty.service.WebClientService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.Map;
+import java.util.List;
 
-@Controller
+@RestController
+@RequestMapping("/api/batch")
 public class BatchRESTController {
 
 	@Autowired
-	private ImportService importService;
-
-	@Autowired
-	private ResourceService resourceService;
-
-	@Autowired
-	private NotificationService notificationService;
-
-	@Autowired
-	private RetailCustomerService retailCustomerService;
-
-	@Autowired
-	private ExportService exportService;
+	private WebClientService webClientService;
 
 	@ExceptionHandler(Exception.class)
 	@ResponseStatus(HttpStatus.BAD_REQUEST)
-	public void handleGenericException() {
+	public ResponseEntity<String> handleGenericException(Exception e) {
+		return ResponseEntity.badRequest().body("Error processing batch request: " + e.getMessage());
 	}
 
-	@RequestMapping(value = Routes.BATCH_DOWNLOAD_MY_DATA_COLLECTION, method = RequestMethod.GET, produces = "application/atom+xml")
-	@ResponseBody
-	public void download_collection(HttpServletResponse response,
-			@PathVariable Long retailCustomerId,
-			@RequestParam Map<String, String> params) throws IOException,
-			FeedException {
-
-		response.setContentType(MediaType.APPLICATION_ATOM_XML_VALUE);
-		response.addHeader("Content-Disposition",
-				"attachment; filename=GreenButtonDownload.xml");
+	@GetMapping("/download/{customerId}")
+	public ResponseEntity<List<UsagePointDto>> downloadCustomerData(
+			@PathVariable Long customerId,
+			@RequestHeader("Authorization") String accessToken) {
+		
 		try {
-			// TODO -- need authorization hook
-			exportService.exportUsagePointsFull(0L, retailCustomerId,
-					response.getOutputStream(), new ExportFilter(params));
-
+			// Use WebClient to fetch usage data from datacustodian
+			List<UsagePointDto> usagePoints = webClientService
+				.getAuthenticatedWebClient(accessToken)
+				.get()
+				.uri("/api/customers/{customerId}/usage-points", customerId)
+				.retrieve()
+				.bodyToFlux(UsagePointDto.class)
+				.collectList()
+				.block();
+			
+			return ResponseEntity.ok(usagePoints);
+			
 		} catch (Exception e) {
-			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
 		}
-
 	}
 
-	@RequestMapping(value = Routes.BATCH_DOWNLOAD_MY_DATA_MEMBER, method = RequestMethod.GET, produces = "application/atom+xml")
-	@ResponseBody
-	public void download_member(HttpServletResponse response,
-			@PathVariable Long retailCustomerId,
+	@GetMapping("/download/{customerId}/usage-point/{usagePointId}")
+	public ResponseEntity<UsagePointDto> downloadUsagePointData(
+			@PathVariable Long customerId,
 			@PathVariable Long usagePointId,
-			@RequestParam Map<String, String> params) throws IOException,
-			FeedException {
-
-		response.setContentType(MediaType.APPLICATION_ATOM_XML_VALUE);
-		response.addHeader("Content-Disposition",
-				"attachment; filename=GreenButtonDownload.xml");
+			@RequestHeader("Authorization") String accessToken) {
+		
 		try {
-
-			// TODO -- need authorization hook
-			exportService.exportUsagePointFull(0L, retailCustomerId,
-					usagePointId, response.getOutputStream(), new ExportFilter(
-							params));
-
+			// Use WebClient to fetch specific usage point data from datacustodian
+			UsagePointDto usagePoint = webClientService
+				.getAuthenticatedWebClient(accessToken)
+				.get()
+				.uri("/api/customers/{customerId}/usage-points/{usagePointId}", customerId, usagePointId)
+				.retrieve()
+				.bodyToMono(UsagePointDto.class)
+				.block();
+			
+			return ResponseEntity.ok(usagePoint);
+			
 		} catch (Exception e) {
-			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
 		}
-
-	}
-
-	public void setImportService(ImportService importService) {
-		this.importService = importService;
-	}
-
-	public ImportService getImportService() {
-		return this.importService;
-	}
-
-	public void setResourceService(ResourceService resourceService) {
-		this.resourceService = resourceService;
-	}
-
-	public ResourceService getResourceService() {
-		return this.resourceService;
-	}
-
-	public void setNotificationService(NotificationService notificationService) {
-		this.notificationService = notificationService;
-	}
-
-	public NotificationService getNotificationService() {
-		return this.notificationService;
-	}
-
-	public void setRetailCustomerService(
-			RetailCustomerService retailCustomerService) {
-		this.retailCustomerService = retailCustomerService;
-	}
-
-	public RetailCustomerService getRetailCustomerService() {
-		return this.retailCustomerService;
-	}
-
-	public void setExportService(ExportService exportService) {
-		this.exportService = exportService;
-	}
-
-	public ExportService getExportService() {
-		return this.exportService;
 	}
 
 }

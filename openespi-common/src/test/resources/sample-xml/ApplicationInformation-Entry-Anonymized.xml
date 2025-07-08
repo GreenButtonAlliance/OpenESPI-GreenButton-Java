@@ -1,0 +1,47 @@
+<entry xmlns:espi="http://naesb.org/espi" xmlns="http://www.w3.org/2005/Atom">
+	<id>urn:uuid:11111111-1111-1111-1111-111111111111</id>
+	<link href="https://test-datacustodian.example.com/espi/1_1/resource/ApplicationInformation" rel="up" type="espi-feed/ApplicationInformation"/>
+	<link href="https://test-datacustodian.example.com/espi/1_1/resource/ApplicationInformation/12345678" rel="self" type="espi-entry/ApplicationInformation"/>
+	<link href="https://cert.greenbuttonalliance.org/certificate/test-certificate-id" rel="related" type="text/xml"/>
+	<title/>
+	<content>
+		<espi:ApplicationInformation>
+			<espi:dataCustodianId>test-datacustodian</espi:dataCustodianId>
+			<espi:dataCustodianApplicationStatus>2</espi:dataCustodianApplicationStatus>
+			<espi:thirdPartyApplicationDescription>Test Application</espi:thirdPartyApplicationDescription>
+			<espi:thirdPartyApplicationStatus>2</espi:thirdPartyApplicationStatus>
+			<espi:thirdPartyApplicationType>1</espi:thirdPartyApplicationType>
+			<espi:thirdPartyApplicationUse>1</espi:thirdPartyApplicationUse>
+			<espi:authorizationServerUri>https://test-datacustodian.example.com</espi:authorizationServerUri>
+			<espi:thirdPartyNotifyUri>https://test-thirdparty.example.com/espi/1_1/Notification</espi:thirdPartyNotifyUri>
+			<espi:authorizationServerAuthorizationEndpoint>https://test-datacustodian.example.com/oauth/authorize</espi:authorizationServerAuthorizationEndpoint>
+			<espi:authorizationServerRegistrationEndpoint>https://test-datacustodian.example.com/oauth/authorize</espi:authorizationServerRegistrationEndpoint>
+			<espi:authorizationServerTokenEndpoint>https://test-datacustodian.example.com/oauth/token</espi:authorizationServerTokenEndpoint>
+			<espi:dataCustodianBulkRequestURI>https://test-datacustodian.example.com/espi/1_1/resource</espi:dataCustodianBulkRequestURI>
+			<espi:dataCustodianResourceEndpoint>https://test-api.example.com/espi/1_1/resource</espi:dataCustodianResourceEndpoint>
+			<espi:thirdPartyScopeSelectionScreenURI>https://test-thirdparty.example.com/scope</espi:thirdPartyScopeSelectionScreenURI>
+			<espi:thirdPartyUserPortalScreenURI>https://test-thirdparty.example.com/portal</espi:thirdPartyUserPortalScreenURI>
+			<espi:client_secret>test-client-secret</espi:client_secret>
+			<espi:logo_uri>https://test-assets.example.com/logo.png</espi:logo_uri>
+			<espi:client_name>Test Client</espi:client_name>
+			<espi:client_uri>https://test-thirdparty.example.com</espi:client_uri>
+			<espi:redirect_uri>https://test-thirdparty.example.com/callback</espi:redirect_uri>
+			<espi:client_id>test-client-id</espi:client_id>
+			<espi:software_id>v0001</espi:software_id>
+			<espi:software_version>1.00.00</espi:software_version>
+			<espi:client_id_issued_at>1600000000</espi:client_id_issued_at>
+			<espi:client_secret_expires_at>86400000000</espi:client_secret_expires_at>
+			<espi:token_endpoint_auth_method>client_secret_basic</espi:token_endpoint_auth_method>
+			<espi:scope>FB=1_3_4_5_13_15_16_28_31_37_39_51_53_54_55_56_57_58_59_60_61_64_65_69</espi:scope>
+			<espi:grant_types>refresh_token</espi:grant_types>
+			<espi:grant_types>client_credentials</espi:grant_types>
+			<espi:grant_types>authorization_code</espi:grant_types>
+			<espi:response_types>code</espi:response_types>
+			<espi:registration_client_uri>https://test-api.example.com/espi/1_1/resource/ApplicationInformation/12345678</espi:registration_client_uri>
+			<espi:registration_access_token>test-access-token</espi:registration_access_token>
+			<espi:dataCustodianScopeSelectionScreenURI>https://test-datacustodian.example.com/RetailCustomer/ScopeSelectionList</espi:dataCustodianScopeSelectionScreenURI>
+		</espi:ApplicationInformation>
+	</content>
+	<published>2025-01-01T00:00:00Z</published>
+	<updated>2025-01-01T00:00:00Z</updated>
+</entry>

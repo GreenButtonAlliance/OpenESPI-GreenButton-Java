@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:cust="http://naesb.org/espi/customer">
+	<id>urn:uuid:77777777-7777-7777-7777-777777777777</id>
+	<title>RetailCustomer - Customer</title>
+	<updated>2025-01-01T00:00:00Z</updated>
+	<link href="https://test-api.example.com/customer/espi/1_1/resource/RetailCustomer/test-customer-id/Customer/test-customer-number/Account/test-account-number" rel="self" type="text/xml"/>
+	<link href="https://cert.greenbuttonalliance.org/certificate/test-certificate-id" rel="related" type="text/xml"/>
+	<entry>
+		<id>urn:uuid:88888888-8888-8888-8888-888888888888</id>
+		<link href="https://test-api.example.com/customer/espi/1_1/resource/LocalTimeParameters/test-time-params-id" rel="related" type="cust-entry/LocalTimeParameters"/>
+		<link href="https://test-api.example.com/customer/espi/1_1/resource/RetailCustomer/test-customer-id/Customer" rel="up" type="cust-feed/Customer"/>
+		<link href="https://test-api.example.com/customer/espi/1_1/resource/RetailCustomer/test-customer-id/Customer/test-customer-number" rel="self" type="cust-entry/Customer"/>
+		<link href="https://test-api.example.com/customer/espi/1_1/resource/RetailCustomer/test-customer-id/Customer/test-customer-number/CustomerAccount/test-account-number" rel="related" type="cust-entry/CustomerAccount"/>
+		<title>Customer</title>
+		<content>
+			<cust:Customer>
+				<cust:Organisation>
+					<cust:streetAddress>
+						<cust:streetDetail>
+							<cust:suiteNumber/>
+							<cust:addressGeneral>123 Test Street</cust:addressGeneral>
+						</cust:streetDetail>
+						<cust:townDetail>
+							<cust:name>Test City</cust:name>
+							<cust:stateOrProvince>Test State</cust:stateOrProvince>
+							<cust:country>US</cust:country>
+						</cust:townDetail>
+						<cust:postalCode>12345-6789</cust:postalCode>
+						<cust:poBox>N/A</cust:poBox>
+					</cust:streetAddress>
+				</cust:Organisation>
+				<cust:kind>residential</cust:kind>
+				<cust:status>active</cust:status>
+			</cust:Customer>
+		</content>
+		<published>2025-01-01T00:00:00Z</published>
+		<updated>2025-01-01T00:00:00Z</updated>
+	</entry>
+</feed>
