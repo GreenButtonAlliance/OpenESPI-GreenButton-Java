@@ -50,23 +50,13 @@
 
     <developers>
         <developer>
-            <id>jteeter</id>
-            <name>John Teeter</name>
-            <email>john.teeter@energyos.org</email>
-        </developer>
-        <developer>
             <id>dcoffin</id>
             <name>Donald F. Coffin</name>
-            <email>donald.coffin@reminetworks.com</email>
-        </developer>
-        <developer>
-            <id>mburns</id>
-            <name>Dr. Martin J. Burns</name>
-            <email>marty@hypertek.us</email>
+            <email>dcoffin@greenbuttonalliance.org</email>
         </developer>
     </developers>
 
-    <inceptionYear>2013</inceptionYear>
+    <inceptionYear>2025</inceptionYear>
 
     <licenses>
         <license>
@@ -81,7 +71,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
         <!-- OpenESPI Dependencies -->
-        <openespi-common.version>1.4-BUILD-SNAPSHOT</openespi-common.version>
+        <openespi-common.version>Spring-Boot-3.5-BUILD-SNAPSHOT</openespi-common.version>
 
         <!-- Database Versions -->
         <mysql.version>9.1.0</mysql.version>
@@ -90,7 +80,6 @@
 
         <!-- Testing -->
         <testcontainers.version>1.20.4</testcontainers.version>
-        <cucumber.version>7.20.1</cucumber.version>
 
         <!-- Maven Plugin Versions -->
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
@@ -353,27 +342,6 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Cucumber BDD Testing -->
-        <dependency>
-            <groupId>io.cucumber</groupId>
-            <artifactId>cucumber-java</artifactId>
-            <version>${cucumber.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>io.cucumber</groupId>
-            <artifactId>cucumber-junit-platform-engine</artifactId>
-            <version>${cucumber.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>io.cucumber</groupId>
-            <artifactId>cucumber-spring</artifactId>
-            <version>${cucumber.version}</version>
-            <scope>test</scope>
-        </dependency>
 
         <!-- API Documentation -->
         <dependency>
@@ -482,7 +450,6 @@
                     <includes>
                         <include>**/*IntegrationTest.java</include>
                         <include>**/*IT.java</include>
-                        <include>**/CucumberTest.java</include>
                     </includes>
                     <systemPropertyVariables>
                         <spring.profiles.active>test</spring.profiles.active>

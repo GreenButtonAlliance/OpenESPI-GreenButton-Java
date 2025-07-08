@@ -1,8 +1,7 @@
 /*
  *
- *    Copyright (c) 2018-2021 Green Button Alliance, Inc.
+ *        Copyright (c) 2025 Green Button Alliance, Inc.
  *
- *    Portions (c) 2013-2018 EnergyOS.org
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
  *     you may not use this file except in compliance with the License.
@@ -20,10 +19,8 @@
 
 package org.greenbuttonalliance.espi.common.service;
 
-import org.greenbuttonalliance.espi.common.domain.legacy.ElectricPowerQualitySummary;
-import org.greenbuttonalliance.espi.common.domain.legacy.UsagePoint;
-import org.greenbuttonalliance.espi.common.domain.legacy.atom.EntryType;
-import org.greenbuttonalliance.espi.common.utils.EntryTypeIterator;
+import org.greenbuttonalliance.espi.common.domain.usage.ElectricPowerQualitySummaryEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 
 import java.io.InputStream;
 import java.util.List;
@@ -31,34 +28,28 @@ import java.util.UUID;
 
 public interface ElectricPowerQualitySummaryService {
 
-	ElectricPowerQualitySummary findById(
+	ElectricPowerQualitySummaryEntity findById(
 			Long electricPowerQualitySummaryId);
 
-	ElectricPowerQualitySummary findByUUID(UUID uuid);
+	ElectricPowerQualitySummaryEntity findByUUID(UUID uuid);
 
-	List<ElectricPowerQualitySummary> findAllByUsagePoint(
-			UsagePoint usagePoint);
+	List<ElectricPowerQualitySummaryEntity> findAllByUsagePointEntity(
+			UsagePointEntity usagePoint);
 
 	String feedFor(
-			List<ElectricPowerQualitySummary> electricPowerQualitySummarys);
+			List<ElectricPowerQualitySummaryEntity> electricPowerQualitySummarys);
 
 	String entryFor(
-			ElectricPowerQualitySummary electricPowerQualitySummary);
+			ElectricPowerQualitySummaryEntity electricPowerQualitySummary);
 
-	void associateByUUID(UsagePoint usagePoint, UUID uuid);
+	void associateByUUID(UsagePointEntity usagePoint, UUID uuid);
 
-	void persist(ElectricPowerQualitySummary electricPowerQualitySummary);
+	void persist(ElectricPowerQualitySummaryEntity electricPowerQualitySummary);
 
-	EntryType findEntryType(Long retailCustomerId, Long usagePointId,
-							Long electricPowerQualitySummaryId);
+	void add(ElectricPowerQualitySummaryEntity electricPowerQualitySummary);
 
-	EntryTypeIterator findEntryTypeIterator(Long retailCustomerId,
-											Long usagePointId);
+	void delete(ElectricPowerQualitySummaryEntity electricPowerQualitySummary);
 
-	void add(ElectricPowerQualitySummary electricPowerQualitySummary);
-
-	void delete(ElectricPowerQualitySummary electricPowerQualitySummary);
-
-	ElectricPowerQualitySummary importResource(InputStream stream);
+	ElectricPowerQualitySummaryEntity importResource(InputStream stream);
 
 }

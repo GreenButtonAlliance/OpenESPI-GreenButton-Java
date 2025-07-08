@@ -1,8 +1,7 @@
 /*
  *
- *    Copyright (c) 2018-2021 Green Button Alliance, Inc.
+ *        Copyright (c) 2025 Green Button Alliance, Inc.
  *
- *    Portions (c) 2013-2018 EnergyOS.org
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
  *     you may not use this file except in compliance with the License.
@@ -20,39 +19,30 @@
 
 package org.greenbuttonalliance.espi.common.service;
 
-import org.greenbuttonalliance.espi.common.domain.legacy.Subscription;
-import org.greenbuttonalliance.espi.common.domain.legacy.UsagePoint;
-import org.greenbuttonalliance.espi.common.domain.legacy.atom.EntryType;
+import org.greenbuttonalliance.espi.common.domain.usage.SubscriptionEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 import org.greenbuttonalliance.espi.common.repositories.usage.SubscriptionRepository;
-import org.greenbuttonalliance.espi.common.utils.EntryTypeIterator;
-import org.springframework.security.oauth2.provider.OAuth2Authentication;
-
 import java.util.List;
+import java.util.Set;
 
 public interface SubscriptionService {
 
-	Subscription createSubscription(OAuth2Authentication retailCustomer);
+	SubscriptionEntity createSubscription(String username, Set<String> roles, String clientId);
 
-	Subscription findByHashedId(String hashedId);
-
-	EntryTypeIterator findEntriesByHashedId(String hashedId);
+	SubscriptionEntity findByHashedId(String hashedId);
 
 	void setRepository(SubscriptionRepository subscriptionRepository);
 
-	EntryType findEntryType(Long retailCustomerId, Long subscriptionId);
+	void merge(SubscriptionEntity subscription);
 
-	EntryTypeIterator findEntryTypeIterator(Long retailCustomerId);
-
-	void merge(Subscription subscription);
-
-	Subscription findById(Long subscriptionId);
+	SubscriptionEntity findById(Long subscriptionId);
 
 	List<Long> findUsagePointIds(Long subscriptionId);
 
-	Subscription findByAuthorizationId(Long id);
+	SubscriptionEntity findByAuthorizationId(Long id);
 
-	Subscription addUsagePoint(Subscription subscription,
-							   UsagePoint usagePoint);
+	SubscriptionEntity addUsagePoint(SubscriptionEntity subscription,
+							   UsagePointEntity usagePoint);
 
 	Long findRetailCustomerId(Long subscriptionId, Long usagePointId);
 

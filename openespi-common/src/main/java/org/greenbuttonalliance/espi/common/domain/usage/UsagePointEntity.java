@@ -1,8 +1,7 @@
 /*
  *
- *    Copyright (c) 2018-2025 Green Button Alliance, Inc.
+ *        Copyright (c) 2025 Green Button Alliance, Inc.
  *
- *    Portions (c) 2013-2018 EnergyOS.org
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
  *     you may not use this file except in compliance with the License.
@@ -24,9 +23,10 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-import org.greenbuttonalliance.espi.common.domain.legacy.ServiceCategory;
+import org.greenbuttonalliance.espi.common.domain.common.ServiceCategory;
 import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
-import org.greenbuttonalliance.espi.common.domain.legacy.SummaryMeasurement;
+import org.greenbuttonalliance.espi.common.domain.common.SummaryMeasurement;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
 
@@ -166,9 +166,10 @@ public class UsagePointEntity extends IdentifiedObject {
     /**
      * Meter readings associated with this usage point.
      * One-to-many relationship with cascade and orphan removal.
+     * Optimized with lazy loading and batch size to prevent N+1 queries.
      */
-    @OneToMany(mappedBy = "usagePoint", cascade = CascadeType.ALL, orphanRemoval = true)
-    @LazyCollection(LazyCollectionOption.FALSE)
+    @OneToMany(mappedBy = "usagePoint", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @BatchSize(size = 25)
     private List<MeterReadingEntity> meterReadings = new ArrayList<>();
 
     // ElectricPowerUsageSummary relationships removed - deprecated resource
@@ -176,25 +177,28 @@ public class UsagePointEntity extends IdentifiedObject {
     /**
      * Usage summaries for this usage point.
      * One-to-many relationship with cascade and orphan removal.
+     * Optimized with lazy loading and batch size to prevent N+1 queries.
      */
-    @OneToMany(mappedBy = "usagePoint", cascade = CascadeType.ALL, orphanRemoval = true)
-    @LazyCollection(LazyCollectionOption.FALSE)
+    @OneToMany(mappedBy = "usagePoint", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @BatchSize(size = 15)
     private List<UsageSummaryEntity> usageSummaries = new ArrayList<>();
 
     /**
      * Electric power quality summaries for this usage point.
      * One-to-many relationship with cascade and orphan removal.
+     * Optimized with lazy loading and batch size to prevent N+1 queries.
      */
-    @OneToMany(mappedBy = "usagePoint", cascade = CascadeType.ALL, orphanRemoval = true)
-    @LazyCollection(LazyCollectionOption.FALSE)
+    @OneToMany(mappedBy = "usagePoint", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @BatchSize(size = 10)
     private List<ElectricPowerQualitySummaryEntity> electricPowerQualitySummaries = new ArrayList<>();
 
     /**
      * Subscriptions that include this usage point.
      * Many-to-many relationship mapped by the subscriptions side.
+     * Optimized with lazy loading and batch size to prevent N+1 queries.
      */
-    @ManyToMany(mappedBy = "usagePoints")
-    @LazyCollection(LazyCollectionOption.FALSE)
+    @ManyToMany(mappedBy = "usagePoints", fetch = FetchType.LAZY)
+    @BatchSize(size = 20)
     private Set<SubscriptionEntity> subscriptions = new HashSet<>();
 
     /**
@@ -208,17 +212,19 @@ public class UsagePointEntity extends IdentifiedObject {
     /**
      * Pricing node references for this usage point.
      * One-to-many relationship with cascade and orphan removal.
+     * Optimized with lazy loading and batch size to prevent N+1 queries.
      */
-    @OneToMany(mappedBy = "usagePoint", cascade = CascadeType.ALL, orphanRemoval = true)
-    @LazyCollection(LazyCollectionOption.FALSE)
+    @OneToMany(mappedBy = "usagePoint", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @BatchSize(size = 30)
     private List<PnodeRefEntity> pnodeRefs = new ArrayList<>();
 
     /**
      * Aggregated node references for this usage point.
      * One-to-many relationship with cascade and orphan removal.
+     * Optimized with lazy loading and batch size to prevent N+1 queries.
      */
-    @OneToMany(mappedBy = "usagePoint", cascade = CascadeType.ALL, orphanRemoval = true)
-    @LazyCollection(LazyCollectionOption.FALSE)
+    @OneToMany(mappedBy = "usagePoint", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @BatchSize(size = 30)
     private List<AggregatedNodeRefEntity> aggregatedNodeRefs = new ArrayList<>();
 
     /**

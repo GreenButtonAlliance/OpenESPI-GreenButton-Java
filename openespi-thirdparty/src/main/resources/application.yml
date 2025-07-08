@@ -1,0 +1,74 @@
+# OpenESPI Third Party (OAuth2 Client) Application Configuration
+
+spring:
+  application:
+    name: openespi-thirdparty
+  
+  profiles:
+    active: dev
+  
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+  
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/openespi_thirdparty}
+    username: ${DB_USERNAME:espi_user}
+    password: ${DB_PASSWORD:espi_password}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  
+  security:
+    oauth2:
+      client:
+        registration:
+          datacustodian:
+            client-id: ${OAUTH2_CLIENT_ID:third_party}
+            client-secret: ${OAUTH2_CLIENT_SECRET:secret}
+            authorization-grant-type: authorization_code
+            redirect-uri: "https://localhost:8443/login/oauth2/code/datacustodian"
+            scope: "FB=1_3_4_5_13_14_15_16_39;IntervalDuration=monthly;BlockDuration=monthly;HistoryLength=13"
+            client-name: Data Custodian
+        provider:
+          datacustodian:
+            authorization-uri: ${OAUTH2_AUTHORIZATION_URI:https://localhost:8443/DataCustodian/oauth/authorize}
+            token-uri: ${OAUTH2_TOKEN_URI:https://localhost:8443/DataCustodian/oauth/token}
+            user-info-uri: ${OAUTH2_USER_INFO_URI:https://localhost:8443/DataCustodian/espi/1_1/resource/Authorization}
+            user-name-attribute: uuid
+
+# Server configuration
+server:
+  port: 8080
+  servlet:
+    context-path: /ThirdParty
+  ssl:
+    enabled: false
+    
+# Logging configuration
+logging:
+  level:
+    org.greenbuttonalliance.espi: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# Application specific configuration
+espi:
+  base-url: ${ESPI_BASE_URL:http://localhost:8080/ThirdParty}
+  datacustodian:
+    base-url: ${DATACUSTODIAN_BASE_URL:https://localhost:8443/DataCustodian}
+  
+# Management endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized

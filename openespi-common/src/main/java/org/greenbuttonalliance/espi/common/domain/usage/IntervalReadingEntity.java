@@ -1,8 +1,7 @@
 /*
  *
- *    Copyright (c) 2018-2025 Green Button Alliance, Inc.
+ *        Copyright (c) 2025 Green Button Alliance, Inc.
  *
- *    Portions (c) 2013-2018 EnergyOS.org
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
  *     you may not use this file except in compliance with the License.
@@ -24,7 +23,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-import org.greenbuttonalliance.espi.common.domain.legacy.DateTimeInterval;
+import org.greenbuttonalliance.espi.common.domain.common.DateTimeInterval;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
 
@@ -118,8 +118,8 @@ public class IntervalReadingEntity implements Serializable {
      * Reading quality indicators for this interval reading.
      * One-to-many relationship with cascade and orphan removal.
      */
-    @OneToMany(mappedBy = "intervalReading", cascade = CascadeType.ALL, orphanRemoval = true)
-    @LazyCollection(LazyCollectionOption.FALSE)
+    @OneToMany(mappedBy = "intervalReading", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @BatchSize(size = 10)
     private List<ReadingQualityEntity> readingQualities = new ArrayList<>();
 
     /**

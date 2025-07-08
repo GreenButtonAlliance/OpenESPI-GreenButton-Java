@@ -1,0 +1,29 @@
+<entry xmlns:espi="http://naesb.org/espi" xmlns="http://www.w3.org/2005/Atom">
+	<id>urn:uuid:ae094968-f840-3ba5-a859-f379b3d852e7</id>
+	<link href="https://aes-ohio-greenbutton-app.bigdataenergy.com/espi/1_1/resource/Authorization" rel="up" type="espi-feed/Authorization"/>
+	<link href="https://aes-ohio-greenbutton-app.bigdataenergy.com/espi/1_1/resource/Authorization/182e424e-2b23-3048-9e24-7e4f75666445" rel="self" type="espi-entry/Authorization"/>
+	<link href="https://cert.greenbuttonalliance.org/certificate/99a9f280-a91d-5e68-a13d-9512878f240a" rel="related" type="text/xml"/>
+	<title>Authorization</title>
+	<content>
+		<espi:Authorization>
+			<espi:authorizedPeriod>
+				<espi:duration>31604340</espi:duration>
+				<espi:start>1748408400</espi:start>
+			</espi:authorizedPeriod>
+			<espi:publishedPeriod>
+				<espi:duration>31604340</espi:duration>
+				<espi:start>1748408400</espi:start>
+			</espi:publishedPeriod>
+			<espi:status>1</espi:status>
+			<espi:expires_at>1748529571</espi:expires_at>
+			<espi:grant_type>authorization_code</espi:grant_type>
+			<espi:scope>FB=1_3_4_5_13_15_16_28_31_37_39_51_53_54_55_56_57_58_59_60_61_64_65_69</espi:scope>
+			<espi:token_type>Bearer</espi:token_type>
+			<espi:resourceURI>https://greenbutton-api.bigdataenergy.com/espi/1_1/resource/Batch/Subscription/0016d208-a9ae-3935-adb4-f29525b5bd0b</espi:resourceURI>
+			<espi:authorizationURI>https://greenbutton-api.bigdataenergy.com/espi/1_1/resource/Authorization/182e424e-2b23-3048-9e24-7e4f75666445</espi:authorizationURI>
+			<espi:customerResourceURI>https://greenbutton-api.bigdataenergy.com/customer/espi/1_1/resource/Batch/RetailCustomer/354f06e1-be98-5478-bbb6-ec352956a4e7</espi:customerResourceURI>
+		</espi:Authorization>
+	</content>
+	<published>2025-05-28T14:39:33Z</published>
+	<updated>2025-05-28T14:39:34Z</updated>
+</entry>

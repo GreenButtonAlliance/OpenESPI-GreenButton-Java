@@ -1,8 +1,7 @@
 /*
  *
- *    Copyright (c) 2018-2021 Green Button Alliance, Inc.
+ *        Copyright (c) 2025 Green Button Alliance, Inc.
  *
- *    Portions (c) 2013-2018 EnergyOS.org
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
  *     you may not use this file except in compliance with the License.
@@ -20,6 +19,8 @@
 
 package org.greenbuttonalliance.espi.datacustodian.web;
 
+// COMMENTED OUT FOR SPRING BOOT 3.5 MIGRATION - Uses legacy RetailCustomer domain class
+// This class will be refactored to use modern entities and record-based DTOs
 import org.greenbuttonalliance.espi.common.domain.legacy.RetailCustomer;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -40,3 +41,4 @@ public class BaseController {
 		}
 	}
 }
+*/

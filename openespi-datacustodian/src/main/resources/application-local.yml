@@ -13,10 +13,12 @@ spring:
   
   h2:
     console:
-      enabled: true
+      enabled: ${H2_CONSOLE_ENABLED:true}  # Set to false in production
       path: /h2-console
       settings:
-        web-allow-others: true
+        web-allow-others: false  # Security: Never allow remote access
+        trace: false
+        web-admin-password: ${H2_ADMIN_PASSWORD:}  # Require password for admin access
   
   jpa:
     show-sql: true

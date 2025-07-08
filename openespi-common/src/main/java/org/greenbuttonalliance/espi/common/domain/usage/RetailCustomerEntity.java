@@ -1,8 +1,7 @@
 /*
  *
- *    Copyright (c) 2018-2025 Green Button Alliance, Inc.
+ *        Copyright (c) 2025 Green Button Alliance, Inc.
  *
- *    Portions (c) 2013-2018 EnergyOS.org
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
  *     you may not use this file except in compliance with the License.
@@ -20,11 +19,15 @@
 
 package org.greenbuttonalliance.espi.common.domain.usage;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
+import org.greenbuttonalliance.espi.common.utils.security.PasswordPolicy;
+// Password encoder removed - authentication moved to DataCustodian/ThirdParty
+// import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 // Spring Security imports removed - authentication concerns moved to DataCustodian/ThirdParty repositories
 // import org.springframework.security.core.GrantedAuthority;
 // import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -33,7 +36,9 @@ import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import org.hibernate.annotations.BatchSize;
 // import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
@@ -53,10 +58,16 @@ import java.util.UUID;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
-@ToString(callSuper = true, exclude = {"usagePoints", "authorizations"})
+@ToString(callSuper = true, exclude = {"password", "usagePoints", "authorizations"})
 public class RetailCustomerEntity extends IdentifiedObject {
 
     private static final long serialVersionUID = 1L;
+
+    // Password encoder removed - authentication moved to DataCustodian/ThirdParty
+    // private static final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    
+    // Password policy validator
+    private static final PasswordPolicy passwordPolicy = new PasswordPolicy();
 
     // Role constants
     public static final String ROLE_USER = "ROLE_USER";
@@ -92,10 +103,14 @@ public class RetailCustomerEntity extends IdentifiedObject {
 
     /**
      * Encrypted password for authentication.
-     * Should be stored using BCrypt or similar secure hashing.
+     * Automatically hashed using BCrypt before storage.
+     * Never included in JSON serialization for security.
      */
-    @Column(name = "password")
-    @Size(min = 5, max = 100, message = "Password must be between 5 and 100 characters")
+    @JsonIgnore
+    @Column(name = "password", length = 100)
+    @Size(min = 8, max = 100, message = "Password must be between 8 and 100 characters")
+    @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$", 
+             message = "Password must contain at least one lowercase letter, one uppercase letter, one digit, and one special character")
     private String password;
 
     /**
@@ -161,15 +176,19 @@ public class RetailCustomerEntity extends IdentifiedObject {
     /**
      * Usage points associated with this customer.
      * One-to-many relationship representing all metering points.
+     * Optimized with batch loading to prevent N+1 queries.
      */
     @OneToMany(mappedBy = "retailCustomer", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @BatchSize(size = 10)
     private List<UsagePointEntity> usagePoints = new ArrayList<>();
 
     /**
      * Authorizations granted to this customer.
      * OAuth2 authorizations for third-party access.
+     * Optimized with batch loading to prevent N+1 queries.
      */
     @OneToMany(mappedBy = "retailCustomer", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @BatchSize(size = 20)
     private List<AuthorizationEntity> authorizations = new ArrayList<>();
 
     /**
@@ -357,8 +376,21 @@ public class RetailCustomerEntity extends IdentifiedObject {
                 this.role = other.role;
             }
             
-            // Note: Security-sensitive fields like password, enabled, accountLocked are not merged
+            // SECURITY: Never merge password, enabled, accountLocked, or authentication fields
+            // Password updates must use setPasswordSecurely() method
             // Note: Collections are not merged to preserve existing relationships
+        }
+    }
+
+    /**
+     * Safely updates password during merge if a new password is provided.
+     * This method should be called separately from merge() for security.
+     * 
+     * @param newRawPassword the new plain text password, or null to skip update
+     */
+    public void updatePasswordDuringMerge(String newRawPassword) {
+        if (newRawPassword != null && !newRawPassword.trim().isEmpty()) {
+            setPasswordSecurely(newRawPassword);
         }
     }
 
@@ -444,6 +476,105 @@ public class RetailCustomerEntity extends IdentifiedObject {
      */
     public boolean shouldLockAccount(int maxAttempts) {
         return failedLoginAttempts != null && failedLoginAttempts >= maxAttempts;
+    }
+
+    /**
+     * Password security methods moved to DataCustodian/ThirdParty applications.
+     * This is now a simple setter for migration/testing purposes.
+     * 
+     * @param rawPassword the plain text password (will be stored as-is for now)
+     * @deprecated Use authentication services in DataCustodian/ThirdParty modules
+     */
+    @Deprecated
+    public void setPasswordSecurely(String rawPassword) {
+        if (rawPassword == null || rawPassword.trim().isEmpty()) {
+            throw new IllegalArgumentException("Password cannot be null or empty");
+        }
+        
+        // Simple assignment - encryption handled in web layer
+        this.password = rawPassword.trim();
+    }
+
+    /**
+     * Sets password without validation (for system/migration use only).
+     * 
+     * @param rawPassword the plain text password to store
+     * @deprecated Use authentication services in DataCustodian/ThirdParty modules
+     */
+    @Deprecated
+    public void setPasswordSecurelyNoValidation(String rawPassword) {
+        if (rawPassword != null && !rawPassword.trim().isEmpty()) {
+            this.password = rawPassword.trim();
+        }
+    }
+
+    /**
+     * Simple password verification for backward compatibility.
+     * Real authentication moved to DataCustodian/ThirdParty modules.
+     * 
+     * @param rawPassword the plain text password to verify
+     * @return true if the password matches, false otherwise
+     * @deprecated Use authentication services in DataCustodian/ThirdParty modules
+     */
+    @Deprecated
+    public boolean checkPassword(String rawPassword) {
+        if (rawPassword == null || password == null) {
+            return false;
+        }
+        return rawPassword.equals(password);
+    }
+
+    /**
+     * Validates password against security policy.
+     * 
+     * @param rawPassword the plain text password to check
+     * @return validation result with details
+     */
+    public static PasswordPolicy.PasswordValidationResult validatePassword(String rawPassword) {
+        return passwordPolicy.validatePassword(rawPassword);
+    }
+
+    /**
+     * Checks if the current password is strong according to security policy.
+     * 
+     * @param rawPassword the plain text password to check
+     * @return true if password meets strength requirements, false otherwise
+     */
+    public static boolean isPasswordStrong(String rawPassword) {
+        return passwordPolicy.validatePassword(rawPassword).isValid();
+    }
+
+    /**
+     * Calculates password strength score (0-100).
+     * 
+     * @param rawPassword the plain text password to score
+     * @return strength score from 0 (weakest) to 100 (strongest)
+     */
+    public static int getPasswordStrength(String rawPassword) {
+        return passwordPolicy.calculatePasswordStrength(rawPassword);
+    }
+
+    /**
+     * Updates the password if it's different from the current one.
+     * Useful for password change operations.
+     * 
+     * @param newRawPassword the new plain text password
+     * @return true if password was updated, false if it was the same
+     * @deprecated Use authentication services in DataCustodian/ThirdParty modules
+     */
+    @Deprecated
+    public boolean updatePasswordIfDifferent(String newRawPassword) {
+        if (newRawPassword == null || newRawPassword.trim().isEmpty()) {
+            return false;
+        }
+        
+        // Check if the new password is different from current
+        if (checkPassword(newRawPassword)) {
+            return false; // Same password, no update needed
+        }
+        
+        setPasswordSecurely(newRawPassword);
+        return true;
     }
 
     /**

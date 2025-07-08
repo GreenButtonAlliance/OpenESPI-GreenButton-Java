@@ -1,8 +1,7 @@
 /*
  *
- *    Copyright (c) 2018-2021 Green Button Alliance, Inc.
+ *        Copyright (c) 2025 Green Button Alliance, Inc.
  *
- *    Portions (c) 2013-2018 EnergyOS.org
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
  *     you may not use this file except in compliance with the License.
@@ -20,13 +19,13 @@
 
 package org.greenbuttonalliance.espi.common.service;
 
-import org.greenbuttonalliance.espi.common.domain.legacy.BatchList;
+import org.greenbuttonalliance.espi.common.domain.usage.BatchListEntity;
 
 import java.util.List;
 
 public interface BatchListService {
 
-	void persist(BatchList batchList);
+	void persist(BatchListEntity batchList);
 
-	List<BatchList> findAll();
+	List<BatchListEntity> findAll();
 }

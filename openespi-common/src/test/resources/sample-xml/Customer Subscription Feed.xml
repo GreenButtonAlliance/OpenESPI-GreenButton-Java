@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:cust="http://naesb.org/espi/customer">
+	<id>urn:uuid:919df6d4-8d2f-52b5-b259-615d7d89c0a7</id>
+	<title>RetailCustomer - Customer</title>
+	<updated>2025-05-28T16:18:19Z</updated>
+	<link href="https://greenbutton-api.bigdataenergy.com/customer/espi/1_1/resource/RetailCustomer/354f06e1-be98-5478-bbb6-ec352956a4e7/Customer/200000776591AESOH/Account/200000776591" rel="self" type="text/xml"/>
+	<link href="https://cert.greenbuttonalliance.org/certificate/9ae2bf8e-2c12-59ed-a506-bd758a271671" rel="related" type="text/xml"/>
+	<entry>
+		<id>urn:uuid:5433cb95-5232-598a-bbf6-81214a35bfc8</id>
+		<link href="https://greenbutton-api.bigdataenergy.com/customer/espi/1_1/resource/LocalTimeParameters/100000000001" rel="related" type="cust-entry/LocalTimeParameters"/>
+		<link href="https://greenbutton-api.bigdataenergy.com/customer/espi/1_1/resource/RetailCustomer/354f06e1-be98-5478-bbb6-ec352956a4e7/Customer" rel="up" type="cust-feed/Customer"/>
+		<link href="https://greenbutton-api.bigdataenergy.com/customer/espi/1_1/resource/RetailCustomer/354f06e1-be98-5478-bbb6-ec352956a4e7/Customer/200000776591AESOH" rel="self" type="cust-entry/Customer"/>
+		<link href="https://greenbutton-api.bigdataenergy.com/customer/espi/1_1/resource/RetailCustomer/354f06e1-be98-5478-bbb6-ec352956a4e7/Customer/200000776591AESOH/CustomerAccount/200000776591" rel="related" type="cust-entry/CustomerAccount"/>
+		<title>Customer</title>
+		<content>
+			<cust:Customer>
+				<cust:Organisation>
+					<cust:streetAddress>
+						<cust:streetDetail>
+							<cust:suiteNumber/>
+							<cust:addressGeneral>205 DELL PARK AVE</cust:addressGeneral>
+						</cust:streetDetail>
+						<cust:townDetail>
+							<cust:name>DAYTON</cust:name>
+							<cust:stateOrProvince>Ohio</cust:stateOrProvince>
+							<cust:country>US</cust:country>
+						</cust:townDetail>
+						<cust:postalCode>45419-1340</cust:postalCode>
+						<cust:poBox>N/A</cust:poBox>
+					</cust:streetAddress>
+					<cust:organisationName>HEMMERT JOHN</cust:organisationName>
+				</cust:Organisation>
+				<cust:kind>Residential</cust:kind>
+				<cust:locale>en</cust:locale>
+				<cust:customerName>HEMMERT JOHN</cust:customerName>
+			</cust:Customer>
+		</content>
+		<published>2024-09-07T19:38:44Z</published>
+		<updated>2024-09-25T16:05:42Z</updated>
+	</entry>
+	<entry>
+		<id>urn:uuid:4052278c-82ee-5173-b6e8-49347e64afbf</id>
+		<link href="https://greenbutton-api.bigdataenergy.com/customer/espi/1_1/resource/RetailCustomer/354f06e1-be98-5478-bbb6-ec352956a4e7/Customer/200000776591AESOH" rel="related" type="cust-entry/Customer"/>
+		<link href="https://greenbutton-api.bigdataenergy.com/customer/espi/1_1/resource/RetailCustomer/354f06e1-be98-5478-bbb6-ec352956a4e7/Customer/200000776591AESOH/CustomerAccount" rel="up" type="cust-feed/CustomerAccount"/>
+		<link href="https://greenbutton-api.bigdataenergy.com/customer/espi/1_1/resource/RetailCustomer/354f06e1-be98-5478-bbb6-ec352956a4e7/Customer/200000776591AESOH/CustomerAccount/200000776591" rel="self" type="cust-entry/CustomerAccount"/>
+		<link href="https://greenbutton-api.bigdataenergy.com/customer/espi/1_1/resource/RetailCustomer/354f06e1-be98-5478-bbb6-ec352956a4e7/Customer/200000776591AESOH/CustomerAccount/200000776591/CustomerAgreement/8000177813" rel="related" type="cust-entry/CustomerAgreement"/>
+		<title>Customer Account</title>
+		<content>
+			<cust:CustomerAccount>
+				<cust:contactInfo>
+					<cust:streetAddress>
+						<cust:streetDetail>
+							<cust:name>205 DELL PARK AVE</cust:name>
+							<cust:suiteNumber/>
+						</cust:streetDetail>
+						<cust:townDetail>
+							<cust:name>DAYTON</cust:name>
+							<cust:stateOrProvince>Ohio</cust:stateOrProvince>
+							<cust:country>US</cust:country>
+						</cust:townDetail>
+						<cust:postalCode>45419-1340</cust:postalCode>
+						<cust:poBox>N/A</cust:poBox>
+					</cust:streetAddress>
+				</cust:contactInfo>
+				<cust:accountId>200000776591</cust:accountId>
+			</cust:CustomerAccount>
+		</content>
+		<published>2024-09-07T19:38:42Z</published>
+		<updated>2024-09-26T13:31:21Z</updated>
+	</entry>
+	<entry>
+		<id>urn:uuid:3ba4fbb6-cb97-58b6-b29e-0eda887198d7</id>
+		<link href="https://greenbutton-api.bigdataenergy.com/customer/espi/1_1/resource/RetailCustomer/354f06e1-be98-5478-bbb6-ec352956a4e7/Customer/200000776591AESOH/CustomerAccount/200000776591" rel="related" type="cust-entry/CustomerAccount"/>
+		<link href="https://greenbutton-api.bigdataenergy.com/customer/espi/1_1/resource/RetailCustomer/354f06e1-be98-5478-bbb6-ec352956a4e7/Customer/200000776591AESOH/CustomerAccount/200000776591/CustomerAgreement" rel="up" type="cust-feed/CustomerAgreement"/>
+		<link href="https://greenbutton-api.bigdataenergy.com/customer/espi/1_1/resource/RetailCustomer/354f06e1-be98-5478-bbb6-ec352956a4e7/Customer/200000776591AESOH/CustomerAccount/200000776591/CustomerAgreement/8000177813" rel="self" type="cust-entry/CustomerAgreement"/>
+		<link href="https://greenbutton-api.bigdataenergy.com/customer/espi/1_1/resource/RetailCustomer/354f06e1-be98-5478-bbb6-ec352956a4e7/Customer/200000776591AESOH/CustomerAccount/200000776591/CustomerAgreement/8000177813/ServiceLocation/8000177813" rel="related" type="cust-entry/ServiceLocation"/>
+		<link href="https://greenbutton-api.bigdataenergy.com/customer/espi/1_1/resource/RetailCustomer/354f06e1-be98-5478-bbb6-ec352956a4e7/Customer/200000776591AESOH/CustomerAccount/200000776591/CustomerAgreement/8000177813/ServiceSupplier/8000177813-SS" rel="related" type="cust-entry/ServiceSupplier"/>
+		<title>Customer Agreement</title>
+		<content>
+			<cust:CustomerAgreement>
+				<cust:validityInterval>
+					<cust:duration>4294967295</cust:duration>
+					<cust:start>1725737922</cust:start>
+				</cust:validityInterval>
+				<cust:currency>840</cust:currency>
+				<cust:agreementId>8000177813</cust:agreementId>
+			</cust:CustomerAgreement>
+		</content>
+		<published>2024-09-07T19:38:42Z</published>
+		<updated>2024-09-26T13:30:56Z</updated>
+	</entry>
+	<entry>
+		<id>urn:uuid:d1547f73-ff06-5b09-93fb-556d81971ae7</id>
+		<link href="https://greenbutton-api.bigdataenergy.com/customer/espi/1_1/resource/LocalTimeParameters/100000000001" rel="related" type="cust-entry/LocalTimeParameters"/>
+		<link href="https://greenbutton-api.bigdataenergy.com/customer/espi/1_1/resource/RetailCustomer/354f06e1-be98-5478-bbb6-ec352956a4e7/Customer/200000776591AESOH/CustomerAccount/200000776591/CustomerAgreement/8000177813" rel="related" type="cust-entry/CustomerAgreement"/>
+		<link href="https://greenbutton-api.bigdataenergy.com/customer/espi/1_1/resource/RetailCustomer/354f06e1-be98-5478-bbb6-ec352956a4e7/Customer/200000776591AESOH/CustomerAccount/200000776591/CustomerAgreement/8000177813/ServiceLocation" rel="up" type="cust-feed/ServiceLocation"/>
+		<link href="https://greenbutton-api.bigdataenergy.com/customer/espi/1_1/resource/RetailCustomer/354f06e1-be98-5478-bbb6-ec352956a4e7/Customer/200000776591AESOH/CustomerAccount/200000776591/CustomerAgreement/8000177813/ServiceLocation/8000177813" rel="self" type="cust-entry/ServiceLocation"/>
+		<link href="https://greenbutton-api.bigdataenergy.com/customer/espi/1_1/resource/RetailCustomer/354f06e1-be98-5478-bbb6-ec352956a4e7/Customer/200000776591AESOH/CustomerAccount/200000776591/CustomerAgreement/8000177813/ServiceLocation/8000177813/EndDevice/400310696-ED" rel="related" type="cust-entry/EndDevice"/>
+		<link href="https://greenbutton-api.bigdataenergy.com/customer/espi/1_1/resource/RetailCustomer/354f06e1-be98-5478-bbb6-ec352956a4e7/Customer/200000776591AESOH/CustomerAccount/200000776591/CustomerAgreement/8000177813/ServiceLocation/8000177813/Meter/400310696" rel="related" type="cust-entry/Meter"/>
+		<title>Service Location</title>
+		<content>
+			<cust:ServiceLocation>
+				<cust:mainAddress>
+					<cust:streetDetail>
+						<cust:addressGeneral>DELL PARK AVE 205 </cust:addressGeneral>
+					</cust:streetDetail>
+					<cust:townDetail>
+						<cust:name>DAYTON</cust:name>
+						<cust:stateOrProvince>OH</cust:stateOrProvince>
+						<cust:country>US</cust:country>
+					</cust:townDetail>
+				</cust:mainAddress>
+				<cust:status>
+					<cust:value>Active</cust:value>
+					<cust:remark/>
+				</cust:status>
+				<cust:UsagePoints>
+					<cust:UsagePoint>https://aes-ohio-greenbutton-app.bigdataenergy.com/espi/1_1/resource/RetailCustomer/354f06e1-be98-5478-bbb6-ec352956a4e7/UsagePoint/fd4221ff-c5ce-5ce9-97f6-ea771b2d8358</cust:UsagePoint>
+				</cust:UsagePoints>
+			</cust:ServiceLocation>
+		</content>
+		<published>2024-09-07T19:39:45Z</published>
+		<updated>2024-09-26T18:05:30Z</updated>
+	</entry>
+	<entry>
+		<id>urn:uuid:ad5fd598-4091-5b5b-9980-5152596e5b4c</id>
+		<link href="https://greenbutton-api.bigdataenergy.com/customer/espi/1_1/resource/RetailCustomer/354f06e1-be98-5478-bbb6-ec352956a4e7/Customer/200000776591AESOH/CustomerAccount/200000776591/CustomerAgreement/8000177813" rel="related" type="cust-entry/CustomerAgreement"/>
+		<link href="https://greenbutton-api.bigdataenergy.com/customer/espi/1_1/resource/RetailCustomer/354f06e1-be98-5478-bbb6-ec352956a4e7/Customer/200000776591AESOH/CustomerAccount/200000776591/CustomerAgreement/8000177813/ServiceSupplier" rel="up" type="cust-feed/ServiceSupplier"/>
+		<link href="https://greenbutton-api.bigdataenergy.com/customer/espi/1_1/resource/RetailCustomer/354f06e1-be98-5478-bbb6-ec352956a4e7/Customer/200000776591AESOH/CustomerAccount/200000776591/CustomerAgreement/8000177813/ServiceSupplier/8000177813-SS" rel="self" type="cust-entry/ServiceSupplier"/>
+		<title>Service Supplier</title>
+		<content>
+			<cust:ServiceSupplier>
+				<cust:Organisation>
+					<cust:organisationName>AES OH</cust:organisationName>
+				</cust:Organisation>
+				<cust:effectiveDate>1725737922</cust:effectiveDate>
+			</cust:ServiceSupplier>
+		</content>
+		<published>2024-09-07T19:38:42Z</published>
+		<updated>2024-09-26T13:31:16Z</updated>
+	</entry>
+	<entry>
+		<id>urn:uuid:863ad9be-3d46-5c52-b345-20a7ff2b96b5</id>
+		<link href="https://greenbutton-api.bigdataenergy.com/customer/espi/1_1/resource/RetailCustomer/354f06e1-be98-5478-bbb6-ec352956a4e7/Customer/200000776591AESOH/CustomerAccount/200000776591/CustomerAgreement/8000177813/ServiceLocation/8000177813" rel="related" type="cust-entry/ServiceLocation"/>
+		<link href="https://greenbutton-api.bigdataenergy.com/customer/espi/1_1/resource/RetailCustomer/354f06e1-be98-5478-bbb6-ec352956a4e7/Customer/200000776591AESOH/CustomerAccount/200000776591/CustomerAgreement/8000177813/ServiceLocation/8000177813/EndDevice" rel="up" type="cust-feed/EndDevice"/>
+		<link href="https://greenbutton-api.bigdataenergy.com/customer/espi/1_1/resource/RetailCustomer/354f06e1-be98-5478-bbb6-ec352956a4e7/Customer/200000776591AESOH/CustomerAccount/200000776591/CustomerAgreement/8000177813/ServiceLocation/8000177813/EndDevice/400310696-ED" rel="self" type="cust-entry/EndDevice"/>
+		<title>End Device</title>
+		<content>
+			<cust:EndDevice>
+				<cust:type>INTERVAL</cust:type>
+				<cust:serialNumber>400310696</cust:serialNumber>
+				<cust:status>
+					<cust:value>Active</cust:value>
+				</cust:status>
+			</cust:EndDevice>
+		</content>
+		<published>2024-09-07T19:39:04Z</published>
+		<updated>2024-09-29T13:30:39Z</updated>
+	</entry>
+	<entry>
+		<id>urn:uuid:2ec88611-37ec-55df-941b-89925555d15a</id>
+		<link href="https://greenbutton-api.bigdataenergy.com/customer/espi/1_1/resource/RetailCustomer/354f06e1-be98-5478-bbb6-ec352956a4e7/Customer/200000776591AESOH/CustomerAccount/200000776591/CustomerAgreement/8000177813/ServiceLocation/8000177813" rel="related" type="cust-entry/ServiceLocation"/>
+		<link href="https://greenbutton-api.bigdataenergy.com/customer/espi/1_1/resource/RetailCustomer/354f06e1-be98-5478-bbb6-ec352956a4e7/Customer/200000776591AESOH/CustomerAccount/200000776591/CustomerAgreement/8000177813/ServiceLocation/8000177813/Meter" rel="up" type="cust-feed/Meter"/>
+		<link href="https://greenbutton-api.bigdataenergy.com/customer/espi/1_1/resource/RetailCustomer/354f06e1-be98-5478-bbb6-ec352956a4e7/Customer/200000776591AESOH/CustomerAccount/200000776591/CustomerAgreement/8000177813/ServiceLocation/8000177813/Meter/400310696" rel="self" type="cust-entry/Meter"/>
+		<title>Meter</title>
+		<content>
+			<cust:Meter>
+				<cust:type>INTERVAL</cust:type>
+				<cust:serialNumber>400310696</cust:serialNumber>
+				<cust:status>
+					<cust:value>Active</cust:value>
+					<cust:remark/>
+				</cust:status>
+				<cust:MeterMultipliers>
+					<cust:kind>kH</cust:kind>
+					<cust:value>1.0</cust:value>
+				</cust:MeterMultipliers>
+				<cust:intervalLength>900</cust:intervalLength>
+			</cust:Meter>
+		</content>
+		<published>2024-09-07T19:39:04Z</published>
+		<updated>2024-09-28T22:46:30Z</updated>
+	</entry>
+	<entry>
+		<id>urn:uuid:d5817ccb-ed4c-5ebb-b46b-9a322b63b07e</id>
+		<link href="https://greenbutton-api.bigdataenergy.com/customer/espi/1_1/resource/RetailCustomer/354f06e1-be98-5478-bbb6-ec352956a4e7/Customer/200000776591AESOH" rel="related" type="cust-entry/Customer"/>
+		<link href="https://greenbutton-api.bigdataenergy.com/customer/espi/1_1/resource/RetailCustomer/354f06e1-be98-5478-bbb6-ec352956a4e7/Customer/200000776591AESOH/CustomerAccount/200000776591/CustomerAgreement/8000177813/ServiceLocation/8000177813" rel="related" type="cust-entry/ServiceLocation"/>
+		<link href="https://greenbutton-api.bigdataenergy.com/customer/espi/1_1/resource/LocalTimeParameters" rel="up" type="cust-feed/LocalTimeParameters"/>
+		<link href="https://greenbutton-api.bigdataenergy.com/customer/espi/1_1/resource/LocalTimeParameters/100000000001" rel="self" type="cust-entry/LocalTimeParameters"/>
+		<title>Local Time Parameters</title>
+		<content>
+			<cust:LocalTimeParameters>
+				<cust:dstEndRule>30</cust:dstEndRule>
+				<cust:dstOffset>3600</cust:dstOffset>
+				<cust:dstStartRule>30</cust:dstStartRule>
+				<cust:tzOffset>-18000</cust:tzOffset>
+			</cust:LocalTimeParameters>
+		</content>
+		<published>2020-01-01T00:00:00Z</published>
+		<updated>2020-03-11T00:00:00Z</updated>
+	</entry>
+</feed>

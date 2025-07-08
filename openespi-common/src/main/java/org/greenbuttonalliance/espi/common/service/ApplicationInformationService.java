@@ -1,8 +1,7 @@
 /*
  *
- *    Copyright (c) 2018-2021 Green Button Alliance, Inc.
+ *        Copyright (c) 2025 Green Button Alliance, Inc.
  *
- *    Portions (c) 2013-2018 EnergyOS.org
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
  *     you may not use this file except in compliance with the License.
@@ -20,7 +19,7 @@
 
 package org.greenbuttonalliance.espi.common.service;
 
-import org.greenbuttonalliance.espi.common.domain.legacy.ApplicationInformation;
+import org.greenbuttonalliance.espi.common.domain.usage.ApplicationInformationEntity;
 
 import java.io.InputStream;
 import java.util.List;
@@ -31,35 +30,35 @@ public interface ApplicationInformationService {
 	 * @param kind
 	 *            String indicating [ DATA_CUSTODIAN_ADMIN | THIRD_PARTY |
 	 *            UPLOAD_ADMIN ]
-	 * @return List of ApplicationInformation Resources
+	 * @return List of ApplicationInformationEntity Resources
 	 */
-	public List<ApplicationInformation> findByKind(String kind);
+	public List<ApplicationInformationEntity> findByKind(String kind);
 
 	/**
-	 * Find an ApplicationInformation resource by using it's clientId.
+	 * Find an ApplicationInformationEntity resource by using it's clientId.
 	 * 
 	 * @param clientId
-	 *            String uniquely identifying a specific ApplicationInformation.clientId
-	 * @return an ApplicationInformation resource
+	 *            String uniquely identifying a specific ApplicationInformationEntity.clientId
+	 * @return an ApplicationInformationEntity resource
 	 */
-	public ApplicationInformation findByClientId(String clientId);
+	public ApplicationInformationEntity findByClientId(String clientId);
 
 	/**
 	 * Find an Application Information resource by using it's dataCustodianId.
 	 * 
 	 * @param dataCustodianClientId
-	 * @return an ApplicationInformation resource
+	 * @return an ApplicationInformationEntity resource
 	 */
-	public ApplicationInformation findByDataCustodianClientId(
+	public ApplicationInformationEntity findByDataCustodianClientId(
 			String dataCustodianClientId);
 
 	/**
-	 * Import and XML stream, unmarshalling into an ApplicationInformation
+	 * Import and XML stream, unmarshalling into an ApplicationInformationEntity
 	 * resource
 	 * 
 	 * @param stream
-	 * @return an ApplicationInformation resource
+	 * @return an ApplicationInformationEntity resource
 	 */
-	public ApplicationInformation importResource(InputStream stream);
+	public ApplicationInformationEntity importResource(InputStream stream);
 
 }

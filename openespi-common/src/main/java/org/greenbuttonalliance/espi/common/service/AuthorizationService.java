@@ -1,8 +1,7 @@
 /*
  *
- *    Copyright (c) 2018-2021 Green Button Alliance, Inc.
+ *        Copyright (c) 2025 Green Button Alliance, Inc.
  *
- *    Portions (c) 2013-2018 EnergyOS.org
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
  *     you may not use this file except in compliance with the License.
@@ -20,10 +19,8 @@
 
 package org.greenbuttonalliance.espi.common.service;
 
-import org.greenbuttonalliance.espi.common.domain.legacy.Authorization;
-import org.greenbuttonalliance.espi.common.domain.legacy.Subscription;
-import org.greenbuttonalliance.espi.common.domain.legacy.atom.EntryType;
-import org.greenbuttonalliance.espi.common.utils.EntryTypeIterator;
+import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.SubscriptionEntity;
 
 import java.io.InputStream;
 import java.util.List;
@@ -31,7 +28,7 @@ import java.util.UUID;
 
 public interface AuthorizationService {
 	// residue from random stories
-	List<Authorization> findAllByRetailCustomerId(Long retailCustomerId);
+	List<AuthorizationEntity> findAllByRetailCustomerId(Long retailCustomerId);
 
 	/**
 	 * @param authorization
@@ -41,51 +38,43 @@ public interface AuthorizationService {
 	List<Long> findAllIdsByApplicationInformationId(
 			Long applicationInformationId);
 
-	Authorization createAuthorization(Subscription subscription,
+	AuthorizationEntity createAuthorizationEntity(SubscriptionEntity subscription,
 									  String accessToken);
 
-	Authorization findByState(String state);
+	AuthorizationEntity findByState(String state);
 
-	Authorization findByScope(String scope, Long retailCustomerId);
+	AuthorizationEntity findByScope(String scope, Long retailCustomerId);
 
-	Authorization findByAccessToken(String accessToken);
+	AuthorizationEntity findByAccessToken(String accessToken);
 
-	List<Authorization> findAll();
+	List<AuthorizationEntity> findAll();
 
-	String feedFor(List<Authorization> authorizations);
+	String feedFor(List<AuthorizationEntity> authorizations);
 
-	String entryFor(Authorization authorization);
+	String entryFor(AuthorizationEntity authorization);
 
-	Authorization findByURI(String uri);
+	AuthorizationEntity findByURI(String uri);
 
 	// persistence management services
-	void persist(Authorization authorization);
+	void persist(AuthorizationEntity authorization);
 
-	void merge(Authorization authorization);
+	void merge(AuthorizationEntity authorization);
 
 	// accessor services
-	Authorization findById(Long authorizationId);
+	AuthorizationEntity findById(Long authorizationId);
 
-	EntryType findEntryType(Long retailCustomerId, Long authorizationId);
+	void add(AuthorizationEntity authorization);
 
-	EntryTypeIterator findEntryTypeIterator(Long retailCustomerId);
-
-	void add(Authorization authorization);
-
-	void delete(Authorization authorization);
+	void delete(AuthorizationEntity authorization);
 
 	// import-exportResource services
-	Authorization importResource(InputStream stream);
+	AuthorizationEntity importResource(InputStream stream);
 
-	Authorization findById(Long retailCustomerId, long authorizationId);
+	AuthorizationEntity findById(Long retailCustomerId, long authorizationId);
 
-	EntryType findRoot(Long authorizationId);
+	AuthorizationEntity findByUUID(UUID uuid);
 
-	EntryTypeIterator findEntryTypeIterator();
-
-	Authorization findByUUID(UUID uuid);
-
-	Authorization findByRefreshToken(String refreshToken);
+	AuthorizationEntity findByRefreshToken(String refreshToken);
 
 	List<Long> findAllIdsByBulkId(String thirdParty, Long bulkId);
 

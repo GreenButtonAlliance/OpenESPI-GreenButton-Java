@@ -1,8 +1,7 @@
 /*
  *
- *    Copyright (c) 2018-2021 Green Button Alliance, Inc.
+ *        Copyright (c) 2025 Green Button Alliance, Inc.
  *
- *    Portions (c) 2013-2018 EnergyOS.org
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
  *     you may not use this file except in compliance with the License.
@@ -20,25 +19,34 @@
 
 package org.greenbuttonalliance.espi.thirdparty.web;
 
-import org.greenbuttonalliance.espi.common.domain.RetailCustomer;
-import org.greenbuttonalliance.espi.common.domain.Routes;
+import org.greenbuttonalliance.espi.common.constants.Routes;
+import org.greenbuttonalliance.espi.common.constants.UserRoles;
+import org.greenbuttonalliance.espi.common.service.RetailCustomerService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.security.Principal;
 
 @Controller
-public class DefaultController extends BaseController {
+public class DefaultController {
 
-	@RequestMapping(Routes.DEFAULT)
-	public String defaultAfterLogin(HttpServletRequest request,
-			Principal principal) {
-		if (request.isUserInRole(RetailCustomer.ROLE_CUSTODIAN)) {
+	@Autowired
+	private RetailCustomerService retailCustomerService;
+
+	@GetMapping(Routes.DEFAULT)
+	public String defaultAfterLogin(HttpServletRequest request, Principal principal) {
+		if (request.isUserInRole(UserRoles.ROLE_CUSTODIAN)) {
 			return "redirect:/custodian/home";
-		} else if (request.isUserInRole(RetailCustomer.ROLE_USER)) {
-			return "redirect:/RetailCustomer/"
-					+ currentCustomer(principal).getId() + "/home";
+		} else if (request.isUserInRole(UserRoles.ROLE_USER)) {
+			if (principal instanceof Authentication auth) {
+				var customer = retailCustomerService.findByUsername(auth.getName());
+				if (customer != null) {
+					return "redirect:/RetailCustomer/" + customer.getId() + "/home";
+				}
+			}
 		}
 		return "redirect:/home";
 	}

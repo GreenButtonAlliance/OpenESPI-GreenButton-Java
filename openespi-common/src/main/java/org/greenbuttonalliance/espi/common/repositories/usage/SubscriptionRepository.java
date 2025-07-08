@@ -1,8 +1,7 @@
 /*
  *
- *     Copyright (c) 2018-2025 Green Button Alliance, Inc.
+ *         Copyright (c) 2025 Green Button Alliance, Inc.
  *
- *     Portions copyright (c) 2013-2018 EnergyOS.org
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
  *     you may not use this file except in compliance with the License.
@@ -20,7 +19,7 @@
 
 package org.greenbuttonalliance.espi.common.repositories.usage;
 
-import org.greenbuttonalliance.espi.common.domain.legacy.Subscription;
+import org.greenbuttonalliance.espi.common.domain.usage.SubscriptionEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -33,36 +32,36 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface SubscriptionRepository extends JpaRepository<Subscription, Long> {
+public interface SubscriptionRepository extends JpaRepository<SubscriptionEntity, UUID> {
 	// JpaRepository provides: save(), findAll(), findById(), deleteById(), etc.
 	// Note: merge() functionality is handled by save() in Spring Data JPA
 
-	Optional<Subscription> findByHashedId(String hashedId);
+	Optional<SubscriptionEntity> findByHashedId(String hashedId);
 
 	@Modifying
 	@Transactional
-	@Query("DELETE FROM Subscription s WHERE s.id = :id")
-	void deleteById(@Param("id") Long id);
+	@Query("DELETE FROM SubscriptionEntity s WHERE s.id = :id")
+	void deleteById(@Param("id") UUID id);
 
-	Optional<Subscription> findByUuid(UUID uuid);
+	Optional<SubscriptionEntity> findByUuid(UUID uuid);
 
-	@Query("SELECT s FROM Subscription s WHERE s.authorization.id = :authorizationId")
-	Optional<Subscription> findByAuthorizationId(@Param("authorizationId") Long id);
+	@Query("SELECT s FROM SubscriptionEntity s WHERE s.authorization.id = :authorizationId")
+	Optional<SubscriptionEntity> findByAuthorizationId(@Param("authorizationId") UUID id);
 
 	// Missing NamedQueries that need to be added:
 
-	@Query("SELECT s.id FROM Subscription s")
-	List<Long> findAllIds();
+	@Query("SELECT s.id FROM SubscriptionEntity s")
+	List<UUID> findAllIds();
 
-	@Query("SELECT s FROM Subscription s WHERE s.retailCustomer.id = :retailCustomerId")
-	List<Subscription> findByRetailCustomerId(@Param("retailCustomerId") Long retailCustomerId);
+	@Query("SELECT s FROM SubscriptionEntity s WHERE s.retailCustomer.id = :retailCustomerId")
+	List<SubscriptionEntity> findByRetailCustomerId(@Param("retailCustomerId") UUID retailCustomerId);
 
-	@Query("SELECT s FROM Subscription s WHERE s.applicationInformation.id = :applicationInformationId")
-	List<Subscription> findByApplicationInformationId(@Param("applicationInformationId") Long applicationInformationId);
+	@Query("SELECT s FROM SubscriptionEntity s WHERE s.applicationInformation.id = :applicationInformationId")
+	List<SubscriptionEntity> findByApplicationInformationId(@Param("applicationInformationId") UUID applicationInformationId);
 
-	@Query("SELECT s FROM Subscription s WHERE s.authorization IS NOT NULL AND s.authorization.status = 'ACTIVE'")
-	List<Subscription> findActiveSubscriptions();
+	@Query("SELECT s FROM SubscriptionEntity s WHERE s.authorization IS NOT NULL AND s.authorization.status = 'ACTIVE'")
+	List<SubscriptionEntity> findActiveSubscriptions();
 
-	@Query("SELECT DISTINCT s FROM Subscription s JOIN s.usagePoints up WHERE up.id = :usagePointId")
-	List<Subscription> findByUsagePointId(@Param("usagePointId") Long usagePointId);
+	@Query("SELECT DISTINCT s FROM SubscriptionEntity s JOIN s.usagePoints up WHERE up.id = :usagePointId")
+	List<SubscriptionEntity> findByUsagePointId(@Param("usagePointId") UUID usagePointId);
 }

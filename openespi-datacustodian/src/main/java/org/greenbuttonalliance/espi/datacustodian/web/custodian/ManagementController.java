@@ -1,8 +1,7 @@
 /*
  *
- *    Copyright (c) 2018-2021 Green Button Alliance, Inc.
+ *        Copyright (c) 2025 Green Button Alliance, Inc.
  *
- *    Portions (c) 2013-2018 EnergyOS.org
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
  *     you may not use this file except in compliance with the License.
@@ -20,39 +19,36 @@
 
 package org.greenbuttonalliance.espi.datacustodian.web.custodian;
 
-import org.greenbuttonalliance.espi.common.domain.legacy.Routes;
 import org.greenbuttonalliance.espi.common.service.NotificationService;
-import org.greenbuttonalliance.espi.datacustodian.web.BaseController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 
 @Controller
 @PreAuthorize("hasRole('ROLE_CUSTODIAN')")
-public class ManagementController extends BaseController {
+public class ManagementController {
 
 	@Autowired
 	private NotificationService notificationService;
 
-	@RequestMapping(value = Routes.DATA_CUSTODIAN_NOTIFY_THIRD_PARTY, method = RequestMethod.GET)
+	@GetMapping("/espi/1_1/NotifyThirdParty/{applicationInformationId}")
 	public String notifyThirdParty(@PathVariable Long applicationInformationId,
 			ModelMap model) throws Exception {
 
 		notificationService.notifyAllNeed();
 
-		return "redirect:" + Routes.DATA_CUSTODIAN_HOME;
+		return "redirect:/custodian/home";
 	}
 
-	@RequestMapping(value = Routes.DATA_CUSTODIAN_NOTIFY_THIRD_PARTYS, method = RequestMethod.GET)
-	public String notifyThirdParty(ModelMap model) throws Exception {
+	@GetMapping("/espi/1_1/NotifyThirdParty")
+	public String notifyAllThirdParties(ModelMap model) throws Exception {
 
 		notificationService.notifyAllNeed();
 
-		return "redirect:" + Routes.DATA_CUSTODIAN_HOME;
+		return "redirect:/custodian/home";
 	}
 
 	public void setNotificationService(NotificationService notificationService) {

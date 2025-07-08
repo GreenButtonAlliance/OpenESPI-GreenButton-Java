@@ -1,9 +1,9 @@
 # Development PostgreSQL Profile Configuration
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/datacustodian?createDatabaseIfNotExist=true
-    username: espi
-    password: espi123
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/datacustodian?createDatabaseIfNotExist=true}
+    username: ${DATABASE_USERNAME:espi}
+    password: ${DATABASE_PASSWORD:espi123}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 20

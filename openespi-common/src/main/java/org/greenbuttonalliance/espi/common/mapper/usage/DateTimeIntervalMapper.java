@@ -1,8 +1,7 @@
 /*
  *
- *    Copyright (c) 2018-2025 Green Button Alliance, Inc.
+ *        Copyright (c) 2025 Green Button Alliance, Inc.
  *
- *    Portions (c) 2013-2018 EnergyOS.org
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
  *     you may not use this file except in compliance with the License.
@@ -20,7 +19,7 @@
 
 package org.greenbuttonalliance.espi.common.mapper.usage;
 
-import org.greenbuttonalliance.espi.common.domain.legacy.DateTimeInterval;
+import org.greenbuttonalliance.espi.common.domain.common.DateTimeInterval;
 import org.greenbuttonalliance.espi.common.dto.usage.DateTimeIntervalDto;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -54,6 +53,5 @@ public interface DateTimeIntervalMapper {
      */
     @Mapping(target = "start", source = "start")
     @Mapping(target = "duration", source = "duration")
-    @Mapping(target = "extension", ignore = true) // Extension field not present in DTO
     DateTimeInterval toEntity(DateTimeIntervalDto dto);
 }

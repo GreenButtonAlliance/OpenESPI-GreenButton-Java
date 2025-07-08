@@ -1,7 +1,21 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(sed:*)",
+      "Bash(mvn clean compile:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(ls:*)",
+      "Bash(mvn compile:*)",
+      "Bash(jar tf:*)",
+      "Bash(javap:*)",
+      "Bash(rg:*)",
+      "Bash(mvn clean:*)",
+      "Bash(mkdir:*)",
+      "Bash(mv:*)"
     ],
     "deny": []
   }

@@ -1,8 +1,7 @@
 /*
  *
- *     Copyright (c) 2018-2025 Green Button Alliance, Inc.
+ *         Copyright (c) 2025 Green Button Alliance, Inc.
  *
- *     Portions copyright (c) 2013-2018 EnergyOS.org
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
  *     you may not use this file except in compliance with the License.
@@ -28,6 +27,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Spring Data JPA repository for PnodeRefEntity.
@@ -35,7 +35,7 @@ import java.util.List;
  * Provides CRUD operations and custom queries for pricing node references.
  */
 @Repository
-public interface PnodeRefRepository extends JpaRepository<PnodeRefEntity, Long> {
+public interface PnodeRefRepository extends JpaRepository<PnodeRefEntity, UUID> {
 
     /**
      * Find all pricing node references for a specific usage point.
@@ -51,7 +51,7 @@ public interface PnodeRefRepository extends JpaRepository<PnodeRefEntity, Long> 
      * @param usagePointId the usage point ID
      * @return list of pricing node references
      */
-    List<PnodeRefEntity> findByUsagePointId(Long usagePointId);
+    List<PnodeRefEntity> findByUsagePointId(UUID usagePointId);
 
     /**
      * Find pricing node references by type.
@@ -88,7 +88,7 @@ public interface PnodeRefRepository extends JpaRepository<PnodeRefEntity, Long> 
     @Query("SELECT p FROM PnodeRefEntity p WHERE p.usagePoint.id = :usagePointId " +
            "AND (p.startEffectiveDate IS NULL OR p.startEffectiveDate <= :currentTime) " +
            "AND (p.endEffectiveDate IS NULL OR p.endEffectiveDate >= :currentTime)")
-    List<PnodeRefEntity> findValidByUsagePointId(@Param("usagePointId") Long usagePointId, 
+    List<PnodeRefEntity> findValidByUsagePointId(@Param("usagePointId") UUID usagePointId, 
                                                 @Param("currentTime") Long currentTime);
 
     /**
@@ -118,5 +118,5 @@ public interface PnodeRefRepository extends JpaRepository<PnodeRefEntity, Long> 
      * @param usagePointId the usage point ID
      * @return number of deleted records
      */
-    Long deleteByUsagePointId(Long usagePointId);
+    Long deleteByUsagePointId(UUID usagePointId);
 }

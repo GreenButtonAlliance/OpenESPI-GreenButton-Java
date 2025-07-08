@@ -1,8 +1,7 @@
 /*
  *
- *    Copyright (c) 2018-2021 Green Button Alliance, Inc.
+ *        Copyright (c) 2025 Green Button Alliance, Inc.
  *
- *    Portions (c) 2013-2018 EnergyOS.org
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
  *     you may not use this file except in compliance with the License.
@@ -20,16 +19,16 @@
 
 package org.greenbuttonalliance.espi.thirdparty.web;
 
-import org.greenbuttonalliance.espi.common.domain.Routes;
+import org.greenbuttonalliance.espi.common.constants.Routes;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 
 @Controller
 @RequestMapping(Routes.LOGIN)
-public class LoginController extends BaseController {
+public class LoginController {
 
-	@RequestMapping(method = RequestMethod.GET)
+	@GetMapping
 	public String index() {
 		return "login";
 	}

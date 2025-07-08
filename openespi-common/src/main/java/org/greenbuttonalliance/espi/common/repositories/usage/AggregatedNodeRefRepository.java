@@ -1,8 +1,7 @@
 /*
  *
- *     Copyright (c) 2018-2025 Green Button Alliance, Inc.
+ *         Copyright (c) 2025 Green Button Alliance, Inc.
  *
- *     Portions copyright (c) 2013-2018 EnergyOS.org
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
  *     you may not use this file except in compliance with the License.
@@ -29,6 +28,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Spring Data JPA repository for AggregatedNodeRefEntity.
@@ -36,7 +36,7 @@ import java.util.List;
  * Provides CRUD operations and custom queries for aggregated node references.
  */
 @Repository
-public interface AggregatedNodeRefRepository extends JpaRepository<AggregatedNodeRefEntity, Long> {
+public interface AggregatedNodeRefRepository extends JpaRepository<AggregatedNodeRefEntity, UUID> {
 
     /**
      * Find all aggregated node references for a specific usage point.
@@ -52,7 +52,7 @@ public interface AggregatedNodeRefRepository extends JpaRepository<AggregatedNod
      * @param usagePointId the usage point ID
      * @return list of aggregated node references
      */
-    List<AggregatedNodeRefEntity> findByUsagePointId(Long usagePointId);
+    List<AggregatedNodeRefEntity> findByUsagePointId(UUID usagePointId);
 
     /**
      * Find aggregated node references by type.
@@ -93,7 +93,7 @@ public interface AggregatedNodeRefRepository extends JpaRepository<AggregatedNod
      * @param pnodeRefId the pricing node reference ID
      * @return list of aggregated node references
      */
-    List<AggregatedNodeRefEntity> findByPnodeRefId(Long pnodeRefId);
+    List<AggregatedNodeRefEntity> findByPnodeRefId(UUID pnodeRefId);
 
     /**
      * Find currently valid aggregated node references for a usage point.
@@ -105,7 +105,7 @@ public interface AggregatedNodeRefRepository extends JpaRepository<AggregatedNod
     @Query("SELECT a FROM AggregatedNodeRefEntity a WHERE a.usagePoint.id = :usagePointId " +
            "AND (a.startEffectiveDate IS NULL OR a.startEffectiveDate <= :currentTime) " +
            "AND (a.endEffectiveDate IS NULL OR a.endEffectiveDate >= :currentTime)")
-    List<AggregatedNodeRefEntity> findValidByUsagePointId(@Param("usagePointId") Long usagePointId, 
+    List<AggregatedNodeRefEntity> findValidByUsagePointId(@Param("usagePointId") UUID usagePointId, 
                                                          @Param("currentTime") Long currentTime);
 
     /**
@@ -129,7 +129,7 @@ public interface AggregatedNodeRefRepository extends JpaRepository<AggregatedNod
      */
     @Query("SELECT a FROM AggregatedNodeRefEntity a LEFT JOIN FETCH a.pnodeRef " +
            "WHERE a.usagePoint.id = :usagePointId")
-    List<AggregatedNodeRefEntity> findByUsagePointIdWithPnodeRef(@Param("usagePointId") Long usagePointId);
+    List<AggregatedNodeRefEntity> findByUsagePointIdWithPnodeRef(@Param("usagePointId") UUID usagePointId);
 
     /**
      * Delete all aggregated node references for a usage point.
@@ -145,7 +145,7 @@ public interface AggregatedNodeRefRepository extends JpaRepository<AggregatedNod
      * @param usagePointId the usage point ID
      * @return number of deleted records
      */
-    Long deleteByUsagePointId(Long usagePointId);
+    Long deleteByUsagePointId(UUID usagePointId);
 
     /**
      * Delete aggregated node references by pricing node reference.

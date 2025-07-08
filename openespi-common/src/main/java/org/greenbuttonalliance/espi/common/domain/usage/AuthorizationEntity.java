@@ -1,8 +1,7 @@
 /*
  *
- *    Copyright (c) 2018-2025 Green Button Alliance, Inc.
+ *        Copyright (c) 2025 Green Button Alliance, Inc.
  *
- *    Portions (c) 2013-2018 EnergyOS.org
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
  *     you may not use this file except in compliance with the License.
@@ -24,12 +23,13 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-import org.greenbuttonalliance.espi.common.domain.legacy.DateTimeInterval;
+import org.greenbuttonalliance.espi.common.domain.common.DateTimeInterval;
 import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
-import org.greenbuttonalliance.espi.common.domain.legacy.GrantType;
-import org.greenbuttonalliance.espi.common.domain.legacy.OAuthError;
-import org.greenbuttonalliance.espi.common.domain.legacy.ResponseType;
-import org.greenbuttonalliance.espi.common.domain.legacy.TokenType;
+import org.greenbuttonalliance.espi.common.domain.common.GrantType;
+import org.greenbuttonalliance.espi.common.domain.common.OAuthError;
+import org.greenbuttonalliance.espi.common.domain.common.ResponseType;
+import org.greenbuttonalliance.espi.common.domain.common.TokenType;
+import org.greenbuttonalliance.espi.common.utils.encryption.FieldEncryptionConverter;
 
 import jakarta.persistence.*;
 import java.time.Instant;
@@ -87,15 +87,19 @@ public class AuthorizationEntity extends IdentifiedObject {
     /**
      * OAuth2 access token for API access.
      * Used for authentication in API requests.
+     * Encrypted at rest using AES-256-GCM.
      */
-    @Column(name = "access_token", length = 512)
+    @Column(name = "access_token", length = 1024) // Increased for encrypted storage
+    @Convert(converter = FieldEncryptionConverter.class)
     private String accessToken;
 
     /**
      * OAuth2 refresh token for token renewal.
      * Used to obtain new access tokens when they expire.
+     * Encrypted at rest using AES-256-GCM.
      */
-    @Column(name = "refresh_token", length = 512)
+    @Column(name = "refresh_token", length = 1024) // Increased for encrypted storage
+    @Convert(converter = FieldEncryptionConverter.class)
     private String refreshToken;
 
     /**
@@ -153,8 +157,10 @@ public class AuthorizationEntity extends IdentifiedObject {
     /**
      * OAuth2 authorization code.
      * Temporary code used in authorization code flow.
+     * Encrypted at rest using AES-256-GCM.
      */
-    @Column(name = "code", length = 512)
+    @Column(name = "code", length = 1024) // Increased for encrypted storage
+    @Convert(converter = FieldEncryptionConverter.class)
     private String code;
 
     /**

@@ -1,8 +1,7 @@
 /*
  *
- *     Copyright (c) 2018-2025 Green Button Alliance, Inc.
+ *         Copyright (c) 2025 Green Button Alliance, Inc.
  *
- *     Portions copyright (c) 2013-2018 EnergyOS.org
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
  *     you may not use this file except in compliance with the License.
@@ -20,7 +19,7 @@
 
 package org.greenbuttonalliance.espi.common.repositories.usage;
 
-import org.greenbuttonalliance.espi.common.domain.legacy.RetailCustomer;
+import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -31,30 +30,31 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
-public interface RetailCustomerRepository extends JpaRepository<RetailCustomer, Long> {
+public interface RetailCustomerRepository extends JpaRepository<RetailCustomerEntity, UUID> {
 
 	// JpaRepository provides: save(), findAll(), findById(), deleteById(), etc.
 
 	@Modifying
 	@Transactional
-	@Query("DELETE FROM RetailCustomer r WHERE r.id = :id")
-	void deleteById(@Param("id") Long retailCustomerId);
+	@Query("DELETE FROM RetailCustomerEntity r WHERE r.id = :id")
+	void deleteById(@Param("id") UUID retailCustomerId);
 
-	@Query("SELECT r FROM RetailCustomer r WHERE r.id = :id")
-	Optional<RetailCustomer> findByIdString(@Param("id") String retailCustomerId);
+	@Query("SELECT r FROM RetailCustomerEntity r WHERE r.id = :id")
+	Optional<RetailCustomerEntity> findByIdString(@Param("id") String retailCustomerId);
 
-	@Query("SELECT r FROM RetailCustomer r WHERE r.username = :username")
+	@Query("SELECT r FROM RetailCustomerEntity r WHERE r.username = :username")
 	Optional<UserDetails> findByUsername(@Param("username") String userName);
 
-	@Query("SELECT r.id FROM RetailCustomer r")
-	List<Long> findAllIds();
+	@Query("SELECT r.id FROM RetailCustomerEntity r")
+	List<UUID> findAllIds();
 
-	@Query("SELECT DISTINCT r.id FROM RetailCustomer r")
-	List<Long> findAllIdsByXpath0();
+	@Query("SELECT DISTINCT r.id FROM RetailCustomerEntity r")
+	List<UUID> findAllIdsByXpath0();
 
-	@Query("SELECT DISTINCT r.id FROM RetailCustomer r WHERE r.id = :o1Id")
-	Optional<Long> findIdsByXpath(@Param("o1Id") Long o1Id);
+	@Query("SELECT DISTINCT r.id FROM RetailCustomerEntity r WHERE r.id = :o1Id")
+	Optional<UUID> findIdsByXpath(@Param("o1Id") UUID o1Id);
 
 }

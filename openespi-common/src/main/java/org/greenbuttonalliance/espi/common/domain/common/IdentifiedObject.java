@@ -1,8 +1,7 @@
 /*
  *
- *    Copyright (c) 2018-2025 Green Button Alliance, Inc.
+ *        Copyright (c) 2025 Green Button Alliance, Inc.
  *
- *    Portions (c) 2013-2018 EnergyOS.org
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
  *     you may not use this file except in compliance with the License.
@@ -24,7 +23,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-import org.greenbuttonalliance.espi.common.domain.legacy.atom.LinkType;
+// LinkType is now in the same package
 import org.greenbuttonalliance.espi.common.service.EspiIdGeneratorService;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -49,7 +48,6 @@ import java.util.UUID;
  */
 @MappedSuperclass
 @Data
-@NoArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @ToString
 public abstract class IdentifiedObject implements Serializable {
@@ -294,7 +292,15 @@ public abstract class IdentifiedObject implements Serializable {
         }
     }
 
-    // Removed @PrePersist and @PreUpdate methods - Spring Boot handles lifecycle automatically
+    /**
+     * Protected constructor that ensures all entities have a UUID.
+     * This maintains domain integrity while keeping persistence concerns separate.
+     */
+    protected IdentifiedObject() {
+        if (this.id == null) {
+            this.id = UUID.randomUUID();
+        }
+    }
 
     /**
      * Manual setter for description field (Lombok issue workaround).

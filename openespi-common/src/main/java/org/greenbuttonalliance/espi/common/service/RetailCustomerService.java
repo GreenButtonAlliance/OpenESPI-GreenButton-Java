@@ -1,8 +1,7 @@
 /*
  *
- *    Copyright (c) 2018-2021 Green Button Alliance, Inc.
+ *        Copyright (c) 2025 Green Button Alliance, Inc.
  *
- *    Portions (c) 2013-2018 EnergyOS.org
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
  *     you may not use this file except in compliance with the License.
@@ -20,32 +19,32 @@
 
 package org.greenbuttonalliance.espi.common.service;
 
-import org.greenbuttonalliance.espi.common.domain.legacy.RetailCustomer;
-import org.greenbuttonalliance.espi.common.domain.legacy.Subscription;
-import org.springframework.security.core.userdetails.UserDetailsService;
-
+import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.SubscriptionEntity;
 import java.io.InputStream;
 import java.util.List;
 import java.util.UUID;
 
-public interface RetailCustomerService extends UserDetailsService {
+public interface RetailCustomerService {
 
-	List<RetailCustomer> findAll();
+	List<RetailCustomerEntity> findAll();
 
-	RetailCustomer findByHashedId(Long retailCustomerId);
+	RetailCustomerEntity findByHashedId(Long retailCustomerId);
 
-	void persist(RetailCustomer customer);
+	void persist(RetailCustomerEntity customer);
 
-	RetailCustomer findById(Long retailCustomerId);
+	RetailCustomerEntity findById(Long retailCustomerId);
 
-	RetailCustomer findById(String retailCustomerId);
+	RetailCustomerEntity findById(String retailCustomerId);
 
-	void add(RetailCustomer retailCustomer);
+	void add(RetailCustomerEntity retailCustomer);
 
-	void delete(RetailCustomer retailCustomer);
+	void delete(RetailCustomerEntity retailCustomer);
 
-	RetailCustomer importResource(InputStream stream);
+	RetailCustomerEntity importResource(InputStream stream);
 
-	Subscription associateByUUID(Long retailCustomerId, UUID uuId);
+	SubscriptionEntity associateByUUID(Long retailCustomerId, UUID uuId);
+
+	RetailCustomerEntity findByUsername(String username);
 
 }

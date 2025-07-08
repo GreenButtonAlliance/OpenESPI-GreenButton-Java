@@ -1,8 +1,7 @@
 /*
  *
- *    Copyright (c) 2018-2021 Green Button Alliance, Inc.
+ *        Copyright (c) 2025 Green Button Alliance, Inc.
  *
- *    Portions (c) 2013-2018 EnergyOS.org
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
  *     you may not use this file except in compliance with the License.
@@ -122,13 +121,15 @@ public class BatchRESTController {
 			throws IOException, FeedException {
 
 		try {
-			RetailCustomerEntity retailCustomer = retailCustomerService
+			// retailCustomerService returns legacy RetailCustomer
+			var retailCustomer = retailCustomerService
 					.findById(retailCustomerId);
 
 			importService.importData(stream, retailCustomerId);
 
 			// do any notifications
 
+			// NotificationService expects legacy entities
 			notificationService.notify(retailCustomer,
 					importService.getMinUpdated(),
 					importService.getMaxUpdated());
@@ -595,9 +596,11 @@ public class BatchRESTController {
 
 		if (token != null) {
 			token = token.replace("Bearer ", "");
-			AuthorizationEntity authorization = authorizationService
+			// authorizationService returns legacy Authorization
+			var authorization = authorizationService
 					.findByAccessToken(token);
-			ApplicationInformationEntity applicationInformation = authorization
+			// authorization returns legacy ApplicationInformation
+			var applicationInformation = authorization
 					.getApplicationInformation();
 			// note that ApplicationInformation.clientId is a String
 			//

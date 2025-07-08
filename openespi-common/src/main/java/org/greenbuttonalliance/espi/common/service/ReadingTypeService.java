@@ -1,8 +1,7 @@
 /*
  *
- *    Copyright (c) 2018-2021 Green Button Alliance, Inc.
+ *        Copyright (c) 2025 Green Button Alliance, Inc.
  *
- *    Portions (c) 2013-2018 EnergyOS.org
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
  *     you may not use this file except in compliance with the License.
@@ -20,42 +19,35 @@
 
 package org.greenbuttonalliance.espi.common.service;
 
-import org.greenbuttonalliance.espi.common.domain.legacy.MeterReading;
-import org.greenbuttonalliance.espi.common.domain.legacy.ReadingType;
-import org.greenbuttonalliance.espi.common.domain.legacy.atom.EntryType;
+import org.greenbuttonalliance.espi.common.domain.usage.MeterReadingEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.ReadingTypeEntity;
 import org.greenbuttonalliance.espi.common.repositories.usage.ReadingTypeRepository;
-import org.greenbuttonalliance.espi.common.utils.EntryTypeIterator;
 
 import java.io.InputStream;
 import java.util.UUID;
 
 public interface ReadingTypeService {
 
-	ReadingType findByUUID(UUID uuid);
+	ReadingTypeEntity findByUUID(UUID uuid);
 
-	String feedFor(ReadingType readingType);
+	String feedFor(ReadingTypeEntity readingType);
 
-	String entryFor(ReadingType readingType);
+	String entryFor(ReadingTypeEntity readingType);
 
-	void associateByUUID(MeterReading meterReading, UUID uuid);
+	void associateByUUID(MeterReadingEntity meterReading, UUID uuid);
 
 	void deleteById(long readingTypeId);
 
 	void setReadingTypeRepository(ReadingTypeRepository repository);
 
-	void persist(ReadingType readingType);
+	void persist(ReadingTypeEntity readingType);
 
-	ReadingType findById(Long readingTypeId);
+	ReadingTypeEntity findById(Long readingTypeId);
 
-	EntryType findEntryType(Long retailCustomerId, Long usagePointId, Long meterReadingId,
-							Long readingTypeId);
+	void add(ReadingTypeEntity readingType);
 
-	EntryTypeIterator findEntryTypeIterator(Long retailCustomerId, Long usagePointId);
+	void delete(ReadingTypeEntity readingType);
 
-	void add(ReadingType readingType);
-
-	void delete(ReadingType readingType);
-
-	ReadingType importResource(InputStream stream);
+	ReadingTypeEntity importResource(InputStream stream);
 
 }

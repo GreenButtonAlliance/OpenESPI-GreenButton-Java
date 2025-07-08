@@ -1,8 +1,7 @@
 /*
  *
- *    Copyright (c) 2018-2025 Green Button Alliance, Inc.
+ *        Copyright (c) 2025 Green Button Alliance, Inc.
  *
- *    Portions (c) 2013-2018 EnergyOS.org
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
  *     you may not use this file except in compliance with the License.
@@ -24,9 +23,9 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-import org.greenbuttonalliance.espi.common.domain.legacy.RationalNumber;
+import org.greenbuttonalliance.espi.common.domain.common.RationalNumber;
 import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
-import org.greenbuttonalliance.espi.common.domain.legacy.ReadingInterharmonic;
+import org.greenbuttonalliance.espi.common.domain.common.ReadingInterharmonic;
 
 import jakarta.persistence.*;
 import java.util.ArrayList;

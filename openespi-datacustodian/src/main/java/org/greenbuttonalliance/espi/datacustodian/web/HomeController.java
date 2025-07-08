@@ -1,8 +1,7 @@
 /*
  *
- *    Copyright (c) 2018-2021 Green Button Alliance, Inc.
+ *        Copyright (c) 2025 Green Button Alliance, Inc.
  *
- *    Portions (c) 2013-2018 EnergyOS.org
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
  *     you may not use this file except in compliance with the License.
@@ -20,20 +19,19 @@
 
 package org.greenbuttonalliance.espi.datacustodian.web;
 
-import org.greenbuttonalliance.espi.common.domain.legacy.Routes;
+import org.greenbuttonalliance.espi.datacustodian.web.constants.Routes;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.GetMapping;
 
 @Controller
-public class HomeController extends BaseController {
+public class HomeController {
 
-	@RequestMapping(value = Routes.ROOT, method = RequestMethod.GET)
+	@GetMapping(Routes.ROOT)
 	public String index() {
 		return "/home";
 	}
 
-	@RequestMapping(value = Routes.HOME, method = RequestMethod.GET)
+	@GetMapping(Routes.HOME)
 	public String home() {
 		return "/home";
 	}

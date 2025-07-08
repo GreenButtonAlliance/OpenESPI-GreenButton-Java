@@ -1,8 +1,7 @@
 /*
  *
- *     Copyright (c) 2018-2025 Green Button Alliance, Inc.
+ *         Copyright (c) 2025 Green Button Alliance, Inc.
  *
- *     Portions copyright (c) 2013-2018 EnergyOS.org
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
  *     you may not use this file except in compliance with the License.
@@ -20,7 +19,7 @@
 
 package org.greenbuttonalliance.espi.common.repositories.usage;
 
-import org.greenbuttonalliance.espi.common.domain.legacy.ReadingType;
+import org.greenbuttonalliance.espi.common.domain.usage.ReadingTypeEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -33,34 +32,34 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface ReadingTypeRepository extends JpaRepository<ReadingType, Long> {
+public interface ReadingTypeRepository extends JpaRepository<ReadingTypeEntity, UUID> {
 
 	// JpaRepository provides: save(), findById(), findAll(), deleteById(), etc.
 
 	@Modifying
 	@Transactional
-	@Query("DELETE FROM ReadingType r WHERE r.id = :id")
-	void deleteById(@Param("id") Long id);
+	@Query("DELETE FROM ReadingTypeEntity r WHERE r.id = :id")
+	void deleteById(@Param("id") UUID id);
 
-	@Query("SELECT r.id FROM ReadingType r")
-	List<Long> findAllIds();
+	@Query("SELECT r.id FROM ReadingTypeEntity r")
+	List<UUID> findAllIds();
 
-	Optional<ReadingType> findByUuid(UUID uuid);
+	Optional<ReadingTypeEntity> findByUuid(UUID uuid);
 
 	@Modifying
 	@Transactional
-	@Query("DELETE FROM ReadingType r WHERE r.uuid = :uuid")
+	@Query("DELETE FROM ReadingTypeEntity r WHERE r.id = :uuid")
 	void deleteByUuid(@Param("uuid") UUID uuid);
 
 	// Custom method for createOrReplaceByUUID - should be implemented in service layer
 
-	@Query("SELECT meterReading.readingType.id FROM MeterReading meterReading WHERE meterReading.usagePoint.id = :usagePointId")
-	List<Long> findAllIdsByUsagePointId(@Param("usagePointId") Long usagePointId);
+	@Query("SELECT meterReading.readingType.id FROM MeterReadingEntity meterReading WHERE meterReading.usagePoint.id = :usagePointId")
+	List<UUID> findAllIdsByUsagePointId(@Param("usagePointId") UUID usagePointId);
 
-	@Query("SELECT DISTINCT r.id FROM ReadingType r")
-	List<Long> findAllIdsByXpath0();
+	@Query("SELECT DISTINCT r.id FROM ReadingTypeEntity r")
+	List<UUID> findAllIdsByXpath0();
 
-	@Query("SELECT DISTINCT r.id FROM ReadingType r WHERE r.id = :o1Id")
-	Optional<Long> findIdByXpath(@Param("o1Id") Long o1Id);
+	@Query("SELECT DISTINCT r.id FROM ReadingTypeEntity r WHERE r.id = :o1Id")
+	Optional<UUID> findIdByXpath(@Param("o1Id") UUID o1Id);
 
 }
