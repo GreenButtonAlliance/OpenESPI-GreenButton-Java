@@ -33,7 +33,7 @@
 
     <groupId>org.greenbuttonalliance</groupId>
     <artifactId>OpenESPI-Common</artifactId>
-    <version>Spring-Boot-3.5-BUILD-SNAPSHOT</version>
+    <version>3.5.0-RC1</version>
     <packaging>jar</packaging>
 
     <name>OpenESPI-Common</name>
@@ -670,7 +670,20 @@
     </build>
 
     <distributionManagement>
-        <!-- Sonatype Maven Repository configuration -->
+        <!-- GitHub Packages Maven Repository configuration -->
+        <repository>
+            <id>github</id>
+            <name>GitHub Green Button Alliance Apache Maven Packages</name>
+            <url>https://maven.pkg.github.com/greenbuttonalliance/openespi-greenbutton-java</url>
+        </repository>
+        <snapshotRepository>
+            <id>github</id>
+            <name>GitHub Green Button Alliance Apache Maven Packages</name>
+            <url>https://maven.pkg.github.com/greenbuttonalliance/openespi-greenbutton-java</url>
+        </snapshotRepository>
+        
+        <!-- Alternative: Sonatype Maven Repository configuration (commented out) -->
+        <!--
         <snapshotRepository>
             <id>sonatype-snapshot</id>
             <name>Sonatype Maven Snapshot Repository</name>
@@ -678,8 +691,9 @@
         </snapshotRepository>
         <repository>
             <id>sonatype-release</id>
-            <name>Sonatype Maven Snapshot Repository</name>
+            <name>Sonatype Maven Release Repository</name>
             <url>https://oss.sonatype.org/content/repositories/releases</url>
         </repository>
+        -->
     </distributionManagement>
 </project>
