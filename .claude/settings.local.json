@@ -15,7 +15,8 @@
       "Bash(rg:*)",
       "Bash(mvn clean:*)",
       "Bash(mkdir:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(./mvnw clean:*)"
     ],
     "deny": []
   }

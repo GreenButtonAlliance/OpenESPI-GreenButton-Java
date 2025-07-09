@@ -19,9 +19,9 @@
 
 package org.greenbuttonalliance.espi.thirdparty.web.custodian;
 
-import org.greenbuttonalliance.espi.common.domain.ApplicationInformation;
-import org.greenbuttonalliance.espi.common.domain.Authorization;
-import org.greenbuttonalliance.espi.common.domain.RetailCustomer;
+import org.greenbuttonalliance.espi.common.domain.usage.ApplicationInformationEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.greenbuttonalliance.espi.common.domain.Routes;
 import org.greenbuttonalliance.espi.common.models.atom.EntryType;
 import org.greenbuttonalliance.espi.common.service.ImportService;
@@ -63,16 +63,16 @@ public class AdministratorController extends BaseController {
 	@RequestMapping(value = Routes.ROOT_SERVICE_STATUS, method = RequestMethod.GET)
 	public String showServiceStatus(ModelMap model) {
 
-		ApplicationInformation applicationInformation = resourceService
-				.findById(1L, ApplicationInformation.class);
+		ApplicationInformationEntity applicationInformation = resourceService
+				.findById(1L, ApplicationInformationEntity.class);
 		String statusUri = applicationInformation
 				.getAuthorizationServerAuthorizationEndpoint()
 				+ "/ReadServiceStatus";
 		// not sure this will work w/o the right seed information
 		//
-		Authorization authorization = resourceService.findByResourceUri(
-				statusUri, Authorization.class);
-		RetailCustomer retailCustomer = authorization.getRetailCustomer();
+		AuthorizationEntity authorization = resourceService.findByResourceUri(
+				statusUri, AuthorizationEntity.class);
+		RetailCustomerEntity retailCustomer = authorization.getRetailCustomer();
 
 		String accessToken = authorization.getAccessToken();
 		String serviceStatus = "OK";

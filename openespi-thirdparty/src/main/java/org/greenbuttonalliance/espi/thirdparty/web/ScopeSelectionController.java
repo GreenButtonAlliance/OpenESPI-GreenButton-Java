@@ -19,9 +19,9 @@
 
 package org.greenbuttonalliance.espi.thirdparty.web;
 
-import org.greenbuttonalliance.espi.common.domain.ApplicationInformation;
-import org.greenbuttonalliance.espi.common.domain.Authorization;
-import org.greenbuttonalliance.espi.common.domain.Routes;
+import org.greenbuttonalliance.espi.common.domain.usage.ApplicationInformationEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
+// import org.greenbuttonalliance.espi.common.domain.Routes; // TODO: Find correct Routes import
 import org.greenbuttonalliance.espi.common.service.ApplicationInformationService;
 import org.greenbuttonalliance.espi.common.service.AuthorizationService;
 import org.greenbuttonalliance.espi.common.service.StateService;
@@ -35,8 +35,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import javax.persistence.NoResultException;
-import javax.xml.bind.JAXBException;
+import jakarta.persistence.NoResultException;
+import jakarta.xml.bind.JAXBException;
 import java.security.Principal;
 import java.util.Arrays;
 import java.util.Set;
@@ -56,7 +56,7 @@ public class ScopeSelectionController extends BaseController {
 	@Qualifier("stateService")
 	private StateService stateService;
 
-	@RequestMapping(value = Routes.THIRD_PARTY_SCOPE_SELECTION_SCREEN, method = RequestMethod.GET)
+	@RequestMapping(value = "/RetailCustomer/ScopeSelection", method = RequestMethod.GET) // TODO: Use Routes.THIRD_PARTY_SCOPE_SELECTION_SCREEN when available
 	public String scopeSelection(@RequestParam("scope") String[] scopes,
 			ModelMap model) throws JAXBException {
 
@@ -69,7 +69,7 @@ public class ScopeSelectionController extends BaseController {
 		return "/RetailCustomer/ScopeSelection";
 	}
 
-	@RequestMapping(value = Routes.THIRD_PARTY_SCOPE_SELECTION_SCREEN_WITH_RETAIL_CUSTOMER_ID, method = RequestMethod.POST)
+	@RequestMapping(value = "/RetailCustomer/{retailCustomerId}/ScopeSelection", method = RequestMethod.POST) // TODO: Use Routes.THIRD_PARTY_SCOPE_SELECTION_SCREEN_WITH_RETAIL_CUSTOMER_ID when available
 	public String scopeSelection(
 			@RequestParam("Data_custodian") String dataCustodianId,
 			@RequestParam("Data_custodian_URL") String dataCustodianURL)
@@ -79,14 +79,14 @@ public class ScopeSelectionController extends BaseController {
 				.printf("ScopeSelectionController: HttpRequest Method: POST, dataCustodianID: %s dataCustodianURL: %s\n",
 						dataCustodianId, dataCustodianURL);
 		
-		ApplicationInformation applicationInformation = applicationInformationService
+		ApplicationInformationEntity applicationInformation = applicationInformationService
 				.findByDataCustodianClientId(dataCustodianId);
 		return "redirect:" + dataCustodianURL + "?"
 				+ newScopeParams(applicationInformation.getScope())
 				+ "&ThirdPartyID=" + applicationInformation.getClientId();
 	}
 
-	@RequestMapping(value = Routes.THIRD_PARTY_SCOPE_SELECTION_SCREEN, method = RequestMethod.POST)
+	@RequestMapping(value = "/RetailCustomer/ScopeSelection", method = RequestMethod.POST) // TODO: Use Routes.THIRD_PARTY_SCOPE_SELECTION_SCREEN when available
 	public String scopeAuthorization(@RequestParam("scope") String scope,
 			@RequestParam("DataCustodianID") String dataCustodianId,
 			Principal principal) throws JAXBException {
@@ -95,12 +95,12 @@ public class ScopeSelectionController extends BaseController {
 				.printf("ScopeSelectionController: HttpRequest Method: POST, scope: %s dataCustodianID: %s\n",
 						scope, dataCustodianId);
 		
-		ApplicationInformation applicationInformation = applicationInformationService
+		ApplicationInformationEntity applicationInformation = applicationInformationService
 				.findByDataCustodianClientId(dataCustodianId);
 
 		try {
 			// Does an ACTIVE authorization record exist for the requested Scope
-			Authorization currentAuthorization = authorizationService
+			AuthorizationEntity currentAuthorization = authorizationService
 					.findByScope(scope, currentCustomer(principal).getId());
 
 			// Is this a valid authorization record?
@@ -124,7 +124,7 @@ public class ScopeSelectionController extends BaseController {
 		} catch (NoResultException | EmptyResultDataAccessException e) {
 
 			// No authorization record exist for the requested Scope
-			Authorization authorization = new Authorization();
+			AuthorizationEntity authorization = new AuthorizationEntity();
 
 			// Initialize authorization record content
 			authorization.setApplicationInformation(applicationInformation);

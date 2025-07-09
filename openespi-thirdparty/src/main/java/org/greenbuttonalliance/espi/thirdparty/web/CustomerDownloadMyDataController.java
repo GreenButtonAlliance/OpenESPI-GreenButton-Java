@@ -32,13 +32,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Map;
 
-@Controller
-@PreAuthorize("hasRole('ROLE_USER')")
-public class CustomerDownloadMyDataController extends BaseController {
+// @Controller - Disabled during migration: ExportService removed
+// @PreAuthorize("hasRole('ROLE_USER')")
+public class CustomerDownloadMyDataController { // Disabled during migration - TODO: Remove or replace ExportService
 
 	@Autowired
 	private ExportService exportService;

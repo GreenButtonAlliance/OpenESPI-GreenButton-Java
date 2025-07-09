@@ -19,10 +19,10 @@
 
 package org.greenbuttonalliance.espi.thirdparty.service.impl;
 
-import org.greenbuttonalliance.espi.common.domain.Authorization;
-import org.greenbuttonalliance.espi.common.domain.IdentifiedObject;
-import org.greenbuttonalliance.espi.common.domain.UsagePoint;
-import org.greenbuttonalliance.espi.common.repositories.ResourceRepository;
+import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
+import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
+import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
+import org.greenbuttonalliance.espi.common.repositories.usage.ResourceRepository;
 import org.greenbuttonalliance.espi.thirdparty.repository.ResourceRESTRepository;
 import org.greenbuttonalliance.espi.thirdparty.service.ResourceRESTService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,12 +36,12 @@ public class ResourceRESTServiceImpl implements ResourceRESTService {
 	@Autowired
 	private ResourceRepository resourceRepository;
 
-	public IdentifiedObject get(Authorization authorization, String uri) {
+	public IdentifiedObject get(AuthorizationEntity authorization, String uri) {
 		return resourceRESTRepository.get(authorization, uri);
 	}
 
 	@Override
-	public void update(UsagePoint resource) {
+	public void update(UsagePointEntity resource) {
 		resourceRepository.update(resource);
 	}
 

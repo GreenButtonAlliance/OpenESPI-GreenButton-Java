@@ -19,14 +19,14 @@
 
 package org.greenbuttonalliance.espi.thirdparty.repository.impl;
 
-import org.greenbuttonalliance.espi.common.domain.Authorization;
-import org.greenbuttonalliance.espi.common.domain.RetailCustomer;
-import org.greenbuttonalliance.espi.common.domain.UsagePoint;
-import org.greenbuttonalliance.espi.common.repositories.UsagePointRepository;
+import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
+import org.greenbuttonalliance.espi.common.repositories.usage.UsagePointRepository;
 import org.greenbuttonalliance.espi.common.service.AuthorizationService;
-import org.greenbuttonalliance.espi.common.service.ImportService;
+// ImportService removed in migration
 import org.greenbuttonalliance.espi.common.service.RetailCustomerService;
-import org.greenbuttonalliance.espi.common.service.UsagePointService;
+// UsagePointService removed in migration
 import org.greenbuttonalliance.espi.thirdparty.repository.UsagePointRESTRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -35,10 +35,18 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Repository;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.greenbuttonalliance.espi.common.dto.atom.AtomFeedDto;
+import org.greenbuttonalliance.espi.common.dto.usage.UsagePointDto;
+import org.greenbuttonalliance.espi.common.mapper.usage.UsagePointMapper;
 
-import javax.xml.bind.JAXBException;
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBException;
+import jakarta.xml.bind.Unmarshaller;
 import java.io.ByteArrayInputStream;
+import java.io.StringReader;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Repository
 public class UsagePointRESTRepositoryImpl implements UsagePointRESTRepository {
@@ -50,10 +58,20 @@ public class UsagePointRESTRepositoryImpl implements UsagePointRESTRepository {
 	private AuthorizationService authorizationService;
 
 	@Autowired
-	private ImportService importService;
+	private UsagePointMapper usagePointMapper;
 
 	@Autowired
-	private UsagePointService usagePointService;
+	private WebClient webClient;
+
+	private JAXBContext jaxbContext;
+
+	public UsagePointRESTRepositoryImpl() {
+		try {
+			this.jaxbContext = JAXBContext.newInstance(AtomFeedDto.class);
+		} catch (JAXBException e) {
+			throw new RuntimeException("Failed to initialize JAXB context", e);
+		}
+	}
 
 	@Autowired
 	private UsagePointRepository usagePointRepository;
@@ -63,12 +81,12 @@ public class UsagePointRESTRepositoryImpl implements UsagePointRESTRepository {
 
 	// services initializers
 	//
-	public void setUsagePointService(UsagePointService usagePointService) {
-		this.usagePointService = usagePointService;
+	public void setUsagePointMapper(UsagePointMapper usagePointMapper) {
+		this.usagePointMapper = usagePointMapper;
 	}
 
-	public void setImportService(ImportService importService) {
-		this.importService = importService;
+	public void setWebClient(WebClient webClient) {
+		this.webClient = webClient;
 	}
 
 	public void setRetailCustomerService(
@@ -91,32 +109,40 @@ public class UsagePointRESTRepositoryImpl implements UsagePointRESTRepository {
 	}
 
 	@Override
-	public List<UsagePoint> findAllByRetailCustomerId(Long retailCustomerId)
+	public List<UsagePointEntity> findAllByRetailCustomerId(Long retailCustomerId)
 			throws JAXBException {
 
-		HttpEntity<String> httpResult = getUsagePoints(findAuthorization(retailCustomerId));
-		ByteArrayInputStream bs = new ByteArrayInputStream(httpResult.getBody()
-				.toString().getBytes());
+		AuthorizationEntity authorization = findAuthorization(retailCustomerId);
+		
+		// Make OAuth2 REST call to data custodian
+		String xmlResponse = webClient.get()
+				.uri(authorization.getResourceUri())
+				.headers(headers -> headers.setBearerAuth(authorization.getAccessToken()))
+				.retrieve()
+				.bodyToMono(String.class)
+				.block();
 
-		try {
-			importService.importData(bs, retailCustomerId);
-		} catch (Exception e) {
-			// TODO need to pass the exception on through appropriately
-		}
+		// Use openespi-common JAXB unmarshalling
+		Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
+		AtomFeedDto feedDto = (AtomFeedDto) unmarshaller.unmarshal(new StringReader(xmlResponse));
 
-		List<UsagePoint> result;
-		RetailCustomer retailCustomer = retailCustomerService
-				.findById(retailCustomerId);
-		result = usagePointService.findAllByRetailCustomer(retailCustomer);
-		return result;
+		// Use openespi-common mappers for transformation
+		List<UsagePointEntity> usagePoints = feedDto.getEntries().stream()
+				.map(entry -> {
+					UsagePointDto dto = (UsagePointDto) entry.getContent().getResource();
+					return usagePointMapper.toEntity(dto);
+				})
+				.collect(Collectors.toList());
+
+		return usagePoints;
 	}
 
 	@Override
-	public UsagePoint findByHashedId(Long retailCustomerId,
+	public UsagePointEntity findByHashedId(Long retailCustomerId,
 			String usagePointHashedId) throws JAXBException {
-		List<UsagePoint> usagePoints = findAllByRetailCustomerId(retailCustomerId);
+		List<UsagePointEntity> usagePoints = findAllByRetailCustomerId(retailCustomerId);
 
-		for (UsagePoint usagePoint : usagePoints) {
+		for (UsagePointEntity usagePoint : usagePoints) {
 			if (usagePoint.getHashedId().equalsIgnoreCase(usagePointHashedId)) {
 				return usagePoint;
 			}
@@ -125,7 +151,7 @@ public class UsagePointRESTRepositoryImpl implements UsagePointRESTRepository {
 		return null;
 	}
 
-	private HttpEntity<String> getUsagePoints(Authorization authorization) {
+	private HttpEntity<String> getUsagePoints(AuthorizationEntity authorization) {
 		HttpHeaders requestHeaders = new HttpHeaders();
 		requestHeaders.set("Authorization",
 				"Bearer " + authorization.getAccessToken());
@@ -136,8 +162,8 @@ public class UsagePointRESTRepositoryImpl implements UsagePointRESTRepository {
 				HttpMethod.GET, requestEntity, String.class);
 	}
 
-	private Authorization findAuthorization(Long retailCustomerId) {
-		List<Authorization> authorizations = authorizationService
+	private AuthorizationEntity findAuthorization(Long retailCustomerId) {
+		List<AuthorizationEntity> authorizations = authorizationService
 				.findAllByRetailCustomerId(retailCustomerId);
 		return authorizations.get(authorizations.size() - 1);
 	}

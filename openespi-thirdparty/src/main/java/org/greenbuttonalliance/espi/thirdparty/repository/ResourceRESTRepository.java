@@ -19,9 +19,9 @@
 
 package org.greenbuttonalliance.espi.thirdparty.repository;
 
-import org.greenbuttonalliance.espi.common.domain.Authorization;
-import org.greenbuttonalliance.espi.common.domain.IdentifiedObject;
+import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
+import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
 
 public interface ResourceRESTRepository {
-	IdentifiedObject get(Authorization authorization, String uri);
+	IdentifiedObject get(AuthorizationEntity authorization, String uri);
 }

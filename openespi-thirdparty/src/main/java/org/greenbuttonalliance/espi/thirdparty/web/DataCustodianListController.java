@@ -19,7 +19,7 @@
 
 package org.greenbuttonalliance.espi.thirdparty.web;
 
-import org.greenbuttonalliance.espi.common.domain.ApplicationInformation;
+import org.greenbuttonalliance.espi.common.domain.usage.ApplicationInformationEntity;
 import org.greenbuttonalliance.espi.common.domain.Routes;
 import org.greenbuttonalliance.espi.common.service.ResourceService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,13 +29,13 @@ import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
-import javax.xml.bind.JAXBException;
+import jakarta.xml.bind.JAXBException;
 import java.util.ArrayList;
 import java.util.List;
 
-@Controller
+// @Controller - Disabled during migration: ResourceService removed
 @PreAuthorize("hasRole('ROLE_USER')")
-public class DataCustodianListController extends BaseController {
+class DataCustodianListController { // Disabled during migration
 
 	@Autowired
 	private ResourceService resourceService;
@@ -43,11 +43,11 @@ public class DataCustodianListController extends BaseController {
 	@RequestMapping(value = Routes.THIRD_PARTY_DATA_CUSTODIAN_LIST, method = RequestMethod.GET)
 	public String index(ModelMap model) throws JAXBException {
 		List<Long> allIds = resourceService
-				.findAllIds(ApplicationInformation.class);
-		List<ApplicationInformation> applicationInformations = new ArrayList<ApplicationInformation>();
+				.findAllIds(ApplicationInformationEntity.class);
+		List<ApplicationInformationEntity> applicationInformations = new ArrayList<ApplicationInformationEntity>();
 		for (Long id : allIds) {
 			applicationInformations.add(resourceService.findById(id,
-					ApplicationInformation.class));
+					ApplicationInformationEntity.class));
 		}
 		model.put("applicationInformationList", applicationInformations);
 		return "/RetailCustomer/DataCustodianList/index";

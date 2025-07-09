@@ -19,7 +19,7 @@
 
 package org.greenbuttonalliance.espi.thirdparty.web;
 
-import org.greenbuttonalliance.espi.common.domain.RetailCustomer;
+import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
@@ -28,24 +28,24 @@ import java.security.Principal;
 public class BaseController {
 
 	@ModelAttribute("currentCustomer")
-	public RetailCustomer currentCustomer(Principal principal) {
+	public RetailCustomerEntity currentCustomer(Principal principal) {
 		try {
-			return (RetailCustomer) ((Authentication) principal).getPrincipal();
+			return (RetailCustomerEntity) ((Authentication) principal).getPrincipal();
 		} catch (Exception e) {
 			return null;
 		}
 	}
 
 	public boolean isUserCustodian(Principal principal) {
-		return checkRole(principal, RetailCustomer.ROLE_CUSTODIAN);
+		return checkRole(principal, RetailCustomerEntity.ROLE_CUSTODIAN);
 	}
 
 	public boolean isUserUserRole(Principal principal) {
-		return checkRole(principal, RetailCustomer.ROLE_USER);
+		return checkRole(principal, RetailCustomerEntity.ROLE_USER);
 	}
 
 	private boolean checkRole(Principal principal, String givenRole) {
-		RetailCustomer retailCustomer = currentCustomer(principal);
+		RetailCustomerEntity retailCustomer = currentCustomer(principal);
 		if (retailCustomer == null)
 			return false;
 

@@ -19,10 +19,10 @@
 
 package org.greenbuttonalliance.espi.thirdparty.web;
 
-import org.greenbuttonalliance.espi.common.domain.legacy_deprecated.Authorization;
-import org.greenbuttonalliance.espi.common.domain.legacy_deprecated.BatchList;
-import org.greenbuttonalliance.espi.common.domain.legacy_deprecated.RetailCustomer;
-import org.greenbuttonalliance.espi.common.domain.legacy_deprecated.Routes;
+import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.BatchListEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
+// import org.greenbuttonalliance.espi.common.domain.Routes; // TODO: Find correct Routes import
 import org.greenbuttonalliance.espi.common.service.*;
 import org.greenbuttonalliance.espi.thirdparty.service.WebClientService;
 import org.slf4j.Logger;
@@ -54,14 +54,14 @@ public class NotificationController extends BaseController {
 	@Autowired
 	private BatchListService batchListService;
 
-	@Autowired
-	private ResourceService resourceService;
+	// @Autowired
+	// private ResourceService resourceService;
 
-	@Autowired
-	private UsagePointService usagePointService;
+	// @Autowired
+	// private UsagePointService usagePointService;
 
-	@Autowired
-	private ImportService importService;
+	// @Autowired
+	// private ImportService importService;
 
 	@Autowired
 	private WebClientService webClientService;
@@ -75,12 +75,12 @@ public class NotificationController extends BaseController {
 	@Qualifier(value = "atomMarshaller")
 	public Jaxb2Marshaller marshaller;
 
-	@PostMapping(Routes.THIRD_PARTY_NOTIFICATION)
+	@PostMapping("/espi/1_1/Notification") // TODO: Use Routes.THIRD_PARTY_NOTIFICATION when available
 	public ResponseEntity<Void> notification(@RequestBody String xmlPayload) {
 
 		try {
 			ByteArrayInputStream inputStream = new ByteArrayInputStream(xmlPayload.getBytes());
-			BatchList batchList = (BatchList) marshaller.unmarshal(new StreamSource(inputStream));
+			BatchListEntity batchList = (BatchListEntity) marshaller.unmarshal(new StreamSource(inputStream));
 
 			batchListService.persist(batchList);
 
@@ -107,8 +107,8 @@ public class NotificationController extends BaseController {
 
 		String resourceUri = subscriptionUri;
 		String accessToken = "";
-		Authorization authorization = null;
-		RetailCustomer retailCustomer = null;
+		AuthorizationEntity authorization = null;
+		RetailCustomerEntity retailCustomer = null;
 
 		if (subscriptionUri.indexOf("?") > -1) { // Does message contain a query
 													// element
@@ -165,18 +165,18 @@ public class NotificationController extends BaseController {
 					}
 				}
 
-				Authorization x = resourceService.findById(2L,
-						Authorization.class);
+				// Authorization x = resourceService.findById(2L,
+				// 		AuthorizationEntity.class);
 
-				if (x.getResourceURI().equals(resourceUri)) {
-					logger.debug("ResourceURIs Equal: {}", resourceUri);
-				} else {
-					logger.debug("ResourceURIs Not Equal: {}", resourceUri);
-				}
-				authorization = resourceService.findByResourceUri(resourceUri,
-						Authorization.class);
-				retailCustomer = authorization.getRetailCustomer();
-				accessToken = authorization.getAccessToken();
+				// if (x.getResourceURI().equals(resourceUri)) {
+				// 	logger.debug("ResourceURIs Equal: {}", resourceUri);
+				// } else {
+				// 	logger.debug("ResourceURIs Not Equal: {}", resourceUri);
+				// }
+				// authorization = resourceService.findByResourceUri(resourceUri,
+				// 		AuthorizationEntity.class);
+				// retailCustomer = authorization.getRetailCustomer();
+				// accessToken = authorization.getAccessToken();
 
 				try {
 					// Create authenticated WebClient for resource access
@@ -186,14 +186,14 @@ public class NotificationController extends BaseController {
 					String responseBody = webClientService.getForObject(
 						authenticatedClient, subscriptionUri, String.class);
 
-					if (responseBody != null) {
-						// Import data into the repository
-						ByteArrayInputStream bs = new ByteArrayInputStream(responseBody.getBytes());
-						importService.importData(bs, retailCustomer.getId());
-						logger.debug("Successfully imported data from subscription: {}", subscriptionUri);
-					} else {
-						logger.warn("No data received from subscription: {}", subscriptionUri);
-					}
+					// if (responseBody != null) {
+					// 	// Import data into the repository
+					// 	ByteArrayInputStream bs = new ByteArrayInputStream(responseBody.getBytes());
+					// 	importService.importData(bs, retailCustomer.getId());
+					// 	logger.debug("Successfully imported data from subscription: {}", subscriptionUri);
+					// } else {
+					// 	logger.warn("No data received from subscription: {}", subscriptionUri);
+					// }
 
 				} catch (WebClientResponseException e) {
 					logger.error("HTTP error during subscription import: {} - {}", 
@@ -215,17 +215,17 @@ public class NotificationController extends BaseController {
 		this.batchListService = batchListService;
 	}
 
-	public void setImportService(ImportService importService) {
-		this.importService = importService;
-	}
+	// public void setImportService(ImportService importService) {
+	// 	this.importService = importService;
+	// }
 
-	public void setResourceService(ResourceService resourceService) {
-		this.resourceService = resourceService;
-	}
+	// public void setResourceService(ResourceService resourceService) {
+	// 	this.resourceService = resourceService;
+	// }
 
-	public void setUsagePointService(UsagePointService usagePointService) {
-		this.usagePointService = usagePointService;
-	}
+	// public void setUsagePointService(UsagePointService usagePointService) {
+	// 	this.usagePointService = usagePointService;
+	// }
 
 	public RestTemplate getRestTemplate() {
 		return this.restTemplate;

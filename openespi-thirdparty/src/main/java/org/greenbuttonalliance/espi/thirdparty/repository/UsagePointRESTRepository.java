@@ -19,16 +19,16 @@
 
 package org.greenbuttonalliance.espi.thirdparty.repository;
 
-import org.greenbuttonalliance.espi.common.domain.UsagePoint;
+import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 
-import javax.xml.bind.JAXBException;
+import jakarta.xml.bind.JAXBException;
 import java.util.List;
 
 // TODO repository convergence with common
 //
 public interface UsagePointRESTRepository {
-	List<UsagePoint> findAllByRetailCustomerId(Long id) throws JAXBException;
+	List<UsagePointEntity> findAllByRetailCustomerId(Long id) throws JAXBException;
 
-	UsagePoint findByHashedId(Long retailCustomerId, String usagePointHashedId)
+	UsagePointEntity findByHashedId(Long retailCustomerId, String usagePointHashedId)
 			throws JAXBException;
 }

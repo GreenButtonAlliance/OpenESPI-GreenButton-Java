@@ -19,10 +19,11 @@
 
 package org.greenbuttonalliance.espi.thirdparty.web;
 
-import org.greenbuttonalliance.espi.common.domain.*;
+import org.greenbuttonalliance.espi.common.domain.usage.*;
+import org.greenbuttonalliance.espi.common.domain.common.*;
 import org.greenbuttonalliance.espi.common.service.ApplicationInformationService;
 import org.greenbuttonalliance.espi.common.service.ResourceService;
-import org.greenbuttonalliance.espi.common.service.UsagePointService;
+// import org.greenbuttonalliance.espi.common.service.UsagePointService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -44,8 +45,8 @@ import java.util.List;
 @PreAuthorize("hasRole('ROLE_USER')")
 public class UsagePointController extends BaseController {
 
-	@Autowired
-	private UsagePointService usagePointService;
+	// @Autowired
+	// private UsagePointService usagePointService;
 
 	@Autowired
 	private ApplicationInformationService applicationInformationService;
@@ -53,24 +54,24 @@ public class UsagePointController extends BaseController {
 	@Autowired
 	private ResourceService resourceService;
 
-	@ModelAttribute
-	public List<UsagePoint> usagePoints(Principal principal) {
-		return usagePointService
-				.findAllByRetailCustomer(currentCustomer(principal));
-	}
+	// @ModelAttribute
+	// public List<UsagePointEntity> usagePoints(Principal principal) {
+	// 	return usagePointService
+	// 			.findAllByRetailCustomer(currentCustomer(principal));
+	// }
 
-	@RequestMapping(value = Routes.USAGE_POINT_INDEX, method = RequestMethod.GET)
+	@RequestMapping(value = "/RetailCustomer/{retailCustomerId}/UsagePoint", method = RequestMethod.GET) // TODO: Use Routes.USAGE_POINT_INDEX when available
 	public String index(ModelMap model, Principal principal) {
 		return "/customer/usagepoints/index";
 	}
 
 	@Transactional(readOnly = true)
-	@RequestMapping(value = Routes.USAGE_POINT_SHOW, method = RequestMethod.GET)
+	@RequestMapping(value = "/RetailCustomer/{retailCustomerId}/UsagePoint/{usagePointId}/show", method = RequestMethod.GET) // TODO: Use Routes.USAGE_POINT_SHOW when available
 	public String show(@PathVariable Long retailCustomerId,
 			@PathVariable Long usagePointId, ModelMap model) {
 		try {
 
-			resourceService.testById(usagePointId, UsagePoint.class);
+			resourceService.testById(usagePointId, UsagePointEntity.class);
 			// because of the lazy loading from DB it's easier to build a bag
 			// and hand it off
 			// in a separate transaction, fill up a display bag lazily - do it
@@ -87,7 +88,7 @@ public class UsagePointController extends BaseController {
 
 			// got to do a dummy DB access to satify the transaction rollback
 			// needs ...
-			resourceService.findById(1L, ApplicationInformation.class);
+			resourceService.findById(1L, ApplicationInformationEntity.class);
 			System.out.printf("UX Error: %s\n", e.toString());
 			model.put("errorString", e.toString());
 			try {
@@ -139,8 +140,8 @@ public class UsagePointController extends BaseController {
 			Long usagePointId) {
 
 		HashMap<String, Object> displayBag = new HashMap<String, Object>();
-		UsagePoint usagePoint = resourceService.findById(usagePointId,
-				UsagePoint.class);
+		UsagePointEntity usagePoint = resourceService.findById(usagePointId,
+				UsagePointEntity.class);
 		displayBag.put("Description", usagePoint.getDescription());
 		displayBag.put("ServiceCategory", usagePoint.getServiceCategory());
 		displayBag.put("Uri", usagePoint.getSelfHref());
@@ -148,14 +149,14 @@ public class UsagePointController extends BaseController {
 		// put the meterReadings
 		@SuppressWarnings("rawtypes")
 		List<HashMap> meterReadings = new ArrayList<HashMap>();
-		Iterator<MeterReading> it = usagePoint.getMeterReadings().iterator();
+		Iterator<MeterReadingEntity> it = usagePoint.getMeterReadings().iterator();
 		while (it.hasNext()) {
 			HashMap<String, Object> mrBag = new HashMap<String, Object>();
-			MeterReading mr = it.next();
+			MeterReadingEntity mr = it.next();
 			mrBag.put("Description", mr.getDescription());
 			// TODO remove the 1L assumption in ApplicationInformation
 			String thirdPartyNotifyURI = resourceService.findById(1L,
-					ApplicationInformation.class).getThirdPartyNotifyUri();
+					ApplicationInformationEntity.class).getThirdPartyNotifyUri();
 			String uriTail = "/RetailCustomer/" + retailCustomerId
 					+ "/UsagePoint/" + usagePointId + "/MeterReading/"
 					+ mr.getId() + "/show";
@@ -167,14 +168,14 @@ public class UsagePointController extends BaseController {
 		}
 		displayBag.put("MeterReadings", meterReadings);
 		// find the summary rollups
-		List<ElectricPowerQualitySummary> qualitySummaryList = usagePoint
+		List<ElectricPowerQualitySummaryEntity> qualitySummaryList = usagePoint
 				.getElectricPowerQualitySummaries();
-		List<ElectricPowerUsageSummary> usageSummaryList = usagePoint
+		List<UsageSummaryEntity> usageSummaryList = usagePoint
 				.getElectricPowerUsageSummaries();
 		displayBag.put("QualitySummaryList", qualitySummaryList);
 		displayBag.put("UsageSummaryList", usageSummaryList);
 
-		TimeConfiguration timeConfiguration = usagePoint
+		TimeConfigurationEntity timeConfiguration = usagePoint
 				.getLocalTimeParameters();
 		displayBag.put("localTimeParameters", timeConfiguration);
 

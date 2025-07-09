@@ -19,15 +19,15 @@
 
 package org.greenbuttonalliance.espi.thirdparty.service.impl;
 
-import org.greenbuttonalliance.espi.common.domain.Authorization;
-import org.greenbuttonalliance.espi.common.domain.UsagePoint;
+import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 import org.greenbuttonalliance.espi.common.service.AuthorizationService;
 import org.greenbuttonalliance.espi.thirdparty.service.ResourceRESTService;
 import org.greenbuttonalliance.espi.thirdparty.service.UpdateRESTService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.xml.bind.JAXBException;
+import jakarta.xml.bind.JAXBException;
 
 @Service
 public class UpdateRESTServiceImpl implements UpdateRESTService {
@@ -38,8 +38,8 @@ public class UpdateRESTServiceImpl implements UpdateRESTService {
 	private ResourceRESTService resourceRESTService;
 
 	public void update(String uri) throws JAXBException {
-		Authorization authorization = authorizationService.findByURI(uri);
-		UsagePoint resource = (UsagePoint) resourceRESTService.get(
+		AuthorizationEntity authorization = authorizationService.findByURI(uri);
+		UsagePointEntity resource = (UsagePointEntity) resourceRESTService.get(
 				authorization, uri);
 		resourceRESTService.update(resource);
 	}

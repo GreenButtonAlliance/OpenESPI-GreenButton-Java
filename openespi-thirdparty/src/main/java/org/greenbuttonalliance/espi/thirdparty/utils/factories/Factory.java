@@ -19,21 +19,21 @@
 
 package org.greenbuttonalliance.espi.thirdparty.utils.factories;
 
-import org.greenbuttonalliance.espi.common.domain.MeterReading;
-import org.greenbuttonalliance.espi.common.domain.RetailCustomer;
-import org.greenbuttonalliance.espi.common.domain.ServiceCategory;
-import org.greenbuttonalliance.espi.common.domain.UsagePoint;
+import org.greenbuttonalliance.espi.common.domain.usage.MeterReadingEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
+// import org.greenbuttonalliance.espi.common.domain.usage.ServiceCategoryEntity; // TODO: Check if this class exists
+import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 
 public class Factory {
 
-	public static UsagePoint newUsagePoint() {
-		UsagePoint usagePoint = new UsagePoint();
+	public static UsagePointEntity newUsagePoint() {
+		UsagePointEntity usagePoint = new UsagePointEntity();
 
 		usagePoint.setMRID("urn:uuid:7BC41774-7190-4864-841C-861AC76D46C2");
 		usagePoint.setDescription("Electric meter");
-		usagePoint.setServiceCategory(newServiceCategory());
+		// usagePoint.setServiceCategory(newServiceCategory()); // TODO: Fix ServiceCategory reference
 
-		RetailCustomer retailCustomer = new RetailCustomer();
+		RetailCustomerEntity retailCustomer = new RetailCustomerEntity();
 		retailCustomer.setId(88L);
 		usagePoint.setRetailCustomer(retailCustomer);
 
@@ -42,8 +42,8 @@ public class Factory {
 		return usagePoint;
 	}
 
-	public static MeterReading newMeterReading() {
-		MeterReading meterReading = new MeterReading();
+	public static MeterReadingEntity newMeterReading() {
+		MeterReadingEntity meterReading = new MeterReadingEntity();
 
 		meterReading.setId(98L);
 		meterReading.setMRID("urn:uuid:F77FBF34-A09E-4EBC-9606-FF1A59A17CAE");
@@ -52,11 +52,11 @@ public class Factory {
 		return meterReading;
 	}
 
-	public static ServiceCategory newServiceCategory() {
-		ServiceCategory serviceCategory = new ServiceCategory();
-
-		serviceCategory.setKind(new Long(0L));
-
-		return serviceCategory;
-	}
+	// public static ServiceCategoryEntity newServiceCategory() {
+	// 	ServiceCategoryEntity serviceCategory = new ServiceCategoryEntity();
+	// 
+	// 	serviceCategory.setKind(new Long(0L));
+	// 
+	// 	return serviceCategory;
+	// }
 }

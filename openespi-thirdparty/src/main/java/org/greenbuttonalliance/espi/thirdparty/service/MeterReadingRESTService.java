@@ -19,13 +19,13 @@
 
 package org.greenbuttonalliance.espi.thirdparty.service;
 
-import org.greenbuttonalliance.espi.common.domain.MeterReading;
+import org.greenbuttonalliance.espi.common.domain.usage.MeterReadingEntity;
 
-import javax.xml.bind.JAXBException;
+import jakarta.xml.bind.JAXBException;
 import java.util.UUID;
 
 public interface MeterReadingRESTService {
 
-	MeterReading findByUUID(Long retailCustomerId, UUID uuid)
+	MeterReadingEntity findByUUID(Long retailCustomerId, UUID uuid)
 			throws JAXBException;
 }

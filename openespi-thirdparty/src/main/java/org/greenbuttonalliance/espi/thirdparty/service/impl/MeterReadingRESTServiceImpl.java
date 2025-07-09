@@ -19,13 +19,13 @@
 
 package org.greenbuttonalliance.espi.thirdparty.service.impl;
 
-import org.greenbuttonalliance.espi.common.domain.MeterReading;
+import org.greenbuttonalliance.espi.common.domain.usage.MeterReadingEntity;
 import org.greenbuttonalliance.espi.thirdparty.repository.MeterReadingRESTRepository;
 import org.greenbuttonalliance.espi.thirdparty.service.MeterReadingRESTService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.xml.bind.JAXBException;
+import jakarta.xml.bind.JAXBException;
 import java.util.UUID;
 
 @Service
@@ -34,7 +34,7 @@ public class MeterReadingRESTServiceImpl implements MeterReadingRESTService {
 	protected MeterReadingRESTRepository repository;
 
 	@Override
-	public MeterReading findByUUID(Long retailCustomerId, UUID uuid)
+	public MeterReadingEntity findByUUID(Long retailCustomerId, UUID uuid)
 			throws JAXBException {
 		return repository.findByUUID(retailCustomerId, uuid);
 	}

@@ -19,14 +19,14 @@
 
 package org.greenbuttonalliance.espi.thirdparty.repository.impl;
 
-import org.greenbuttonalliance.espi.common.domain.MeterReading;
-import org.greenbuttonalliance.espi.common.domain.UsagePoint;
+import org.greenbuttonalliance.espi.common.domain.usage.MeterReadingEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 import org.greenbuttonalliance.espi.thirdparty.repository.MeterReadingRESTRepository;
 import org.greenbuttonalliance.espi.thirdparty.repository.UsagePointRESTRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
-import javax.xml.bind.JAXBException;
+import jakarta.xml.bind.JAXBException;
 import java.util.List;
 import java.util.UUID;
 
@@ -48,18 +48,18 @@ public class MeterReadingRESTRepositoryImpl implements
 	}
 
 	@Override
-	public MeterReading findByUUID(Long retailCustomerId, UUID uuid)
+	public MeterReadingEntity findByUUID(Long retailCustomerId, UUID uuid)
 			throws JAXBException {
-		List<UsagePoint> usagePointList = usagePointRESTRepository
+		List<UsagePointEntity> usagePointList = usagePointRESTRepository
 				.findAllByRetailCustomerId(retailCustomerId);
 
 		return findMeterReading(usagePointList, uuid);
 	}
 
-	private MeterReading findMeterReading(List<UsagePoint> usagePointList,
+	private MeterReadingEntity findMeterReading(List<UsagePointEntity> usagePointList,
 			UUID uuid) {
-		for (UsagePoint usagePoint : usagePointList) {
-			MeterReading meterReading = findMeterReadingInUsagePoint(
+		for (UsagePointEntity usagePoint : usagePointList) {
+			MeterReadingEntity meterReading = findMeterReadingInUsagePoint(
 					usagePoint.getMeterReadings(), uuid);
 			if (meterReading != null) {
 				return meterReading;
@@ -68,9 +68,9 @@ public class MeterReadingRESTRepositoryImpl implements
 		return null;
 	}
 
-	private MeterReading findMeterReadingInUsagePoint(
-			List<MeterReading> meterReadings, UUID uuid) {
-		for (MeterReading meterReading : meterReadings) {
+	private MeterReadingEntity findMeterReadingInUsagePoint(
+			List<MeterReadingEntity> meterReadings, UUID uuid) {
+		for (MeterReadingEntity meterReading : meterReadings) {
 			if (meterReading.getUUID().equals(uuid)) {
 				return meterReading;
 			}

@@ -19,12 +19,12 @@
 
 package org.greenbuttonalliance.espi.thirdparty.service;
 
-import org.greenbuttonalliance.espi.common.domain.Authorization;
-import org.greenbuttonalliance.espi.common.domain.IdentifiedObject;
-import org.greenbuttonalliance.espi.common.domain.UsagePoint;
+import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
+import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
+import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 
 public interface ResourceRESTService {
-	IdentifiedObject get(Authorization authorization, String uri);
+	IdentifiedObject get(AuthorizationEntity authorization, String uri);
 
-	void update(UsagePoint resource);
+	void update(UsagePointEntity resource);
 }

@@ -19,8 +19,8 @@
 
 package org.greenbuttonalliance.espi.thirdparty.repository.impl;
 
-import org.greenbuttonalliance.espi.common.domain.Authorization;
-import org.greenbuttonalliance.espi.common.domain.IdentifiedObject;
+import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
+import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
 import org.greenbuttonalliance.espi.thirdparty.repository.ResourceRESTRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -43,7 +43,7 @@ public class ResourceRESTRepositoryImpl implements ResourceRESTRepository {
 	@Qualifier(value = "atomMarshaller")
 	private Jaxb2Marshaller marshaller;
 
-	public IdentifiedObject get(Authorization authorization, String url) {
+	public IdentifiedObject get(AuthorizationEntity authorization, String url) {
 		HttpHeaders requestHeaders = new HttpHeaders();
 		requestHeaders.set("Authorization",
 				"Bearer " + authorization.getAccessToken());
