@@ -71,7 +71,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
         <!-- OpenESPI Dependencies -->
-        <openespi-common.version>3.5.0-RC1</openespi-common.version>
+        <openespi-common.version>3.5.0-RC2</openespi-common.version>
 
         <!-- Database Versions -->
         <mysql.version>9.1.0</mysql.version>
@@ -356,7 +356,7 @@
         <repository>
             <id>github</id>
             <name>GitHub Green Button Alliance Apache Maven Packages</name>
-            <url>https://maven.pkg.github.com/greenbuttonalliance/openespi-greenbutton-java</url>
+            <url>https://maven.pkg.github.com/GreenButtonAlliance/OpenESPI-GreenButton-Java</url>
             <releases>
                 <enabled>true</enabled>
             </releases>

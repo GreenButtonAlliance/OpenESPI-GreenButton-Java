@@ -72,7 +72,7 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
 
         <!-- Spring Boot 3.5 provides all Spring and security versions -->
-        <openespi-common.version>3.5.0-RC1</openespi-common.version>
+        <openespi-common.version>3.5.0-RC2</openespi-common.version>
 
         <maven.build.timestamp.format>yyyy/MM/dd hh:mm:ss a,z</maven.build.timestamp.format>
     </properties>
@@ -304,7 +304,7 @@
         <repository>
             <id>github</id>
             <name>GitHub Green Button Alliance Apache Maven Packages</name>
-            <url>https://maven.pkg.github.com/greenbuttonalliance/openespi-greenbutton-java</url>
+            <url>https://maven.pkg.github.com/GreenButtonAlliance/OpenESPI-GreenButton-Java</url>
             <releases>
                 <enabled>true</enabled>
             </releases>

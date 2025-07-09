@@ -33,7 +33,7 @@
 
     <groupId>org.greenbuttonalliance</groupId>
     <artifactId>OpenESPI-Common</artifactId>
-    <version>3.5.0-RC1</version>
+    <version>3.5.0-RC2</version>
     <packaging>jar</packaging>
 
     <name>OpenESPI-Common</name>
@@ -674,12 +674,12 @@
         <repository>
             <id>github</id>
             <name>GitHub Green Button Alliance Apache Maven Packages</name>
-            <url>https://maven.pkg.github.com/greenbuttonalliance/openespi-greenbutton-java</url>
+            <url>https://maven.pkg.github.com/GreenButtonAlliance/OpenESPI-GreenButton-Java</url>
         </repository>
         <snapshotRepository>
             <id>github</id>
             <name>GitHub Green Button Alliance Apache Maven Packages</name>
-            <url>https://maven.pkg.github.com/greenbuttonalliance/openespi-greenbutton-java</url>
+            <url>https://maven.pkg.github.com/GreenButtonAlliance/OpenESPI-GreenButton-Java</url>
         </snapshotRepository>
         
         <!-- Alternative: Sonatype Maven Repository configuration (commented out) -->
