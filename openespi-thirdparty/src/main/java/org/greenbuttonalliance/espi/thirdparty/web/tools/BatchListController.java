@@ -19,7 +19,6 @@
 
 package org.greenbuttonalliance.espi.thirdparty.web.tools;
 
-import org.greenbuttonalliance.espi.common.domain.Routes;
 import org.greenbuttonalliance.espi.common.service.BatchListService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -30,7 +29,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import java.io.IOException;
 
 @Controller
-@RequestMapping(Routes.THIRD_PARTY_BATCH_LIST)
+@RequestMapping("/batch/list")
 public class BatchListController {
 
 	@Autowired

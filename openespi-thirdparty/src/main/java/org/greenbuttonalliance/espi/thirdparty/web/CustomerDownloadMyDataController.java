@@ -20,7 +20,7 @@
 package org.greenbuttonalliance.espi.thirdparty.web;
 
 import com.sun.syndication.io.FeedException;
-import org.greenbuttonalliance.espi.common.domain.Routes;
+
 import org.greenbuttonalliance.espi.common.service.ExportService;
 import org.greenbuttonalliance.espi.common.utils.ExportFilter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,7 +43,7 @@ public class CustomerDownloadMyDataController { // Disabled during migration - T
 	@Autowired
 	private ExportService exportService;
 
-	@RequestMapping(value = Routes.RETAIL_CUSTOMER_DOWNLOAD_MY_DATA, method = RequestMethod.GET)
+	@RequestMapping(value = "/RetailCustomer/download", method = RequestMethod.GET)
 	public void downloadMyData(HttpServletResponse response,
 			@PathVariable Long retailCustomerId,
 			@PathVariable Long usagePointId,
@@ -63,7 +63,7 @@ public class CustomerDownloadMyDataController { // Disabled during migration - T
 		}
 	}
 
-	@RequestMapping(value = Routes.RETAIL_CUSTOMER_DOWNLOAD_MY_DATA_COLLECTION, method = RequestMethod.GET)
+	@RequestMapping(value = "/RetailCustomer/download/collection", method = RequestMethod.GET)
 	public void downloadMyDataCollection(HttpServletResponse response,
 			@PathVariable Long retailCustomerId,
 			@RequestParam Map<String, String> params) throws IOException,

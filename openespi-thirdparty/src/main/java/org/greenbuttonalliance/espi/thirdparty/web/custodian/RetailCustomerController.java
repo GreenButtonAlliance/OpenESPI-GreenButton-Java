@@ -20,7 +20,7 @@
 package org.greenbuttonalliance.espi.thirdparty.web.custodian;
 
 import org.greenbuttonalliance.espi.common.domain.RetailCustomer;
-import org.greenbuttonalliance.espi.common.domain.Routes;
+
 import org.greenbuttonalliance.espi.common.service.RetailCustomerService;
 import org.greenbuttonalliance.espi.thirdparty.web.BaseController;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,21 +56,21 @@ public class RetailCustomerController extends BaseController {
 		binder.setValidator(new RetailCustomerValidator());
 	}
 
-	@RequestMapping(value = Routes.DATA_CUSTODIAN_RETAIL_CUSTOMER_INDEX, method = RequestMethod.GET)
+	@RequestMapping(value = "/custodian/retailcustomers", method = RequestMethod.GET)
 	public String index(ModelMap model) {
 		model.put("customers", service.findAll());
 
 		return "retailcustomers/index";
 	}
 
-	@RequestMapping(value = Routes.DATA_CUSTODIAN_RETAIL_CUSTOMER_FORM, method = RequestMethod.GET)
+	@RequestMapping(value = "/custodian/retailcustomers/form", method = RequestMethod.GET)
 	public String form(ModelMap model) {
 		model.put("retailCustomer", new RetailCustomer());
 
 		return "retailcustomers/form";
 	}
 
-	@RequestMapping(value = Routes.DATA_CUSTODIAN_RETAIL_CUSTOMER_CREATE, method = RequestMethod.POST)
+	@RequestMapping(value = "/custodian/retailcustomers", method = RequestMethod.POST)
 	public String create(
 			@ModelAttribute("retailCustomer") @Valid RetailCustomer retailCustomer,
 			BindingResult result) {
@@ -86,7 +86,7 @@ public class RetailCustomerController extends BaseController {
 		}
 	}
 
-	@RequestMapping(value = Routes.DATA_CUSTODIAN_RETAIL_CUSTOMER_SHOW, method = RequestMethod.GET)
+	@RequestMapping(value = "/custodian/retailcustomers/{retailCustomerId}", method = RequestMethod.GET)
 	public String show(@PathVariable Long retailCustomerId, ModelMap model) {
 		RetailCustomer retailCustomer = service.findById(retailCustomerId);
 		model.put("retailCustomer", retailCustomer);

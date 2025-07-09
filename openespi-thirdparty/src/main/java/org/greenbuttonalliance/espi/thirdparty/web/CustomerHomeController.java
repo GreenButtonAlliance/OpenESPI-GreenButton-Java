@@ -19,7 +19,7 @@
 
 package org.greenbuttonalliance.espi.thirdparty.web;
 
-import org.greenbuttonalliance.espi.common.domain.Routes;
+
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 @PreAuthorize("hasRole('ROLE_USER')")
 public class CustomerHomeController extends BaseController {
 
-	@RequestMapping(value = Routes.RETAIL_CUSTOMER_HOME, method = RequestMethod.GET)
+	@RequestMapping(value = "/RetailCustomer/home", method = RequestMethod.GET)
 	public String home() {
 		return "/RetailCustomer/home";
 	}

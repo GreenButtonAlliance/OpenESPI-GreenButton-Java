@@ -60,7 +60,7 @@ public class AdministratorController extends BaseController {
 	@Autowired
 	private ImportService importService;
 
-	@RequestMapping(value = Routes.ROOT_SERVICE_STATUS, method = RequestMethod.GET)
+	@RequestMapping(value = "/espi/1_1/ServiceStatus", method = RequestMethod.GET)
 	public String showServiceStatus(ModelMap model) {
 
 		ApplicationInformationEntity applicationInformation = resourceService

@@ -19,7 +19,6 @@
 
 package org.greenbuttonalliance.espi.thirdparty.web;
 
-import org.greenbuttonalliance.espi.common.constants.Routes;
 import org.greenbuttonalliance.espi.common.constants.UserRoles;
 import org.greenbuttonalliance.espi.common.service.RetailCustomerService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +35,7 @@ public class HomeController {
 	@Autowired
 	private RetailCustomerService retailCustomerService;
 
-	@GetMapping(Routes.ROOT)
+	@GetMapping("/")
 	public String index(HttpServletRequest request, Principal principal) {
 		if (request.isUserInRole(UserRoles.ROLE_CUSTODIAN)) {
 			return "redirect:/custodian/home";
@@ -52,7 +51,7 @@ public class HomeController {
 		return "home";
 	}
 
-	@GetMapping(Routes.HOME)
+	@GetMapping("/home")
 	public String home(HttpServletRequest request, Principal principal) {
 		return index(request, principal);
 	}

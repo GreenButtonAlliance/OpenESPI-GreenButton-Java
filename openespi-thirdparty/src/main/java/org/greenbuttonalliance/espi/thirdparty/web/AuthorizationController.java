@@ -221,7 +221,7 @@ public class AuthorizationController {
 				+ "/AuthorizationList";
 	}
 
-	@RequestMapping(value = Routes.THIRD_PARTY_AUTHORIZATION, method = RequestMethod.GET)
+	@RequestMapping(value = "/authorization", method = RequestMethod.GET)
 	public String index(ModelMap model, Authentication principal) {
 		model.put(
 				"authorizationList",

@@ -19,11 +19,10 @@
 
 package org.greenbuttonalliance.espi.thirdparty.web;
 
-import org.greenbuttonalliance.espi.common.domain.IntervalBlock;
-import org.greenbuttonalliance.espi.common.domain.IntervalReading;
-import org.greenbuttonalliance.espi.common.domain.MeterReading;
-import org.greenbuttonalliance.espi.common.domain.Routes;
-import org.greenbuttonalliance.espi.common.service.MeterReadingService;
+import org.greenbuttonalliance.espi.common.domain.usage.IntervalBlockEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.IntervalReadingEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.MeterReadingEntity;
+import org.greenbuttonalliance.espi.common.service.usage.MeterReadingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,23 +41,23 @@ public class MeterReadingController extends BaseController {
 	protected MeterReadingService meterReadingService;
 
 	@Transactional(readOnly = true)
-	@RequestMapping(value = Routes.METER_READINGS_SHOW, method = RequestMethod.GET)
+	@RequestMapping(value = "/RetailCustomer/{retailCustomerId}/UsagePoint/{usagePointId}/MeterReading/{meterReadingId}/show", method = RequestMethod.GET)
 	public String show(@PathVariable Long retailCustomerId,
 			@PathVariable Long usagePointId, @PathVariable Long meterReadingId,
 			ModelMap model) {
 		// TODO need to walk the subtree to force the load (for now)
-		MeterReading mr = meterReadingService.findById(retailCustomerId,
+		MeterReadingEntity mr = meterReadingService.findById(retailCustomerId,
 				usagePointId, meterReadingId);
-		MeterReading newMeterReading = new MeterReading();
+		MeterReadingEntity newMeterReading = new MeterReadingEntity();
 		newMeterReading.merge(mr);
-		Iterator<IntervalBlock> it = newMeterReading.getIntervalBlocks()
+		Iterator<IntervalBlockEntity> it = newMeterReading.getIntervalBlocks()
 				.iterator();
 		while (it.hasNext()) {
-			IntervalBlock temp = it.next();
-			Iterator<IntervalReading> it1 = temp.getIntervalReadings()
+			IntervalBlockEntity temp = it.next();
+			Iterator<IntervalReadingEntity> it1 = temp.getIntervalReadings()
 					.iterator();
 			while (it1.hasNext()) {
-				IntervalReading temp1 = it1.next();
+				IntervalReadingEntity temp1 = it1.next();
 				temp1.getCost();
 			}
 

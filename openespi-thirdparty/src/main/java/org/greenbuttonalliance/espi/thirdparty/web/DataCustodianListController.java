@@ -20,7 +20,7 @@
 package org.greenbuttonalliance.espi.thirdparty.web;
 
 import org.greenbuttonalliance.espi.common.domain.usage.ApplicationInformationEntity;
-import org.greenbuttonalliance.espi.common.domain.Routes;
+
 import org.greenbuttonalliance.espi.common.service.ResourceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -40,7 +40,7 @@ class DataCustodianListController { // Disabled during migration
 	@Autowired
 	private ResourceService resourceService;
 
-	@RequestMapping(value = Routes.THIRD_PARTY_DATA_CUSTODIAN_LIST, method = RequestMethod.GET)
+	@RequestMapping(value = "/DataCustodianList", method = RequestMethod.GET)
 	public String index(ModelMap model) throws JAXBException {
 		List<Long> allIds = resourceService
 				.findAllIds(ApplicationInformationEntity.class);

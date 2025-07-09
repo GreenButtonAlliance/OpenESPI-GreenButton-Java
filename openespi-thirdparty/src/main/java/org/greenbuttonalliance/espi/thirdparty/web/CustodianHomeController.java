@@ -19,13 +19,13 @@
 
 package org.greenbuttonalliance.espi.thirdparty.web;
 
-import org.greenbuttonalliance.espi.common.domain.Routes;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 @Controller
-@RequestMapping(Routes.DATA_CUSTODIAN_HOME)
+@RequestMapping("/custodian/home")
 public class CustodianHomeController extends BaseController {
 
 	@RequestMapping(method = RequestMethod.GET)
