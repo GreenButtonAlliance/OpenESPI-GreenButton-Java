@@ -21,7 +21,7 @@ package org.greenbuttonalliance.espi.thirdparty.web;
 
 import org.greenbuttonalliance.espi.common.domain.usage.ApplicationInformationEntity;
 
-import org.greenbuttonalliance.espi.common.service.ResourceService;
+import org.greenbuttonalliance.espi.common.service.ApplicationInformationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -38,26 +38,22 @@ import java.util.List;
 class DataCustodianListController { // Disabled during migration
 
 	@Autowired
-	private ResourceService resourceService;
+	private ApplicationInformationService applicationInformationService;
 
 	@RequestMapping(value = "/DataCustodianList", method = RequestMethod.GET)
 	public String index(ModelMap model) throws JAXBException {
-		List<Long> allIds = resourceService
-				.findAllIds(ApplicationInformationEntity.class);
+		// TODO: Replace with proper ApplicationInformationService methods
 		List<ApplicationInformationEntity> applicationInformations = new ArrayList<ApplicationInformationEntity>();
-		for (Long id : allIds) {
-			applicationInformations.add(resourceService.findById(id,
-					ApplicationInformationEntity.class));
-		}
+		// List<ApplicationInformationEntity> applicationInformations = applicationInformationService.findAll();
 		model.put("applicationInformationList", applicationInformations);
 		return "/RetailCustomer/DataCustodianList/index";
 	}
 
-	public void setApplicationInformationService(ResourceService resourceService) {
-		this.resourceService = resourceService;
+	public void setApplicationInformationService(ApplicationInformationService applicationInformationService) {
+		this.applicationInformationService = applicationInformationService;
 	}
 
-	public ResourceService getApplicationInformationService() {
+	public ApplicationInformationService getApplicationInformationService() {
 		return this.resourceService;
 	}
 

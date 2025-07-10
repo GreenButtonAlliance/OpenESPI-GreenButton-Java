@@ -21,8 +21,8 @@ package org.greenbuttonalliance.espi.thirdparty.web;
 
 import com.sun.syndication.io.FeedException;
 
-import org.greenbuttonalliance.espi.common.service.ExportService;
-import org.greenbuttonalliance.espi.common.utils.ExportFilter;
+import org.greenbuttonalliance.espi.common.service.DtoExportService;
+// ExportFilter removed in migration
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -41,7 +41,7 @@ import java.util.Map;
 public class CustomerDownloadMyDataController { // Disabled during migration - TODO: Remove or replace ExportService
 
 	@Autowired
-	private ExportService exportService;
+	private DtoExportService dtoExportService; // Replaced ExportService with DtoExportService
 
 	@RequestMapping(value = "/RetailCustomer/download", method = RequestMethod.GET)
 	public void downloadMyData(HttpServletResponse response,
@@ -54,9 +54,9 @@ public class CustomerDownloadMyDataController { // Disabled during migration - T
 				"attachment; filename=GreenButtonDownload.xml");
 		try {
 
-			exportService.exportUsagePointFull(0L, retailCustomerId,
-					usagePointId, response.getOutputStream(), new ExportFilter(
-							params));
+			// TODO: Implement export using DtoExportService
+			// ExportFilter functionality needs to be recreated
+			// dtoExportService.exportUsagePointFull(retailCustomerId, usagePointId, response.getOutputStream());
 
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
@@ -74,19 +74,20 @@ public class CustomerDownloadMyDataController { // Disabled during migration - T
 				"attachment; filename=GreenButtonDownload.xml");
 		try {
 			// TODO -- need authorization hook
-			exportService.exportUsagePointsFull(0L, retailCustomerId,
-					response.getOutputStream(), new ExportFilter(params));
+			// TODO: Implement export using DtoExportService
+			// ExportFilter functionality needs to be recreated
+			// dtoExportService.exportUsagePointsFull(retailCustomerId, response.getOutputStream());
 
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 		}
 	}
 
-	public void setExportService(ExportService exportService) {
-		this.exportService = exportService;
+	public void setDtoExportService(DtoExportService dtoExportService) {
+		this.dtoExportService = dtoExportService;
 	}
 
-	public ExportService getExportService() {
-		return this.exportService;
+	public DtoExportService getDtoExportService() {
+		return this.dtoExportService;
 	}
 }

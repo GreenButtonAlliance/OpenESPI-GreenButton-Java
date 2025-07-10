@@ -19,10 +19,20 @@
 
 package org.greenbuttonalliance.espi.thirdparty.web;
 
-public class ClientRestTemplateFactory {
+import org.springframework.stereotype.Component;
 
-	public ClientRestTemplate newClientRestTemplate(String username,
-			String password) {
-		return new ClientRestTemplate(username, password);
+/**
+ * Factory for creating ClientWebClient instances
+ * Replacement for ClientRestTemplateFactory
+ */
+@Component
+public class ClientWebClientFactory {
+
+	public ClientWebClient newClientWebClient(String username, String password) {
+		return new ClientWebClient(username, password);
+	}
+
+	public ClientWebClient newClientWebClient() {
+		return new ClientWebClient();
 	}
 }

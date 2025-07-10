@@ -19,7 +19,7 @@
 
 package org.greenbuttonalliance.espi.thirdparty.web.custodian;
 
-import org.greenbuttonalliance.espi.common.domain.RetailCustomer;
+import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 
 import org.greenbuttonalliance.espi.common.service.RetailCustomerService;
 import org.greenbuttonalliance.espi.thirdparty.web.BaseController;
@@ -34,7 +34,7 @@ import org.springframework.validation.Validator;
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 
 @Controller
 @PreAuthorize("hasRole('ROLE_CUSTODIAN')")
@@ -72,7 +72,7 @@ public class RetailCustomerController extends BaseController {
 
 	@RequestMapping(value = "/custodian/retailcustomers", method = RequestMethod.POST)
 	public String create(
-			@ModelAttribute("retailCustomer") @Valid RetailCustomer retailCustomer,
+			@ModelAttribute("retailCustomer") @Valid RetailCustomerEntity retailCustomer,
 			BindingResult result) {
 		if (result.hasErrors()) {
 			return "retailcustomers/form";
@@ -88,7 +88,7 @@ public class RetailCustomerController extends BaseController {
 
 	@RequestMapping(value = "/custodian/retailcustomers/{retailCustomerId}", method = RequestMethod.GET)
 	public String show(@PathVariable Long retailCustomerId, ModelMap model) {
-		RetailCustomer retailCustomer = service.findById(retailCustomerId);
+		RetailCustomerEntity retailCustomer = service.findById(retailCustomerId);
 		model.put("retailCustomer", retailCustomer);
 		return "/custodian/retailcustomers/show";
 	}

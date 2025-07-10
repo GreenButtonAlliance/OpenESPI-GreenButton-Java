@@ -22,7 +22,7 @@ package org.greenbuttonalliance.espi.thirdparty.web;
 import org.greenbuttonalliance.espi.common.domain.usage.IntervalBlockEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.IntervalReadingEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.MeterReadingEntity;
-import org.greenbuttonalliance.espi.common.service.usage.MeterReadingService;
+import org.greenbuttonalliance.espi.thirdparty.service.MeterReadingRESTService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,7 +38,7 @@ import java.util.Iterator;
 public class MeterReadingController extends BaseController {
 
 	@Autowired
-	protected MeterReadingService meterReadingService;
+	protected MeterReadingRESTService meterReadingService;
 
 	@Transactional(readOnly = true)
 	@RequestMapping(value = "/RetailCustomer/{retailCustomerId}/UsagePoint/{usagePointId}/MeterReading/{meterReadingId}/show", method = RequestMethod.GET)
@@ -46,8 +46,9 @@ public class MeterReadingController extends BaseController {
 			@PathVariable Long usagePointId, @PathVariable Long meterReadingId,
 			ModelMap model) {
 		// TODO need to walk the subtree to force the load (for now)
-		MeterReadingEntity mr = meterReadingService.findById(retailCustomerId,
-				usagePointId, meterReadingId);
+		// TODO: Implement using REST service - MeterReadingRESTService doesn't have findById method
+		// MeterReadingEntity mr = meterReadingService.findByUUID(retailCustomerId, UUID.fromString(meterReadingId.toString()));
+		MeterReadingEntity mr = new MeterReadingEntity(); // Placeholder
 		MeterReadingEntity newMeterReading = new MeterReadingEntity();
 		newMeterReading.merge(mr);
 		Iterator<IntervalBlockEntity> it = newMeterReading.getIntervalBlocks()
@@ -66,7 +67,7 @@ public class MeterReadingController extends BaseController {
 		return "/customer/meterreadings/show";
 	}
 
-	public void setMeterReadingService(MeterReadingService service) {
+	public void setMeterReadingService(MeterReadingRESTService service) {
 		this.meterReadingService = service;
 	}
 }
