@@ -20,14 +20,12 @@
 package org.greenbuttonalliance.espi.thirdparty.integration.web.filters;
 
 import org.greenbuttonalliance.espi.thirdparty.web.filter.CORSFilter;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Profile;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.RequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -37,10 +35,8 @@ import static org.hamcrest.core.Is.is;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppContextSetup;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@WebAppConfiguration
-@ContextConfiguration("/spring/test-context.xml")
-@Profile("test")
+@WebMvcTest(CORSFilter.class)
+@TestPropertySource(properties = "spring.profiles.active=test")
 public class CORSFilterTests {
 
 	@Autowired
@@ -51,7 +47,7 @@ public class CORSFilterTests {
 
 	private MockMvc mockMvc;
 
-	@Before
+	@BeforeEach
 	public void setup() {
 		this.mockMvc = webAppContextSetup(this.wac).addFilters(filter).build();
 	}

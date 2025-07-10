@@ -25,16 +25,16 @@ import org.greenbuttonalliance.espi.common.domain.Authorization;
 import org.greenbuttonalliance.espi.common.domain.RetailCustomer;
 import org.greenbuttonalliance.espi.common.service.AuthorizationService;
 import org.greenbuttonalliance.espi.common.test.EspiFactory;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.springframework.security.core.Authentication;
 import org.springframework.ui.ModelMap;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.*;
 
@@ -49,7 +49,7 @@ public class AuthorizationControllerTests {
 	private ApplicationInformation applicationInformation;
 	private Authorization authorization;
 
-	@Before
+	@BeforeEach
 	public void before() {
 		controller = new AuthorizationController();
 
@@ -76,7 +76,7 @@ public class AuthorizationControllerTests {
 	}
 
 	@Test
-	@Ignore
+	@Disabled
 	public void authorization_fetchesToken() throws Exception {
 		String url = String.format(
 				"%s?redirect_uri=%s&code=%s&grant_type=authorization_code",
@@ -90,7 +90,7 @@ public class AuthorizationControllerTests {
 	}
 
 	@Test
-	@Ignore
+	@Disabled
 	public void authorization_updatesAuthorization() throws Exception {
 		controller.authorization(CODE, authorization.getState(),
 				new ModelMap(), principal, CODE, CODE, CODE);
@@ -99,7 +99,7 @@ public class AuthorizationControllerTests {
 	}
 
 	@Test
-	@Ignore
+	@Disabled
 	public void authorization_returnsAuthorizationList() throws Exception {
 		List<Authorization> authorizations = new ArrayList<>();
 		authorizations.add(new Authorization());

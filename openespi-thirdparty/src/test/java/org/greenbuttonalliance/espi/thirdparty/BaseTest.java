@@ -19,12 +19,12 @@
 
 package org.greenbuttonalliance.espi.thirdparty;
 
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.mockito.MockitoAnnotations;
 
 public class BaseTest {
-	@Before
+	@BeforeEach
 	public void initMocks() {
-		MockitoAnnotations.initMocks(this);
+		MockitoAnnotations.openMocks(this);
 	}
 }
