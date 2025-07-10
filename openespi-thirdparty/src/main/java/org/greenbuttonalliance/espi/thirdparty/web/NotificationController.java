@@ -42,7 +42,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.xml.transform.stream.StreamSource;
+import javax.xml.transform.stream.StreamSource;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -227,8 +227,8 @@ public class NotificationController extends BaseController {
 	// 	this.usagePointService = usagePointService;
 	// }
 
-	public RestTemplate getRestTemplate() {
-		return this.restTemplate;
+	public WebClient getWebClient() {
+		return webClient;
 	}
 
 	public void setMarshaller(Jaxb2Marshaller marshaller) {

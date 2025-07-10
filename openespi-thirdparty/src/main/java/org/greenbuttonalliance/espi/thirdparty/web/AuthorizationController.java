@@ -34,6 +34,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -59,6 +61,9 @@ public class AuthorizationController {
 
 	@Autowired
 	private WebClientService webClientService;
+
+	@Autowired
+	private ClientWebClientFactory clientWebClientFactory;
 
 	@GetMapping("/oauth/callback")
 	public String authorization(
@@ -102,8 +107,8 @@ public class AuthorizationController {
 									code);
 
 					// Build /oauth/token Endpoint request
-					ClientRestTemplate restTemplate = templateFactory
-							.newClientRestTemplate(
+					ClientWebClient webClient = clientWebClientFactory
+							.newClientWebClient(
 									applicationInformation.getClientId(),
 									applicationInformation.getClientSecret());
 
@@ -248,13 +253,13 @@ public class AuthorizationController {
 		return this.usagePointRESTRepository;
 	}
 
-	public void setClientRestTemplateFactory(
-			ClientRestTemplateFactory templateFactory) {
-		this.templateFactory = templateFactory;
+	public void setClientWebClientFactory(
+			ClientWebClientFactory clientWebClientFactory) {
+		this.clientWebClientFactory = clientWebClientFactory;
 	}
 
-	public ClientRestTemplateFactory getClientRestTemplateFactory() {
-		return this.templateFactory;
+	public ClientWebClientFactory getClientWebClientFactory() {
+		return this.clientWebClientFactory;
 	}
 
 }

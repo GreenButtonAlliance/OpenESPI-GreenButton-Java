@@ -22,7 +22,8 @@ package org.greenbuttonalliance.espi.thirdparty.web;
 import org.greenbuttonalliance.espi.common.domain.usage.*;
 import org.greenbuttonalliance.espi.common.domain.common.*;
 import org.greenbuttonalliance.espi.common.service.ApplicationInformationService;
-import org.greenbuttonalliance.espi.common.service.ResourceService;
+// ResourceService removed in migration
+// import org.greenbuttonalliance.espi.common.service.ResourceService;
 // import org.greenbuttonalliance.espi.common.service.UsagePointService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -51,8 +52,9 @@ public class UsagePointController extends BaseController {
 	@Autowired
 	private ApplicationInformationService applicationInformationService;
 
-	@Autowired
-	private ResourceService resourceService;
+	// ResourceService removed in migration
+	// @Autowired
+	// private ResourceService resourceService;
 
 	// @ModelAttribute
 	// public List<UsagePointEntity> usagePoints(Principal principal) {
@@ -193,7 +195,8 @@ public class UsagePointController extends BaseController {
 		this.applicationInformationService = applicationInformationService;
 	}
 
-	public void setResourceService(ResourceService resourceService) {
-		this.resourceService = resourceService;
-	}
+	// ResourceService removed in migration
+	// public void setResourceService(ResourceService resourceService) {
+	// 	this.resourceService = resourceService;
+	// }
 }

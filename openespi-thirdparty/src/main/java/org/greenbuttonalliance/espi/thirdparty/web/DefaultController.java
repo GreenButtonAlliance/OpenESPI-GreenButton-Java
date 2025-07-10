@@ -19,7 +19,7 @@
 
 package org.greenbuttonalliance.espi.thirdparty.web;
 
-import org.greenbuttonalliance.espi.common.constants.UserRoles;
+// UserRoles constants replaced with direct strings
 import org.greenbuttonalliance.espi.common.service.RetailCustomerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -37,9 +37,9 @@ public class DefaultController {
 
 	@GetMapping("/default")
 	public String defaultAfterLogin(HttpServletRequest request, Principal principal) {
-		if (request.isUserInRole(UserRoles.ROLE_CUSTODIAN)) {
+		if (request.isUserInRole("ROLE_CUSTODIAN")) {
 			return "redirect:/custodian/home";
-		} else if (request.isUserInRole(UserRoles.ROLE_USER)) {
+		} else if (request.isUserInRole("ROLE_USER")) {
 			if (principal instanceof Authentication auth) {
 				var customer = retailCustomerService.findByUsername(auth.getName());
 				if (customer != null) {

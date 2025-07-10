@@ -64,7 +64,7 @@ public class SecurityConfiguration {
                 .frameOptions().sameOrigin()
                 .httpStrictTransportSecurity(hstsConfig -> hstsConfig
                     .maxAgeInSeconds(31536000)
-                    .includeSubdomains(true)
+                    .includeSubDomains(true)
                     .preload(true)
                 )
                 .contentTypeOptions().and()

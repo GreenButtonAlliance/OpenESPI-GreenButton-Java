@@ -116,7 +116,7 @@ public class UsagePointRESTRepositoryImpl implements UsagePointRESTRepository {
 		
 		// Make OAuth2 REST call to data custodian
 		String xmlResponse = webClient.get()
-				.uri(authorization.getResourceUri())
+				.uri(authorization.getResourceURI())
 				.headers(headers -> headers.setBearerAuth(authorization.getAccessToken()))
 				.retrieve()
 				.bodyToMono(String.class)

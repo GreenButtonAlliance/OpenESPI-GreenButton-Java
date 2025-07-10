@@ -22,10 +22,12 @@ package org.greenbuttonalliance.espi.thirdparty.web.custodian;
 import org.greenbuttonalliance.espi.common.domain.usage.ApplicationInformationEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
-import org.greenbuttonalliance.espi.common.domain.Routes;
-import org.greenbuttonalliance.espi.common.models.atom.EntryType;
-import org.greenbuttonalliance.espi.common.service.ImportService;
-import org.greenbuttonalliance.espi.common.service.ResourceService;
+// Routes class removed in migration
+// import org.greenbuttonalliance.espi.common.domain.Routes;
+import org.greenbuttonalliance.espi.common.dto.atom.AtomEntryDto;
+// ImportService and ResourceService removed in migration
+// import org.greenbuttonalliance.espi.common.service.ImportService;
+// import org.greenbuttonalliance.espi.common.service.ResourceService;
 import org.greenbuttonalliance.espi.common.service.RetailCustomerService;
 import org.greenbuttonalliance.espi.thirdparty.web.BaseController;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,24 +56,27 @@ public class AdministratorController extends BaseController {
 	@Qualifier("restTemplate")
 	private RestTemplate restTemplate;
 
-	@Autowired
-	private ResourceService resourceService;
+	// ResourceService and ImportService removed in migration
+	// @Autowired
+	// private ResourceService resourceService;
 
-	@Autowired
-	private ImportService importService;
+	// @Autowired
+	// private ImportService importService;
 
 	@RequestMapping(value = "/espi/1_1/ServiceStatus", method = RequestMethod.GET)
 	public String showServiceStatus(ModelMap model) {
 
-		ApplicationInformationEntity applicationInformation = resourceService
-				.findById(1L, ApplicationInformationEntity.class);
+		// TODO: Replace with ApplicationInformationService
+		// ApplicationInformationEntity applicationInformation = applicationInformationService.findById(1L);
+		ApplicationInformationEntity applicationInformation = new ApplicationInformationEntity(); // Placeholder
 		String statusUri = applicationInformation
 				.getAuthorizationServerAuthorizationEndpoint()
 				+ "/ReadServiceStatus";
 		// not sure this will work w/o the right seed information
 		//
-		AuthorizationEntity authorization = resourceService.findByResourceUri(
-				statusUri, AuthorizationEntity.class);
+		// TODO: Replace with AuthorizationService
+		// AuthorizationEntity authorization = authorizationService.findByResourceUri(statusUri);
+		AuthorizationEntity authorization = new AuthorizationEntity(); // Placeholder
 		RetailCustomerEntity retailCustomer = authorization.getRetailCustomer();
 
 		String accessToken = authorization.getAccessToken();
@@ -92,9 +97,11 @@ public class AdministratorController extends BaseController {
 			ByteArrayInputStream bs = new ByteArrayInputStream(httpResult
 					.getBody().toString().getBytes());
 
-			importService.importData(bs, retailCustomer.getId());
+			// TODO: Replace with modern import/parsing using openespi-common DTOs
+			// importService.importData(bs, retailCustomer.getId());
 
-			List<EntryType> entries = importService.getEntries();
+			// List<AtomEntryDto> entries = parseDataUsingDtos(bs);
+			// Placeholder for now
 
 			// TODO: Use-Case 1 registration - service status
 
@@ -124,20 +131,21 @@ public class AdministratorController extends BaseController {
 		return this.restTemplate;
 	}
 
-	public void setResourceService(ResourceService resourceService) {
-		this.resourceService = resourceService;
-	}
+	// ResourceService and ImportService removed in migration
+	// public void setResourceService(ResourceService resourceService) {
+	// 	this.resourceService = resourceService;
+	// }
 
-	public ResourceService getResourceService() {
-		return this.resourceService;
-	}
+	// public ResourceService getResourceService() {
+	// 	return this.resourceService;
+	// }
 
-	public void setImportService(ImportService importService) {
-		this.importService = importService;
-	}
+	// public void setImportService(ImportService importService) {
+	// 	this.importService = importService;
+	// }
 
-	public ImportService getImportService() {
-		return this.importService;
-	}
+	// public ImportService getImportService() {
+	// 	return this.importService;
+	// }
 
 }

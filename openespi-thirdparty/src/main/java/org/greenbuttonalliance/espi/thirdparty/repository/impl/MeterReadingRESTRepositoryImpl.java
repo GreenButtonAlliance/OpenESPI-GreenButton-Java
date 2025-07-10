@@ -71,7 +71,7 @@ public class MeterReadingRESTRepositoryImpl implements
 	private MeterReadingEntity findMeterReadingInUsagePoint(
 			List<MeterReadingEntity> meterReadings, UUID uuid) {
 		for (MeterReadingEntity meterReading : meterReadings) {
-			if (meterReading.getUUID().equals(uuid)) {
+			if (meterReading.getId().equals(uuid)) {
 				return meterReading;
 			}
 		}
