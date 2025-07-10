@@ -27,17 +27,14 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.greenbuttonalliance.espi.common.domain.legacy.Authorization;
+import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
 import org.greenbuttonalliance.espi.common.service.AuthorizationService;
-import org.greenbuttonalliance.espi.common.service.ExportService;
-import org.greenbuttonalliance.espi.common.service.ResourceService;
 import org.greenbuttonalliance.espi.common.service.RetailCustomerService;
-import org.greenbuttonalliance.espi.common.utils.ExportFilter;
+import org.greenbuttonalliance.espi.common.service.DtoExportService;
 import org.greenbuttonalliance.espi.datacustodian.utils.VerifyURLParams;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.security.oauth2.provider.token.DefaultTokenServices;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -47,35 +44,29 @@ import java.io.InputStream;
 import java.util.Map;
 
 /**
- * RESTful controller for managing Authorization resources according to the 
+ * RESTful controller for managing AuthorizationEntity resources according to the 
  * Green Button Alliance ESPI (Energy Services Provider Interface) specification.
  * 
- * Authorization represents OAuth2 access permissions and tokens for 
+ * AuthorizationEntity represents OAuth2 access permissions and tokens for 
  * third-party applications to access customer energy data.
  */
 @RestController
 @RequestMapping("/espi/1_1/resource")
-@Tag(name = "Authorization", description = "OAuth2 Authorization and Access Token Management API")
+@Tag(name = "Authorization", description = "OAuth2 AuthorizationEntity and Access Token Management API")
 public class AuthorizationRESTController {
 
 	private final AuthorizationService authorizationService;
 	private final RetailCustomerService retailCustomerService;
-	private final DefaultTokenServices tokenService;
-	private final ExportService exportService;
-	private final ResourceService resourceService;
+	private final DtoExportService dtoExportService;
 
 	@Autowired
 	public AuthorizationRESTController(
 			AuthorizationService authorizationService,
 			RetailCustomerService retailCustomerService,
-			DefaultTokenServices tokenService,
-			ExportService exportService,
-			ResourceService resourceService) {
+			DtoExportService dtoExportService) {
 		this.authorizationService = authorizationService;
 		this.retailCustomerService = retailCustomerService;
-		this.tokenService = tokenService;
-		this.exportService = exportService;
-		this.resourceService = resourceService;
+		this.dtoExportService = dtoExportService;
 	}
 
 	@ExceptionHandler(Exception.class)
@@ -85,11 +76,11 @@ public class AuthorizationRESTController {
 	}
 
 	// ================================
-	// ROOT Authorization Collection APIs
+	// ROOT AuthorizationEntity Collection APIs
 	// ================================
 
 	/**
-	 * Retrieves all Authorization resources (root level access).
+	 * Retrieves all AuthorizationEntity resources (root level access).
 	 * 
 	 * @param request HTTP servlet request for authorization context
 	 * @param response HTTP response for streaming ATOM XML content
@@ -99,17 +90,17 @@ public class AuthorizationRESTController {
 	 */
 	@GetMapping(value = "/Authorization", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
-		summary = "Get Authorization Collection",
-		description = "Retrieves all authorized Authorization resources with optional filtering and pagination. " +
+		summary = "Get AuthorizationEntity Collection",
+		description = "Retrieves all authorized AuthorizationEntity resources with optional filtering and pagination. " +
 					 "Returns an ATOM feed containing OAuth2 authorization and access token information. " +
 					 "Access scope depends on the requesting client's authorization level."
 	)
 	@ApiResponses(value = {
 		@ApiResponse(
 			responseCode = "200", 
-			description = "Successfully retrieved Authorization collection",
+			description = "Successfully retrieved AuthorizationEntity collection",
 			content = @Content(mediaType = MediaType.APPLICATION_ATOM_XML_VALUE, 
-							 schema = @Schema(description = "ATOM feed containing Authorization entries"))
+							 schema = @Schema(description = "ATOM feed containing AuthorizationEntity entries"))
 		),
 		@ApiResponse(
 			responseCode = "400", 
@@ -138,7 +129,7 @@ public class AuthorizationRESTController {
 		try {
 			String accessToken = request.getHeader("authorization").replace(
 					"Bearer ", "");
-			Authorization authorization = authorizationService.findByAccessToken(accessToken);
+			AuthorizationEntity authorization = authorizationService.findByAccessToken(accessToken);
 
 			// Determine access scope: data_custodian_admin gets everything, 
 			// third-party clients get restricted scope
@@ -157,7 +148,7 @@ public class AuthorizationRESTController {
 	}
 
 	/**
-	 * Retrieves a specific Authorization resource by ID (root level access).
+	 * Retrieves a specific AuthorizationEntity resource by ID (root level access).
 	 * 
 	 * @param response HTTP response for streaming ATOM XML content
 	 * @param authorizationId Unique identifier for the Authorization
@@ -167,8 +158,8 @@ public class AuthorizationRESTController {
 	 */
 	@GetMapping(value = "/Authorization/{authorizationId}", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
-		summary = "Get Authorization by ID",
-		description = "Retrieves a specific Authorization resource by its unique identifier. " +
+		summary = "Get AuthorizationEntity by ID",
+		description = "Retrieves a specific AuthorizationEntity resource by its unique identifier. " +
 					 "Returns an ATOM entry containing OAuth2 authorization details including " +
 					 "access tokens, scope, and application information."
 	)
@@ -177,7 +168,7 @@ public class AuthorizationRESTController {
 			responseCode = "200", 
 			description = "Successfully retrieved Authorization",
 			content = @Content(mediaType = MediaType.APPLICATION_ATOM_XML_VALUE,
-							 schema = @Schema(description = "ATOM entry containing Authorization details"))
+							 schema = @Schema(description = "ATOM entry containing AuthorizationEntity details"))
 		),
 		@ApiResponse(
 			responseCode = "400", 
@@ -189,7 +180,7 @@ public class AuthorizationRESTController {
 		),
 		@ApiResponse(
 			responseCode = "404", 
-			description = "Authorization not found"
+			description = "AuthorizationEntity not found"
 		)
 	})
 	public void getAuthorization(
@@ -221,7 +212,7 @@ public class AuthorizationRESTController {
 				produces = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
 		summary = "Create Authorization",
-		description = "Creates a new Authorization resource for OAuth2 access control."
+		description = "Creates a new AuthorizationEntity resource for OAuth2 access control."
 	)
 	public void createAuthorization(
 			HttpServletResponse response,
@@ -230,7 +221,7 @@ public class AuthorizationRESTController {
 
 		response.setContentType(MediaType.APPLICATION_ATOM_XML_VALUE);
 		try {
-			Authorization authorization = 
+			AuthorizationEntity authorization = 
 					this.authorizationService.importResource(stream);
 			exportService.exportAuthorization(authorization.getId(),
 					response.getOutputStream(), new ExportFilter(params));
@@ -244,7 +235,7 @@ public class AuthorizationRESTController {
 			   consumes = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
 		summary = "Update Authorization",
-		description = "Updates an existing Authorization resource."
+		description = "Updates an existing AuthorizationEntity resource."
 	)
 	public void updateAuthorization(
 			HttpServletResponse response,
@@ -253,11 +244,11 @@ public class AuthorizationRESTController {
 			@RequestBody InputStream stream) throws IOException, FeedException {
 		
 		try {
-			Authorization authorization = 
+			AuthorizationEntity authorization = 
 					authorizationService.findById(authorizationId);
 
 			if (authorization != null) {
-				Authorization newAuthorization = 
+				AuthorizationEntity newAuthorizationEntity = 
 						authorizationService.importResource(stream);
 				authorization.merge(newAuthorization);
 				response.setStatus(HttpServletResponse.SC_OK);
@@ -272,14 +263,14 @@ public class AuthorizationRESTController {
 	@DeleteMapping("/Authorization/{authorizationId}")
 	@Operation(
 		summary = "Delete Authorization", 
-		description = "Removes an Authorization resource and revokes associated OAuth2 tokens."
+		description = "Removes an AuthorizationEntity resource and revokes associated OAuth2 tokens."
 	)
 	public void deleteAuthorization(
 			HttpServletResponse response,
 			@PathVariable Long authorizationId) {
 		
 		try {
-			Authorization authorization = resourceService.findById(
+			AuthorizationEntity authorization = resourceService.findById(
 					authorizationId, Authorization.class);
 			
 			if (authorization != null) {
@@ -296,13 +287,13 @@ public class AuthorizationRESTController {
 	}
 
 	// =============================================
-	// RetailCustomer-scoped Authorization Collection APIs
+	// RetailCustomer-scoped AuthorizationEntity Collection APIs
 	// =============================================
 
 	@GetMapping(value = "/RetailCustomer/{retailCustomerId}/Authorization", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
 		summary = "Get Customer Authorizations",
-		description = "Retrieves all Authorization resources for a specific retail customer."
+		description = "Retrieves all AuthorizationEntity resources for a specific retail customer."
 	)
 	public void getCustomerAuthorizations(
 			HttpServletResponse response,
@@ -327,8 +318,8 @@ public class AuthorizationRESTController {
 
 	@GetMapping(value = "/RetailCustomer/{retailCustomerId}/Authorization/{authorizationId}", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
-		summary = "Get Customer Authorization by ID",
-		description = "Retrieves a specific Authorization resource for a retail customer."
+		summary = "Get Customer AuthorizationEntity by ID",
+		description = "Retrieves a specific AuthorizationEntity resource for a retail customer."
 	)
 	public void getCustomerAuthorization(
 			HttpServletResponse response,
@@ -358,7 +349,7 @@ public class AuthorizationRESTController {
 				produces = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
 		summary = "Create Customer Authorization",
-		description = "Creates a new Authorization resource for a specific retail customer."
+		description = "Creates a new AuthorizationEntity resource for a specific retail customer."
 	)
 	public void createCustomerAuthorization(
 			HttpServletResponse response,
@@ -368,7 +359,7 @@ public class AuthorizationRESTController {
 
 		response.setContentType(MediaType.APPLICATION_ATOM_XML_VALUE);
 		try {
-			Authorization authorization = 
+			AuthorizationEntity authorization = 
 					this.authorizationService.importResource(stream);
 			retailCustomerService.associateByUUID(retailCustomerId,
 					authorization.getUUID());
@@ -385,7 +376,7 @@ public class AuthorizationRESTController {
 			   consumes = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
 		summary = "Update Customer Authorization",
-		description = "Updates an existing Authorization resource for a retail customer."
+		description = "Updates an existing AuthorizationEntity resource for a retail customer."
 	)
 	public void updateCustomerAuthorization(
 			HttpServletResponse response,
@@ -395,11 +386,11 @@ public class AuthorizationRESTController {
 			@RequestBody InputStream stream) throws IOException, FeedException {
 		
 		try {
-			Authorization authorization = authorizationService.findById(
+			AuthorizationEntity authorization = authorizationService.findById(
 					retailCustomerId, authorizationId);
 
 			if (authorization != null) {
-				Authorization newAuthorization = 
+				AuthorizationEntity newAuthorizationEntity = 
 						authorizationService.importResource(stream);
 				authorization.merge(newAuthorization);
 				response.setStatus(HttpServletResponse.SC_OK);
@@ -414,7 +405,7 @@ public class AuthorizationRESTController {
 	@DeleteMapping("/RetailCustomer/{retailCustomerId}/Authorization/{authorizationId}")
 	@Operation(
 		summary = "Delete Customer Authorization", 
-		description = "Removes an Authorization resource for a retail customer and revokes associated OAuth2 tokens."
+		description = "Removes an AuthorizationEntity resource for a retail customer and revokes associated OAuth2 tokens."
 	)
 	public void deleteCustomerAuthorization(
 			HttpServletResponse response,
@@ -422,7 +413,7 @@ public class AuthorizationRESTController {
 			@PathVariable Long authorizationId) {
 
 		try {
-			Authorization authorization = authorizationService.findById(
+			AuthorizationEntity authorization = authorizationService.findById(
 					retailCustomerId, authorizationId);
 			
 			if (authorization != null) {

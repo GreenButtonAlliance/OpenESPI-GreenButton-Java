@@ -21,7 +21,7 @@
 package org.greenbuttonalliance.espi.datacustodian.web.customer;
 
 import org.greenbuttonalliance.espi.common.domain.usage.ApplicationInformationEntity;
-import org.greenbuttonalliance.espi.common.domain.legacy.Routes;
+import org.greenbuttonalliance.espi.common.domain.usage.Routes;
 import org.greenbuttonalliance.espi.common.repositories.usage.ApplicationInformationEntityRepository;
 import org.greenbuttonalliance.espi.datacustodian.web.BaseController;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -48,10 +48,10 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * RESTful controller for managing RetailCustomer resources according to the 
+ * RESTful controller for managing RetailCustomerEntity resources according to the 
  * Green Button Alliance ESPI (Energy Services Provider Interface) specification.
  * 
- * RetailCustomer represents the end consumer of utility services who may be 
+ * RetailCustomerEntity represents the end consumer of utility services who may be 
  * either a person or organization.
  */
 @RestController
@@ -86,11 +86,11 @@ public class RetailCustomerRESTController {
 	}
 
 	// ================================
-	// ROOT RetailCustomer Collection APIs
+	// ROOT RetailCustomerEntity Collection APIs
 	// ================================
 
 	/**
-	 * Retrieves all RetailCustomer resources (root level access).
+	 * Retrieves all RetailCustomerEntity resources (root level access).
 	 * 
 	 * @param request HTTP servlet request for authorization context
 	 * @param response HTTP response for streaming ATOM XML content
@@ -100,16 +100,16 @@ public class RetailCustomerRESTController {
 	 */
 	@GetMapping(value = "/RetailCustomer", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
-		summary = "Get RetailCustomer Collection",
-		description = "Retrieves all authorized RetailCustomer resources with optional filtering and pagination. " +
+		summary = "Get RetailCustomerEntity Collection",
+		description = "Retrieves all authorized RetailCustomerEntity resources with optional filtering and pagination. " +
 					 "Returns an ATOM feed containing customer account information."
 	)
 	@ApiResponses(value = {
 		@ApiResponse(
 			responseCode = "200", 
-			description = "Successfully retrieved RetailCustomer collection",
+			description = "Successfully retrieved RetailCustomerEntity collection",
 			content = @Content(mediaType = MediaType.APPLICATION_ATOM_XML_VALUE, 
-							 schema = @Schema(description = "ATOM feed containing RetailCustomer entries"))
+							 schema = @Schema(description = "ATOM feed containing RetailCustomerEntity entries"))
 		),
 		@ApiResponse(
 			responseCode = "400", 
@@ -145,7 +145,7 @@ public class RetailCustomerRESTController {
 	}
 
 	/**
-	 * Retrieves a specific RetailCustomer resource by ID (root level access).
+	 * Retrieves a specific RetailCustomerEntity resource by ID (root level access).
 	 * 
 	 * @param request HTTP servlet request for authorization context
 	 * @param response HTTP response for streaming ATOM XML content
@@ -156,8 +156,8 @@ public class RetailCustomerRESTController {
 	 */
 	@GetMapping(value = "/RetailCustomer/{retailCustomerId}", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
-		summary = "Get RetailCustomer by ID",
-		description = "Retrieves a specific RetailCustomer resource by its unique identifier. " +
+		summary = "Get RetailCustomerEntity by ID",
+		description = "Retrieves a specific RetailCustomerEntity resource by its unique identifier. " +
 					 "Returns an ATOM entry containing customer account details and contact information."
 	)
 	@ApiResponses(value = {
@@ -165,7 +165,7 @@ public class RetailCustomerRESTController {
 			responseCode = "200", 
 			description = "Successfully retrieved RetailCustomer",
 			content = @Content(mediaType = MediaType.APPLICATION_ATOM_XML_VALUE,
-							 schema = @Schema(description = "ATOM entry containing RetailCustomer details"))
+							 schema = @Schema(description = "ATOM entry containing RetailCustomerEntity details"))
 		),
 		@ApiResponse(
 			responseCode = "400", 
@@ -177,7 +177,7 @@ public class RetailCustomerRESTController {
 		),
 		@ApiResponse(
 			responseCode = "404", 
-			description = "RetailCustomer not found"
+			description = "RetailCustomerEntity not found"
 		)
 	})
 	public void getRetailCustomer(
@@ -208,7 +208,7 @@ public class RetailCustomerRESTController {
 	}
 
 	/**
-	 * Creates a new RetailCustomer resource (root level).
+	 * Creates a new RetailCustomerEntity resource (root level).
 	 * 
 	 * @param request HTTP servlet request for authorization context
 	 * @param response HTTP response for returning created resource
@@ -221,7 +221,7 @@ public class RetailCustomerRESTController {
 				produces = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
 		summary = "Create RetailCustomer",
-		description = "Creates a new RetailCustomer resource representing a utility customer account. " +
+		description = "Creates a new RetailCustomerEntity resource representing a utility customer account. " +
 					 "The request body should contain an ATOM entry with customer details including " +
 					 "name, contact information, and account preferences."
 	)
@@ -234,7 +234,7 @@ public class RetailCustomerRESTController {
 		),
 		@ApiResponse(
 			responseCode = "400", 
-			description = "Invalid ATOM XML format or RetailCustomer data"
+			description = "Invalid ATOM XML format or RetailCustomerEntity data"
 		),
 		@ApiResponse(
 			responseCode = "401", 
@@ -246,7 +246,7 @@ public class RetailCustomerRESTController {
 			HttpServletResponse response,
 			@Parameter(description = "Query parameters for export filtering")
 			@RequestParam Map<String, String> params, 
-			@Parameter(description = "ATOM XML containing RetailCustomer data", required = true)
+			@Parameter(description = "ATOM XML containing RetailCustomerEntity data", required = true)
 			@RequestBody InputStream stream) throws IOException {
 
 		Long subscriptionId = getSubscriptionId(request);
@@ -260,7 +260,7 @@ public class RetailCustomerRESTController {
 			// Current exportService.exportRetailCustomer() only accepts Long IDs
 			// but RetailCustomerEntity.getId() returns UUID
 			response.getWriter().write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-			response.getWriter().write("<feed>RetailCustomer created with UUID: " + 
+			response.getWriter().write("<feed>RetailCustomerEntity created with UUID: " + 
 					retailCustomer.getId() + "</feed>");
 			response.setStatus(HttpServletResponse.SC_CREATED);
 		} catch (Exception e) {
@@ -269,10 +269,10 @@ public class RetailCustomerRESTController {
 	}
 
 	/**
-	 * Updates an existing RetailCustomer resource (root level).
+	 * Updates an existing RetailCustomerEntity resource (root level).
 	 * 
 	 * @param response HTTP response for returning updated resource
-	 * @param retailCustomerId Unique identifier for the RetailCustomer to update
+	 * @param retailCustomerId Unique identifier for the RetailCustomerEntity to update
 	 * @param params Query parameters for export filtering
 	 * @param stream Input stream containing updated ATOM XML data
 	 * @throws IOException if input/output stream operations fail
@@ -282,7 +282,7 @@ public class RetailCustomerRESTController {
 			   consumes = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
 		summary = "Update RetailCustomer",
-		description = "Updates an existing RetailCustomer resource. The request body should contain " +
+		description = "Updates an existing RetailCustomerEntity resource. The request body should contain " +
 					 "an ATOM entry with updated customer account details."
 	)
 	@ApiResponses(value = {
@@ -292,7 +292,7 @@ public class RetailCustomerRESTController {
 		),
 		@ApiResponse(
 			responseCode = "400", 
-			description = "Invalid ATOM XML format or RetailCustomer data"
+			description = "Invalid ATOM XML format or RetailCustomerEntity data"
 		),
 		@ApiResponse(
 			responseCode = "401", 
@@ -300,16 +300,16 @@ public class RetailCustomerRESTController {
 		),
 		@ApiResponse(
 			responseCode = "404", 
-			description = "RetailCustomer not found"
+			description = "RetailCustomerEntity not found"
 		)
 	})
 	public void updateRetailCustomer(
 			HttpServletResponse response,
-			@Parameter(description = "Unique identifier of the RetailCustomer to update", required = true)
+			@Parameter(description = "Unique identifier of the RetailCustomerEntity to update", required = true)
 			@PathVariable UUID retailCustomerId,
 			@Parameter(description = "Query parameters for export filtering")
 			@RequestParam Map<String, String> params, 
-			@Parameter(description = "ATOM XML containing updated RetailCustomer data", required = true)
+			@Parameter(description = "ATOM XML containing updated RetailCustomerEntity data", required = true)
 			@RequestBody InputStream stream) throws IOException, FeedException {
 		try {
 			// TODO: Update to UUID-based service methods when available
@@ -322,15 +322,15 @@ public class RetailCustomerRESTController {
 	}
 
 	/**
-	 * Deletes a RetailCustomer resource (root level).
+	 * Deletes a RetailCustomerEntity resource (root level).
 	 * 
 	 * @param response HTTP response
-	 * @param retailCustomerId Unique identifier for the RetailCustomer to delete
+	 * @param retailCustomerId Unique identifier for the RetailCustomerEntity to delete
 	 */
 	@DeleteMapping("/RetailCustomer/{retailCustomerId}")
 	@Operation(
 		summary = "Delete RetailCustomer", 
-		description = "Removes a RetailCustomer resource. This will also remove all associated " +
+		description = "Removes a RetailCustomerEntity resource. This will also remove all associated " +
 					 "usage points, authorizations, and subscription data."
 	)
 	@ApiResponses(value = {
@@ -344,12 +344,12 @@ public class RetailCustomerRESTController {
 		),
 		@ApiResponse(
 			responseCode = "404", 
-			description = "RetailCustomer not found"
+			description = "RetailCustomerEntity not found"
 		)
 	})
 	public void deleteRetailCustomer(
 			HttpServletResponse response,
-			@Parameter(description = "Unique identifier of the RetailCustomer to delete", required = true)
+			@Parameter(description = "Unique identifier of the RetailCustomerEntity to delete", required = true)
 			@PathVariable UUID retailCustomerId) {
 
 		try {

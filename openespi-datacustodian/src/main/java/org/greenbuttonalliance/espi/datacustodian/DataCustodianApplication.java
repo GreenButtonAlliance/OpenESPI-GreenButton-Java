@@ -30,7 +30,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
  * 
  * This application provides a NAESB ESPI 1.0 compliant Data Custodian (Utility) implementation
  * that serves as an OAuth2 Resource Server, consuming authorization tokens from the separate
- * OpenESPI Authorization Server.
+ * OpenESPI AuthorizationEntity Server.
  * 
  * Key Features:
  * - OAuth2 Resource Server for ESPI-compliant API access

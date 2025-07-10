@@ -625,7 +625,7 @@ public class BatchRESTController {
 		String accessToken = request.getHeader("authorization");
 		if (accessToken != null) {
 			if (accessToken.contains("Bearer")) {
-				// has Authorization header with Bearer type
+				// has AuthorizationEntity header with Bearer type
 				accessToken = accessToken.replace("Bearer ", "");
 				// ensure length is >12 characters (48 bits in hex at least)
 				if (accessToken.length() >= 12) {

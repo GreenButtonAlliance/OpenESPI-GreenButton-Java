@@ -19,9 +19,7 @@
 
 package org.greenbuttonalliance.espi.datacustodian.web;
 
-// COMMENTED OUT FOR SPRING BOOT 3.5 MIGRATION - Uses legacy RetailCustomer domain class
-// This class will be refactored to use modern entities and record-based DTOs
-import org.greenbuttonalliance.espi.common.domain.legacy.RetailCustomer;
+import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
@@ -29,12 +27,12 @@ import java.security.Principal;
 
 public class BaseController {
 	@ModelAttribute("currentCustomer")
-	public RetailCustomer currentCustomer(Principal principal) {
+	public RetailCustomerEntity currentCustomer(Principal principal) {
 		try {
 			System.out.printf("BaseController: currentCustomer -- %s\n",
-					(RetailCustomer) ((Authentication) principal)
+					(RetailCustomerEntity) ((Authentication) principal)
 							.getPrincipal());
-			return (RetailCustomer) ((Authentication) principal).getPrincipal();
+			return (RetailCustomerEntity) ((Authentication) principal).getPrincipal();
 		} catch (Exception e) {
 			System.out.printf("BaseController: currentCustomer -- null\n");
 			return null;

@@ -28,7 +28,6 @@ import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
 import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
-import org.springframework.stereotype.Service;
 
 import java.util.Set;
 
@@ -49,8 +48,9 @@ import java.util.Set;
  * @author Green Button Alliance
  * @version 1.0.0
  * @since Spring Boot 3.5
+ * 
+ * Note: This class is configured as a bean in AuthorizationServerConfig
  */
-@Service
 public class EspiTokenCustomizer implements OAuth2TokenCustomizer<JwtEncodingContext> {
 
     private static final Logger logger = LoggerFactory.getLogger(EspiTokenCustomizer.class);

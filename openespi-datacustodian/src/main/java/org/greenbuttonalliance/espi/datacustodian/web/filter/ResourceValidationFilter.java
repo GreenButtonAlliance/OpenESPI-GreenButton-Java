@@ -108,7 +108,7 @@ public class ResourceValidationFilter implements Filter {
 
 		if (token != null) {
 			if (token.contains("Bearer")) {
-				// has Authorization header with Bearer type
+				// has AuthorizationEntity header with Bearer type
 				hasBearer = true;
 				token = token.replace("Bearer ", "");
 
@@ -128,10 +128,10 @@ public class ResourceValidationFilter implements Filter {
 
 					} catch (Exception e) {
 						System.out
-								.printf("ResourceValidationFilter: doFilter - No Authorization Found - %s\n",
+								.printf("ResourceValidationFilter: doFilter - No AuthorizationEntity Found - %s\n",
 										e.toString());
 						throw new AccessDeniedException(
-								String.format("No Authorization Found"));
+								String.format("No AuthorizationEntity Found"));
 					}
 				}
 			}
@@ -325,7 +325,7 @@ public class ResourceValidationFilter implements Filter {
 							if (authorizationId != -1l) {
 								// it is specific ID, see if it authorization
 								// for this third party
-								AuthorizationEntity requestedAuthorization = authorizationService
+								AuthorizationEntity requestedAuthorizationEntity = authorizationService
 										.findById(authorizationId);
 								if ((requestedAuthorization
 										.getApplicationInformation().getId())

@@ -88,7 +88,7 @@ public class DataCustodianIntegrationConfig {
     @NotNull
     @Min(1)
     @Max(24)
-    private Integer healthLogRetentionDays = 30;
+    private Integer healthLogRetentionDays = 24;
 
     @NotNull
     @Min(1)

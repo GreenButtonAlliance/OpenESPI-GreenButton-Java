@@ -40,7 +40,7 @@ import java.util.List;
  * Security configuration for the OpenESPI Data Custodian Resource Server.
  * 
  * This configuration implements OAuth2 Resource Server security using opaque tokens
- * from the separate OpenESPI Authorization Server. It replaces the legacy Spring
+ * from the separate OpenESPI AuthorizationEntity Server. It replaces the legacy Spring
  * Security configuration replacing legacy Spring XML with modern Spring Security 6.5.
  * 
  * Key Features:
@@ -209,10 +209,10 @@ public class SecurityConfiguration {
      * OAuth2 Resource Server configuration notes:
      * 
      * The DataCustodian acts as an OAuth2 Resource Server that validates opaque tokens
-     * issued by the separate OpenESPI Authorization Server. This configuration:
+     * issued by the separate OpenESPI AuthorizationEntity Server. This configuration:
      * 
      * 1. Uses opaque token introspection (ESPI standard requirement)
-     * 2. Connects to the Authorization Server's introspection endpoint
+     * 2. Connects to the AuthorizationEntity Server's introspection endpoint
      * 3. Uses client credentials for introspection authentication
      * 
      * Future enhancement: Add JWT support for dynamic client registration scenarios

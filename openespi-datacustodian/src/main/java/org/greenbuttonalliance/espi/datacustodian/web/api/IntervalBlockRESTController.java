@@ -730,7 +730,7 @@ public class IntervalBlockRESTController {
 
 		if (token != null) {
 			token = token.replace("Bearer ", "");
-			Authorization authorization = authorizationService.findByAccessToken(token);
+			AuthorizationEntity authorization = authorizationService.findByAccessToken(token);
 			if (authorization != null) {
 				Subscription subscription = authorization.getSubscription();
 				if (subscription != null) {

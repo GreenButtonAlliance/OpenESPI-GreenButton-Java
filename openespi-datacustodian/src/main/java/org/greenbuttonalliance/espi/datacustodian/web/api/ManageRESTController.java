@@ -23,7 +23,7 @@
 package org.greenbuttonalliance.espi.datacustodian.web.api;
 
 
-import org.greenbuttonalliance.espi.common.domain.legacy.Routes;
+import org.greenbuttonalliance.espi.common.domain.usage.Routes;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
