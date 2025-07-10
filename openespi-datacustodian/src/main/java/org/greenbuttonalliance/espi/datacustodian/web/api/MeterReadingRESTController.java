@@ -33,7 +33,9 @@ import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.SubscriptionEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.IntervalBlockEntity;
 import org.greenbuttonalliance.espi.common.service.*;
-import org.greenbuttonalliance.espi.common.utils.ExportFilter;
+import org.greenbuttonalliance.espi.common.repositories.usage.MeterReadingRepository;
+import org.greenbuttonalliance.espi.common.repositories.usage.UsagePointRepository;
+import org.greenbuttonalliance.espi.common.repositories.usage.ResourceRepository;
 import org.greenbuttonalliance.espi.datacustodian.utils.VerifyURLParams;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -47,10 +49,10 @@ import java.io.InputStream;
 import java.util.Map;
 
 /**
- * RESTful controller for managing MeterReading resources according to the 
+ * RESTful controller for managing MeterReadingEntity resources according to the 
  * Green Button Alliance ESPI (Energy Services Provider Interface) specification.
  * 
- * MeterReading represents a collection of readings from a smart meter device 
+ * MeterReadingEntity represents a collection of readings from a smart meter device 
  * for a specific time period, including actual consumption/production values 
  * and associated interval blocks.
  */
@@ -59,22 +61,22 @@ import java.util.Map;
 @Tag(name = "Meter Reading", description = "Smart Meter Reading Data Management API")
 public class MeterReadingRESTController {
 
-	private final MeterReadingService meterReadingService;
-	private final UsagePointService usagePointService;
+	private final MeterReadingRepository meterReadingService;
+	private final UsagePointRepository usagePointService;
 	private final RetailCustomerService retailCustomerService;
 	private final SubscriptionService subscriptionService;
-	private final ExportService exportService;
-	private final ResourceService resourceService;
+	private final DtoExportService exportService;
+	private final ResourceRepository resourceService;
 	private final AuthorizationService authorizationService;
 
 	@Autowired
-	public MeterReadingRESTController(
-			MeterReadingService meterReadingService,
-			UsagePointService usagePointService,
+	public MeterReadingEntityRESTController(
+			MeterReadingRepository meterReadingService,
+			UsagePointRepository usagePointService,
 			RetailCustomerService retailCustomerService,
 			SubscriptionService subscriptionService,
-			ExportService exportService,
-			ResourceService resourceService,
+			DtoExportService exportService,
+			ResourceRepository resourceService,
 			AuthorizationService authorizationService) {
 		this.meterReadingService = meterReadingService;
 		this.usagePointService = usagePointService;
@@ -92,11 +94,11 @@ public class MeterReadingRESTController {
 	}
 
 	// ================================
-	// ROOT MeterReading Collection APIs
+	// ROOT MeterReadingEntity Collection APIs
 	// ================================
 
 	/**
-	 * Retrieves all MeterReading resources (root level access).
+	 * Retrieves all MeterReadingEntity resources (root level access).
 	 * 
 	 * @param request HTTP servlet request for authorization context
 	 * @param response HTTP response for streaming ATOM XML content
@@ -106,16 +108,16 @@ public class MeterReadingRESTController {
 	 */
 	@GetMapping(value = "/MeterReading", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
-		summary = "Get MeterReading Collection",
-		description = "Retrieves all authorized MeterReading resources with optional filtering and pagination. " +
-					 "Returns an ATOM feed containing MeterReading entries for smart meter data collections."
+		summary = "Get MeterReadingEntity Collection",
+		description = "Retrieves all authorized MeterReadingEntity resources with optional filtering and pagination. " +
+					 "Returns an ATOM feed containing MeterReadingEntity entries for smart meter data collections."
 	)
 	@ApiResponses(value = {
 		@ApiResponse(
 			responseCode = "200", 
-			description = "Successfully retrieved MeterReading collection",
+			description = "Successfully retrieved MeterReadingEntity collection",
 			content = @Content(mediaType = MediaType.APPLICATION_ATOM_XML_VALUE, 
-							 schema = @Schema(description = "ATOM feed containing MeterReading entries"))
+							 schema = @Schema(description = "ATOM feed containing MeterReadingEntity entries"))
 		),
 		@ApiResponse(
 			responseCode = "400", 
@@ -123,7 +125,7 @@ public class MeterReadingRESTController {
 		),
 		@ApiResponse(
 			responseCode = "401", 
-			description = "Unauthorized access to MeterReading resources"
+			description = "Unauthorized access to MeterReadingEntity resources"
 		)
 	})
 	public void getMeterReadingCollection(
@@ -151,28 +153,28 @@ public class MeterReadingRESTController {
 	}
 
 	/**
-	 * Retrieves a specific MeterReading resource by ID (root level access).
+	 * Retrieves a specific MeterReadingEntity resource by ID (root level access).
 	 * 
 	 * @param request HTTP servlet request for authorization context
 	 * @param response HTTP response for streaming ATOM XML content
-	 * @param meterReadingId Unique identifier for the MeterReading
+	 * @param meterReadingId Unique identifier for the MeterReadingEntity
 	 * @param params Query parameters for export filtering
 	 * @throws IOException if output stream cannot be written
 	 * @throws FeedException if ATOM entry generation fails
 	 */
 	@GetMapping(value = "/MeterReading/{meterReadingId}", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
-		summary = "Get MeterReading by ID",
-		description = "Retrieves a specific MeterReading resource by its unique identifier. " +
-					 "Returns an ATOM entry containing the MeterReading details including " +
+		summary = "Get MeterReadingEntity by ID",
+		description = "Retrieves a specific MeterReadingEntity resource by its unique identifier. " +
+					 "Returns an ATOM entry containing the MeterReadingEntity details including " +
 					 "reading type, time period, and associated interval blocks."
 	)
 	@ApiResponses(value = {
 		@ApiResponse(
 			responseCode = "200", 
-			description = "Successfully retrieved MeterReading",
+			description = "Successfully retrieved MeterReadingEntity",
 			content = @Content(mediaType = MediaType.APPLICATION_ATOM_XML_VALUE,
-							 schema = @Schema(description = "ATOM entry containing MeterReading details"))
+							 schema = @Schema(description = "ATOM entry containing MeterReadingEntity details"))
 		),
 		@ApiResponse(
 			responseCode = "400", 
@@ -180,7 +182,7 @@ public class MeterReadingRESTController {
 		),
 		@ApiResponse(
 			responseCode = "401", 
-			description = "Unauthorized access to this MeterReading"
+			description = "Unauthorized access to this MeterReadingEntity"
 		),
 		@ApiResponse(
 			responseCode = "404", 
@@ -190,7 +192,7 @@ public class MeterReadingRESTController {
 	public void getMeterReading(
 			HttpServletRequest request, 
 			HttpServletResponse response,
-			@Parameter(description = "Unique identifier of the MeterReading", required = true)
+			@Parameter(description = "Unique identifier of the MeterReadingEntity", required = true)
 			@PathVariable Long meterReadingId,
 			@Parameter(description = "Query parameters for export filtering")
 			@RequestParam Map<String, String> params) throws IOException, FeedException {
@@ -215,7 +217,7 @@ public class MeterReadingRESTController {
 	}
 
 	/**
-	 * Creates a new MeterReading resource (root level).
+	 * Creates a new MeterReadingEntity resource (root level).
 	 * 
 	 * @param request HTTP servlet request for authorization context
 	 * @param response HTTP response for returning created resource
@@ -227,25 +229,25 @@ public class MeterReadingRESTController {
 				consumes = MediaType.APPLICATION_ATOM_XML_VALUE, 
 				produces = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
-		summary = "Create MeterReading",
-		description = "Creates a new MeterReading resource representing smart meter data collection. " +
-					 "The request body should contain an ATOM entry with MeterReading details including " +
+		summary = "Create MeterReadingEntity",
+		description = "Creates a new MeterReadingEntity resource representing smart meter data collection. " +
+					 "The request body should contain an ATOM entry with MeterReadingEntity details including " +
 					 "reading type, time period, and interval block data."
 	)
 	@ApiResponses(value = {
 		@ApiResponse(
 			responseCode = "201", 
-			description = "Successfully created MeterReading",
+			description = "Successfully created MeterReadingEntity",
 			content = @Content(mediaType = MediaType.APPLICATION_ATOM_XML_VALUE,
-							 schema = @Schema(description = "ATOM entry containing the created MeterReading"))
+							 schema = @Schema(description = "ATOM entry containing the created MeterReadingEntity"))
 		),
 		@ApiResponse(
 			responseCode = "400", 
-			description = "Invalid ATOM XML format or MeterReading data"
+			description = "Invalid ATOM XML format or MeterReadingEntity data"
 		),
 		@ApiResponse(
 			responseCode = "401", 
-			description = "Unauthorized to create MeterReadings"
+			description = "Unauthorized to create MeterReadingEntitys"
 		)
 	})
 	public void createMeterReading(
@@ -253,7 +255,7 @@ public class MeterReadingRESTController {
 			HttpServletResponse response,
 			@Parameter(description = "Query parameters for export filtering")
 			@RequestParam Map<String, String> params, 
-			@Parameter(description = "ATOM XML containing MeterReading data", required = true)
+			@Parameter(description = "ATOM XML containing MeterReadingEntity data", required = true)
 			@RequestBody InputStream stream) throws IOException {
 
 		Long subscriptionId = getSubscriptionId(request);
@@ -271,32 +273,32 @@ public class MeterReadingRESTController {
 	}
 
 	/**
-	 * Updates an existing MeterReading resource (root level).
+	 * Updates an existing MeterReadingEntity resource (root level).
 	 * 
 	 * @param response HTTP response for returning updated resource
-	 * @param meterReadingId Unique identifier for the MeterReading to update
+	 * @param meterReadingId Unique identifier for the MeterReadingEntity to update
 	 * @param params Query parameters for export filtering
 	 * @param stream Input stream containing updated ATOM XML data
 	 */
 	@PutMapping(value = "/MeterReading/{meterReadingId}", 
 			   consumes = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
-		summary = "Update MeterReading",
-		description = "Updates an existing MeterReading resource. The request body should contain " +
-					 "an ATOM entry with updated MeterReading details."
+		summary = "Update MeterReadingEntity",
+		description = "Updates an existing MeterReadingEntity resource. The request body should contain " +
+					 "an ATOM entry with updated MeterReadingEntity details."
 	)
 	@ApiResponses(value = {
 		@ApiResponse(
 			responseCode = "200", 
-			description = "Successfully updated MeterReading"
+			description = "Successfully updated MeterReadingEntity"
 		),
 		@ApiResponse(
 			responseCode = "400", 
-			description = "Invalid ATOM XML format or MeterReading data"
+			description = "Invalid ATOM XML format or MeterReadingEntity data"
 		),
 		@ApiResponse(
 			responseCode = "401", 
-			description = "Unauthorized to update this MeterReading"
+			description = "Unauthorized to update this MeterReadingEntity"
 		),
 		@ApiResponse(
 			responseCode = "404", 
@@ -305,14 +307,14 @@ public class MeterReadingRESTController {
 	})
 	public void updateMeterReading(
 			HttpServletResponse response,
-			@Parameter(description = "Unique identifier of the MeterReading to update", required = true)
+			@Parameter(description = "Unique identifier of the MeterReadingEntity to update", required = true)
 			@PathVariable Long meterReadingId,
 			@Parameter(description = "Query parameters for export filtering")
 			@RequestParam Map<String, String> params, 
-			@Parameter(description = "ATOM XML containing updated MeterReading data", required = true)
+			@Parameter(description = "ATOM XML containing updated MeterReadingEntity data", required = true)
 			@RequestBody InputStream stream) {
 
-		if (null != resourceService.findById(meterReadingId, MeterReading.class)) {
+		if (null != resourceService.findById(meterReadingId, MeterReadingEntity.class)) {
 			try {
 				// Note: the import service is doing the merge
 				meterReadingService.importResource(stream);
@@ -326,25 +328,25 @@ public class MeterReadingRESTController {
 	}
 
 	/**
-	 * Deletes a MeterReading resource (root level).
+	 * Deletes a MeterReadingEntity resource (root level).
 	 * 
 	 * @param response HTTP response
-	 * @param meterReadingId Unique identifier for the MeterReading to delete
+	 * @param meterReadingId Unique identifier for the MeterReadingEntity to delete
 	 */
 	@DeleteMapping("/MeterReading/{meterReadingId}")
 	@Operation(
-		summary = "Delete MeterReading", 
-		description = "Removes a MeterReading resource. This will also remove all associated " +
+		summary = "Delete MeterReadingEntity", 
+		description = "Removes a MeterReadingEntity resource. This will also remove all associated " +
 					 "interval blocks and reading data."
 	)
 	@ApiResponses(value = {
 		@ApiResponse(
 			responseCode = "200", 
-			description = "Successfully deleted MeterReading"
+			description = "Successfully deleted MeterReadingEntity"
 		),
 		@ApiResponse(
 			responseCode = "401", 
-			description = "Unauthorized to delete this MeterReading"
+			description = "Unauthorized to delete this MeterReadingEntity"
 		),
 		@ApiResponse(
 			responseCode = "404", 
@@ -353,11 +355,11 @@ public class MeterReadingRESTController {
 	})
 	public void deleteMeterReading(
 			HttpServletResponse response,
-			@Parameter(description = "Unique identifier of the MeterReading to delete", required = true)
+			@Parameter(description = "Unique identifier of the MeterReadingEntity to delete", required = true)
 			@PathVariable Long meterReadingId) {
 
 		try {
-			resourceService.deleteById(meterReadingId, MeterReading.class);
+			resourceService.deleteById(meterReadingId, MeterReadingEntity.class);
 			response.setStatus(HttpServletResponse.SC_OK);
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_NOT_FOUND);
@@ -365,11 +367,11 @@ public class MeterReadingRESTController {
 	}
 
 	// =============================================
-	// Subscription-scoped MeterReading Collection APIs
+	// SubscriptionEntity-scoped MeterReadingEntity Collection APIs
 	// =============================================
 
 	/**
-	 * Retrieves MeterReading resources within a specific subscription and usage point context.
+	 * Retrieves MeterReadingEntity resources within a specific subscription and usage point context.
 	 * 
 	 * @param subscriptionId Unique identifier for the subscription
 	 * @param usagePointId Unique identifier for the usage point
@@ -380,16 +382,16 @@ public class MeterReadingRESTController {
 	 */
 	@GetMapping(value = "/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/MeterReading", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
-		summary = "Get MeterReadings by Subscription and UsagePoint",
-		description = "Retrieves all MeterReading resources associated with a specific subscription and usage point. " +
+		summary = "Get MeterReadingEntitys by SubscriptionEntity and UsagePointEntity",
+		description = "Retrieves all MeterReadingEntity resources associated with a specific subscription and usage point. " +
 					 "This provides filtered access based on the subscription's authorization scope."
 	)
 	@ApiResponses(value = {
 		@ApiResponse(
 			responseCode = "200", 
-			description = "Successfully retrieved subscription MeterReadings",
+			description = "Successfully retrieved subscription MeterReadingEntitys",
 			content = @Content(mediaType = MediaType.APPLICATION_ATOM_XML_VALUE, 
-							 schema = @Schema(description = "ATOM feed containing subscription-scoped MeterReading entries"))
+							 schema = @Schema(description = "ATOM feed containing subscription-scoped MeterReadingEntity entries"))
 		),
 		@ApiResponse(
 			responseCode = "400", 
@@ -401,7 +403,7 @@ public class MeterReadingRESTController {
 		),
 		@ApiResponse(
 			responseCode = "404", 
-			description = "Subscription or UsagePoint not found"
+			description = "Subscription or UsagePointEntity not found"
 		)
 	})
 	public void getSubscriptionMeterReadings(
@@ -434,11 +436,11 @@ public class MeterReadingRESTController {
 	}
 
 	/**
-	 * Retrieves a specific MeterReading within a subscription and usage point context.
+	 * Retrieves a specific MeterReadingEntity within a subscription and usage point context.
 	 * 
 	 * @param subscriptionId Unique identifier for the subscription
 	 * @param usagePointId Unique identifier for the usage point
-	 * @param meterReadingId Unique identifier for the MeterReading
+	 * @param meterReadingId Unique identifier for the MeterReadingEntity
 	 * @param response HTTP response for streaming ATOM XML content
 	 * @param params Query parameters for export filtering
 	 * @throws IOException if output stream cannot be written
@@ -446,16 +448,16 @@ public class MeterReadingRESTController {
 	 */
 	@GetMapping(value = "/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/MeterReading/{meterReadingId}", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
-		summary = "Get Subscription MeterReading by ID",
-		description = "Retrieves a specific MeterReading resource within a subscription and usage point context. " +
+		summary = "Get SubscriptionEntity MeterReadingEntity by ID",
+		description = "Retrieves a specific MeterReadingEntity resource within a subscription and usage point context. " +
 					 "This provides access control based on the subscription's authorization scope."
 	)
 	@ApiResponses(value = {
 		@ApiResponse(
 			responseCode = "200", 
-			description = "Successfully retrieved subscription MeterReading",
+			description = "Successfully retrieved subscription MeterReadingEntity",
 			content = @Content(mediaType = MediaType.APPLICATION_ATOM_XML_VALUE,
-							 schema = @Schema(description = "ATOM entry containing subscription-scoped MeterReading details"))
+							 schema = @Schema(description = "ATOM entry containing subscription-scoped MeterReadingEntity details"))
 		),
 		@ApiResponse(
 			responseCode = "400", 
@@ -463,11 +465,11 @@ public class MeterReadingRESTController {
 		),
 		@ApiResponse(
 			responseCode = "401", 
-			description = "Unauthorized access to this subscription or MeterReading"
+			description = "Unauthorized access to this subscription or MeterReadingEntity"
 		),
 		@ApiResponse(
 			responseCode = "404", 
-			description = "Subscription, UsagePoint, or MeterReading not found"
+			description = "Subscription, UsagePointEntity, or MeterReadingEntity not found"
 		)
 	})
 	public void getSubscriptionMeterReading(
@@ -475,7 +477,7 @@ public class MeterReadingRESTController {
 			@PathVariable Long subscriptionId,
 			@Parameter(description = "Unique identifier of the usage point", required = true)
 			@PathVariable Long usagePointId,
-			@Parameter(description = "Unique identifier of the MeterReading", required = true)
+			@Parameter(description = "Unique identifier of the MeterReadingEntity", required = true)
 			@PathVariable Long meterReadingId,
 			HttpServletResponse response,
 			@Parameter(description = "Query parameters for export filtering")
@@ -495,7 +497,7 @@ public class MeterReadingRESTController {
 	}
 
 	/**
-	 * Creates a new MeterReading resource within a subscription and usage point context.
+	 * Creates a new MeterReadingEntity resource within a subscription and usage point context.
 	 * 
 	 * @param subscriptionId Unique identifier for the subscription
 	 * @param usagePointId Unique identifier for the usage point
@@ -508,28 +510,28 @@ public class MeterReadingRESTController {
 				consumes = MediaType.APPLICATION_ATOM_XML_VALUE, 
 				produces = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
-		summary = "Create Subscription MeterReading",
-		description = "Creates a new MeterReading resource within a subscription and usage point context. " +
-					 "The request body should contain an ATOM entry with MeterReading details."
+		summary = "Create SubscriptionEntity MeterReadingEntity",
+		description = "Creates a new MeterReadingEntity resource within a subscription and usage point context. " +
+					 "The request body should contain an ATOM entry with MeterReadingEntity details."
 	)
 	@ApiResponses(value = {
 		@ApiResponse(
 			responseCode = "201", 
-			description = "Successfully created MeterReading",
+			description = "Successfully created MeterReadingEntity",
 			content = @Content(mediaType = MediaType.APPLICATION_ATOM_XML_VALUE,
-							 schema = @Schema(description = "ATOM entry containing the created MeterReading"))
+							 schema = @Schema(description = "ATOM entry containing the created MeterReadingEntity"))
 		),
 		@ApiResponse(
 			responseCode = "400", 
-			description = "Invalid ATOM XML format, MeterReading data, or context"
+			description = "Invalid ATOM XML format, MeterReadingEntity data, or context"
 		),
 		@ApiResponse(
 			responseCode = "401", 
-			description = "Unauthorized to create MeterReadings in this context"
+			description = "Unauthorized to create MeterReadingEntitys in this context"
 		),
 		@ApiResponse(
 			responseCode = "404", 
-			description = "Subscription or UsagePoint not found"
+			description = "Subscription or UsagePointEntity not found"
 		)
 	})
 	public void createSubscriptionMeterReading(
@@ -540,7 +542,7 @@ public class MeterReadingRESTController {
 			HttpServletResponse response,
 			@Parameter(description = "Query parameters for export filtering")
 			@RequestParam Map<String, String> params, 
-			@Parameter(description = "ATOM XML containing MeterReading data", required = true)
+			@Parameter(description = "ATOM XML containing MeterReadingEntity data", required = true)
 			@RequestBody InputStream stream) throws IOException {
 
 		response.setContentType(MediaType.APPLICATION_ATOM_XML_VALUE);
@@ -550,7 +552,7 @@ public class MeterReadingRESTController {
 					subscriptionId, usagePointId);
 
 			if (null != resourceService.findIdByXPath(retailCustomerId,
-					usagePointId, UsagePoint.class)) {
+					usagePointId, UsagePointEntity.class)) {
 				
 				MeterReading meterReading = meterReadingService.importResource(stream);
 
@@ -568,11 +570,11 @@ public class MeterReadingRESTController {
 	}
 
 	/**
-	 * Updates an existing MeterReading resource within a subscription and usage point context.
+	 * Updates an existing MeterReadingEntity resource within a subscription and usage point context.
 	 * 
 	 * @param subscriptionId Unique identifier for the subscription
 	 * @param usagePointId Unique identifier for the usage point
-	 * @param meterReadingId Unique identifier for the MeterReading to update
+	 * @param meterReadingId Unique identifier for the MeterReadingEntity to update
 	 * @param response HTTP response for returning updated resource
 	 * @param params Query parameters for export filtering
 	 * @param stream Input stream containing updated ATOM XML data
@@ -580,26 +582,26 @@ public class MeterReadingRESTController {
 	@PutMapping(value = "/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/MeterReading/{meterReadingId}", 
 			   consumes = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
-		summary = "Update Subscription MeterReading",
-		description = "Updates an existing MeterReading resource within a subscription and usage point context. " +
-					 "The request body should contain an ATOM entry with updated MeterReading details."
+		summary = "Update SubscriptionEntity MeterReadingEntity",
+		description = "Updates an existing MeterReadingEntity resource within a subscription and usage point context. " +
+					 "The request body should contain an ATOM entry with updated MeterReadingEntity details."
 	)
 	@ApiResponses(value = {
 		@ApiResponse(
 			responseCode = "200", 
-			description = "Successfully updated MeterReading"
+			description = "Successfully updated MeterReadingEntity"
 		),
 		@ApiResponse(
 			responseCode = "400", 
-			description = "Invalid ATOM XML format or MeterReading data"
+			description = "Invalid ATOM XML format or MeterReadingEntity data"
 		),
 		@ApiResponse(
 			responseCode = "401", 
-			description = "Unauthorized to update this MeterReading"
+			description = "Unauthorized to update this MeterReadingEntity"
 		),
 		@ApiResponse(
 			responseCode = "404", 
-			description = "Subscription, UsagePoint, or MeterReading not found"
+			description = "Subscription, UsagePointEntity, or MeterReadingEntity not found"
 		)
 	})
 	public void updateSubscriptionMeterReading(
@@ -607,12 +609,12 @@ public class MeterReadingRESTController {
 			@PathVariable Long subscriptionId,
 			@Parameter(description = "Unique identifier of the usage point", required = true)
 			@PathVariable Long usagePointId,
-			@Parameter(description = "Unique identifier of the MeterReading to update", required = true)
+			@Parameter(description = "Unique identifier of the MeterReadingEntity to update", required = true)
 			@PathVariable Long meterReadingId,
 			HttpServletResponse response,
 			@Parameter(description = "Query parameters for export filtering")
 			@RequestParam Map<String, String> params, 
-			@Parameter(description = "ATOM XML containing updated MeterReading data", required = true)
+			@Parameter(description = "ATOM XML containing updated MeterReadingEntity data", required = true)
 			@RequestBody InputStream stream) {
 
 		response.setContentType(MediaType.APPLICATION_ATOM_XML_VALUE);
@@ -622,7 +624,7 @@ public class MeterReadingRESTController {
 					subscriptionId, usagePointId);
 
 			if (null != resourceService.findIdByXPath(retailCustomerId,
-					usagePointId, meterReadingId, MeterReading.class)) {
+					usagePointId, meterReadingId, MeterReadingEntity.class)) {
 				
 				meterReadingService.importResource(stream);
 				response.setStatus(HttpServletResponse.SC_OK);
@@ -635,31 +637,31 @@ public class MeterReadingRESTController {
 	}
 
 	/**
-	 * Deletes a MeterReading resource within a subscription and usage point context.
+	 * Deletes a MeterReadingEntity resource within a subscription and usage point context.
 	 * 
 	 * @param subscriptionId Unique identifier for the subscription
 	 * @param usagePointId Unique identifier for the usage point
-	 * @param meterReadingId Unique identifier for the MeterReading to delete
+	 * @param meterReadingId Unique identifier for the MeterReadingEntity to delete
 	 * @param response HTTP response
 	 */
 	@DeleteMapping("/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/MeterReading/{meterReadingId}")
 	@Operation(
-		summary = "Delete Subscription MeterReading", 
-		description = "Removes a MeterReading resource within a subscription and usage point context. " +
+		summary = "Delete SubscriptionEntity MeterReadingEntity", 
+		description = "Removes a MeterReadingEntity resource within a subscription and usage point context. " +
 					 "This will also remove all associated interval blocks and reading data."
 	)
 	@ApiResponses(value = {
 		@ApiResponse(
 			responseCode = "200", 
-			description = "Successfully deleted MeterReading"
+			description = "Successfully deleted MeterReadingEntity"
 		),
 		@ApiResponse(
 			responseCode = "401", 
-			description = "Unauthorized to delete this MeterReading"
+			description = "Unauthorized to delete this MeterReadingEntity"
 		),
 		@ApiResponse(
 			responseCode = "404", 
-			description = "Subscription, UsagePoint, or MeterReading not found"
+			description = "Subscription, UsagePointEntity, or MeterReadingEntity not found"
 		)
 	})
 	public void deleteSubscriptionMeterReading(
@@ -667,7 +669,7 @@ public class MeterReadingRESTController {
 			@PathVariable Long subscriptionId,
 			@Parameter(description = "Unique identifier of the usage point", required = true)
 			@PathVariable Long usagePointId,
-			@Parameter(description = "Unique identifier of the MeterReading to delete", required = true)
+			@Parameter(description = "Unique identifier of the MeterReadingEntity to delete", required = true)
 			@PathVariable Long meterReadingId,
 			HttpServletResponse response) {
 
@@ -676,7 +678,7 @@ public class MeterReadingRESTController {
 					subscriptionId, usagePointId);
 
 			resourceService.deleteByXPathId(retailCustomerId, usagePointId,
-					meterReadingId, MeterReading.class);
+					meterReadingId, MeterReadingEntity.class);
 					
 			response.setStatus(HttpServletResponse.SC_OK);
 		} catch (Exception e) {
@@ -692,7 +694,7 @@ public class MeterReadingRESTController {
 	 * Extracts subscription ID from the HTTP request context.
 	 * 
 	 * @param request HTTP servlet request
-	 * @return Subscription ID if available, 0L otherwise
+	 * @return SubscriptionEntity ID if available, 0L otherwise
 	 */
 	private Long getSubscriptionId(HttpServletRequest request) {
 		String token = request.getHeader("authorization");

@@ -119,7 +119,7 @@ public class SecurityConfiguration {
                         "SCOPE_DataCustodian_Admin_Access"
                     )
                 
-                // ESPI Subscription-based endpoints
+                // ESPI SubscriptionEntity-based endpoints
                 .requestMatchers(HttpMethod.GET, "/espi/1_1/resource/Subscription/*/UsagePoint/**")
                     .hasAnyAuthority(
                         "SCOPE_FB_15_READ_3rd_party", 

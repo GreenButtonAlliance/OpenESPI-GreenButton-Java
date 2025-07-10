@@ -20,7 +20,7 @@
 
 package org.greenbuttonalliance.espi.datacustodian.web.customer;
 
-import org.greenbuttonalliance.espi.common.service.ExportService;
+import org.greenbuttonalliance.espi.common.service.DtoExportService;
 import org.greenbuttonalliance.espi.common.utils.ExportFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -39,7 +39,7 @@ import java.util.Map;
 public class CustomerDownloadMyDataController {
 
 	@Autowired
-	private ExportService exportService;
+	private DtoExportService exportService;
 
 	@GetMapping("/RetailCustomer/{retailCustomerId}/DownloadMyData/UsagePoint/{usagePointId}")
 	public void downloadMyData(HttpServletResponse response,
@@ -77,11 +77,11 @@ public class CustomerDownloadMyDataController {
 		}
 	}
 
-	public void setExportService(ExportService exportService) {
+	public void setDtoExportService(DtoExportService exportService) {
 		this.exportService = exportService;
 	}
 
-	public ExportService getExportService() {
+	public DtoExportService getDtoExportService() {
 		return this.exportService;
 	}
 }

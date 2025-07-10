@@ -28,9 +28,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.greenbuttonalliance.espi.common.domain.usage.ReadingTypeEntity;
-import org.greenbuttonalliance.espi.common.service.ExportService;
+import org.greenbuttonalliance.espi.common.service.DtoExportService;
 import org.greenbuttonalliance.espi.common.service.ReadingTypeService;
-import org.greenbuttonalliance.espi.common.service.ResourceService;
+import org.greenbuttonalliance.espi.common.service.ResourceRepository;
 import org.greenbuttonalliance.espi.common.utils.ExportFilter;
 import org.greenbuttonalliance.espi.datacustodian.utils.VerifyURLParams;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,14 +57,14 @@ import java.util.Map;
 public class ReadingTypeRESTController {
 
 	private final ReadingTypeService readingTypeService;
-	private final ResourceService resourceService;
-	private final ExportService exportService;
+	private final ResourceRepository resourceService;
+	private final DtoExportService exportService;
 
 	@Autowired
 	public ReadingTypeRESTController(
 			ReadingTypeService readingTypeService,
-			ResourceService resourceService,
-			ExportService exportService) {
+			ResourceRepository resourceService,
+			DtoExportService exportService) {
 		this.readingTypeService = readingTypeService;
 		this.resourceService = resourceService;
 		this.exportService = exportService;

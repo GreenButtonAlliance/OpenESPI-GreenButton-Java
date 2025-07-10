@@ -22,7 +22,7 @@ package org.greenbuttonalliance.espi.datacustodian.web.custodian;
 
 import org.greenbuttonalliance.espi.common.service.ImportService;
 import org.greenbuttonalliance.espi.common.service.NotificationService;
-import org.greenbuttonalliance.espi.common.service.UsagePointService;
+import org.greenbuttonalliance.espi.common.service.UsagePointRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
@@ -44,7 +44,7 @@ public class UploadController {
 	private ImportService importService;
 
 	@Autowired
-	private UsagePointService usagePointService;
+	private UsagePointRepository usagePointService;
 
 	@Autowired
 	private NotificationService notificationService;
@@ -91,11 +91,11 @@ public class UploadController {
 		return this.importService;
 	}
 
-	public void setUsagePointService(UsagePointService usagePointService) {
+	public void setUsagePointRepository(UsagePointRepository usagePointService) {
 		this.usagePointService = usagePointService;
 	}
 
-	public UsagePointService getUsagePointService() {
+	public UsagePointRepository getUsagePointRepository() {
 		return this.usagePointService;
 	}
 

@@ -28,9 +28,9 @@ import org.greenbuttonalliance.espi.common.domain.usage.UsageSummaryEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.ElectricPowerQualitySummaryEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.TimeConfigurationEntity;
 import org.greenbuttonalliance.espi.common.service.ApplicationInformationService;
-import org.greenbuttonalliance.espi.common.service.ExportService;
-import org.greenbuttonalliance.espi.common.service.ResourceService;
-import org.greenbuttonalliance.espi.common.service.UsagePointService;
+import org.greenbuttonalliance.espi.common.service.DtoExportService;
+import org.greenbuttonalliance.espi.common.service.ResourceRepository;
+import org.greenbuttonalliance.espi.common.service.UsagePointRepository;
 import org.greenbuttonalliance.espi.common.service.RetailCustomerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -48,16 +48,16 @@ import java.util.Iterator;
 import java.util.List;
 
 @Controller
-public class UsagePointController {
+public class UsagePointEntityController {
 
 	@Autowired
-	private UsagePointService usagePointService;
+	private UsagePointRepository usagePointService;
 
 	@Autowired
-	private ResourceService resourceService;
+	private ResourceRepository resourceService;
 
 	@Autowired
-	private ExportService exportService;
+	private DtoExportService exportService;
 
 	@Autowired
 	private ApplicationInformationService applicationInformationService;
@@ -152,27 +152,27 @@ public class UsagePointController {
 		return displayBag;
 	}
 
-	public void setUsagePointService(UsagePointService usagePointService) {
+	public void setUsagePointRepository(UsagePointRepository usagePointService) {
 		this.usagePointService = usagePointService;
 	}
 
-	public UsagePointService getUsagePointService() {
+	public UsagePointRepository getUsagePointRepository() {
 		return this.usagePointService;
 	}
 
-	public void setResourceService(ResourceService resourceService) {
+	public void setResourceRepository(ResourceRepository resourceService) {
 		this.resourceService = resourceService;
 	}
 
-	public ResourceService getResourceService() {
+	public ResourceRepository getResourceRepository() {
 		return this.resourceService;
 	}
 
-	public void setExportService(ExportService exportService) {
+	public void setDtoExportService(DtoExportService exportService) {
 		this.exportService = exportService;
 	}
 
-	public ExportService getExportService() {
+	public DtoExportService getDtoExportService() {
 		return this.exportService;
 	}
 

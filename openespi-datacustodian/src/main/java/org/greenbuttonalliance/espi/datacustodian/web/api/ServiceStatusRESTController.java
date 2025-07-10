@@ -25,7 +25,7 @@ import org.greenbuttonalliance.espi.common.domain.usage.ApplicationInformationEn
 import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.atom.DateTimeType;
 import org.greenbuttonalliance.espi.common.service.AuthorizationService;
-import org.greenbuttonalliance.espi.common.service.ResourceService;
+import org.greenbuttonalliance.espi.common.service.ResourceRepository;
 import org.greenbuttonalliance.espi.common.utils.DateConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -51,12 +51,12 @@ import java.util.UUID;
 @Tag(name = "Service Status", description = "System Service Status Information API")
 public class ServiceStatusRESTController {
 
-	private final ResourceService resourceService;
+	private final ResourceRepository resourceService;
 	private final AuthorizationService authorizationService;
 
 	@Autowired
 	public ServiceStatusRESTController(
-			ResourceService resourceService,
+			ResourceRepository resourceService,
 			AuthorizationService authorizationService) {
 		this.resourceService = resourceService;
 		this.authorizationService = authorizationService;

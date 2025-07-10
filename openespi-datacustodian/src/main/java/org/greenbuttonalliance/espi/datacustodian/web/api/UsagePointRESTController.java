@@ -32,7 +32,7 @@ import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.SubscriptionEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.MeterReadingEntity;
 import org.greenbuttonalliance.espi.common.service.*;
-import org.greenbuttonalliance.espi.common.utils.ExportFilter;
+import org.greenbuttonalliance.espi.common.repositories.usage.UsagePointRepository;
 import org.greenbuttonalliance.espi.datacustodian.utils.VerifyURLParams;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -46,10 +46,10 @@ import java.io.InputStream;
 import java.util.Map;
 
 /**
- * RESTful controller for managing UsagePoint resources according to the 
+ * RESTful controller for managing UsagePointEntity resources according to the 
  * Green Button Alliance ESPI (Energy Services Provider Interface) specification.
  * 
- * UsagePoint represents a logical point on the network where consumption or 
+ * UsagePointEntity represents a logical point on the network where consumption or 
  * production is measured (e.g., meter connection point, sub-load, or generation source).
  */
 @RestController
@@ -57,26 +57,23 @@ import java.util.Map;
 @Tag(name = "Usage Point", description = "Smart Meter Usage Point Management API")
 public class UsagePointRESTController {
 
-    private final UsagePointService usagePointService;
+    private final UsagePointRepository usagePointRepository;
     private final SubscriptionService subscriptionService;
     private final RetailCustomerService retailCustomerService;
-    private final ExportService exportService;
-    private final ResourceService resourceService;
+    private final DtoExportService exportService;
     private final AuthorizationService authorizationService;
 
     @Autowired
-    public UsagePointRESTController(
-            UsagePointService usagePointService,
+    public UsagePointEntityRESTController(
+            UsagePointRepository usagePointRepository,
             SubscriptionService subscriptionService,
             RetailCustomerService retailCustomerService,
-            ExportService exportService,
-            ResourceService resourceService,
+            DtoExportService exportService,
             AuthorizationService authorizationService) {
-        this.usagePointService = usagePointService;
+        this.usagePointRepository = usagePointRepository;
         this.subscriptionService = subscriptionService;
         this.retailCustomerService = retailCustomerService;
         this.exportService = exportService;
-        this.resourceService = resourceService;
         this.authorizationService = authorizationService;
     }
 
@@ -87,11 +84,11 @@ public class UsagePointRESTController {
     }
 
     // ================================
-    // ROOT UsagePoint Collection APIs
+    // ROOT UsagePointEntity Collection APIs
     // ================================
 
     /**
-     * Retrieves all UsagePoint resources (root level access).
+     * Retrieves all UsagePointEntity resources (root level access).
      * 
      * @param request HTTP servlet request for authorization context
      * @param response HTTP response for streaming ATOM XML content
@@ -101,16 +98,16 @@ public class UsagePointRESTController {
      */
     @GetMapping(value = "/UsagePoint", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
     @Operation(
-        summary = "Get UsagePoint Collection",
-        description = "Retrieves all authorized UsagePoint resources with optional filtering and pagination. " +
-                     "Returns an ATOM feed containing UsagePoint entries for smart meter connection points."
+        summary = "Get UsagePointEntity Collection",
+        description = "Retrieves all authorized UsagePointEntity resources with optional filtering and pagination. " +
+                     "Returns an ATOM feed containing UsagePointEntity entries for smart meter connection points."
     )
     @ApiResponses(value = {
         @ApiResponse(
             responseCode = "200", 
-            description = "Successfully retrieved UsagePoint collection",
+            description = "Successfully retrieved UsagePointEntity collection",
             content = @Content(mediaType = MediaType.APPLICATION_ATOM_XML_VALUE, 
-                             schema = @Schema(description = "ATOM feed containing UsagePoint entries"))
+                             schema = @Schema(description = "ATOM feed containing UsagePointEntity entries"))
         ),
         @ApiResponse(
             responseCode = "400", 
@@ -118,7 +115,7 @@ public class UsagePointRESTController {
         ),
         @ApiResponse(
             responseCode = "401", 
-            description = "Unauthorized access to UsagePoint resources"
+            description = "Unauthorized access to UsagePointEntity resources"
         )
     })
     public void getUsagePointCollection(
@@ -139,35 +136,35 @@ public class UsagePointRESTController {
         
         try {
             exportService.exportUsagePoints_Root(subscriptionId,
-                    response.getOutputStream(), new ExportFilter(params));
+                    response.getOutputStream(), params);
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
         }
     }
 
     /**
-     * Retrieves a specific UsagePoint resource by ID (root level access).
+     * Retrieves a specific UsagePointEntity resource by ID (root level access).
      * 
      * @param request HTTP servlet request for authorization context
      * @param response HTTP response for streaming ATOM XML content
-     * @param usagePointId Unique identifier for the UsagePoint
+     * @param usagePointId Unique identifier for the UsagePointEntity
      * @param params Query parameters for export filtering
      * @throws IOException if output stream cannot be written
      * @throws FeedException if ATOM entry generation fails
      */
     @GetMapping(value = "/UsagePoint/{usagePointId}", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
     @Operation(
-        summary = "Get UsagePoint by ID",
-        description = "Retrieves a specific UsagePoint resource by its unique identifier. " +
-                     "Returns an ATOM entry containing the UsagePoint details including service category, " +
+        summary = "Get UsagePointEntity by ID",
+        description = "Retrieves a specific UsagePointEntity resource by its unique identifier. " +
+                     "Returns an ATOM entry containing the UsagePointEntity details including service category, " +
                      "connection state, and meter configuration."
     )
     @ApiResponses(value = {
         @ApiResponse(
             responseCode = "200", 
-            description = "Successfully retrieved UsagePoint",
+            description = "Successfully retrieved UsagePointEntity",
             content = @Content(mediaType = MediaType.APPLICATION_ATOM_XML_VALUE,
-                             schema = @Schema(description = "ATOM entry containing UsagePoint details"))
+                             schema = @Schema(description = "ATOM entry containing UsagePointEntity details"))
         ),
         @ApiResponse(
             responseCode = "400", 
@@ -175,7 +172,7 @@ public class UsagePointRESTController {
         ),
         @ApiResponse(
             responseCode = "401", 
-            description = "Unauthorized access to this UsagePoint"
+            description = "Unauthorized access to this UsagePointEntity"
         ),
         @ApiResponse(
             responseCode = "404", 
@@ -185,7 +182,7 @@ public class UsagePointRESTController {
     public void getUsagePoint(
             HttpServletRequest request, 
             HttpServletResponse response,
-            @Parameter(description = "Unique identifier of the UsagePoint", required = true)
+            @Parameter(description = "Unique identifier of the UsagePointEntity", required = true)
             @PathVariable Long usagePointId,
             @Parameter(description = "Query parameters for export filtering")
             @RequestParam Map<String, String> params) throws IOException, FeedException {
@@ -202,14 +199,14 @@ public class UsagePointRESTController {
         
         try {
             exportService.exportUsagePoint_Root(subscriptionId, usagePointId,
-                    response.getOutputStream(), new ExportFilter(params));
+                    response.getOutputStream(), params);
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
         }
     }
 
     /**
-     * Creates a new UsagePoint resource (root level).
+     * Creates a new UsagePointEntity resource (root level).
      * 
      * @param request HTTP servlet request for authorization context
      * @param response HTTP response for returning created resource
@@ -221,25 +218,25 @@ public class UsagePointRESTController {
                 consumes = MediaType.APPLICATION_ATOM_XML_VALUE, 
                 produces = MediaType.APPLICATION_ATOM_XML_VALUE)
     @Operation(
-        summary = "Create UsagePoint",
-        description = "Creates a new UsagePoint resource representing a smart meter connection point. " +
-                     "The request body should contain an ATOM entry with UsagePoint details including " +
+        summary = "Create UsagePointEntity",
+        description = "Creates a new UsagePointEntity resource representing a smart meter connection point. " +
+                     "The request body should contain an ATOM entry with UsagePointEntity details including " +
                      "service category, connection state, and meter identification."
     )
     @ApiResponses(value = {
         @ApiResponse(
             responseCode = "201", 
-            description = "Successfully created UsagePoint",
+            description = "Successfully created UsagePointEntity",
             content = @Content(mediaType = MediaType.APPLICATION_ATOM_XML_VALUE,
-                             schema = @Schema(description = "ATOM entry containing the created UsagePoint"))
+                             schema = @Schema(description = "ATOM entry containing the created UsagePointEntity"))
         ),
         @ApiResponse(
             responseCode = "400", 
-            description = "Invalid ATOM XML format or UsagePoint data"
+            description = "Invalid ATOM XML format or UsagePointEntity data"
         ),
         @ApiResponse(
             responseCode = "401", 
-            description = "Unauthorized to create UsagePoints"
+            description = "Unauthorized to create UsagePointEntitys"
         )
     })
     public void createUsagePoint(
@@ -247,28 +244,30 @@ public class UsagePointRESTController {
             HttpServletResponse response,
             @Parameter(description = "Query parameters for export filtering")
             @RequestParam Map<String, String> params,
-            @Parameter(description = "ATOM XML containing UsagePoint data", required = true)
+            @Parameter(description = "ATOM XML containing UsagePointEntity data", required = true)
             @RequestBody InputStream stream) throws IOException {
 
         Long subscriptionId = getSubscriptionId(request);
         response.setContentType(MediaType.APPLICATION_ATOM_XML_VALUE);
         
         try {
-            UsagePoint usagePoint = this.usagePointService.importResource(stream);
-            exportService.exportUsagePoint_Root(subscriptionId, usagePoint.getId(),
-                    response.getOutputStream(), new ExportFilter(params));
-            response.setStatus(HttpServletResponse.SC_CREATED);
+            // TODO: Implement XML import functionality with modern architecture
+            // UsagePointEntityEntity usagePoint = importUsagePointFromXml(stream);
+            // UsagePointEntityEntity savedUsagePoint = usagePointRepository.save(usagePoint);
+            // exportService.exportUsagePoint_Root(subscriptionId, savedUsagePoint.getId(),
+            //         response.getOutputStream(), new ExportFilter(params));
+            response.setStatus(HttpServletResponse.SC_NOT_IMPLEMENTED);
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
         }
     }
 
     /**
-     * Updates an existing UsagePoint resource (root level).
+     * Updates an existing UsagePointEntity resource (root level).
      * 
      * @param request HTTP servlet request for authorization context
      * @param response HTTP response for returning updated resource
-     * @param usagePointId Unique identifier for the UsagePoint to update
+     * @param usagePointId Unique identifier for the UsagePointEntity to update
      * @param params Query parameters for export filtering
      * @param stream Input stream containing updated ATOM XML data
      * @throws IOException if input/output stream operations fail
@@ -276,22 +275,22 @@ public class UsagePointRESTController {
     @PutMapping(value = "/UsagePoint/{usagePointId}", 
                consumes = MediaType.APPLICATION_ATOM_XML_VALUE)
     @Operation(
-        summary = "Update UsagePoint",
-        description = "Updates an existing UsagePoint resource. The request body should contain " +
-                     "an ATOM entry with updated UsagePoint details."
+        summary = "Update UsagePointEntity",
+        description = "Updates an existing UsagePointEntity resource. The request body should contain " +
+                     "an ATOM entry with updated UsagePointEntity details."
     )
     @ApiResponses(value = {
         @ApiResponse(
             responseCode = "200", 
-            description = "Successfully updated UsagePoint"
+            description = "Successfully updated UsagePointEntity"
         ),
         @ApiResponse(
             responseCode = "400", 
-            description = "Invalid ATOM XML format or UsagePoint data"
+            description = "Invalid ATOM XML format or UsagePointEntity data"
         ),
         @ApiResponse(
             responseCode = "401", 
-            description = "Unauthorized to update this UsagePoint"
+            description = "Unauthorized to update this UsagePointEntity"
         ),
         @ApiResponse(
             responseCode = "404", 
@@ -301,44 +300,45 @@ public class UsagePointRESTController {
     public void updateUsagePoint(
             HttpServletRequest request, 
             HttpServletResponse response,
-            @Parameter(description = "Unique identifier of the UsagePoint to update", required = true)
+            @Parameter(description = "Unique identifier of the UsagePointEntity to update", required = true)
             @PathVariable Long usagePointId,
             @Parameter(description = "Query parameters for export filtering")
             @RequestParam Map<String, String> params,
-            @Parameter(description = "ATOM XML containing updated UsagePoint data", required = true)
+            @Parameter(description = "ATOM XML containing updated UsagePointEntity data", required = true)
             @RequestBody InputStream stream) throws IOException {
 
         try {
-            UsagePoint usagePoint = usagePointService.importResource(stream);
-            usagePoint.setId(usagePointId);
-            usagePointService.save(usagePoint);
-            response.setStatus(HttpServletResponse.SC_OK);
+            // TODO: Implement XML import functionality with modern architecture
+            // UsagePointEntityEntity usagePoint = importUsagePointFromXml(stream);
+            // usagePoint.setId(usagePointId);
+            // usagePointRepository.save(usagePoint);
+            response.setStatus(HttpServletResponse.SC_NOT_IMPLEMENTED);
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
         }
     }
 
     /**
-     * Deletes a UsagePoint resource (root level).
+     * Deletes a UsagePointEntity resource (root level).
      * 
      * @param request HTTP servlet request for authorization context
      * @param response HTTP response
-     * @param usagePointId Unique identifier for the UsagePoint to delete
+     * @param usagePointId Unique identifier for the UsagePointEntity to delete
      */
     @DeleteMapping("/UsagePoint/{usagePointId}")
     @Operation(
-        summary = "Delete UsagePoint", 
-        description = "Removes a UsagePoint resource. This will also remove all associated " +
+        summary = "Delete UsagePointEntity", 
+        description = "Removes a UsagePointEntity resource. This will also remove all associated " +
                      "meter readings, interval blocks, and usage summaries."
     )
     @ApiResponses(value = {
         @ApiResponse(
             responseCode = "200", 
-            description = "Successfully deleted UsagePoint"
+            description = "Successfully deleted UsagePointEntity"
         ),
         @ApiResponse(
             responseCode = "401", 
-            description = "Unauthorized to delete this UsagePoint"
+            description = "Unauthorized to delete this UsagePointEntity"
         ),
         @ApiResponse(
             responseCode = "404", 
@@ -348,11 +348,11 @@ public class UsagePointRESTController {
     public void deleteUsagePoint(
             HttpServletRequest request, 
             HttpServletResponse response,
-            @Parameter(description = "Unique identifier of the UsagePoint to delete", required = true)
+            @Parameter(description = "Unique identifier of the UsagePointEntity to delete", required = true)
             @PathVariable Long usagePointId) {
 
         try {
-            usagePointService.deleteById(usagePointId);
+            usagePointRepository.deleteById(usagePointId);
             response.setStatus(HttpServletResponse.SC_OK);
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
@@ -360,11 +360,11 @@ public class UsagePointRESTController {
     }
 
     // =============================================
-    // Subscription-scoped UsagePoint Collection APIs
+    // SubscriptionEntity-scoped UsagePointEntity Collection APIs
     // =============================================
 
     /**
-     * Retrieves UsagePoint resources within a specific subscription context.
+     * Retrieves UsagePointEntity resources within a specific subscription context.
      * 
      * @param subscriptionId Unique identifier for the subscription
      * @param request HTTP servlet request for authorization context
@@ -375,16 +375,16 @@ public class UsagePointRESTController {
      */
     @GetMapping(value = "/Subscription/{subscriptionId}/UsagePoint", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
     @Operation(
-        summary = "Get UsagePoints by Subscription",
-        description = "Retrieves all UsagePoint resources associated with a specific subscription. " +
+        summary = "Get UsagePointEntitys by SubscriptionEntity",
+        description = "Retrieves all UsagePointEntity resources associated with a specific subscription. " +
                      "This provides filtered access based on the subscription's authorization scope."
     )
     @ApiResponses(value = {
         @ApiResponse(
             responseCode = "200", 
-            description = "Successfully retrieved subscription UsagePoints",
+            description = "Successfully retrieved subscription UsagePointEntitys",
             content = @Content(mediaType = MediaType.APPLICATION_ATOM_XML_VALUE, 
-                             schema = @Schema(description = "ATOM feed containing subscription-scoped UsagePoint entries"))
+                             schema = @Schema(description = "ATOM feed containing subscription-scoped UsagePointEntity entries"))
         ),
         @ApiResponse(
             responseCode = "400", 
@@ -418,17 +418,17 @@ public class UsagePointRESTController {
         
         try {
             exportService.exportUsagePoints(subscriptionId,
-                    response.getOutputStream(), new ExportFilter(params));
+                    response.getOutputStream(), params);
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
         }
     }
 
     /**
-     * Retrieves a specific UsagePoint within a subscription context.
+     * Retrieves a specific UsagePointEntity within a subscription context.
      * 
      * @param subscriptionId Unique identifier for the subscription
-     * @param usagePointId Unique identifier for the UsagePoint
+     * @param usagePointId Unique identifier for the UsagePointEntity
      * @param request HTTP servlet request for authorization context
      * @param response HTTP response for streaming ATOM XML content
      * @param params Query parameters for export filtering
@@ -437,16 +437,16 @@ public class UsagePointRESTController {
      */
     @GetMapping(value = "/Subscription/{subscriptionId}/UsagePoint/{usagePointId}", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
     @Operation(
-        summary = "Get Subscription UsagePoint by ID",
-        description = "Retrieves a specific UsagePoint resource within a subscription context. " +
+        summary = "Get SubscriptionEntity UsagePointEntity by ID",
+        description = "Retrieves a specific UsagePointEntity resource within a subscription context. " +
                      "This provides access control based on the subscription's authorization scope."
     )
     @ApiResponses(value = {
         @ApiResponse(
             responseCode = "200", 
-            description = "Successfully retrieved subscription UsagePoint",
+            description = "Successfully retrieved subscription UsagePointEntity",
             content = @Content(mediaType = MediaType.APPLICATION_ATOM_XML_VALUE,
-                             schema = @Schema(description = "ATOM entry containing subscription-scoped UsagePoint details"))
+                             schema = @Schema(description = "ATOM entry containing subscription-scoped UsagePointEntity details"))
         ),
         @ApiResponse(
             responseCode = "400", 
@@ -454,17 +454,17 @@ public class UsagePointRESTController {
         ),
         @ApiResponse(
             responseCode = "401", 
-            description = "Unauthorized access to this subscription or UsagePoint"
+            description = "Unauthorized access to this subscription or UsagePointEntity"
         ),
         @ApiResponse(
             responseCode = "404", 
-            description = "Subscription or UsagePoint not found"
+            description = "Subscription or UsagePointEntity not found"
         )
     })
     public void getSubscriptionUsagePoint(
             @Parameter(description = "Unique identifier of the subscription", required = true)
             @PathVariable Long subscriptionId,
-            @Parameter(description = "Unique identifier of the UsagePoint", required = true)
+            @Parameter(description = "Unique identifier of the UsagePointEntity", required = true)
             @PathVariable Long usagePointId,
             HttpServletRequest request, 
             HttpServletResponse response,
@@ -475,7 +475,7 @@ public class UsagePointRESTController {
         
         try {
             exportService.exportUsagePoint(subscriptionId, usagePointId,
-                    response.getOutputStream(), new ExportFilter(params));
+                    response.getOutputStream(), params);
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
         }
@@ -489,7 +489,7 @@ public class UsagePointRESTController {
      * Extracts subscription ID from the HTTP request context.
      * 
      * @param request HTTP servlet request
-     * @return Subscription ID if available, null otherwise
+     * @return SubscriptionEntity ID if available, null otherwise
      */
     private Long getSubscriptionId(HttpServletRequest request) {
         // Implementation would extract subscription ID from OAuth2 context

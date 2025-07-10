@@ -23,9 +23,9 @@ package org.greenbuttonalliance.espi.datacustodian.web.custodian;
 import org.greenbuttonalliance.espi.common.domain.usage.Routes;
 import org.greenbuttonalliance.espi.common.domain.usage.SubscriptionEntity;
 import org.greenbuttonalliance.espi.common.service.NotificationService;
-import org.greenbuttonalliance.espi.common.service.ResourceService;
+import org.greenbuttonalliance.espi.common.service.ResourceRepository;
 import org.greenbuttonalliance.espi.common.service.RetailCustomerService;
-import org.greenbuttonalliance.espi.common.service.UsagePointService;
+import org.greenbuttonalliance.espi.common.service.UsagePointRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -48,22 +48,22 @@ public class AssociateUsagePointController {
 	private RetailCustomerService retailCustomerService;
 
 	@Autowired
-	private ResourceService resourceService;
+	private ResourceRepository resourceService;
 
 	@Autowired
 	private NotificationService notificationService;
 
 	@Autowired
-	private UsagePointService service;
+	private UsagePointRepository service;
 
 	@InitBinder
 	protected void initBinder(WebDataBinder binder) {
-		binder.setValidator(new UsagePointFormValidator());
+		binder.setValidator(new UsagePointEntityFormValidator());
 	}
 
 	@RequestMapping(value = Routes.DATA_CUSTODIAN_RETAIL_CUSTOMER_USAGE_POINTS_FORM, method = RequestMethod.GET)
 	public String form(@PathVariable Long retailCustomerId, ModelMap model) {
-		model.put("usagePointForm", new UsagePointForm());
+		model.put("usagePointForm", new UsagePointEntityForm());
 		model.put("retailCustomerId", retailCustomerId);
 
 		return "/custodian/retailcustomers/usagepoints/form";
@@ -72,12 +72,12 @@ public class AssociateUsagePointController {
 	@RequestMapping(value = Routes.DATA_CUSTODIAN_RETAIL_CUSTOMER_USAGE_POINTS_CREATE, method = RequestMethod.POST)
 	public String create(
 			@PathVariable Long retailCustomerId,
-			@ModelAttribute("usagePointForm") @Valid UsagePointForm usagePointForm,
+			@ModelAttribute("usagePointForm") @Valid UsagePointEntityForm usagePointForm,
 			BindingResult result) {
 		if (result.hasErrors())
 			return "/custodian/retailcustomers/usagepoints/form";
 
-		// retailCustomerService returns legacy Subscription, not SubscriptionEntity
+		// retailCustomerService returns legacy SubscriptionEntity, not SubscriptionEntityEntity
 		var subscription = retailCustomerService.associateByUUID(
 				retailCustomerId, UUID.fromString(usagePointForm.getUUID()));
 
@@ -88,15 +88,15 @@ public class AssociateUsagePointController {
 		return "redirect:/custodian/retailcustomers";
 	}
 
-	public void setService(UsagePointService service) {
+	public void setService(UsagePointRepository service) {
 		this.service = service;
 	}
 
-	public void getService(UsagePointService service) {
+	public void getService(UsagePointRepository service) {
 		this.service = service;
 	}
 
-	public static class UsagePointForm {
+	public static class UsagePointEntityForm {
 		private String uuid;
 		private String description;
 
@@ -117,10 +117,10 @@ public class AssociateUsagePointController {
 		}
 	}
 
-	public static class UsagePointFormValidator implements Validator {
+	public static class UsagePointEntityFormValidator implements Validator {
 
 		public boolean supports(@SuppressWarnings("rawtypes") Class clazz) {
-			return UsagePointForm.class.isAssignableFrom(clazz);
+			return UsagePointEntityForm.class.isAssignableFrom(clazz);
 		}
 
 		public void validate(Object target, Errors errors) {
@@ -146,11 +146,11 @@ public class AssociateUsagePointController {
 		return this.retailCustomerService;
 	}
 
-	public void setResourceService(ResourceService resourceService) {
+	public void setResourceRepository(ResourceRepository resourceService) {
 		this.resourceService = resourceService;
 	}
 
-	public ResourceService getResourceService() {
+	public ResourceRepository getResourceRepository() {
 		return this.resourceService;
 	}
 
@@ -162,11 +162,11 @@ public class AssociateUsagePointController {
 		return this.notificationService;
 	}
 
-	public void setUsagePointService(UsagePointService service) {
+	public void setUsagePointRepository(UsagePointRepository service) {
 		this.service = service;
 	}
 
-	public UsagePointService getUsagePointService() {
+	public UsagePointRepository getUsagePointRepository() {
 		return this.service;
 	}
 

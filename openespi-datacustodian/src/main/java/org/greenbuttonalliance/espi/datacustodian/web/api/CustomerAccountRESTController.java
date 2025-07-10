@@ -31,7 +31,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerAccountEntity;
 import org.greenbuttonalliance.espi.common.dto.customer.CustomerAccountDto;
 import org.greenbuttonalliance.espi.common.service.customer.CustomerAccountService;
-import org.greenbuttonalliance.espi.common.service.ExportService;
+import org.greenbuttonalliance.espi.common.service.DtoExportService;
 import org.greenbuttonalliance.espi.common.utils.ExportFilter;
 import org.greenbuttonalliance.espi.datacustodian.utils.VerifyURLParams;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,12 +71,12 @@ import java.util.UUID;
 public class CustomerAccountRESTController {
 
     private final CustomerAccountService customerAccountService;
-    private final ExportService exportService;
+    private final DtoExportService exportService;
 
     @Autowired
     public CustomerAccountRESTController(
             CustomerAccountService customerAccountService,
-            ExportService exportService) {
+            DtoExportService exportService) {
         this.customerAccountService = customerAccountService;
         this.exportService = exportService;
     }

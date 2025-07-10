@@ -61,16 +61,16 @@ public class RetailCustomerRESTController {
 
 	private final ImportService importService;
 	private final RetailCustomerService retailCustomerService;
-	private final UsagePointService usagePointService;
-	private final ExportService exportService;
+	private final UsagePointRepository usagePointService;
+	private final DtoExportService exportService;
 	private final AuthorizationService authorizationService;
 
 	@Autowired
 	public RetailCustomerRESTController(
 			ImportService importService,
 			RetailCustomerService retailCustomerService,
-			UsagePointService usagePointService,
-			ExportService exportService,
+			UsagePointRepository usagePointService,
+			DtoExportService exportService,
 			AuthorizationService authorizationService) {
 		this.importService = importService;
 		this.retailCustomerService = retailCustomerService;
@@ -370,7 +370,7 @@ public class RetailCustomerRESTController {
 	 * Extracts subscription ID from the HTTP request context.
 	 * 
 	 * @param request HTTP servlet request
-	 * @return Subscription ID if available, 0L otherwise
+	 * @return SubscriptionEntity ID if available, 0L otherwise
 	 */
 	private Long getSubscriptionId(HttpServletRequest request) {
 		String token = request.getHeader("authorization");

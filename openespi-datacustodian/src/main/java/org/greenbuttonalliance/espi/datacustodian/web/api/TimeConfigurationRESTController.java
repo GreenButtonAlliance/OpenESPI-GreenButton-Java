@@ -52,17 +52,17 @@ public class TimeConfigurationRESTController {
 
 	private final TimeConfigurationService timeConfigurationService;
 	private final RetailCustomerService retailCustomerService;
-	private final UsagePointService usagePointService;
-	private final ExportService exportService;
-	private final ResourceService resourceService;
+	private final UsagePointRepository usagePointService;
+	private final DtoExportService exportService;
+	private final ResourceRepository resourceService;
 
 	@Autowired
 	public TimeConfigurationRESTController(
 			TimeConfigurationService timeConfigurationService,
 			RetailCustomerService retailCustomerService,
-			UsagePointService usagePointService,
-			ExportService exportService,
-			ResourceService resourceService) {
+			UsagePointRepository usagePointService,
+			DtoExportService exportService,
+			ResourceRepository resourceService) {
 		this.timeConfigurationService = timeConfigurationService;
 		this.retailCustomerService = retailCustomerService;
 		this.usagePointService = usagePointService;

@@ -60,18 +60,18 @@ import java.util.Map;
 public class UsageSummaryRESTController {
 
 	private final UsageSummaryService usageSummaryService;
-	private final UsagePointService usagePointService;
-	private final ExportService exportService;
-	private final ResourceService resourceService;
+	private final UsagePointRepository usagePointService;
+	private final DtoExportService exportService;
+	private final ResourceRepository resourceService;
 	private final SubscriptionService subscriptionService;
 	private final AuthorizationService authorizationService;
 
 	@Autowired
 	public UsageSummaryRESTController(
 			UsageSummaryService usageSummaryService,
-			UsagePointService usagePointService,
-			ExportService exportService,
-			ResourceService resourceService,
+			UsagePointRepository usagePointService,
+			DtoExportService exportService,
+			ResourceRepository resourceService,
 			SubscriptionService subscriptionService,
 			AuthorizationService authorizationService) {
 		this.usageSummaryService = usageSummaryService;
@@ -370,7 +370,7 @@ public class UsageSummaryRESTController {
 	}
 
 	// =============================================
-	// Subscription-scoped UsageSummary Collection APIs
+	// SubscriptionEntity-scoped UsageSummary Collection APIs
 	// =============================================
 
 	/**
@@ -385,7 +385,7 @@ public class UsageSummaryRESTController {
 	 */
 	@GetMapping(value = "/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/UsageSummary", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
-		summary = "Get UsageSummaries by Subscription Context",
+		summary = "Get UsageSummaries by SubscriptionEntity Context",
 		description = "Retrieves all UsageSummary resources associated with a specific subscription and usage point. " +
 					 "This provides filtered access based on the subscription's authorization scope."
 	)
@@ -406,7 +406,7 @@ public class UsageSummaryRESTController {
 		),
 		@ApiResponse(
 			responseCode = "404", 
-			description = "Subscription or UsagePoint not found"
+			description = "Subscription or UsagePointEntity not found"
 		)
 	})
 	public void getSubscriptionUsageSummaries(
@@ -452,7 +452,7 @@ public class UsageSummaryRESTController {
 	 */
 	@GetMapping(value = "/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/UsageSummary/{electricPowerUsageSummaryId}", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
-		summary = "Get Subscription UsageSummary by ID",
+		summary = "Get SubscriptionEntity UsageSummary by ID",
 		description = "Retrieves a specific UsageSummary resource within a subscription context. " +
 					 "This provides access control based on the subscription's authorization scope."
 	)
@@ -473,7 +473,7 @@ public class UsageSummaryRESTController {
 		),
 		@ApiResponse(
 			responseCode = "404", 
-			description = "Subscription, UsagePoint, or UsageSummary not found"
+			description = "Subscription, UsagePointEntity, or UsageSummary not found"
 		)
 	})
 	public void getSubscriptionUsageSummary(
@@ -516,7 +516,7 @@ public class UsageSummaryRESTController {
 				consumes = MediaType.APPLICATION_ATOM_XML_VALUE, 
 				produces = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
-		summary = "Create Subscription UsageSummary",
+		summary = "Create SubscriptionEntity UsageSummary",
 		description = "Creates a new UsageSummary resource within a subscription context. " +
 					 "The request body should contain an ATOM entry with usage summary details."
 	)
@@ -537,7 +537,7 @@ public class UsageSummaryRESTController {
 		),
 		@ApiResponse(
 			responseCode = "404", 
-			description = "Subscription or UsagePoint not found"
+			description = "Subscription or UsagePointEntity not found"
 		)
 	})
 	public void createSubscriptionUsageSummary(
@@ -558,7 +558,7 @@ public class UsageSummaryRESTController {
 					subscriptionId, usagePointId);
 
 			if (null != resourceService.findIdByXPath(retailCustomerId,
-					usagePointId, UsagePointEntity.class)) {
+					usagePointId, UsagePointEntityEntity.class)) {
 				
 				UsagePointEntity usagePoint = usagePointService.findById(usagePointId);
 				UsageSummaryEntity electricPowerUsageSummary = 
@@ -595,7 +595,7 @@ public class UsageSummaryRESTController {
 	@PutMapping(value = "/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/UsageSummary/{electricPowerUsageSummaryId}", 
 			   consumes = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
-		summary = "Update Subscription UsageSummary",
+		summary = "Update SubscriptionEntity UsageSummary",
 		description = "Updates an existing UsageSummary resource within a subscription context. " +
 					 "The request body should contain an ATOM entry with updated usage summary details."
 	)
@@ -614,7 +614,7 @@ public class UsageSummaryRESTController {
 		),
 		@ApiResponse(
 			responseCode = "404", 
-			description = "Subscription, UsagePoint, or UsageSummary not found"
+			description = "Subscription, UsagePointEntity, or UsageSummary not found"
 		)
 	})
 	public void updateSubscriptionUsageSummary(
@@ -657,7 +657,7 @@ public class UsageSummaryRESTController {
 	 */
 	@DeleteMapping("/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/UsageSummary/{electricPowerUsageSummaryId}")
 	@Operation(
-		summary = "Delete Subscription UsageSummary", 
+		summary = "Delete SubscriptionEntity UsageSummary", 
 		description = "Removes an UsageSummary resource within a subscription context. " +
 					 "This will delete the aggregated usage data for the specified billing period."
 	)
@@ -672,7 +672,7 @@ public class UsageSummaryRESTController {
 		),
 		@ApiResponse(
 			responseCode = "404", 
-			description = "Subscription, UsagePoint, or UsageSummary not found"
+			description = "Subscription, UsagePointEntity, or UsageSummary not found"
 		)
 	})
 	public void deleteSubscriptionUsageSummary(
@@ -706,7 +706,7 @@ public class UsageSummaryRESTController {
 	 * Extracts subscription ID from the HTTP request context.
 	 * 
 	 * @param request HTTP servlet request
-	 * @return Subscription ID if available, 0L otherwise
+	 * @return SubscriptionEntity ID if available, 0L otherwise
 	 */
 	private Long getSubscriptionId(HttpServletRequest request) {
 		String token = request.getHeader("authorization");

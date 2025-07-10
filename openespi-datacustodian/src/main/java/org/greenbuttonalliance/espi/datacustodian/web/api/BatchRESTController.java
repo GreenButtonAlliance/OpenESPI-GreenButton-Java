@@ -52,20 +52,20 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 public class BatchRESTController {
 
 	private final ImportService importService;
-	private final ResourceService resourceService;
+	private final ResourceRepository resourceService;
 	private final AuthorizationService authorizationService;
 	private final NotificationService notificationService;
 	private final RetailCustomerService retailCustomerService;
-	private final ExportService exportService;
+	private final DtoExportService exportService;
 
 	@Autowired
 	public BatchRESTController(
 			ImportService importService,
-			ResourceService resourceService,
+			ResourceRepository resourceService,
 			AuthorizationService authorizationService,
 			NotificationService notificationService,
 			RetailCustomerService retailCustomerService,
-			ExportService exportService) {
+			DtoExportService exportService) {
 		this.importService = importService;
 		this.resourceService = resourceService;
 		this.authorizationService = authorizationService;
@@ -214,7 +214,7 @@ public class BatchRESTController {
 	 * @param retailCustomerId
 	 *            The locally unique identifier of a Retail Customer - NOTE PII
 	 * @param usagePointId
-	 *            The locally unique identifier of a UsagePoint.id
+	 *            The locally unique identifier of a UsagePointEntity.id
 	 * @param params
 	 *            HTTP Query Parameters
      * @throws IOException
@@ -271,7 +271,7 @@ public class BatchRESTController {
 	}
 
 	/**
-     * Produce a Subscription for the requester. The resultant response will
+     * Produce a SubscriptionEntity for the requester. The resultant response will
      * contain an Atom "feed" of the Usage Point(s) associated with the subscription.
 	 *
 	 * Requires Authorization: Bearer [{data_custodian_access_token} |
@@ -280,7 +280,7 @@ public class BatchRESTController {
 	 * @param response
 	 *            HTTP Servlet Response
 	 * @param subscriptionId
-	 *            Long identifying the Subscription.id of the desired
+	 *            Long identifying the SubscriptionEntity.id of the desired
 	 *            Authorization
 	 * @param params
 	 *            HTTP Query Parameters
@@ -299,7 +299,7 @@ public class BatchRESTController {
 	@GetMapping(value = "/Batch/Subscription/{subscriptionId}",
 			produces = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
-			summary = "Download Subscription Data",
+			summary = "Download SubscriptionEntity Data",
 			description = "Downloads usage points associated with a subscription as Green Button feed"
 	)
 	@ApiResponses(value = {
@@ -335,7 +335,7 @@ public class BatchRESTController {
 	}
 
 	/**
-     * Produce a Subscription for the requester. The resultant response will
+     * Produce a SubscriptionEntity for the requester. The resultant response will
      * contain an Atom "feed" of the Usage Point(s) associated with the subscription.
 	 *
 	 * Requires Authorization: Bearer [{data_custodian_access_token} |
@@ -344,7 +344,7 @@ public class BatchRESTController {
 	 * @param response
 	 *            HTTP Servlet Response
 	 * @param subscriptionId
-	 *            Long identifying the Subscription.id of the desired
+	 *            Long identifying the SubscriptionEntity.id of the desired
 	 *            Authorization
 	 * @param params
 	 *            HTTP Query Parameters
@@ -363,7 +363,7 @@ public class BatchRESTController {
 	@GetMapping(value = "/Batch/Subscription/{subscriptionId}/UsagePoint",
 			produces = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
-			summary = "Download Subscription Usage Points",
+			summary = "Download SubscriptionEntity Usage Points",
 			description = "Downloads all usage points for a specific subscription as Green Button feed"
 	)
 	@ApiResponses(value = {
@@ -399,7 +399,7 @@ public class BatchRESTController {
 	}
 
 	/**
-     * Produce a Subscription for the requester. The resultant response will
+     * Produce a SubscriptionEntity for the requester. The resultant response will
      * contain an Atom "feed" of the Usage Point(s) associated with the subscription.
      *
 	 * Requires Authorization: Bearer [{data_custodian_access_token} |
@@ -408,10 +408,10 @@ public class BatchRESTController {
 	 * @param response
 	 *            HTTP Servlet Response
 	 * @param subscriptionId
-	 *            Long identifying the Subscription.id of the desired
+	 *            Long identifying the SubscriptionEntity.id of the desired
 	 *            Authorization
 	 * @param usagePointId
-	 *            Long identifying the UsagePoint.id of the desired
+	 *            Long identifying the UsagePointEntity.id of the desired
 	 *            Authorization
 	 * @param params
 	 *            HTTP Query Parameters
@@ -431,7 +431,7 @@ public class BatchRESTController {
 	@GetMapping(value = "/Batch/Subscription/{subscriptionId}/UsagePoint/{usagePointId}",
 			produces = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
-			summary = "Download Specific Subscription Usage Point",
+			summary = "Download Specific SubscriptionEntity Usage Point",
 			description = "Downloads a specific usage point for a subscription as Green Button feed"
 	)
 	@ApiResponses(value = {

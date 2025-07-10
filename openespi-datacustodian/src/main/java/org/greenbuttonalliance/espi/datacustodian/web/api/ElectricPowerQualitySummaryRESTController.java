@@ -59,20 +59,20 @@ import java.util.Map;
 public class ElectricPowerQualitySummaryRESTController {
 
 	private final ElectricPowerQualitySummaryService electricPowerQualitySummaryService;
-	private final UsagePointService usagePointService;
+	private final UsagePointRepository usagePointService;
 	private final RetailCustomerService retailCustomerService;
-	private final ExportService exportService;
-	private final ResourceService resourceService;
+	private final DtoExportService exportService;
+	private final ResourceRepository resourceService;
 	private final SubscriptionService subscriptionService;
 	private final AuthorizationService authorizationService;
 
 	@Autowired
 	public ElectricPowerQualitySummaryRESTController(
 			ElectricPowerQualitySummaryService electricPowerQualitySummaryService,
-			UsagePointService usagePointService,
+			UsagePointRepository usagePointService,
 			RetailCustomerService retailCustomerService,
-			ExportService exportService,
-			ResourceService resourceService,
+			DtoExportService exportService,
+			ResourceRepository resourceService,
 			SubscriptionService subscriptionService,
 			AuthorizationService authorizationService) {
 		this.electricPowerQualitySummaryService = electricPowerQualitySummaryService;
@@ -371,7 +371,7 @@ public class ElectricPowerQualitySummaryRESTController {
 	}
 
 	// =============================================
-	// Subscription-scoped ElectricPowerQualitySummary Collection APIs
+	// SubscriptionEntity-scoped ElectricPowerQualitySummary Collection APIs
 	// =============================================
 
 	/**
@@ -386,7 +386,7 @@ public class ElectricPowerQualitySummaryRESTController {
 	 */
 	@GetMapping(value = "/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/ElectricPowerQualitySummary", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
-		summary = "Get ElectricPowerQualitySummaries by Subscription Context",
+		summary = "Get ElectricPowerQualitySummaries by SubscriptionEntity Context",
 		description = "Retrieves all ElectricPowerQualitySummary resources associated with a specific subscription and usage point. " +
 					 "This provides filtered access based on the subscription's authorization scope."
 	)
@@ -407,7 +407,7 @@ public class ElectricPowerQualitySummaryRESTController {
 		),
 		@ApiResponse(
 			responseCode = "404", 
-			description = "Subscription or UsagePoint not found"
+			description = "Subscription or UsagePointEntity not found"
 		)
 	})
 	public void getSubscriptionElectricPowerQualitySummaries(
@@ -453,7 +453,7 @@ public class ElectricPowerQualitySummaryRESTController {
 	 */
 	@GetMapping(value = "/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/ElectricPowerQualitySummary/{electricPowerQualitySummaryId}", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
-		summary = "Get Subscription ElectricPowerQualitySummary by ID",
+		summary = "Get SubscriptionEntity ElectricPowerQualitySummary by ID",
 		description = "Retrieves a specific ElectricPowerQualitySummary resource within a subscription context. " +
 					 "This provides access control based on the subscription's authorization scope."
 	)
@@ -474,7 +474,7 @@ public class ElectricPowerQualitySummaryRESTController {
 		),
 		@ApiResponse(
 			responseCode = "404", 
-			description = "Subscription, UsagePoint, or ElectricPowerQualitySummary not found"
+			description = "Subscription, UsagePointEntity, or ElectricPowerQualitySummary not found"
 		)
 	})
 	public void getSubscriptionElectricPowerQualitySummary(
@@ -524,7 +524,7 @@ public class ElectricPowerQualitySummaryRESTController {
 				consumes = MediaType.APPLICATION_ATOM_XML_VALUE, 
 				produces = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
-		summary = "Create Subscription ElectricPowerQualitySummary",
+		summary = "Create SubscriptionEntity ElectricPowerQualitySummary",
 		description = "Creates a new ElectricPowerQualitySummary resource within a subscription context. " +
 					 "The request body should contain an ATOM entry with power quality measurement details."
 	)
@@ -545,7 +545,7 @@ public class ElectricPowerQualitySummaryRESTController {
 		),
 		@ApiResponse(
 			responseCode = "404", 
-			description = "Subscription or UsagePoint not found"
+			description = "Subscription or UsagePointEntity not found"
 		)
 	})
 	public void createSubscriptionElectricPowerQualitySummary(
@@ -566,7 +566,7 @@ public class ElectricPowerQualitySummaryRESTController {
 					subscriptionId, usagePointId);
 
 			if (null != resourceService.findIdByXPath(retailCustomerId,
-					usagePointId, UsagePoint.class)) {
+					usagePointId, UsagePointEntity.class)) {
 				
 				UsagePoint usagePoint = usagePointService.findById(usagePointId);
 				ElectricPowerQualitySummary electricPowerQualitySummary = 
@@ -603,7 +603,7 @@ public class ElectricPowerQualitySummaryRESTController {
 	@PutMapping(value = "/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/ElectricPowerQualitySummary/{electricPowerQualitySummaryId}", 
 			   consumes = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
-		summary = "Update Subscription ElectricPowerQualitySummary",
+		summary = "Update SubscriptionEntity ElectricPowerQualitySummary",
 		description = "Updates an existing ElectricPowerQualitySummary resource within a subscription context. " +
 					 "The request body should contain an ATOM entry with updated power quality measurement details."
 	)
@@ -622,7 +622,7 @@ public class ElectricPowerQualitySummaryRESTController {
 		),
 		@ApiResponse(
 			responseCode = "404", 
-			description = "Subscription, UsagePoint, or ElectricPowerQualitySummary not found"
+			description = "Subscription, UsagePointEntity, or ElectricPowerQualitySummary not found"
 		)
 	})
 	public void updateSubscriptionElectricPowerQualitySummary(
@@ -664,7 +664,7 @@ public class ElectricPowerQualitySummaryRESTController {
 	 */
 	@DeleteMapping("/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/ElectricPowerQualitySummary/{electricPowerQualitySummaryId}")
 	@Operation(
-		summary = "Delete Subscription ElectricPowerQualitySummary", 
+		summary = "Delete SubscriptionEntity ElectricPowerQualitySummary", 
 		description = "Removes an ElectricPowerQualitySummary resource within a subscription context. " +
 					 "This will delete the power quality measurement data for the specified period."
 	)
@@ -679,7 +679,7 @@ public class ElectricPowerQualitySummaryRESTController {
 		),
 		@ApiResponse(
 			responseCode = "404", 
-			description = "Subscription, UsagePoint, or ElectricPowerQualitySummary not found"
+			description = "Subscription, UsagePointEntity, or ElectricPowerQualitySummary not found"
 		)
 	})
 	public void deleteSubscriptionElectricPowerQualitySummary(
@@ -713,7 +713,7 @@ public class ElectricPowerQualitySummaryRESTController {
 	 * Extracts subscription ID from the HTTP request context.
 	 * 
 	 * @param request HTTP servlet request
-	 * @return Subscription ID if available, 0L otherwise
+	 * @return SubscriptionEntity ID if available, 0L otherwise
 	 */
 	private Long getSubscriptionId(HttpServletRequest request) {
 		String token = request.getHeader("authorization");

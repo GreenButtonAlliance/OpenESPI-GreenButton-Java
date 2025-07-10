@@ -61,10 +61,10 @@ public class IntervalBlockRESTController {
 
 	private final IntervalBlockService intervalBlockService;
 	private final RetailCustomerService retailCustomerService;
-	private final UsagePointService usagePointService;
-	private final MeterReadingService meterReadingService;
-	private final ExportService exportService;
-	private final ResourceService resourceService;
+	private final UsagePointRepository usagePointService;
+	private final MeterReadingRepository meterReadingService;
+	private final DtoExportService exportService;
+	private final ResourceRepository resourceService;
 	private final SubscriptionService subscriptionService;
 	private final AuthorizationService authorizationService;
 
@@ -72,10 +72,10 @@ public class IntervalBlockRESTController {
 	public IntervalBlockRESTController(
 			IntervalBlockService intervalBlockService,
 			RetailCustomerService retailCustomerService,
-			UsagePointService usagePointService,
-			MeterReadingService meterReadingService,
-			ExportService exportService,
-			ResourceService resourceService,
+			UsagePointRepository usagePointService,
+			MeterReadingRepository meterReadingService,
+			DtoExportService exportService,
+			ResourceRepository resourceService,
 			SubscriptionService subscriptionService,
 			AuthorizationService authorizationService) {
 		this.intervalBlockService = intervalBlockService;
@@ -372,7 +372,7 @@ public class IntervalBlockRESTController {
 	}
 
 	// =============================================
-	// Subscription-scoped IntervalBlock Collection APIs
+	// SubscriptionEntity-scoped IntervalBlock Collection APIs
 	// =============================================
 
 	/**
@@ -388,7 +388,7 @@ public class IntervalBlockRESTController {
 	 */
 	@GetMapping(value = "/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/MeterReading/{meterReadingId}/IntervalBlock", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
-		summary = "Get IntervalBlocks by Subscription Context",
+		summary = "Get IntervalBlocks by SubscriptionEntity Context",
 		description = "Retrieves all IntervalBlock resources associated with a specific subscription, usage point, and meter reading. " +
 					 "This provides filtered access based on the subscription's authorization scope."
 	)
@@ -409,7 +409,7 @@ public class IntervalBlockRESTController {
 		),
 		@ApiResponse(
 			responseCode = "404", 
-			description = "Subscription, UsagePoint, or MeterReading not found"
+			description = "Subscription, UsagePointEntity, or MeterReadingEntity not found"
 		)
 	})
 	public void getSubscriptionIntervalBlocks(
@@ -458,7 +458,7 @@ public class IntervalBlockRESTController {
 	 */
 	@GetMapping(value = "/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/MeterReading/{meterReadingId}/IntervalBlock/{intervalBlockId}", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
-		summary = "Get Subscription IntervalBlock by ID",
+		summary = "Get SubscriptionEntity IntervalBlock by ID",
 		description = "Retrieves a specific IntervalBlock resource within a subscription context. " +
 					 "This provides access control based on the subscription's authorization scope."
 	)
@@ -479,7 +479,7 @@ public class IntervalBlockRESTController {
 		),
 		@ApiResponse(
 			responseCode = "404", 
-			description = "Subscription, UsagePoint, MeterReading, or IntervalBlock not found"
+			description = "Subscription, UsagePointEntity, MeterReadingEntity, or IntervalBlock not found"
 		)
 	})
 	public void getSubscriptionIntervalBlock(
@@ -524,7 +524,7 @@ public class IntervalBlockRESTController {
 				consumes = MediaType.APPLICATION_ATOM_XML_VALUE, 
 				produces = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
-		summary = "Create Subscription IntervalBlock",
+		summary = "Create SubscriptionEntity IntervalBlock",
 		description = "Creates a new IntervalBlock resource within a subscription context. " +
 					 "The request body should contain an ATOM entry with IntervalBlock details."
 	)
@@ -545,7 +545,7 @@ public class IntervalBlockRESTController {
 		),
 		@ApiResponse(
 			responseCode = "404", 
-			description = "Subscription, UsagePoint, or MeterReading not found"
+			description = "Subscription, UsagePointEntity, or MeterReadingEntity not found"
 		)
 	})
 	public void createSubscriptionIntervalBlock(
@@ -568,10 +568,10 @@ public class IntervalBlockRESTController {
 					subscriptionId, usagePointId);
 
 			if (null != resourceService.findIdByXPath(retailCustomerId,
-					usagePointId, meterReadingId, MeterReading.class)) {
+					usagePointId, meterReadingId, MeterReadingEntity.class)) {
 				
 				MeterReading meterReading = resourceService.findById(
-						meterReadingId, MeterReading.class);
+						meterReadingId, MeterReadingEntity.class);
 				IntervalBlock intervalBlock = this.intervalBlockService.importResource(stream);
 				intervalBlockService.associateByUUID(meterReading, intervalBlock.getUUID());
 				
@@ -605,7 +605,7 @@ public class IntervalBlockRESTController {
 	@PutMapping(value = "/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/MeterReading/{meterReadingId}/IntervalBlock/{intervalBlockId}", 
 			   consumes = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
-		summary = "Update Subscription IntervalBlock",
+		summary = "Update SubscriptionEntity IntervalBlock",
 		description = "Updates an existing IntervalBlock resource within a subscription context. " +
 					 "The request body should contain an ATOM entry with updated IntervalBlock details."
 	)
@@ -624,7 +624,7 @@ public class IntervalBlockRESTController {
 		),
 		@ApiResponse(
 			responseCode = "404", 
-			description = "Subscription, UsagePoint, MeterReading, or IntervalBlock not found"
+			description = "Subscription, UsagePointEntity, MeterReadingEntity, or IntervalBlock not found"
 		)
 	})
 	public void updateSubscriptionIntervalBlock(
@@ -672,7 +672,7 @@ public class IntervalBlockRESTController {
 	 */
 	@DeleteMapping("/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/MeterReading/{meterReadingId}/IntervalBlock/{intervalBlockId}")
 	@Operation(
-		summary = "Delete Subscription IntervalBlock", 
+		summary = "Delete SubscriptionEntity IntervalBlock", 
 		description = "Removes an IntervalBlock resource within a subscription context. " +
 					 "This will delete all associated interval reading data and timestamps."
 	)
@@ -687,7 +687,7 @@ public class IntervalBlockRESTController {
 		),
 		@ApiResponse(
 			responseCode = "404", 
-			description = "Subscription, UsagePoint, MeterReading, or IntervalBlock not found"
+			description = "Subscription, UsagePointEntity, MeterReadingEntity, or IntervalBlock not found"
 		)
 	})
 	public void deleteSubscriptionIntervalBlock(
@@ -722,7 +722,7 @@ public class IntervalBlockRESTController {
 	 * Extracts subscription ID from the HTTP request context.
 	 * 
 	 * @param request HTTP servlet request
-	 * @return Subscription ID if available, 0L otherwise
+	 * @return SubscriptionEntity ID if available, 0L otherwise
 	 */
 	private Long getSubscriptionId(HttpServletRequest request) {
 		String token = request.getHeader("authorization");

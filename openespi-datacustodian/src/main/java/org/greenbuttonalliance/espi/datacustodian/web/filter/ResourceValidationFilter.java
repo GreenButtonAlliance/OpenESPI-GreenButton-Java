@@ -24,7 +24,7 @@ import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.SubscriptionEntity;
 import org.greenbuttonalliance.espi.common.service.AuthorizationService;
 import org.greenbuttonalliance.espi.common.service.SubscriptionService;
-import org.greenbuttonalliance.espi.common.service.UsagePointService;
+import org.greenbuttonalliance.espi.common.service.UsagePointRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -46,7 +46,7 @@ public class ResourceValidationFilter implements Filter {
 	private AuthorizationService authorizationService;
 
 	@Autowired
-	private UsagePointService usagePointService;
+	private UsagePointRepository usagePointService;
 
 	@Override
 	public void destroy() {
@@ -508,11 +508,11 @@ public class ResourceValidationFilter implements Filter {
 		return this.authorizationService;
 	}
 
-	public void setUsagePointService(UsagePointService usagePointService) {
+	public void setUsagePointRepository(UsagePointRepository usagePointService) {
 		this.usagePointService = usagePointService;
 	}
 
-	public UsagePointService getUsagePointService() {
+	public UsagePointRepository getUsagePointRepository() {
 		return this.usagePointService;
 	}
 

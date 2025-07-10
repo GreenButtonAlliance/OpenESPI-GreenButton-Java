@@ -57,12 +57,12 @@ import java.util.UUID;
 @RequestMapping("/espi/1_1/resource")
 @Tag(name = "Usage Points", description = "ESPI Usage Point resource endpoints")
 @SecurityRequirement(name = "oauth2")
-public class UsagePointController {
+public class UsagePointEntityController {
 
     private final UsagePointRepository usagePointRepository;
-    private final UsagePointMapper usagePointMapper;
+    private final UsagePointEntityMapper usagePointMapper;
 
-    public UsagePointController(UsagePointRepository usagePointRepository, UsagePointMapper usagePointMapper) {
+    public UsagePointEntityController(UsagePointRepository usagePointRepository, UsagePointEntityMapper usagePointMapper) {
         this.usagePointRepository = usagePointRepository;
         this.usagePointMapper = usagePointMapper;
     }
@@ -77,7 +77,7 @@ public class UsagePointController {
         description = "Retrieve all Usage Points accessible to the authenticated client",
         responses = {
             @ApiResponse(responseCode = "200", description = "Usage Points retrieved successfully",
-                content = @Content(schema = @Schema(implementation = UsagePointDto.class))),
+                content = @Content(schema = @Schema(implementation = UsagePointEntityDto.class))),
             @ApiResponse(responseCode = "401", description = "Unauthorized"),
             @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
         }
@@ -108,7 +108,7 @@ public class UsagePointController {
         description = "Retrieve a specific Usage Point by its unique identifier",
         responses = {
             @ApiResponse(responseCode = "200", description = "Usage Point retrieved successfully",
-                content = @Content(schema = @Schema(implementation = UsagePointDto.class))),
+                content = @Content(schema = @Schema(implementation = UsagePointEntityDto.class))),
             @ApiResponse(responseCode = "404", description = "Usage Point not found"),
             @ApiResponse(responseCode = "401", description = "Unauthorized"),
             @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
@@ -130,15 +130,15 @@ public class UsagePointController {
     }
 
     /**
-     * Get Usage Points for a specific Subscription.
+     * Get Usage Points for a specific SubscriptionEntity.
      */
     @GetMapping(value = "/Subscription/{subscriptionId}/UsagePoint", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @Operation(
-        summary = "Get Usage Points for Subscription",
+        summary = "Get Usage Points for SubscriptionEntity",
         description = "Retrieve all Usage Points associated with a specific subscription",
         responses = {
             @ApiResponse(responseCode = "200", description = "Usage Points retrieved successfully",
-                content = @Content(schema = @Schema(implementation = UsagePointDto.class))),
+                content = @Content(schema = @Schema(implementation = UsagePointEntityDto.class))),
             @ApiResponse(responseCode = "404", description = "Subscription not found"),
             @ApiResponse(responseCode = "401", description = "Unauthorized"),
             @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
@@ -148,7 +148,7 @@ public class UsagePointController {
                  "hasAuthority('SCOPE_FB_16_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_36_READ_3rd_party')")
     public ResponseEntity<List<UsagePointDto>> getSubscriptionUsagePoints(
-            @Parameter(description = "Unique identifier of the Subscription", required = true)
+            @Parameter(description = "Unique identifier of the SubscriptionEntity", required = true)
             @PathVariable UUID subscriptionId,
             @Parameter(description = "Maximum number of results to return", example = "50")
             @RequestParam(defaultValue = "50") int limit,
@@ -165,16 +165,16 @@ public class UsagePointController {
     }
 
     /**
-     * Get specific Usage Point for a Subscription.
+     * Get specific Usage Point for a SubscriptionEntity.
      */
     @GetMapping(value = "/Subscription/{subscriptionId}/UsagePoint/{usagePointId}", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @Operation(
-        summary = "Get Usage Point for Subscription",
+        summary = "Get Usage Point for SubscriptionEntity",
         description = "Retrieve a specific Usage Point associated with a subscription",
         responses = {
             @ApiResponse(responseCode = "200", description = "Usage Point retrieved successfully",
-                content = @Content(schema = @Schema(implementation = UsagePointDto.class))),
-            @ApiResponse(responseCode = "404", description = "Usage Point or Subscription not found"),
+                content = @Content(schema = @Schema(implementation = UsagePointEntityDto.class))),
+            @ApiResponse(responseCode = "404", description = "Usage Point or SubscriptionEntity not found"),
             @ApiResponse(responseCode = "401", description = "Unauthorized"),
             @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
         }
@@ -183,7 +183,7 @@ public class UsagePointController {
                  "hasAuthority('SCOPE_FB_16_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_36_READ_3rd_party')")
     public ResponseEntity<UsagePointDto> getSubscriptionUsagePoint(
-            @Parameter(description = "Unique identifier of the Subscription", required = true)
+            @Parameter(description = "Unique identifier of the SubscriptionEntity", required = true)
             @PathVariable UUID subscriptionId,
             @Parameter(description = "Unique identifier of the Usage Point", required = true)
             @PathVariable UUID usagePointId,

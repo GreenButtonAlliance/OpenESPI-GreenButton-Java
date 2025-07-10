@@ -23,7 +23,7 @@ package org.greenbuttonalliance.espi.datacustodian.web.customer;
 import org.greenbuttonalliance.espi.common.domain.usage.IntervalBlockEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.IntervalReadingEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.MeterReadingEntity;
-import org.greenbuttonalliance.espi.common.service.MeterReadingService;
+import org.greenbuttonalliance.espi.common.service.MeterReadingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,10 +34,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import java.util.Iterator;
 
 @Controller
-public class MeterReadingController {
+public class MeterReadingEntityController {
 
 	@Autowired
-	protected MeterReadingService meterReadingService;
+	protected MeterReadingRepository meterReadingService;
 
 	@Transactional(readOnly = true)
 	@GetMapping("/RetailCustomer/{retailCustomerId}/UsagePoint/{usagePointId}/MeterReading/{meterReadingId}/show")
@@ -47,7 +47,7 @@ public class MeterReadingController {
 		var mr = meterReadingService.findById(retailCustomerId,
 				usagePointId, meterReadingId);
 
-		MeterReadingEntity newMeterReading = new MeterReadingEntity();
+		MeterReadingEntity newMeterReading = new MeterReadingEntityEntity();
 		Iterator<IntervalBlockEntity> it = newMeterReading.getIntervalBlocks()
 				.iterator();
 		while (it.hasNext()) {
@@ -64,12 +64,12 @@ public class MeterReadingController {
 		return "/customer/meterreadings/show";
 	}
 
-	public void setMeterReadingService(MeterReadingService meterReadingService) {
+	public void setMeterReadingRepository(MeterReadingRepository meterReadingService) {
 		this.meterReadingService = meterReadingService;
 	}
 
-	public MeterReadingService getMeterReadingService(
-			MeterReadingService meterReadingService) {
+	public MeterReadingRepository getMeterReadingRepository(
+			MeterReadingRepository meterReadingService) {
 		return this.meterReadingService;
 	}
 

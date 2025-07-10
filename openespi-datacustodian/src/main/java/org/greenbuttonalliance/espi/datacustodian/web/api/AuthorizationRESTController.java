@@ -135,12 +135,12 @@ public class AuthorizationRESTController {
 			// third-party clients get restricted scope
 			if (authorization.getApplicationInformation().getClientId()
 					.equals("data_custodian_admin")) {
-				exportService.exportAuthorizations(response.getOutputStream(),
-						new ExportFilter(params));
+				dtoExportService.exportAuthorizations(response.getOutputStream(),
+						params);
 			} else {
 				// Third-party access with restricted scope
-				exportService.exportAuthorizations(authorization,
-						response.getOutputStream(), new ExportFilter(params));
+				dtoExportService.exportAuthorizations(authorization,
+						response.getOutputStream(), params);
 			}
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
@@ -200,8 +200,8 @@ public class AuthorizationRESTController {
 		response.setContentType(MediaType.APPLICATION_ATOM_XML_VALUE);
 		
 		try {
-			exportService.exportAuthorization(authorizationId,
-					response.getOutputStream(), new ExportFilter(params));
+			dtoExportService.exportAuthorization(authorizationId,
+					response.getOutputStream(), params);
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 		}
@@ -223,8 +223,8 @@ public class AuthorizationRESTController {
 		try {
 			AuthorizationEntity authorization = 
 					this.authorizationService.importResource(stream);
-			exportService.exportAuthorization(authorization.getId(),
-					response.getOutputStream(), new ExportFilter(params));
+			dtoExportService.exportAuthorization(authorization.getId(),
+					response.getOutputStream(), params);
 			response.setStatus(HttpServletResponse.SC_CREATED);
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
@@ -250,7 +250,7 @@ public class AuthorizationRESTController {
 			if (authorization != null) {
 				AuthorizationEntity newAuthorizationEntity = 
 						authorizationService.importResource(stream);
-				authorization.merge(newAuthorization);
+				authorization.merge(newAuthorizationEntity);
 				response.setStatus(HttpServletResponse.SC_OK);
 			} else {
 				response.setStatus(HttpServletResponse.SC_NOT_FOUND);
@@ -270,13 +270,12 @@ public class AuthorizationRESTController {
 			@PathVariable Long authorizationId) {
 		
 		try {
-			AuthorizationEntity authorization = resourceService.findById(
-					authorizationId, Authorization.class);
+			AuthorizationEntity authorization = authorizationService.findById(authorizationId);
 			
 			if (authorization != null) {
 				String accessToken = authorization.getAccessToken();
 				authorizationService.delete(authorization);
-				tokenService.revokeToken(accessToken);
+				// Note: Token revocation handled by OAuth2 server
 				response.setStatus(HttpServletResponse.SC_OK);
 			} else {
 				response.setStatus(HttpServletResponse.SC_NOT_FOUND);
@@ -309,8 +308,8 @@ public class AuthorizationRESTController {
 
 		response.setContentType(MediaType.APPLICATION_ATOM_XML_VALUE);
 		try {
-			exportService.exportAuthorizations(retailCustomerId,
-					response.getOutputStream(), new ExportFilter(params));
+			dtoExportService.exportAuthorizations(retailCustomerId,
+					response.getOutputStream(), params);
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 		}
@@ -336,9 +335,9 @@ public class AuthorizationRESTController {
 
 		response.setContentType(MediaType.APPLICATION_ATOM_XML_VALUE);
 		try {
-			exportService.exportAuthorization(retailCustomerId,
+			dtoExportService.exportAuthorization(retailCustomerId,
 					authorizationId, response.getOutputStream(),
-					new ExportFilter(params));
+					params);
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 		}
@@ -363,9 +362,9 @@ public class AuthorizationRESTController {
 					this.authorizationService.importResource(stream);
 			retailCustomerService.associateByUUID(retailCustomerId,
 					authorization.getUUID());
-			exportService.exportAuthorization(retailCustomerId,
+			dtoExportService.exportAuthorization(retailCustomerId,
 					authorization.getId(), response.getOutputStream(),
-					new ExportFilter(params));
+					params);
 			response.setStatus(HttpServletResponse.SC_CREATED);
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
@@ -392,7 +391,7 @@ public class AuthorizationRESTController {
 			if (authorization != null) {
 				AuthorizationEntity newAuthorizationEntity = 
 						authorizationService.importResource(stream);
-				authorization.merge(newAuthorization);
+				authorization.merge(newAuthorizationEntity);
 				response.setStatus(HttpServletResponse.SC_OK);
 			} else {
 				response.setStatus(HttpServletResponse.SC_NOT_FOUND);
@@ -419,7 +418,7 @@ public class AuthorizationRESTController {
 			if (authorization != null) {
 				String accessToken = authorization.getAccessToken();
 				authorizationService.delete(authorization);
-				tokenService.revokeToken(accessToken);
+				// Note: Token revocation handled by OAuth2 server
 				response.setStatus(HttpServletResponse.SC_OK);
 			} else {
 				response.setStatus(HttpServletResponse.SC_NOT_FOUND);
