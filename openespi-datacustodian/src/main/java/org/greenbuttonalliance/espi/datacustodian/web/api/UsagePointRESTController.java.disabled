@@ -32,6 +32,7 @@ import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.SubscriptionEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.MeterReadingEntity;
 import org.greenbuttonalliance.espi.common.service.*;
+import org.greenbuttonalliance.espi.common.repositories.usage.*;
 import org.greenbuttonalliance.espi.common.repositories.usage.UsagePointRepository;
 import org.greenbuttonalliance.espi.datacustodian.utils.VerifyURLParams;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,9 +53,10 @@ import java.util.Map;
  * UsagePointEntity represents a logical point on the network where consumption or 
  * production is measured (e.g., meter connection point, sub-load, or generation source).
  */
-@RestController
-@RequestMapping("/espi/1_1/resource")
-@Tag(name = "Usage Point", description = "Smart Meter Usage Point Management API")
+// @RestController - COMMENTED OUT: Duplicate of modern UsagePointController  
+// @RequestMapping("/espi/1_1/resource")
+// @Tag(name = "Usage Point", description = "Smart Meter Usage Point Management API")
+// @Component
 public class UsagePointRESTController {
 
     private final UsagePointRepository usagePointRepository;
@@ -64,7 +66,7 @@ public class UsagePointRESTController {
     private final AuthorizationService authorizationService;
 
     @Autowired
-    public UsagePointEntityRESTController(
+    public UsagePointRESTController(
             UsagePointRepository usagePointRepository,
             SubscriptionService subscriptionService,
             RetailCustomerService retailCustomerService,
@@ -255,7 +257,7 @@ public class UsagePointRESTController {
             // UsagePointEntityEntity usagePoint = importUsagePointFromXml(stream);
             // UsagePointEntityEntity savedUsagePoint = usagePointRepository.save(usagePoint);
             // exportService.exportUsagePoint_Root(subscriptionId, savedUsagePoint.getId(),
-            //         response.getOutputStream(), new ExportFilter(params));
+            //         response.getOutputStream(), params);
             response.setStatus(HttpServletResponse.SC_NOT_IMPLEMENTED);
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);

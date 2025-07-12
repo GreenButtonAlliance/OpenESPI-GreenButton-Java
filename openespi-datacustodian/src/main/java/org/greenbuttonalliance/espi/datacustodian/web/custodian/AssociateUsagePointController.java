@@ -20,12 +20,11 @@
 
 package org.greenbuttonalliance.espi.datacustodian.web.custodian;
 
-import org.greenbuttonalliance.espi.common.domain.usage.Routes;
+// import org.greenbuttonalliance.espi.common.domain.usage.Routes; // Missing class
 import org.greenbuttonalliance.espi.common.domain.usage.SubscriptionEntity;
-import org.greenbuttonalliance.espi.common.service.NotificationService;
-import org.greenbuttonalliance.espi.common.service.ResourceRepository;
+import org.greenbuttonalliance.espi.common.repositories.usage.ResourceRepository;
 import org.greenbuttonalliance.espi.common.service.RetailCustomerService;
-import org.greenbuttonalliance.espi.common.service.UsagePointRepository;
+import org.greenbuttonalliance.espi.common.repositories.usage.UsagePointRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -40,7 +39,8 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import java.util.UUID;
 
-@Controller
+// @Controller - COMMENTED OUT: UI not needed in resource server
+// @Component
 @PreAuthorize("hasRole('ROLE_CUSTODIAN')")
 public class AssociateUsagePointController {
 
@@ -50,8 +50,8 @@ public class AssociateUsagePointController {
 	@Autowired
 	private ResourceRepository resourceService;
 
-	@Autowired
-	private NotificationService notificationService;
+	// @Autowired
+	// private NotificationService notificationService; // TODO: Implement
 
 	@Autowired
 	private UsagePointRepository service;
@@ -61,7 +61,7 @@ public class AssociateUsagePointController {
 		binder.setValidator(new UsagePointEntityFormValidator());
 	}
 
-	@RequestMapping(value = Routes.DATA_CUSTODIAN_RETAIL_CUSTOMER_USAGE_POINTS_FORM, method = RequestMethod.GET)
+	@RequestMapping(value = "/custodian/retailcustomers/{retailCustomerId}/usagepoints/form", method = RequestMethod.GET)
 	public String form(@PathVariable Long retailCustomerId, ModelMap model) {
 		model.put("usagePointForm", new UsagePointEntityForm());
 		model.put("retailCustomerId", retailCustomerId);
@@ -69,7 +69,7 @@ public class AssociateUsagePointController {
 		return "/custodian/retailcustomers/usagepoints/form";
 	}
 
-	@RequestMapping(value = Routes.DATA_CUSTODIAN_RETAIL_CUSTOMER_USAGE_POINTS_CREATE, method = RequestMethod.POST)
+	@RequestMapping(value = "/custodian/retailcustomers/{retailCustomerId}/usagepoints/create", method = RequestMethod.POST)
 	public String create(
 			@PathVariable Long retailCustomerId,
 			@ModelAttribute("usagePointForm") @Valid UsagePointEntityForm usagePointForm,
@@ -82,8 +82,8 @@ public class AssociateUsagePointController {
 				retailCustomerId, UUID.fromString(usagePointForm.getUUID()));
 
 		if (subscription != null) {
-			// NotificationService expects legacy entities
-			notificationService.notify(subscription, null, null);
+			// TODO: Implement NotificationService
+			// notificationService.notify(subscription, null, null);
 		}
 		return "redirect:/custodian/retailcustomers";
 	}
@@ -128,7 +128,7 @@ public class AssociateUsagePointController {
 					"field.required", "UUID is required");
 
 			try {
-				UsagePointForm form = (UsagePointForm) target;
+				UsagePointEntityForm form = (UsagePointEntityForm) target;
 				UUID.fromString(form.getUUID());
 			} catch (IllegalArgumentException x) {
 				errors.rejectValue("UUID", "uuid.required", null,
@@ -154,13 +154,13 @@ public class AssociateUsagePointController {
 		return this.resourceService;
 	}
 
-	public void setNotificationService(NotificationService notificationService) {
-		this.notificationService = notificationService;
-	}
+	// public void setNotificationService(NotificationService notificationService) {
+	//	this.notificationService = notificationService;
+	// }
 
-	public NotificationService getNotificationService() {
-		return this.notificationService;
-	}
+	// public NotificationService getNotificationService() {
+	//	return this.notificationService;
+	// }
 
 	public void setUsagePointRepository(UsagePointRepository service) {
 		this.service = service;

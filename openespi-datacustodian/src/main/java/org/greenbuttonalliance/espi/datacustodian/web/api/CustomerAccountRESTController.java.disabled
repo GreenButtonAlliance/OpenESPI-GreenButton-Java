@@ -32,7 +32,6 @@ import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerAccoun
 import org.greenbuttonalliance.espi.common.dto.customer.CustomerAccountDto;
 import org.greenbuttonalliance.espi.common.service.customer.CustomerAccountService;
 import org.greenbuttonalliance.espi.common.service.DtoExportService;
-import org.greenbuttonalliance.espi.common.utils.ExportFilter;
 import org.greenbuttonalliance.espi.datacustodian.utils.VerifyURLParams;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -64,8 +63,9 @@ import java.util.UUID;
  * - Account hierarchy for commercial customers
  * - Financial reporting and statements
  */
-@RestController
-@RequestMapping("/espi/1_1/resource")
+// @RestController - COMMENTED OUT: Legacy controller disabled for simplification
+// @Component
+// @RequestMapping - DISABLED("/espi/1_1/resource")
 @Tag(name = "Customer Account", description = "Customer Billing Account Management API")
 @SecurityRequirement(name = "OAuth2")
 public class CustomerAccountRESTController {
@@ -142,7 +142,7 @@ public class CustomerAccountRESTController {
         
         try {
             exportService.exportCustomerAccounts(response.getOutputStream(), 
-                    new ExportFilter(params));
+                    params);
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
         }
@@ -206,7 +206,7 @@ public class CustomerAccountRESTController {
         
         try {
             exportService.exportCustomerAccount(customerAccountId, response.getOutputStream(), 
-                    new ExportFilter(params));
+                    params);
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
         }

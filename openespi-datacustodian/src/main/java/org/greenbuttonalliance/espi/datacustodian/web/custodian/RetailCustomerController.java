@@ -35,7 +35,8 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 
-@Controller
+// @Controller - COMMENTED OUT: UI not needed in resource server
+// @Component
 @PreAuthorize("hasRole('ROLE_CUSTODIAN')")
 public class RetailCustomerController {
 

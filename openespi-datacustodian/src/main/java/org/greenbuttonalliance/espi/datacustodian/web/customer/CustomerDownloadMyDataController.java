@@ -21,7 +21,6 @@
 package org.greenbuttonalliance.espi.datacustodian.web.customer;
 
 import org.greenbuttonalliance.espi.common.service.DtoExportService;
-import org.greenbuttonalliance.espi.common.utils.ExportFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -34,7 +33,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Map;
 
-@Controller
+// @Controller - COMMENTED OUT: UI not needed in resource server
+// @Component
 @PreAuthorize("hasRole('ROLE_USER')")
 public class CustomerDownloadMyDataController {
 
@@ -50,11 +50,10 @@ public class CustomerDownloadMyDataController {
 		response.addHeader("Content-Disposition",
 				"attachment; filename=GreenButtonDownload.xml");
 		try {
-
-			exportService.exportUsagePointFull(0L, retailCustomerId,
-					usagePointId, response.getOutputStream(), new ExportFilter(
-							params));
-
+			// TODO: Implement export methods in DtoExportService
+			// exportService.exportUsagePointFull(0L, retailCustomerId, usagePointId, response.getOutputStream(), new ExportFilter(params));
+			response.setStatus(HttpServletResponse.SC_NOT_IMPLEMENTED);
+			response.getWriter().write("Download My Data not yet implemented");
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 		}
@@ -69,8 +68,10 @@ public class CustomerDownloadMyDataController {
 		response.addHeader("Content-Disposition",
 				"attachment; filename=GreenButtonDownload.xml");
 		try {
-			exportService.exportUsagePointsFull(0L, retailCustomerId,
-					response.getOutputStream(), new ExportFilter(params));
+			// TODO: Implement export methods in DtoExportService  
+			// exportService.exportUsagePointsFull(0L, retailCustomerId, response.getOutputStream(), params);
+			response.setStatus(HttpServletResponse.SC_NOT_IMPLEMENTED);
+			response.getWriter().write("Download My Data Collection not yet implemented");
 
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);

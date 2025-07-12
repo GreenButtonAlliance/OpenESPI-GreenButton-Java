@@ -23,7 +23,7 @@ package org.greenbuttonalliance.espi.datacustodian.web.customer;
 import org.greenbuttonalliance.espi.common.domain.usage.IntervalBlockEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.IntervalReadingEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.MeterReadingEntity;
-import org.greenbuttonalliance.espi.common.service.MeterReadingRepository;
+import org.greenbuttonalliance.espi.common.repositories.usage.MeterReadingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,8 +33,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.Iterator;
 
-@Controller
-public class MeterReadingEntityController {
+// @Controller - COMMENTED OUT: UI not needed in resource server
+// @Component
+public class MeterReadingController {
 
 	@Autowired
 	protected MeterReadingRepository meterReadingService;
@@ -44,10 +45,14 @@ public class MeterReadingEntityController {
 	public String show(@PathVariable Long retailCustomerId,
 			@PathVariable Long usagePointId, @PathVariable Long meterReadingId,
 			ModelMap model) {
-		var mr = meterReadingService.findById(retailCustomerId,
-				usagePointId, meterReadingId);
+		// TODO: Implement proper meter reading lookup by path parameters
+		// Current repository only supports UUID lookup, need service layer method
+		model.put("error", "MeterReading lookup not yet implemented for UI");
+		return "/customer/error";
 
-		MeterReadingEntity newMeterReading = new MeterReadingEntityEntity();
+		/*
+		// TODO: Implement when proper service layer is available
+		MeterReadingEntity newMeterReading = new MeterReadingEntity();
 		Iterator<IntervalBlockEntity> it = newMeterReading.getIntervalBlocks()
 				.iterator();
 		while (it.hasNext()) {
@@ -58,10 +63,10 @@ public class MeterReadingEntityController {
 				IntervalReadingEntity temp1 = it1.next();
 				temp1.getCost();
 			}
-
 		}
 		model.put("meterReading", newMeterReading);
 		return "/customer/meterreadings/show";
+		*/
 	}
 
 	public void setMeterReadingRepository(MeterReadingRepository meterReadingService) {

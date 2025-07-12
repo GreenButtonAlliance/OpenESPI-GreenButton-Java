@@ -24,7 +24,7 @@ import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.SubscriptionEntity;
 import org.greenbuttonalliance.espi.common.service.AuthorizationService;
 import org.greenbuttonalliance.espi.common.service.SubscriptionService;
-import org.greenbuttonalliance.espi.common.service.UsagePointRepository;
+import org.greenbuttonalliance.espi.common.repositories.usage.UsagePointRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -262,7 +262,7 @@ public class ResourceValidationFilter implements Filter {
 				// or /resource/Batch/Subscription/{subscriptionId}/**
 				if (invalid && uri.contains("/resource/Subscription")) {
 					if (authorizationFromToken.getSubscription().getId()
-							.compareTo(Long.parseLong(tokens[3], 10)) == 0) {
+							.toString().equals(tokens[3])) {
 						invalid = false;
 					} else {
 						// not authorized for this resource
@@ -327,7 +327,7 @@ public class ResourceValidationFilter implements Filter {
 								// for this third party
 								AuthorizationEntity requestedAuthorizationEntity = authorizationService
 										.findById(authorizationId);
-								if ((requestedAuthorization
+								if ((requestedAuthorizationEntity
 										.getApplicationInformation().getId())
 										.equals(authorizationFromToken
 												.getApplicationInformation()
@@ -431,10 +431,9 @@ public class ResourceValidationFilter implements Filter {
 						String[] tokens = uri.split("/");
 
 						if (tokens.length > 3) {
-							Long applicationInformationIdFromUri = Long
-									.parseLong(tokens[3], 10);
-							Long applicationInformationId = authorizationFromToken
-									.getApplicationInformation().getId();
+							String applicationInformationIdFromUri = tokens[3];
+							String applicationInformationId = authorizationFromToken
+									.getApplicationInformation().getId().toString();
 
 							// only gets access to his
 							if (applicationInformationIdFromUri

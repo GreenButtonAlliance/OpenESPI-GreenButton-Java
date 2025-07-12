@@ -29,8 +29,8 @@ import org.greenbuttonalliance.espi.common.domain.usage.ElectricPowerQualitySumm
 import org.greenbuttonalliance.espi.common.domain.usage.TimeConfigurationEntity;
 import org.greenbuttonalliance.espi.common.service.ApplicationInformationService;
 import org.greenbuttonalliance.espi.common.service.DtoExportService;
-import org.greenbuttonalliance.espi.common.service.ResourceRepository;
-import org.greenbuttonalliance.espi.common.service.UsagePointRepository;
+import org.greenbuttonalliance.espi.common.repositories.usage.ResourceRepository;
+import org.greenbuttonalliance.espi.common.repositories.usage.UsagePointRepository;
 import org.greenbuttonalliance.espi.common.service.RetailCustomerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -47,8 +47,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
-@Controller
-public class UsagePointEntityController {
+// @Controller - COMMENTED OUT: UI not needed in resource server
+// @Component
+public class UsagePointController {
 
 	@Autowired
 	private UsagePointRepository usagePointService;
@@ -70,7 +71,8 @@ public class UsagePointEntityController {
 		if (principal instanceof Authentication auth) {
 			var customer = retailCustomerService.findByUsername(auth.getName());
 			if (customer != null) {
-				return usagePointService.findAllByRetailCustomer(customer);
+				// TODO: Implement findAllByRetailCustomer method in repository
+			return new ArrayList<>(); // usagePointService.findAllByRetailCustomer(customer);
 			}
 		}
 		return new ArrayList<>();

@@ -68,12 +68,12 @@ public class ResourceServerConfig {
             )
             // Configure OAuth2 Resource Server with opaque token introspection
             .oauth2ResourceServer(oauth2 -> oauth2
-                .opaqueToken(opaque -> opaque
+                .opaqueToken(opaque -> {
                     // Token introspection is configured via application.yml
                     // spring.security.oauth2.resourceserver.opaquetoken.introspection-uri
                     // spring.security.oauth2.resourceserver.opaquetoken.client-id
                     // spring.security.oauth2.resourceserver.opaquetoken.client-secret
-                )
+                })
             )
             // HTTPS Channel Security for Production
             .requiresChannel(channel -> {

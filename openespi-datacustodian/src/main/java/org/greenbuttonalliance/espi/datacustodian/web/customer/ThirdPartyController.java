@@ -30,7 +30,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-@Controller
+// @Controller - COMMENTED OUT: UI not needed in resource server
+// @Component
 @RequestMapping("/RetailCustomer/{retailCustomerId}/ThirdPartyList")
 public class ThirdPartyController {
 
@@ -48,12 +49,16 @@ public class ThirdPartyController {
 	public String selectThirdParty(
 			@RequestParam("Third_party") Long thirdPartyId,
 			@RequestParam("Third_party_URL") String thirdPartyURL) {
-		ApplicationInformationEntity applicationInformation = applicationInformationService
-				.findById(thirdPartyId);
+		// TODO: Implement findById(Long) method or convert to UUID lookup
+		// ApplicationInformationEntity applicationInformation = applicationInformationService.findById(thirdPartyId);
+		// For now, return error page
+		return "redirect:/customer/error?message=ThirdPartySelection not yet implemented";
+		/*
 		return "redirect:" + thirdPartyURL + "?"
 				+ URLHelper.newScopeParams(applicationInformation.getScope())
 				+ "&DataCustodianID="
 				+ applicationInformation.getDataCustodianId();
+		*/
 	}
 
 	public void setApplicationInformationService(

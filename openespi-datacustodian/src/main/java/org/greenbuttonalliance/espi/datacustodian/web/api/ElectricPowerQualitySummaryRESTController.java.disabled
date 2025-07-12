@@ -17,6 +17,7 @@
  *
  */
 
+
 package org.greenbuttonalliance.espi.datacustodian.web.api;
 
 import com.sun.syndication.io.FeedException;
@@ -27,15 +28,12 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.greenbuttonalliance.espi.common.domain.usage.MeterReadingEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.ElectricPowerQualitySummaryEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.SubscriptionEntity;
-import org.greenbuttonalliance.espi.common.domain.usage.IntervalBlockEntity;
 import org.greenbuttonalliance.espi.common.service.*;
-import org.greenbuttonalliance.espi.common.repositories.usage.MeterReadingRepository;
-import org.greenbuttonalliance.espi.common.repositories.usage.UsagePointRepository;
-import org.greenbuttonalliance.espi.common.repositories.usage.ResourceRepository;
+import org.greenbuttonalliance.espi.common.repositories.usage.*;
 import org.greenbuttonalliance.espi.datacustodian.utils.VerifyURLParams;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -49,41 +47,41 @@ import java.io.InputStream;
 import java.util.Map;
 
 /**
- * RESTful controller for managing MeterReadingEntity resources according to the 
+ * RESTful controller for managing ElectricPowerQualitySummary resources according to the 
  * Green Button Alliance ESPI (Energy Services Provider Interface) specification.
  * 
- * MeterReadingEntity represents a collection of readings from a smart meter device 
- * for a specific time period, including actual consumption/production values 
- * and associated interval blocks.
+ * ElectricPowerQualitySummary represents power quality measurements and statistics 
+ * including voltage, frequency, and harmonic distortion data.
  */
-@RestController
-@RequestMapping("/espi/1_1/resource")
-@Tag(name = "Meter Reading", description = "Smart Meter Reading Data Management API")
-public class MeterReadingRESTController {
+// @RestController - COMMENTED OUT: Legacy controller disabled for simplification
+// @Component
+// @RequestMapping - DISABLED("/espi/1_1/resource")
+@Tag(name = "Electric Power Quality Summary", description = "Power Quality Measurement Data Management API")
+public class ElectricPowerQualitySummaryRESTController {
 
-	private final MeterReadingRepository meterReadingService;
+	private final ElectricPowerQualitySummaryService electricPowerQualitySummaryService;
 	private final UsagePointRepository usagePointService;
 	private final RetailCustomerService retailCustomerService;
-	private final SubscriptionService subscriptionService;
 	private final DtoExportService exportService;
 	private final ResourceRepository resourceService;
+	private final SubscriptionService subscriptionService;
 	private final AuthorizationService authorizationService;
 
 	@Autowired
-	public MeterReadingEntityRESTController(
-			MeterReadingRepository meterReadingService,
+	public ElectricPowerQualitySummaryRESTController(
+			ElectricPowerQualitySummaryService electricPowerQualitySummaryService,
 			UsagePointRepository usagePointService,
 			RetailCustomerService retailCustomerService,
-			SubscriptionService subscriptionService,
 			DtoExportService exportService,
 			ResourceRepository resourceService,
+			SubscriptionService subscriptionService,
 			AuthorizationService authorizationService) {
-		this.meterReadingService = meterReadingService;
+		this.electricPowerQualitySummaryService = electricPowerQualitySummaryService;
 		this.usagePointService = usagePointService;
 		this.retailCustomerService = retailCustomerService;
-		this.subscriptionService = subscriptionService;
 		this.exportService = exportService;
 		this.resourceService = resourceService;
+		this.subscriptionService = subscriptionService;
 		this.authorizationService = authorizationService;
 	}
 
@@ -94,11 +92,11 @@ public class MeterReadingRESTController {
 	}
 
 	// ================================
-	// ROOT MeterReadingEntity Collection APIs
+	// ROOT ElectricPowerQualitySummary Collection APIs
 	// ================================
 
 	/**
-	 * Retrieves all MeterReadingEntity resources (root level access).
+	 * Retrieves all ElectricPowerQualitySummary resources (root level access).
 	 * 
 	 * @param request HTTP servlet request for authorization context
 	 * @param response HTTP response for streaming ATOM XML content
@@ -106,18 +104,18 @@ public class MeterReadingRESTController {
 	 * @throws IOException if output stream cannot be written
 	 * @throws FeedException if ATOM feed generation fails
 	 */
-	@GetMapping(value = "/MeterReading", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
+	@GetMapping(value = "/ElectricPowerQualitySummary", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
-		summary = "Get MeterReadingEntity Collection",
-		description = "Retrieves all authorized MeterReadingEntity resources with optional filtering and pagination. " +
-					 "Returns an ATOM feed containing MeterReadingEntity entries for smart meter data collections."
+		summary = "Get ElectricPowerQualitySummary Collection",
+		description = "Retrieves all authorized ElectricPowerQualitySummary resources with optional filtering and pagination. " +
+					 "Returns an ATOM feed containing power quality measurement entries including voltage, frequency, and harmonic data."
 	)
 	@ApiResponses(value = {
 		@ApiResponse(
 			responseCode = "200", 
-			description = "Successfully retrieved MeterReadingEntity collection",
+			description = "Successfully retrieved ElectricPowerQualitySummary collection",
 			content = @Content(mediaType = MediaType.APPLICATION_ATOM_XML_VALUE, 
-							 schema = @Schema(description = "ATOM feed containing MeterReadingEntity entries"))
+							 schema = @Schema(description = "ATOM feed containing ElectricPowerQualitySummary entries"))
 		),
 		@ApiResponse(
 			responseCode = "400", 
@@ -125,17 +123,17 @@ public class MeterReadingRESTController {
 		),
 		@ApiResponse(
 			responseCode = "401", 
-			description = "Unauthorized access to MeterReadingEntity resources"
+			description = "Unauthorized access to power quality data"
 		)
 	})
-	public void getMeterReadingCollection(
+	public void getElectricPowerQualitySummaryCollection(
 			HttpServletRequest request, 
 			HttpServletResponse response,
 			@Parameter(description = "Query parameters for filtering (published-max, published-min, updated-max, updated-min, max-results, start-index)")
 			@RequestParam Map<String, String> params) throws IOException, FeedException {
 
 		// Verify request contains valid query parameters
-		if (!VerifyURLParams.verifyEntries("/espi/1_1/resource/MeterReading", params)) {
+		if (!VerifyURLParams.verifyEntries("/espi/1_1/resource/ElectricPowerQualitySummary", params)) {
 			response.sendError(HttpServletResponse.SC_BAD_REQUEST, 
 							 "Request contains invalid query parameter values!");
 			return;
@@ -145,60 +143,60 @@ public class MeterReadingRESTController {
 		response.setContentType(MediaType.APPLICATION_ATOM_XML_VALUE);
 		
 		try {
-			exportService.exportMeterReadings_Root(subscriptionId,
-					response.getOutputStream(), new ExportFilter(params));
+			exportService.exportElectricPowerQualitySummarys_Root(subscriptionId,
+					response.getOutputStream(), params);
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 		}
 	}
 
 	/**
-	 * Retrieves a specific MeterReadingEntity resource by ID (root level access).
+	 * Retrieves a specific ElectricPowerQualitySummary resource by ID (root level access).
 	 * 
 	 * @param request HTTP servlet request for authorization context
 	 * @param response HTTP response for streaming ATOM XML content
-	 * @param meterReadingId Unique identifier for the MeterReadingEntity
+	 * @param electricPowerQualitySummaryId Unique identifier for the ElectricPowerQualitySummary
 	 * @param params Query parameters for export filtering
 	 * @throws IOException if output stream cannot be written
 	 * @throws FeedException if ATOM entry generation fails
 	 */
-	@GetMapping(value = "/MeterReading/{meterReadingId}", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
+	@GetMapping(value = "/ElectricPowerQualitySummary/{electricPowerQualitySummaryId}", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
-		summary = "Get MeterReadingEntity by ID",
-		description = "Retrieves a specific MeterReadingEntity resource by its unique identifier. " +
-					 "Returns an ATOM entry containing the MeterReadingEntity details including " +
-					 "reading type, time period, and associated interval blocks."
+		summary = "Get ElectricPowerQualitySummary by ID",
+		description = "Retrieves a specific ElectricPowerQualitySummary resource by its unique identifier. " +
+					 "Returns an ATOM entry containing power quality details including voltage measurements, " +
+					 "frequency variations, and harmonic distortion statistics."
 	)
 	@ApiResponses(value = {
 		@ApiResponse(
 			responseCode = "200", 
-			description = "Successfully retrieved MeterReadingEntity",
+			description = "Successfully retrieved ElectricPowerQualitySummary",
 			content = @Content(mediaType = MediaType.APPLICATION_ATOM_XML_VALUE,
-							 schema = @Schema(description = "ATOM entry containing MeterReadingEntity details"))
+							 schema = @Schema(description = "ATOM entry containing ElectricPowerQualitySummary details"))
 		),
 		@ApiResponse(
 			responseCode = "400", 
-			description = "Invalid meterReadingId or query parameters"
+			description = "Invalid electricPowerQualitySummaryId or query parameters"
 		),
 		@ApiResponse(
 			responseCode = "401", 
-			description = "Unauthorized access to this MeterReadingEntity"
+			description = "Unauthorized access to this power quality data"
 		),
 		@ApiResponse(
 			responseCode = "404", 
-			description = "MeterReading not found"
+			description = "ElectricPowerQualitySummary not found"
 		)
 	})
-	public void getMeterReading(
+	public void getElectricPowerQualitySummary(
 			HttpServletRequest request, 
 			HttpServletResponse response,
-			@Parameter(description = "Unique identifier of the MeterReadingEntity", required = true)
-			@PathVariable Long meterReadingId,
+			@Parameter(description = "Unique identifier of the ElectricPowerQualitySummary", required = true)
+			@PathVariable Long electricPowerQualitySummaryId,
 			@Parameter(description = "Query parameters for export filtering")
 			@RequestParam Map<String, String> params) throws IOException, FeedException {
 
 		// Verify request contains valid query parameters
-		if (!VerifyURLParams.verifyEntries("/espi/1_1/resource/MeterReading/{meterReadingId}", params)) {
+		if (!VerifyURLParams.verifyEntries("/espi/1_1/resource/ElectricPowerQualitySummary/{electricPowerQualitySummaryId}", params)) {
 			response.sendError(HttpServletResponse.SC_BAD_REQUEST, 
 							 "Request contains invalid query parameter values!");
 			return;
@@ -208,16 +206,16 @@ public class MeterReadingRESTController {
 		response.setContentType(MediaType.APPLICATION_ATOM_XML_VALUE);
 		
 		try {
-			exportService.exportMeterReading_Root(subscriptionId,
-					meterReadingId, response.getOutputStream(),
-					new ExportFilter(params));
+			exportService.exportElectricPowerQualitySummary_Root(
+					subscriptionId, electricPowerQualitySummaryId,
+					response.getOutputStream(), params);
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 		}
 	}
 
 	/**
-	 * Creates a new MeterReadingEntity resource (root level).
+	 * Creates a new ElectricPowerQualitySummary resource (root level).
 	 * 
 	 * @param request HTTP servlet request for authorization context
 	 * @param response HTTP response for returning created resource
@@ -225,47 +223,48 @@ public class MeterReadingRESTController {
 	 * @param stream Input stream containing ATOM XML data
 	 * @throws IOException if input/output stream operations fail
 	 */
-	@PostMapping(value = "/MeterReading", 
+	@PostMapping(value = "/ElectricPowerQualitySummary", 
 				consumes = MediaType.APPLICATION_ATOM_XML_VALUE, 
 				produces = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
-		summary = "Create MeterReadingEntity",
-		description = "Creates a new MeterReadingEntity resource representing smart meter data collection. " +
-					 "The request body should contain an ATOM entry with MeterReadingEntity details including " +
-					 "reading type, time period, and interval block data."
+		summary = "Create ElectricPowerQualitySummary",
+		description = "Creates a new ElectricPowerQualitySummary resource representing power quality measurements. " +
+					 "The request body should contain an ATOM entry with power quality details including " +
+					 "voltage measurements, frequency data, and harmonic distortion statistics."
 	)
 	@ApiResponses(value = {
 		@ApiResponse(
 			responseCode = "201", 
-			description = "Successfully created MeterReadingEntity",
+			description = "Successfully created ElectricPowerQualitySummary",
 			content = @Content(mediaType = MediaType.APPLICATION_ATOM_XML_VALUE,
-							 schema = @Schema(description = "ATOM entry containing the created MeterReadingEntity"))
+							 schema = @Schema(description = "ATOM entry containing the created ElectricPowerQualitySummary"))
 		),
 		@ApiResponse(
 			responseCode = "400", 
-			description = "Invalid ATOM XML format or MeterReadingEntity data"
+			description = "Invalid ATOM XML format or ElectricPowerQualitySummary data"
 		),
 		@ApiResponse(
 			responseCode = "401", 
-			description = "Unauthorized to create MeterReadingEntitys"
+			description = "Unauthorized to create power quality data"
 		)
 	})
-	public void createMeterReading(
+	public void createElectricPowerQualitySummary(
 			HttpServletRequest request,
 			HttpServletResponse response,
 			@Parameter(description = "Query parameters for export filtering")
 			@RequestParam Map<String, String> params, 
-			@Parameter(description = "ATOM XML containing MeterReadingEntity data", required = true)
+			@Parameter(description = "ATOM XML containing ElectricPowerQualitySummary data", required = true)
 			@RequestBody InputStream stream) throws IOException {
 
 		Long subscriptionId = getSubscriptionId(request);
 		response.setContentType(MediaType.APPLICATION_ATOM_XML_VALUE);
 		
 		try {
-			MeterReading meterReading = this.meterReadingService.importResource(stream);
-			exportService.exportMeterReading_Root(subscriptionId,
-					meterReading.getId(), response.getOutputStream(),
-					new ExportFilter(params));
+			ElectricPowerQualitySummary electricPowerQualitySummary = 
+					this.electricPowerQualitySummaryService.importResource(stream);
+			exportService.exportElectricPowerQualitySummary_Root(
+					subscriptionId, electricPowerQualitySummary.getId(),
+					response.getOutputStream(), params);
 			response.setStatus(HttpServletResponse.SC_CREATED);
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
@@ -273,93 +272,99 @@ public class MeterReadingRESTController {
 	}
 
 	/**
-	 * Updates an existing MeterReadingEntity resource (root level).
+	 * Updates an existing ElectricPowerQualitySummary resource (root level).
 	 * 
 	 * @param response HTTP response for returning updated resource
-	 * @param meterReadingId Unique identifier for the MeterReadingEntity to update
+	 * @param electricPowerQualitySummaryId Unique identifier for the ElectricPowerQualitySummary to update
 	 * @param params Query parameters for export filtering
 	 * @param stream Input stream containing updated ATOM XML data
+	 * @throws IOException if input/output stream operations fail
+	 * @throws FeedException if ATOM processing fails
 	 */
-	@PutMapping(value = "/MeterReading/{meterReadingId}", 
+	@PutMapping(value = "/ElectricPowerQualitySummary/{electricPowerQualitySummaryId}", 
 			   consumes = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
-		summary = "Update MeterReadingEntity",
-		description = "Updates an existing MeterReadingEntity resource. The request body should contain " +
-					 "an ATOM entry with updated MeterReadingEntity details."
+		summary = "Update ElectricPowerQualitySummary",
+		description = "Updates an existing ElectricPowerQualitySummary resource. The request body should contain " +
+					 "an ATOM entry with updated power quality measurement details."
 	)
 	@ApiResponses(value = {
 		@ApiResponse(
 			responseCode = "200", 
-			description = "Successfully updated MeterReadingEntity"
+			description = "Successfully updated ElectricPowerQualitySummary"
 		),
 		@ApiResponse(
 			responseCode = "400", 
-			description = "Invalid ATOM XML format or MeterReadingEntity data"
+			description = "Invalid ATOM XML format or ElectricPowerQualitySummary data"
 		),
 		@ApiResponse(
 			responseCode = "401", 
-			description = "Unauthorized to update this MeterReadingEntity"
+			description = "Unauthorized to update this power quality data"
 		),
 		@ApiResponse(
 			responseCode = "404", 
-			description = "MeterReading not found"
+			description = "ElectricPowerQualitySummary not found"
 		)
 	})
-	public void updateMeterReading(
+	public void updateElectricPowerQualitySummary(
 			HttpServletResponse response,
-			@Parameter(description = "Unique identifier of the MeterReadingEntity to update", required = true)
-			@PathVariable Long meterReadingId,
+			@Parameter(description = "Unique identifier of the ElectricPowerQualitySummary to update", required = true)
+			@PathVariable Long electricPowerQualitySummaryId,
 			@Parameter(description = "Query parameters for export filtering")
 			@RequestParam Map<String, String> params, 
-			@Parameter(description = "ATOM XML containing updated MeterReadingEntity data", required = true)
-			@RequestBody InputStream stream) {
+			@Parameter(description = "ATOM XML containing updated ElectricPowerQualitySummary data", required = true)
+			@RequestBody InputStream stream) throws IOException, FeedException {
+		try {
+			ElectricPowerQualitySummary electricPowerQualitySummary = 
+					electricPowerQualitySummaryService.findById(electricPowerQualitySummaryId);
 
-		if (null != resourceService.findById(meterReadingId, MeterReadingEntity.class)) {
-			try {
-				// Note: the import service is doing the merge
-				meterReadingService.importResource(stream);
+			if (electricPowerQualitySummary != null) {
+				ElectricPowerQualitySummary newElectricPowerQualitySummary = 
+						electricPowerQualitySummaryService.importResource(stream);
+				electricPowerQualitySummary.merge(newElectricPowerQualitySummary);
 				response.setStatus(HttpServletResponse.SC_OK);
-			} catch (Exception e) {
-				response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			} else {
+				response.setStatus(HttpServletResponse.SC_NOT_FOUND);
 			}
-		} else {
-			response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+		} catch (Exception e) {
+			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 		}
 	}
 
 	/**
-	 * Deletes a MeterReadingEntity resource (root level).
+	 * Deletes an ElectricPowerQualitySummary resource (root level).
 	 * 
 	 * @param response HTTP response
-	 * @param meterReadingId Unique identifier for the MeterReadingEntity to delete
+	 * @param electricPowerQualitySummaryId Unique identifier for the ElectricPowerQualitySummary to delete
 	 */
-	@DeleteMapping("/MeterReading/{meterReadingId}")
+	@DeleteMapping("/ElectricPowerQualitySummary/{electricPowerQualitySummaryId}")
 	@Operation(
-		summary = "Delete MeterReadingEntity", 
-		description = "Removes a MeterReadingEntity resource. This will also remove all associated " +
-					 "interval blocks and reading data."
+		summary = "Delete ElectricPowerQualitySummary", 
+		description = "Removes an ElectricPowerQualitySummary resource. This will delete the " +
+					 "power quality measurement data for the specified period."
 	)
 	@ApiResponses(value = {
 		@ApiResponse(
 			responseCode = "200", 
-			description = "Successfully deleted MeterReadingEntity"
+			description = "Successfully deleted ElectricPowerQualitySummary"
 		),
 		@ApiResponse(
 			responseCode = "401", 
-			description = "Unauthorized to delete this MeterReadingEntity"
+			description = "Unauthorized to delete this power quality data"
 		),
 		@ApiResponse(
 			responseCode = "404", 
-			description = "MeterReading not found"
+			description = "ElectricPowerQualitySummary not found"
 		)
 	})
-	public void deleteMeterReading(
+	public void deleteElectricPowerQualitySummary(
 			HttpServletResponse response,
-			@Parameter(description = "Unique identifier of the MeterReadingEntity to delete", required = true)
-			@PathVariable Long meterReadingId) {
+			@Parameter(description = "Unique identifier of the ElectricPowerQualitySummary to delete", required = true)
+			@PathVariable Long electricPowerQualitySummaryId) {
 
 		try {
-			resourceService.deleteById(meterReadingId, MeterReadingEntity.class);
+			resourceService.deleteById(electricPowerQualitySummaryId,
+					ElectricPowerQualitySummary.class);
 			response.setStatus(HttpServletResponse.SC_OK);
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_NOT_FOUND);
@@ -367,11 +372,11 @@ public class MeterReadingRESTController {
 	}
 
 	// =============================================
-	// SubscriptionEntity-scoped MeterReadingEntity Collection APIs
+	// SubscriptionEntity-scoped ElectricPowerQualitySummary Collection APIs
 	// =============================================
 
 	/**
-	 * Retrieves MeterReadingEntity resources within a specific subscription and usage point context.
+	 * Retrieves ElectricPowerQualitySummary resources within a specific subscription and usage point context.
 	 * 
 	 * @param subscriptionId Unique identifier for the subscription
 	 * @param usagePointId Unique identifier for the usage point
@@ -380,18 +385,18 @@ public class MeterReadingRESTController {
 	 * @throws IOException if output stream cannot be written
 	 * @throws FeedException if ATOM feed generation fails
 	 */
-	@GetMapping(value = "/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/MeterReading", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
+	@GetMapping(value = "/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/ElectricPowerQualitySummary", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
-		summary = "Get MeterReadingEntitys by SubscriptionEntity and UsagePointEntity",
-		description = "Retrieves all MeterReadingEntity resources associated with a specific subscription and usage point. " +
+		summary = "Get ElectricPowerQualitySummaries by SubscriptionEntity Context",
+		description = "Retrieves all ElectricPowerQualitySummary resources associated with a specific subscription and usage point. " +
 					 "This provides filtered access based on the subscription's authorization scope."
 	)
 	@ApiResponses(value = {
 		@ApiResponse(
 			responseCode = "200", 
-			description = "Successfully retrieved subscription MeterReadingEntitys",
+			description = "Successfully retrieved subscription power quality summaries",
 			content = @Content(mediaType = MediaType.APPLICATION_ATOM_XML_VALUE, 
-							 schema = @Schema(description = "ATOM feed containing subscription-scoped MeterReadingEntity entries"))
+							 schema = @Schema(description = "ATOM feed containing subscription-scoped ElectricPowerQualitySummary entries"))
 		),
 		@ApiResponse(
 			responseCode = "400", 
@@ -406,7 +411,7 @@ public class MeterReadingRESTController {
 			description = "Subscription or UsagePointEntity not found"
 		)
 	})
-	public void getSubscriptionMeterReadings(
+	public void getSubscriptionElectricPowerQualitySummaries(
 			@Parameter(description = "Unique identifier of the subscription", required = true)
 			@PathVariable Long subscriptionId,
 			@Parameter(description = "Unique identifier of the usage point", required = true)
@@ -416,7 +421,7 @@ public class MeterReadingRESTController {
 			@RequestParam Map<String, String> params) throws IOException, FeedException {
 
 		// Verify request contains valid query parameters
-		if (!VerifyURLParams.verifyEntries("/espi/1_1/resource/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/MeterReading", params)) {
+		if (!VerifyURLParams.verifyEntries("/espi/1_1/resource/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/ElectricPowerQualitySummary", params)) {
 			response.sendError(HttpServletResponse.SC_BAD_REQUEST, 
 							 "Request contains invalid query parameter values!");
 			return;
@@ -428,76 +433,86 @@ public class MeterReadingRESTController {
 			Long retailCustomerId = subscriptionService.findRetailCustomerId(
 					subscriptionId, usagePointId);
 
-			exportService.exportMeterReadings(subscriptionId, retailCustomerId,
-					usagePointId, response.getOutputStream(), new ExportFilter(params));
+			exportService.exportElectricPowerQualitySummarys(subscriptionId,
+					retailCustomerId, usagePointId, response.getOutputStream(),
+					params);
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 		}
 	}
 
 	/**
-	 * Retrieves a specific MeterReadingEntity within a subscription and usage point context.
+	 * Retrieves a specific ElectricPowerQualitySummary within a subscription context.
 	 * 
 	 * @param subscriptionId Unique identifier for the subscription
 	 * @param usagePointId Unique identifier for the usage point
-	 * @param meterReadingId Unique identifier for the MeterReadingEntity
+	 * @param electricPowerQualitySummaryId Unique identifier for the ElectricPowerQualitySummary
 	 * @param response HTTP response for streaming ATOM XML content
 	 * @param params Query parameters for export filtering
 	 * @throws IOException if output stream cannot be written
 	 * @throws FeedException if ATOM entry generation fails
 	 */
-	@GetMapping(value = "/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/MeterReading/{meterReadingId}", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
+	@GetMapping(value = "/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/ElectricPowerQualitySummary/{electricPowerQualitySummaryId}", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
-		summary = "Get SubscriptionEntity MeterReadingEntity by ID",
-		description = "Retrieves a specific MeterReadingEntity resource within a subscription and usage point context. " +
+		summary = "Get SubscriptionEntity ElectricPowerQualitySummary by ID",
+		description = "Retrieves a specific ElectricPowerQualitySummary resource within a subscription context. " +
 					 "This provides access control based on the subscription's authorization scope."
 	)
 	@ApiResponses(value = {
 		@ApiResponse(
 			responseCode = "200", 
-			description = "Successfully retrieved subscription MeterReadingEntity",
+			description = "Successfully retrieved subscription power quality summary",
 			content = @Content(mediaType = MediaType.APPLICATION_ATOM_XML_VALUE,
-							 schema = @Schema(description = "ATOM entry containing subscription-scoped MeterReadingEntity details"))
+							 schema = @Schema(description = "ATOM entry containing subscription-scoped ElectricPowerQualitySummary details"))
 		),
 		@ApiResponse(
 			responseCode = "400", 
-			description = "Invalid subscriptionId, usagePointId, meterReadingId, or query parameters"
+			description = "Invalid subscriptionId, usagePointId, electricPowerQualitySummaryId, or query parameters"
 		),
 		@ApiResponse(
 			responseCode = "401", 
-			description = "Unauthorized access to this subscription or MeterReadingEntity"
+			description = "Unauthorized access to this subscription or power quality data"
 		),
 		@ApiResponse(
 			responseCode = "404", 
-			description = "Subscription, UsagePointEntity, or MeterReadingEntity not found"
+			description = "Subscription, UsagePointEntity, or ElectricPowerQualitySummary not found"
 		)
 	})
-	public void getSubscriptionMeterReading(
+	public void getSubscriptionElectricPowerQualitySummary(
 			@Parameter(description = "Unique identifier of the subscription", required = true)
 			@PathVariable Long subscriptionId,
 			@Parameter(description = "Unique identifier of the usage point", required = true)
 			@PathVariable Long usagePointId,
-			@Parameter(description = "Unique identifier of the MeterReadingEntity", required = true)
-			@PathVariable Long meterReadingId,
+			@Parameter(description = "Unique identifier of the ElectricPowerQualitySummary", required = true)
+			@PathVariable Long electricPowerQualitySummaryId,
 			HttpServletResponse response,
 			@Parameter(description = "Query parameters for export filtering")
 			@RequestParam Map<String, String> params) throws IOException, FeedException {
+
+		// Verify request contains valid query parameters
+		if (!VerifyURLParams.verifyEntries("/espi/1_1/resource/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/ElectricPowerQualitySummary/{electricPowerQualitySummaryId}", params)) {
+			response.sendError(HttpServletResponse.SC_BAD_REQUEST, 
+							 "Request contains invalid query parameter values!");
+			return;
+		}
 
 		response.setContentType(MediaType.APPLICATION_ATOM_XML_VALUE);
 		
 		try {
 			Long retailCustomerId = subscriptionService.findRetailCustomerId(
 					subscriptionId, usagePointId);
-			exportService.exportMeterReading(subscriptionId, retailCustomerId,
-					usagePointId, meterReadingId, response.getOutputStream(),
-					new ExportFilter(params));
+
+			exportService.exportElectricPowerQualitySummary(subscriptionId,
+					retailCustomerId, usagePointId,
+					electricPowerQualitySummaryId, response.getOutputStream(),
+					params);
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 		}
 	}
 
 	/**
-	 * Creates a new MeterReadingEntity resource within a subscription and usage point context.
+	 * Creates a new ElectricPowerQualitySummary resource within a subscription context.
 	 * 
 	 * @param subscriptionId Unique identifier for the subscription
 	 * @param usagePointId Unique identifier for the usage point
@@ -506,35 +521,35 @@ public class MeterReadingRESTController {
 	 * @param stream Input stream containing ATOM XML data
 	 * @throws IOException if input/output stream operations fail
 	 */
-	@PostMapping(value = "/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/MeterReading", 
+	@PostMapping(value = "/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/ElectricPowerQualitySummary", 
 				consumes = MediaType.APPLICATION_ATOM_XML_VALUE, 
 				produces = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
-		summary = "Create SubscriptionEntity MeterReadingEntity",
-		description = "Creates a new MeterReadingEntity resource within a subscription and usage point context. " +
-					 "The request body should contain an ATOM entry with MeterReadingEntity details."
+		summary = "Create SubscriptionEntity ElectricPowerQualitySummary",
+		description = "Creates a new ElectricPowerQualitySummary resource within a subscription context. " +
+					 "The request body should contain an ATOM entry with power quality measurement details."
 	)
 	@ApiResponses(value = {
 		@ApiResponse(
 			responseCode = "201", 
-			description = "Successfully created MeterReadingEntity",
+			description = "Successfully created ElectricPowerQualitySummary",
 			content = @Content(mediaType = MediaType.APPLICATION_ATOM_XML_VALUE,
-							 schema = @Schema(description = "ATOM entry containing the created MeterReadingEntity"))
+							 schema = @Schema(description = "ATOM entry containing the created ElectricPowerQualitySummary"))
 		),
 		@ApiResponse(
 			responseCode = "400", 
-			description = "Invalid ATOM XML format, MeterReadingEntity data, or context"
+			description = "Invalid ATOM XML format, ElectricPowerQualitySummary data, or context"
 		),
 		@ApiResponse(
 			responseCode = "401", 
-			description = "Unauthorized to create MeterReadingEntitys in this context"
+			description = "Unauthorized to create power quality data in this context"
 		),
 		@ApiResponse(
 			responseCode = "404", 
 			description = "Subscription or UsagePointEntity not found"
 		)
 	})
-	public void createSubscriptionMeterReading(
+	public void createSubscriptionElectricPowerQualitySummary(
 			@Parameter(description = "Unique identifier of the subscription", required = true)
 			@PathVariable Long subscriptionId,
 			@Parameter(description = "Unique identifier of the usage point", required = true)
@@ -542,7 +557,7 @@ public class MeterReadingRESTController {
 			HttpServletResponse response,
 			@Parameter(description = "Query parameters for export filtering")
 			@RequestParam Map<String, String> params, 
-			@Parameter(description = "ATOM XML containing MeterReadingEntity data", required = true)
+			@Parameter(description = "ATOM XML containing ElectricPowerQualitySummary data", required = true)
 			@RequestBody InputStream stream) throws IOException {
 
 		response.setContentType(MediaType.APPLICATION_ATOM_XML_VALUE);
@@ -554,11 +569,16 @@ public class MeterReadingRESTController {
 			if (null != resourceService.findIdByXPath(retailCustomerId,
 					usagePointId, UsagePointEntity.class)) {
 				
-				MeterReading meterReading = meterReadingService.importResource(stream);
-
-				exportService.exportMeterReading(subscriptionId,
-						retailCustomerId, usagePointId, meterReading.getId(),
-						response.getOutputStream(), new ExportFilter(params));
+				UsagePoint usagePoint = usagePointService.findById(usagePointId);
+				ElectricPowerQualitySummary electricPowerQualitySummary = 
+						electricPowerQualitySummaryService.importResource(stream);
+				electricPowerQualitySummaryService.associateByUUID(usagePoint,
+						electricPowerQualitySummary.getUUID());
+				
+				exportService.exportElectricPowerQualitySummary(subscriptionId,
+						retailCustomerId, usagePointId,
+						electricPowerQualitySummary.getId(),
+						response.getOutputStream(), params);
 						
 				response.setStatus(HttpServletResponse.SC_CREATED);
 			} else {
@@ -570,63 +590,62 @@ public class MeterReadingRESTController {
 	}
 
 	/**
-	 * Updates an existing MeterReadingEntity resource within a subscription and usage point context.
+	 * Updates an existing ElectricPowerQualitySummary resource within a subscription context.
 	 * 
 	 * @param subscriptionId Unique identifier for the subscription
 	 * @param usagePointId Unique identifier for the usage point
-	 * @param meterReadingId Unique identifier for the MeterReadingEntity to update
+	 * @param electricPowerQualitySummaryId Unique identifier for the ElectricPowerQualitySummary to update
 	 * @param response HTTP response for returning updated resource
 	 * @param params Query parameters for export filtering
 	 * @param stream Input stream containing updated ATOM XML data
+	 * @throws IOException if input/output stream operations fail
+	 * @throws FeedException if ATOM processing fails
 	 */
-	@PutMapping(value = "/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/MeterReading/{meterReadingId}", 
+	@PutMapping(value = "/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/ElectricPowerQualitySummary/{electricPowerQualitySummaryId}", 
 			   consumes = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
-		summary = "Update SubscriptionEntity MeterReadingEntity",
-		description = "Updates an existing MeterReadingEntity resource within a subscription and usage point context. " +
-					 "The request body should contain an ATOM entry with updated MeterReadingEntity details."
+		summary = "Update SubscriptionEntity ElectricPowerQualitySummary",
+		description = "Updates an existing ElectricPowerQualitySummary resource within a subscription context. " +
+					 "The request body should contain an ATOM entry with updated power quality measurement details."
 	)
 	@ApiResponses(value = {
 		@ApiResponse(
 			responseCode = "200", 
-			description = "Successfully updated MeterReadingEntity"
+			description = "Successfully updated ElectricPowerQualitySummary"
 		),
 		@ApiResponse(
 			responseCode = "400", 
-			description = "Invalid ATOM XML format or MeterReadingEntity data"
+			description = "Invalid ATOM XML format or ElectricPowerQualitySummary data"
 		),
 		@ApiResponse(
 			responseCode = "401", 
-			description = "Unauthorized to update this MeterReadingEntity"
+			description = "Unauthorized to update this power quality data"
 		),
 		@ApiResponse(
 			responseCode = "404", 
-			description = "Subscription, UsagePointEntity, or MeterReadingEntity not found"
+			description = "Subscription, UsagePointEntity, or ElectricPowerQualitySummary not found"
 		)
 	})
-	public void updateSubscriptionMeterReading(
+	public void updateSubscriptionElectricPowerQualitySummary(
 			@Parameter(description = "Unique identifier of the subscription", required = true)
 			@PathVariable Long subscriptionId,
 			@Parameter(description = "Unique identifier of the usage point", required = true)
 			@PathVariable Long usagePointId,
-			@Parameter(description = "Unique identifier of the MeterReadingEntity to update", required = true)
-			@PathVariable Long meterReadingId,
+			@Parameter(description = "Unique identifier of the ElectricPowerQualitySummary to update", required = true)
+			@PathVariable Long electricPowerQualitySummaryId,
 			HttpServletResponse response,
 			@Parameter(description = "Query parameters for export filtering")
 			@RequestParam Map<String, String> params, 
-			@Parameter(description = "ATOM XML containing updated MeterReadingEntity data", required = true)
-			@RequestBody InputStream stream) {
+			@Parameter(description = "ATOM XML containing updated ElectricPowerQualitySummary data", required = true)
+			@RequestBody InputStream stream) throws IOException, FeedException {
 
-		response.setContentType(MediaType.APPLICATION_ATOM_XML_VALUE);
-		
 		try {
-			Long retailCustomerId = subscriptionService.findRetailCustomerId(
-					subscriptionId, usagePointId);
+			ElectricPowerQualitySummary electricPowerQualitySummary = resourceService
+					.findById(electricPowerQualitySummaryId, ElectricPowerQualitySummary.class);
 
-			if (null != resourceService.findIdByXPath(retailCustomerId,
-					usagePointId, meterReadingId, MeterReadingEntity.class)) {
-				
-				meterReadingService.importResource(stream);
+			if (electricPowerQualitySummary != null) {
+				electricPowerQualitySummary.merge(electricPowerQualitySummaryService.importResource(stream));
+				resourceService.merge(electricPowerQualitySummary);
 				response.setStatus(HttpServletResponse.SC_OK);
 			} else {
 				response.setStatus(HttpServletResponse.SC_NOT_FOUND);
@@ -637,40 +656,40 @@ public class MeterReadingRESTController {
 	}
 
 	/**
-	 * Deletes a MeterReadingEntity resource within a subscription and usage point context.
+	 * Deletes an ElectricPowerQualitySummary resource within a subscription context.
 	 * 
 	 * @param subscriptionId Unique identifier for the subscription
 	 * @param usagePointId Unique identifier for the usage point
-	 * @param meterReadingId Unique identifier for the MeterReadingEntity to delete
+	 * @param electricPowerQualitySummaryId Unique identifier for the ElectricPowerQualitySummary to delete
 	 * @param response HTTP response
 	 */
-	@DeleteMapping("/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/MeterReading/{meterReadingId}")
+	@DeleteMapping("/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/ElectricPowerQualitySummary/{electricPowerQualitySummaryId}")
 	@Operation(
-		summary = "Delete SubscriptionEntity MeterReadingEntity", 
-		description = "Removes a MeterReadingEntity resource within a subscription and usage point context. " +
-					 "This will also remove all associated interval blocks and reading data."
+		summary = "Delete SubscriptionEntity ElectricPowerQualitySummary", 
+		description = "Removes an ElectricPowerQualitySummary resource within a subscription context. " +
+					 "This will delete the power quality measurement data for the specified period."
 	)
 	@ApiResponses(value = {
 		@ApiResponse(
 			responseCode = "200", 
-			description = "Successfully deleted MeterReadingEntity"
+			description = "Successfully deleted ElectricPowerQualitySummary"
 		),
 		@ApiResponse(
 			responseCode = "401", 
-			description = "Unauthorized to delete this MeterReadingEntity"
+			description = "Unauthorized to delete this power quality data"
 		),
 		@ApiResponse(
 			responseCode = "404", 
-			description = "Subscription, UsagePointEntity, or MeterReadingEntity not found"
+			description = "Subscription, UsagePointEntity, or ElectricPowerQualitySummary not found"
 		)
 	})
-	public void deleteSubscriptionMeterReading(
+	public void deleteSubscriptionElectricPowerQualitySummary(
 			@Parameter(description = "Unique identifier of the subscription", required = true)
 			@PathVariable Long subscriptionId,
 			@Parameter(description = "Unique identifier of the usage point", required = true)
 			@PathVariable Long usagePointId,
-			@Parameter(description = "Unique identifier of the MeterReadingEntity to delete", required = true)
-			@PathVariable Long meterReadingId,
+			@Parameter(description = "Unique identifier of the ElectricPowerQualitySummary to delete", required = true)
+			@PathVariable Long electricPowerQualitySummaryId,
 			HttpServletResponse response) {
 
 		try {
@@ -678,7 +697,8 @@ public class MeterReadingRESTController {
 					subscriptionId, usagePointId);
 
 			resourceService.deleteByXPathId(retailCustomerId, usagePointId,
-					meterReadingId, MeterReadingEntity.class);
+					electricPowerQualitySummaryId,
+					ElectricPowerQualitySummary.class);
 					
 			response.setStatus(HttpServletResponse.SC_OK);
 		} catch (Exception e) {

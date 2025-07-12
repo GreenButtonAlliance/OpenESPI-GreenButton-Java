@@ -30,8 +30,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.greenbuttonalliance.espi.common.domain.usage.ReadingTypeEntity;
 import org.greenbuttonalliance.espi.common.service.DtoExportService;
 import org.greenbuttonalliance.espi.common.service.ReadingTypeService;
-import org.greenbuttonalliance.espi.common.service.ResourceRepository;
-import org.greenbuttonalliance.espi.common.utils.ExportFilter;
+import org.greenbuttonalliance.espi.common.repositories.usage.ResourceRepository;
 import org.greenbuttonalliance.espi.datacustodian.utils.VerifyURLParams;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -51,8 +50,9 @@ import java.util.Map;
  * energy produced, voltage, current) and includes metadata about units of measure, 
  * measurement kind, phase, and accumulation behavior.
  */
-@RestController
-@RequestMapping("/espi/1_1/resource")
+// @RestController - COMMENTED OUT: Legacy controller disabled for simplification
+// @Component
+// @RequestMapping - DISABLED("/espi/1_1/resource")
 @Tag(name = "Reading Type", description = "Smart Meter Reading Type Metadata Management API")
 public class ReadingTypeRESTController {
 
@@ -123,7 +123,7 @@ public class ReadingTypeRESTController {
 		
 		try {
 			exportService.exportReadingTypes(response.getOutputStream(),
-					new ExportFilter(params));
+					params);
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 		}
@@ -179,7 +179,7 @@ public class ReadingTypeRESTController {
 		
 		try {
 			exportService.exportReadingType(readingTypeId,
-					response.getOutputStream(), new ExportFilter(params));
+					response.getOutputStream(), params);
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 		}
@@ -226,7 +226,7 @@ public class ReadingTypeRESTController {
 		try {
 			ReadingTypeEntity readingType = this.readingTypeService.importResource(stream);
 			exportService.exportReadingType(readingType.getId(),
-					response.getOutputStream(), new ExportFilter(params));
+					response.getOutputStream(), params);
 			response.setStatus(HttpServletResponse.SC_CREATED);
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);

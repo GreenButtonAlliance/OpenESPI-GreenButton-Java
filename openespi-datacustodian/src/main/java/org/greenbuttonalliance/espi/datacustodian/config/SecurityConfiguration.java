@@ -191,15 +191,12 @@ public class SecurityConfiguration {
             
             // Security headers configuration
             .headers(headers -> headers
-                .frameOptions().deny()
-                .contentTypeOptions().and()
+                .frameOptions(frameOptions -> frameOptions.sameOrigin()) // Allow H2 console in development
+                .contentTypeOptions(contentTypeOptions -> contentTypeOptions.and())
                 .httpStrictTransportSecurity(hstsConfig -> hstsConfig
                     .maxAgeInSeconds(31536000)
-                    .includeSubdomains(true)
+                    .includeSubDomains(true)
                     .preload(true))
-                .and()
-                // Allow H2 console in development only
-                .frameOptions().sameOrigin()
             )
             
             .build();

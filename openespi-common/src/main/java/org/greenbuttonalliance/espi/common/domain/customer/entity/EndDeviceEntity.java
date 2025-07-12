@@ -47,6 +47,7 @@ import java.math.BigDecimal;
 @Table(name = "end_devices", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"id"})
 })
+@Inheritance(strategy = InheritanceType.JOINED)
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor

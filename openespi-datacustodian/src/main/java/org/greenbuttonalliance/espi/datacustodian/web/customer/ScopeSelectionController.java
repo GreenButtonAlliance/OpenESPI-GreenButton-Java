@@ -21,7 +21,7 @@
 package org.greenbuttonalliance.espi.datacustodian.web.customer;
 
 import org.greenbuttonalliance.espi.common.domain.usage.ApplicationInformationEntity;
-import org.greenbuttonalliance.espi.common.domain.usage.Routes;
+// import org.greenbuttonalliance.espi.common.domain.usage.Routes; // Missing class
 import org.greenbuttonalliance.espi.common.repositories.usage.ApplicationInformationEntityRepository;
 import org.greenbuttonalliance.espi.datacustodian.web.BaseController;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,8 +36,9 @@ import jakarta.servlet.http.HttpServletRequest;
 
 import static org.greenbuttonalliance.espi.datacustodian.utils.URLHelper.newScopeParams;
 
-@Controller
-@PreAuthorize("hasRole('ROLE_USER')")
+// @Controller - COMMENTED OUT: OAuth2 flows handled by openespi-thirdparty
+// @PreAuthorize("hasRole('ROLE_USER')")
+// @Component
 public class ScopeSelectionController extends BaseController {
 
 	@Autowired
@@ -48,7 +49,7 @@ public class ScopeSelectionController extends BaseController {
 	public void handleGenericException() {
 	}
 
-	@RequestMapping(value = Routes.DATA_CUSTODIAN_SCOPE_SELECTION_SCREEN, method = RequestMethod.GET)
+	@RequestMapping(value = "/custodian/scope_selection", method = RequestMethod.GET)
 	public String scopeSelection(HttpServletRequest request, String[] scopes,
 			@RequestParam("ThirdPartyID") String thirdPartyClientId)
 			throws Exception {

@@ -33,9 +33,6 @@ import jakarta.persistence.*;
  * Used for measuring consumption and detection of events.
  */
 @Entity
-@Table(name = "meters", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"id"})
-})
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor

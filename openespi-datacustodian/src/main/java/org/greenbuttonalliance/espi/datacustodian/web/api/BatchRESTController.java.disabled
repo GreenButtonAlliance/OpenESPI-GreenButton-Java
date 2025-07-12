@@ -24,7 +24,7 @@ import org.greenbuttonalliance.espi.common.domain.usage.ApplicationInformationEn
 import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.greenbuttonalliance.espi.common.service.*;
-import org.greenbuttonalliance.espi.common.utils.ExportFilter;
+import org.greenbuttonalliance.espi.common.repositories.usage.*;
 import org.greenbuttonalliance.espi.datacustodian.utils.VerifyURLParams;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -46,30 +46,34 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-@RestController
-@RequestMapping("/espi/1_1/resource")
-@Tag(name = "Batch Operations", description = "Green Button Bulk Data Processing API")
+// TODO: Re-enable after implementing missing services (ImportService, NotificationService)
+// @RestController
+// @RequestMapping("/espi/1_1/resource")
+// @Tag(name = "Batch Operations", description = "Green Button Bulk Data Processing API")
+// COMMENTED OUT: Complex batch operations not needed for basic OAuth2 resource server functionality
+// @Component
 public class BatchRESTController {
 
-	private final ImportService importService;
-	private final ResourceRepository resourceService;
+	// TODO: Implement these services in openespi-common
+	// private final ImportService importService;
+	// private final ResourceRepository resourceService;
 	private final AuthorizationService authorizationService;
-	private final NotificationService notificationService;
+	// private final NotificationService notificationService;
 	private final RetailCustomerService retailCustomerService;
 	private final DtoExportService exportService;
 
 	@Autowired
 	public BatchRESTController(
-			ImportService importService,
-			ResourceRepository resourceService,
+			// ImportService importService,
+			// ResourceRepository resourceService,
 			AuthorizationService authorizationService,
-			NotificationService notificationService,
+			// NotificationService notificationService,
 			RetailCustomerService retailCustomerService,
 			DtoExportService exportService) {
-		this.importService = importService;
-		this.resourceService = resourceService;
+		// this.importService = importService;
+		// this.resourceService = resourceService;
 		this.authorizationService = authorizationService;
-		this.notificationService = notificationService;
+		// this.notificationService = notificationService;
 		this.retailCustomerService = retailCustomerService;
 		this.exportService = exportService;
 	}
@@ -125,14 +129,16 @@ public class BatchRESTController {
 			var retailCustomer = retailCustomerService
 					.findById(retailCustomerId);
 
-			importService.importData(stream, retailCustomerId);
+			// TODO: Implement ImportService
+			// importService.importData(stream, retailCustomerId);
+			throw new UnsupportedOperationException("ImportService not yet implemented");
 
 			// do any notifications
 
-			// NotificationService expects legacy entities
-			notificationService.notify(retailCustomer,
-					importService.getMinUpdated(),
-					importService.getMaxUpdated());
+			// TODO: Implement NotificationService
+			// notificationService.notify(retailCustomer,
+			//		importService.getMinUpdated(),
+			//		importService.getMaxUpdated());
 
 		} catch (Exception e) {
 			System.out.printf("**** Batch Import Error: %s\n", e.toString());
@@ -193,9 +199,8 @@ public class BatchRESTController {
 				"attachment; filename=GreenButtonDownload.xml");
 		try {
 			// TODO -- need authorization hook
-			exportService.exportUsagePointsFull(0L, retailCustomerId,
-					response.getOutputStream(), new ExportFilter(params));
-
+			// exportService.export(...); // TODO: Implement
+			response.setStatus(HttpServletResponse.SC_NOT_IMPLEMENTED);
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 		}
@@ -259,11 +264,8 @@ public class BatchRESTController {
 		response.addHeader("Content-Disposition",
 				"attachment; filename=GreenButtonDownload.xml");
 		try {
-
-			exportService.exportUsagePointFull(0L, retailCustomerId,
-					usagePointId, response.getOutputStream(), new ExportFilter(
-							params));
-
+			// exportService.export(...); // TODO: Implement
+			response.setStatus(HttpServletResponse.SC_NOT_IMPLEMENTED);
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 		}
@@ -325,9 +327,8 @@ public class BatchRESTController {
 		response.addHeader("Content-Disposition",
 				"attachment; filename=GreenButtonDownload.xml");
 		try {
-			exportService.exportBatchSubscription(subscriptionId,
-					response.getOutputStream(), new ExportFilter(params));
-
+			// exportService.export(...); // TODO: Implement
+			response.setStatus(HttpServletResponse.SC_NOT_IMPLEMENTED);
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 		}
@@ -389,9 +390,8 @@ public class BatchRESTController {
 		response.addHeader("Content-Disposition",
 				"attachment; filename=GreenButtonDownload.xml");
 		try {
-			exportService.exportBatchSubscriptionUsagePoint(subscriptionId,
-					response.getOutputStream(), new ExportFilter(params));
-
+			// exportService.export(...); // TODO: Implement
+			response.setStatus(HttpServletResponse.SC_NOT_IMPLEMENTED);
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 		}
@@ -459,10 +459,8 @@ public class BatchRESTController {
 		response.addHeader("Content-Disposition",
 				"attachment; filename=GreenButtonDownload.xml");
 		try {
-			exportService.exportBatchSubscriptionUsagePoint(subscriptionId,
-					usagePointId, response.getOutputStream(), new ExportFilter(
-							params));
-
+			// exportService.export(...); // TODO: Implement
+			response.setStatus(HttpServletResponse.SC_NOT_IMPLEMENTED);
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 		}
@@ -529,9 +527,9 @@ public class BatchRESTController {
 		//
 		if (isSFTP(request)) {
 			if (isInCache(request, bulkId)) {
-				// make sure the sftpd is running
-				// send back a 302 and queue up a notification
-				// to initiate the SFTP (may want to log this)
+				// TODO: Implement SFTP notification
+				response.setStatus(HttpServletResponse.SC_ACCEPTED);
+				return;
 			} else {
 				// build the file stream
 				// in parallel
@@ -545,10 +543,8 @@ public class BatchRESTController {
 
 				try {
 					try {
-						exportService.exportBatchBulk(bulkId,
-								getAuthorizationThirdParty(request),
-								fileOutputStream, new ExportFilter(params));
-
+						// exportService.export(...); // TODO: Implement
+						response.setStatus(HttpServletResponse.SC_NOT_IMPLEMENTED);
 					} catch (Exception e) {
 						response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 					}
@@ -578,10 +574,8 @@ public class BatchRESTController {
 					"attachment; filename=GreenButtonDownload.xml");
 
 			try {
-				exportService.exportBatchBulk(bulkId,
-						getAuthorizationThirdParty(request),
-						response.getOutputStream(), new ExportFilter(params));
-
+				// exportService.export(...); // TODO: Implement
+				response.setStatus(HttpServletResponse.SC_NOT_IMPLEMENTED);
 			} catch (Exception e) {
 				response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 			}

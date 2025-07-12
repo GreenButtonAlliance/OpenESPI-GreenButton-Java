@@ -17,7 +17,26 @@
       "Bash(mkdir:*)",
       "Bash(mv:*)",
       "Bash(./mvnw clean:*)",
-      "Bash(java:*)"
+      "Bash(java:*)",
+      "Bash(./mvnw compile:*)",
+      "Bash(for controller in CustomerHomeController CustomerDownloadMyDataController MeterReadingController ThirdPartyController UsagePointController)",
+      "Bash(do)",
+      "Bash(file=\"src/main/java/org/greenbuttonalliance/espi/datacustodian/web/customer/$controller.java\")",
+      "Bash(if [ -f \"$file\" ])",
+      "Bash(then)",
+      "Bash(echo:*)",
+      "Bash(fi)",
+      "Bash(done)",
+      "Bash(SPRING_PROFILES_ACTIVE=local mvn spring-boot:run -Dspring-boot.run.jvmArguments=\"-Xmx512m\" -q)",
+      "Bash(for file in *RESTController.java)",
+      "Bash(do mv \"$file\" \"$file.disabled\")",
+      "Bash(true)",
+      "Bash(SPRING_PROFILES_ACTIVE=local mvn spring-boot:run -Dmaven.test.skip=true -Dspring-boot.run.jvmArguments=\"-Xmx512m\" -q)",
+      "Bash(SPRING_PROFILES_ACTIVE=local java -Xmx512m -jar target/OpenESPI-DataCustodian-*.jar)",
+      "Bash(SPRING_PROFILES_ACTIVE=local java -Xmx512m -jar target/OpenESPI-DataCustodian.jar)",
+      "Bash(SPRING_PROFILES_ACTIVE=local java -Xmx512m -Dlogging.config=classpath:logback-spring.xml -jar target/OpenESPI-DataCustodian.jar)",
+      "Bash(timeout 30 mvn spring-boot:run:*)",
+      "Bash(timeout 20 mvn spring-boot:run:*)"
     ],
     "deny": []
   }

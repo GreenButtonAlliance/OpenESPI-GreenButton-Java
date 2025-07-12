@@ -23,10 +23,10 @@ package org.greenbuttonalliance.espi.datacustodian.web.api;
 import com.sun.syndication.io.FeedException;
 import org.greenbuttonalliance.espi.common.domain.usage.ApplicationInformationEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
-import org.greenbuttonalliance.espi.common.domain.usage.atom.DateTimeType;
+// import org.greenbuttonalliance.espi.common.domain.usage.atom.DateTimeType; // Missing class
 import org.greenbuttonalliance.espi.common.service.AuthorizationService;
-import org.greenbuttonalliance.espi.common.service.ResourceRepository;
-import org.greenbuttonalliance.espi.common.utils.DateConverter;
+import org.greenbuttonalliance.espi.common.repositories.usage.ResourceRepository;
+// import org.greenbuttonalliance.espi.common.utils.DateConverter; // Missing class
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
@@ -46,8 +46,9 @@ import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 
-@RestController
-@RequestMapping("/espi/1_1/resource")
+// @RestController - COMMENTED OUT: Service status not essential for basic OAuth2 resource server 
+// @RequestMapping("/espi/1_1/resource")
+// @Component
 @Tag(name = "Service Status", description = "System Service Status Information API")
 public class ServiceStatusRESTController {
 

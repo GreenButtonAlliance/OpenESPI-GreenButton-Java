@@ -33,7 +33,7 @@ import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.SubscriptionEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
 import org.greenbuttonalliance.espi.common.service.*;
-import org.greenbuttonalliance.espi.common.utils.ExportFilter;
+import org.greenbuttonalliance.espi.common.repositories.usage.*;
 import org.greenbuttonalliance.espi.datacustodian.utils.VerifyURLParams;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -54,8 +54,9 @@ import java.util.Map;
  * including totals for consumption, production, and billing determinant values.
  * Supports electricity, water, natural gas, and other utility commodities.
  */
-@RestController
-@RequestMapping("/espi/1_1/resource")
+// @RestController - COMMENTED OUT: Legacy controller disabled for simplification
+// @Component
+// @RequestMapping - DISABLED("/espi/1_1/resource")
 @Tag(name = "Usage Summary", description = "Multi-Commodity Usage Summary Data Management API")
 public class UsageSummaryRESTController {
 
@@ -141,7 +142,7 @@ public class UsageSummaryRESTController {
 		
 		try {
 			exportService.exportUsageSummarys_Root(subscriptionId,
-					response.getOutputStream(), new ExportFilter(params));
+					response.getOutputStream(), params);
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 		}
@@ -205,7 +206,7 @@ public class UsageSummaryRESTController {
 		try {
 			exportService.exportUsageSummary_Root(subscriptionId,
 					electricPowerUsageSummaryId, response.getOutputStream(),
-					new ExportFilter(params));
+					params);
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 		}
@@ -261,7 +262,7 @@ public class UsageSummaryRESTController {
 					this.usageSummaryService.importResource(stream);
 			exportService.exportUsageSummary_Root(subscriptionId,
 					electricPowerUsageSummary.getId(),
-					response.getOutputStream(), new ExportFilter(params));
+					response.getOutputStream(), params);
 			response.setStatus(HttpServletResponse.SC_CREATED);
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
@@ -433,7 +434,7 @@ public class UsageSummaryRESTController {
 
 			exportService.exportUsageSummarys(subscriptionId,
 					retailCustomerId, usagePointId, response.getOutputStream(),
-					new ExportFilter(params));
+					params);
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 		}
@@ -496,7 +497,7 @@ public class UsageSummaryRESTController {
 			exportService.exportUsageSummary(subscriptionId,
 					retailCustomerId, usagePointId,
 					electricPowerUsageSummaryId, response.getOutputStream(),
-					new ExportFilter(params));
+					params);
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 		}
@@ -569,7 +570,7 @@ public class UsageSummaryRESTController {
 				exportService.exportUsageSummary(subscriptionId,
 						retailCustomerId, usagePointId,
 						electricPowerUsageSummary.getId(),
-						response.getOutputStream(), new ExportFilter(params));
+						response.getOutputStream(), params);
 						
 				response.setStatus(HttpServletResponse.SC_CREATED);
 			} else {

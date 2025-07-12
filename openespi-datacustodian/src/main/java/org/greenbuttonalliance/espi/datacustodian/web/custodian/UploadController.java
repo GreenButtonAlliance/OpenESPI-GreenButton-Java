@@ -20,9 +20,7 @@
 
 package org.greenbuttonalliance.espi.datacustodian.web.custodian;
 
-import org.greenbuttonalliance.espi.common.service.ImportService;
-import org.greenbuttonalliance.espi.common.service.NotificationService;
-import org.greenbuttonalliance.espi.common.service.UsagePointRepository;
+import org.greenbuttonalliance.espi.common.repositories.usage.UsagePointRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
@@ -36,18 +34,19 @@ import org.xml.sax.SAXException;
 import jakarta.xml.bind.JAXBException;
 import java.io.IOException;
 
-@Controller
+// @Controller - COMMENTED OUT: UI not needed in resource server
+// @Component
 @RequestMapping("/custodian/upload")
 public class UploadController {
 
-	@Autowired
-	private ImportService importService;
+	// @Autowired
+	// private ImportService importService; // TODO: Implement
 
 	@Autowired
 	private UsagePointRepository usagePointService;
 
-	@Autowired
-	private NotificationService notificationService;
+	// @Autowired
+	// private NotificationService notificationService; // TODO: Implement
 
 	@ModelAttribute("uploadForm")
 	public UploadForm uploadForm() {
@@ -64,17 +63,11 @@ public class UploadController {
 			BindingResult result) throws IOException, JAXBException {
 		
 		try {
-			
-			importService.importData(uploadForm.getFile().getInputStream(),
-					null);
-			return "redirect:/custodian/retailcustomers";
-			
-		} catch (SAXException e) {
-			
-			result.addError(new ObjectError("uploadForm",
-					e.getMessage()));
+			// TODO: Implement ImportService
+			// importService.importData(uploadForm.getFile().getInputStream(), null);
+			result.addError(new ObjectError("uploadForm", "Import functionality not yet implemented"));
 			return "/custodian/upload";
-				
+			
 		} catch (Exception e) {
 				
 			result.addError(new ObjectError("uploadForm",
@@ -83,13 +76,13 @@ public class UploadController {
 		} 
 	}
 
-	public void setImportService(ImportService importService) {
-		this.importService = importService;
-	}
+	// public void setImportService(ImportService importService) {
+	//	this.importService = importService;
+	// }
 
-	public ImportService getImportService() {
-		return this.importService;
-	}
+	// public ImportService getImportService() {
+	//	return this.importService;
+	// }
 
 	public void setUsagePointRepository(UsagePointRepository usagePointService) {
 		this.usagePointService = usagePointService;
@@ -99,12 +92,12 @@ public class UploadController {
 		return this.usagePointService;
 	}
 
-	public void setNotificationService(NotificationService notificationService) {
-		this.notificationService = notificationService;
-	}
+	// public void setNotificationService(NotificationService notificationService) {
+	//	this.notificationService = notificationService;
+	// }
 
-	public NotificationService getNotificationService() {
-		return this.notificationService;
-	}
+	// public NotificationService getNotificationService() {
+	//	return this.notificationService;
+	// }
 
 }

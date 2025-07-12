@@ -32,7 +32,7 @@ import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.SubscriptionEntity;
 import org.greenbuttonalliance.espi.common.service.*;
-import org.greenbuttonalliance.espi.common.utils.ExportFilter;
+import org.greenbuttonalliance.espi.common.repositories.usage.*;
 import org.greenbuttonalliance.espi.datacustodian.utils.VerifyURLParams;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -54,12 +54,13 @@ import java.util.UUID;
  * RetailCustomerEntity represents the end consumer of utility services who may be 
  * either a person or organization.
  */
-@RestController
-@RequestMapping("/espi/1_1/resource")
+// @RestController - COMMENTED OUT: Legacy controller disabled for simplification
+// @Component
+// @RequestMapping - DISABLED("/espi/1_1/resource")
 @Tag(name = "Retail Customer", description = "Utility Customer Account Management API")
 public class RetailCustomerRESTController {
 
-	private final ImportService importService;
+	// private final ImportService importService; // TODO: Implement
 	private final RetailCustomerService retailCustomerService;
 	private final UsagePointRepository usagePointService;
 	private final DtoExportService exportService;
@@ -67,12 +68,12 @@ public class RetailCustomerRESTController {
 
 	@Autowired
 	public RetailCustomerRESTController(
-			ImportService importService,
+			// ImportService importService,
 			RetailCustomerService retailCustomerService,
 			UsagePointRepository usagePointService,
 			DtoExportService exportService,
 			AuthorizationService authorizationService) {
-		this.importService = importService;
+		// this.importService = importService;
 		this.retailCustomerService = retailCustomerService;
 		this.usagePointService = usagePointService;
 		this.exportService = exportService;
@@ -138,7 +139,7 @@ public class RetailCustomerRESTController {
 		
 		try {
 			exportService.exportRetailCustomers(subscriptionId,
-					response.getOutputStream(), new ExportFilter(params));
+					response.getOutputStream(), params);
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 		}
@@ -201,7 +202,7 @@ public class RetailCustomerRESTController {
 		try {
 			exportService.exportRetailCustomer(subscriptionId,
 					retailCustomerId, response.getOutputStream(),
-					new ExportFilter(params));
+					params);
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 		}

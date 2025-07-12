@@ -23,7 +23,7 @@
 package org.greenbuttonalliance.espi.datacustodian.web.api;
 
 
-import org.greenbuttonalliance.espi.common.domain.usage.Routes;
+// import org.greenbuttonalliance.espi.common.domain.usage.Routes; // Missing class
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
@@ -44,7 +44,8 @@ import java.util.Map;
  * @author jat1
  *
  */
-@Controller
+// @Controller - COMMENTED OUT: Admin management not needed for basic OAuth2 resource server
+// @Component  
 public class ManageRESTController {
 
 	@ExceptionHandler(Exception.class)
@@ -66,7 +67,7 @@ public class ManageRESTController {
 	 * @throws IOException
 	 *            Exception thrown by failed or interrupted I/O operations.
 	 */
-	@RequestMapping(value = Routes.DATA_CUSTODIAN_MANAGE, method = RequestMethod.GET, produces = "text/plain")
+	@RequestMapping(value = "/espi/1_1/resource/DataCustodian/manage", method = RequestMethod.GET, produces = "text/plain")
 	@ResponseBody
 	public void doCommand(HttpServletResponse response,
 			@RequestParam Map<String, String> params, InputStream stream)

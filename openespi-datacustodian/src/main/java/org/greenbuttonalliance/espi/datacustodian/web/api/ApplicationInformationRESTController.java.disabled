@@ -46,8 +46,8 @@ import java.util.UUID;
  * 
  * This controller uses modern UUID-based ApplicationInformationEntity and repository patterns.
  */
-@RestController
-@RequestMapping("/espi/1_1/resource")
+// @RestController - DISABLED: Legacy controller with missing dependencies
+// @RequestMapping - DISABLED("/espi/1_1/resource")
 @Tag(name = "Application Information", description = "OAuth2 Application Registration and Management API")
 public class ApplicationInformationRESTController {
 

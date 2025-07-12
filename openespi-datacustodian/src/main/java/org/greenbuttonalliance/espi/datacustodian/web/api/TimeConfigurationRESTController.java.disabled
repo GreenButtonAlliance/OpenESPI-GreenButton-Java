@@ -23,7 +23,7 @@ package org.greenbuttonalliance.espi.datacustodian.web.api;
 import com.sun.syndication.io.FeedException;
 import org.greenbuttonalliance.espi.common.domain.usage.TimeConfigurationEntity;
 import org.greenbuttonalliance.espi.common.service.*;
-import org.greenbuttonalliance.espi.common.utils.ExportFilter;
+import org.greenbuttonalliance.espi.common.repositories.usage.*;
 import org.greenbuttonalliance.espi.datacustodian.utils.VerifyURLParams;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -45,12 +45,13 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
-@RestController
-@RequestMapping("/espi/1_1/resource")
+// @RestController - COMMENTED OUT: Legacy controller disabled for simplification
+// @Component
+// @RequestMapping - DISABLED("/espi/1_1/resource")
 @Tag(name = "Time Configuration", description = "Time Configuration Management API")
 public class TimeConfigurationRESTController {
 
-	private final TimeConfigurationService timeConfigurationService;
+	private final TimeConfigurationRepository timeConfigurationRepository;
 	private final RetailCustomerService retailCustomerService;
 	private final UsagePointRepository usagePointService;
 	private final DtoExportService exportService;
@@ -58,12 +59,12 @@ public class TimeConfigurationRESTController {
 
 	@Autowired
 	public TimeConfigurationRESTController(
-			TimeConfigurationService timeConfigurationService,
+			TimeConfigurationRepository timeConfigurationRepository,
 			RetailCustomerService retailCustomerService,
 			UsagePointRepository usagePointService,
 			DtoExportService exportService,
 			ResourceRepository resourceService) {
-		this.timeConfigurationService = timeConfigurationService;
+		this.timeConfigurationRepository = timeConfigurationRepository;
 		this.retailCustomerService = retailCustomerService;
 		this.usagePointService = usagePointService;
 		this.exportService = exportService;
@@ -100,7 +101,7 @@ public class TimeConfigurationRESTController {
 
 		response.setContentType(MediaType.APPLICATION_ATOM_XML_VALUE);
 		exportService.exportTimeConfigurations(response.getOutputStream(),
-				new ExportFilter(params));
+				params);
 	}
 
 	@GetMapping(value = "/TimeConfiguration/{timeConfigurationId}", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
@@ -130,7 +131,7 @@ public class TimeConfigurationRESTController {
 		response.setContentType(MediaType.APPLICATION_ATOM_XML_VALUE);
 		try {
 			exportService.exportTimeConfiguration(timeConfigurationId,
-					response.getOutputStream(), new ExportFilter(params));
+					response.getOutputStream(), params);
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 		}
@@ -154,7 +155,7 @@ public class TimeConfigurationRESTController {
 
 		response.setContentType(MediaType.APPLICATION_ATOM_XML_VALUE);
 		try {
-			TimeConfigurationEntity timeConfiguration = this.timeConfigurationService
+			TimeConfigurationEntity timeConfiguration = this.timeConfigurationRepository
 					.importResource(stream);
 			exportService.exportTimeConfiguration(timeConfiguration.getId(),
 					response.getOutputStream(), new ExportFilter(
@@ -184,7 +185,7 @@ public class TimeConfigurationRESTController {
 			@RequestParam Map<String, String> params, InputStream stream) {
 
 		try {
-			timeConfigurationService.importResource(stream);
+			timeConfigurationRepository.importResource(stream);
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 		}

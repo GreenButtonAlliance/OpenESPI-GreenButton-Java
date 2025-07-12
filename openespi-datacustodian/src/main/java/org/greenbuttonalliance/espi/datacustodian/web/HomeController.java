@@ -23,7 +23,8 @@ import org.greenbuttonalliance.espi.datacustodian.web.constants.Routes;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 
-@Controller
+// @Controller - COMMENTED OUT: UI not needed in resource server
+// @Component
 public class HomeController {
 
 	@GetMapping(Routes.ROOT)

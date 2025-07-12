@@ -19,7 +19,7 @@
 
 package org.greenbuttonalliance.espi.common.utils;
 
-import org.apache.xerces.util.DatatypeMessageFormatter;
+// Removed xerces dependency - using standard error messages
 
 import javax.xml.datatype.DatatypeConstants;
 import javax.xml.datatype.Duration;
@@ -419,8 +419,7 @@ class XMLGregorianCalendarImpl
                     // check for validity
                     if (!isValid()) {
                         throw new IllegalArgumentException(
-                                DatatypeMessageFormatter.formatMessage(null,"InvalidXGCRepresentation", new Object[]{lexicalRepresentation})
-                                //"\"" + lexicalRepresentation + "\" is not a valid representation of an XML Gregorian Calendar value."
+                                "\"" + lexicalRepresentation + "\" is not a valid representation of an XML Gregorian Calendar value."
                         );
                     }
                     save();
@@ -477,8 +476,7 @@ class XMLGregorianCalendarImpl
         // check for validity
         if (!isValid()) {
             throw new IllegalArgumentException(
-                    DatatypeMessageFormatter.formatMessage(null,"InvalidXGCRepresentation", new Object[]{lexicalRepresentation})
-                    //"\"" + lexicalRepresentation + "\" is not a valid representation of an XML Gregorian Calendar value."
+                    "\"" + lexicalRepresentation + "\" is not a valid representation of an XML Gregorian Calendar value."
             );
         }
         save();
@@ -545,11 +543,7 @@ class XMLGregorianCalendarImpl
         if (!isValid()) {
 
             throw new IllegalArgumentException(
-                    DatatypeMessageFormatter.formatMessage(null,
-                            "InvalidXGCValue-fractional",
-                            new Object[] { year, new Integer(month), new Integer(day),
-                                    new Integer(hour), new Integer(minute), new Integer(second),
-                                    fractionalSecond, new Integer(timezone)})
+                    "Invalid fractional value for XMLGregorianCalendar: " + fractionalSecond
             );
 
             /**
@@ -622,11 +616,7 @@ class XMLGregorianCalendarImpl
         if (!isValid()) {
 
             throw new IllegalArgumentException(
-                    DatatypeMessageFormatter.formatMessage(null,
-                            "InvalidXGCValue-milli",
-                            new Object[] { new Integer(year), new Integer(month), new Integer(day),
-                                    new Integer(hour), new Integer(minute), new Integer(second),
-                                    new Integer(millisecond), new Integer(timezone)})
+                    "Invalid millisecond value for XMLGregorianCalendar: " + millisecond
             );
             /*
                 throw new IllegalArgumentException(
@@ -1364,7 +1354,7 @@ class XMLGregorianCalendarImpl
              " field");
              */
             throw new IllegalArgumentException(
-                    DatatypeMessageFormatter.formatMessage(null, "InvalidFieldValue", new Object[]{ new Integer(value), FIELD_NAME[field]})
+                    "Invalid field value: " + value + " for " + FIELD_NAME[field] + " field"
             );
         }
     }
@@ -2021,7 +2011,7 @@ class XMLGregorianCalendarImpl
         throw new IllegalStateException(
                 this.getClass().getName()
                         + "#getXMLSchemaType() :"
-                        + DatatypeMessageFormatter.formatMessage(null, "InvalidXGCFields", null)
+                        + "Invalid XML Gregorian Calendar fields"
         );
     }
 
@@ -2812,8 +2802,7 @@ class XMLGregorianCalendarImpl
         if (fractional != null) {
             if ((fractional.compareTo(DECIMAL_ZERO) < 0) ||
                     (fractional.compareTo(DECIMAL_ONE) > 0)) {
-                throw new IllegalArgumentException(DatatypeMessageFormatter.formatMessage(null,
-                        "InvalidFractional", new Object[]{fractional}));
+                throw new IllegalArgumentException("Invalid fractional value: " + fractional);
             }
         }
         this.fractionalSecond = fractional;

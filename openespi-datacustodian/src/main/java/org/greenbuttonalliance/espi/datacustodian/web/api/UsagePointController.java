@@ -57,12 +57,12 @@ import java.util.UUID;
 @RequestMapping("/espi/1_1/resource")
 @Tag(name = "Usage Points", description = "ESPI Usage Point resource endpoints")
 @SecurityRequirement(name = "oauth2")
-public class UsagePointEntityController {
+public class UsagePointController {
 
     private final UsagePointRepository usagePointRepository;
-    private final UsagePointEntityMapper usagePointMapper;
+    private final UsagePointMapper usagePointMapper;
 
-    public UsagePointEntityController(UsagePointRepository usagePointRepository, UsagePointEntityMapper usagePointMapper) {
+    public UsagePointController(UsagePointRepository usagePointRepository, UsagePointMapper usagePointMapper) {
         this.usagePointRepository = usagePointRepository;
         this.usagePointMapper = usagePointMapper;
     }
@@ -77,7 +77,7 @@ public class UsagePointEntityController {
         description = "Retrieve all Usage Points accessible to the authenticated client",
         responses = {
             @ApiResponse(responseCode = "200", description = "Usage Points retrieved successfully",
-                content = @Content(schema = @Schema(implementation = UsagePointEntityDto.class))),
+                content = @Content(schema = @Schema(implementation = UsagePointDto.class))),
             @ApiResponse(responseCode = "401", description = "Unauthorized"),
             @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
         }
@@ -95,7 +95,9 @@ public class UsagePointEntityController {
         
         Pageable pageable = PageRequest.of(offset / limit, limit);
         List<UsagePointEntity> usagePointEntities = usagePointRepository.findAll(pageable).getContent();
-        List<UsagePointDto> usagePoints = usagePointMapper.toDto(usagePointEntities);
+        List<UsagePointDto> usagePoints = usagePointEntities.stream()
+            .map(usagePointMapper::toDto)
+            .toList();
         return ResponseEntity.ok(usagePoints);
     }
 
@@ -108,7 +110,7 @@ public class UsagePointEntityController {
         description = "Retrieve a specific Usage Point by its unique identifier",
         responses = {
             @ApiResponse(responseCode = "200", description = "Usage Point retrieved successfully",
-                content = @Content(schema = @Schema(implementation = UsagePointEntityDto.class))),
+                content = @Content(schema = @Schema(implementation = UsagePointDto.class))),
             @ApiResponse(responseCode = "404", description = "Usage Point not found"),
             @ApiResponse(responseCode = "401", description = "Unauthorized"),
             @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
@@ -138,7 +140,7 @@ public class UsagePointEntityController {
         description = "Retrieve all Usage Points associated with a specific subscription",
         responses = {
             @ApiResponse(responseCode = "200", description = "Usage Points retrieved successfully",
-                content = @Content(schema = @Schema(implementation = UsagePointEntityDto.class))),
+                content = @Content(schema = @Schema(implementation = UsagePointDto.class))),
             @ApiResponse(responseCode = "404", description = "Subscription not found"),
             @ApiResponse(responseCode = "401", description = "Unauthorized"),
             @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
@@ -160,7 +162,9 @@ public class UsagePointEntityController {
         // For now, return all usage points with pagination as a temporary solution
         Pageable pageable = PageRequest.of(offset / limit, limit);
         List<UsagePointEntity> usagePointEntities = usagePointRepository.findAll(pageable).getContent();
-        List<UsagePointDto> usagePoints = usagePointMapper.toDto(usagePointEntities);
+        List<UsagePointDto> usagePoints = usagePointEntities.stream()
+            .map(usagePointMapper::toDto)
+            .toList();
         return ResponseEntity.ok(usagePoints);
     }
 
@@ -173,7 +177,7 @@ public class UsagePointEntityController {
         description = "Retrieve a specific Usage Point associated with a subscription",
         responses = {
             @ApiResponse(responseCode = "200", description = "Usage Point retrieved successfully",
-                content = @Content(schema = @Schema(implementation = UsagePointEntityDto.class))),
+                content = @Content(schema = @Schema(implementation = UsagePointDto.class))),
             @ApiResponse(responseCode = "404", description = "Usage Point or SubscriptionEntity not found"),
             @ApiResponse(responseCode = "401", description = "Unauthorized"),
             @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")

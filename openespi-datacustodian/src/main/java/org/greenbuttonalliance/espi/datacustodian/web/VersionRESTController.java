@@ -33,7 +33,7 @@ import java.util.Map;
 import java.util.jar.Manifest;
 
 @Controller
-@RequestMapping
+// @RequestMapping - DISABLED
 public class VersionRESTController extends BaseController {
 
 	/**

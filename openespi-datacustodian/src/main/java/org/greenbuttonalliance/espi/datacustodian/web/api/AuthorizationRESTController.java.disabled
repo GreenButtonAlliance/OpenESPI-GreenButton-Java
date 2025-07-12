@@ -50,9 +50,10 @@ import java.util.Map;
  * AuthorizationEntity represents OAuth2 access permissions and tokens for 
  * third-party applications to access customer energy data.
  */
-@RestController
-@RequestMapping("/espi/1_1/resource")
-@Tag(name = "Authorization", description = "OAuth2 AuthorizationEntity and Access Token Management API")
+// @RestController - COMMENTED OUT: Replaced with modern AuthorizationController
+// @RequestMapping("/espi/1_1/resource")
+// @Tag(name = "Authorization", description = "OAuth2 AuthorizationEntity and Access Token Management API")
+// @Component
 public class AuthorizationRESTController {
 
 	private final AuthorizationService authorizationService;
@@ -131,16 +132,17 @@ public class AuthorizationRESTController {
 					"Bearer ", "");
 			AuthorizationEntity authorization = authorizationService.findByAccessToken(accessToken);
 
+			// TODO: Implement authorization export methods in DtoExportService
 			// Determine access scope: data_custodian_admin gets everything, 
 			// third-party clients get restricted scope
 			if (authorization.getApplicationInformation().getClientId()
 					.equals("data_custodian_admin")) {
-				dtoExportService.exportAuthorizations(response.getOutputStream(),
-						params);
+				// // dtoExportService.exportAuthorization(...); params);
+				response.setStatus(HttpServletResponse.SC_NOT_IMPLEMENTED);
 			} else {
 				// Third-party access with restricted scope
-				dtoExportService.exportAuthorizations(authorization,
-						response.getOutputStream(), params);
+				// // dtoExportService.exportAuthorization(...); params);
+				response.setStatus(HttpServletResponse.SC_NOT_IMPLEMENTED);
 			}
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
@@ -200,8 +202,8 @@ public class AuthorizationRESTController {
 		response.setContentType(MediaType.APPLICATION_ATOM_XML_VALUE);
 		
 		try {
-			dtoExportService.exportAuthorization(authorizationId,
-					response.getOutputStream(), params);
+			// dtoExportService.exportAuthorization(...); params);
+			response.setStatus(HttpServletResponse.SC_NOT_IMPLEMENTED);
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 		}
@@ -223,9 +225,8 @@ public class AuthorizationRESTController {
 		try {
 			AuthorizationEntity authorization = 
 					this.authorizationService.importResource(stream);
-			dtoExportService.exportAuthorization(authorization.getId(),
-					response.getOutputStream(), params);
-			response.setStatus(HttpServletResponse.SC_CREATED);
+			// dtoExportService.exportAuthorization(...); params);
+			response.setStatus(HttpServletResponse.SC_NOT_IMPLEMENTED);
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 		}
@@ -308,8 +309,8 @@ public class AuthorizationRESTController {
 
 		response.setContentType(MediaType.APPLICATION_ATOM_XML_VALUE);
 		try {
-			dtoExportService.exportAuthorizations(retailCustomerId,
-					response.getOutputStream(), params);
+			// dtoExportService.exportAuthorization(...); params);
+			response.setStatus(HttpServletResponse.SC_NOT_IMPLEMENTED);
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 		}
@@ -335,9 +336,8 @@ public class AuthorizationRESTController {
 
 		response.setContentType(MediaType.APPLICATION_ATOM_XML_VALUE);
 		try {
-			dtoExportService.exportAuthorization(retailCustomerId,
-					authorizationId, response.getOutputStream(),
-					params);
+			// dtoExportService.exportAuthorization(retailCustomerId, authorizationId, response.getOutputStream(), params);
+			response.setStatus(HttpServletResponse.SC_NOT_IMPLEMENTED);
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 		}
@@ -360,12 +360,9 @@ public class AuthorizationRESTController {
 		try {
 			AuthorizationEntity authorization = 
 					this.authorizationService.importResource(stream);
-			retailCustomerService.associateByUUID(retailCustomerId,
-					authorization.getUUID());
-			dtoExportService.exportAuthorization(retailCustomerId,
-					authorization.getId(), response.getOutputStream(),
-					params);
-			response.setStatus(HttpServletResponse.SC_CREATED);
+			// retailCustomerService.associateByUUID(retailCustomerId, authorization.getUUID());\n\t\t\t// TODO: Associate authorization with retail customer
+			// dtoExportService.exportAuthorization(retailCustomerId, authorization.getId(), response.getOutputStream(), params);
+			response.setStatus(HttpServletResponse.SC_NOT_IMPLEMENTED);
 		} catch (Exception e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 		}

@@ -30,7 +30,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import jakarta.servlet.http.HttpServletRequest;
 import java.security.Principal;
 
-@Controller
+// @Controller - COMMENTED OUT: UI not needed in resource server
+// @Component
 public class DefaultController {
 
 	@Autowired

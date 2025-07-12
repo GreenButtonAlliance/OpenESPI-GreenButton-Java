@@ -19,7 +19,6 @@
 
 package org.greenbuttonalliance.espi.datacustodian.web.custodian;
 
-import org.greenbuttonalliance.espi.common.service.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -27,18 +26,19 @@ import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
-@Controller
+// @Controller - COMMENTED OUT: UI not needed in resource server
+// @Component
 @PreAuthorize("hasRole('ROLE_CUSTODIAN')")
 public class ManagementController {
 
-	@Autowired
-	private NotificationService notificationService;
+	// @Autowired
+	// private NotificationService notificationService; // TODO: Implement
 
 	@GetMapping("/espi/1_1/NotifyThirdParty/{applicationInformationId}")
 	public String notifyThirdParty(@PathVariable Long applicationInformationId,
 			ModelMap model) throws Exception {
 
-		notificationService.notifyAllNeed();
+		// notificationService.notifyAllNeed(); // TODO: Implement NotificationService
 
 		return "redirect:/custodian/home";
 	}
@@ -46,17 +46,17 @@ public class ManagementController {
 	@GetMapping("/espi/1_1/NotifyThirdParty")
 	public String notifyAllThirdParties(ModelMap model) throws Exception {
 
-		notificationService.notifyAllNeed();
+		// notificationService.notifyAllNeed(); // TODO: Implement NotificationService
 
 		return "redirect:/custodian/home";
 	}
 
-	public void setNotificationService(NotificationService notificationService) {
-		this.notificationService = notificationService;
-	}
+	// public void setNotificationService(NotificationService notificationService) {
+	//	this.notificationService = notificationService;
+	// }
 
-	public NotificationService getNotificationService() {
-		return this.notificationService;
-	}
+	// public NotificationService getNotificationService() {
+	//	return this.notificationService;
+	// }
 
 }
