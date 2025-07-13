@@ -49,26 +49,12 @@ public class Organisation {
      * Street address for this organisation.
      */
     @Embedded
-    @AttributeOverrides({
-        @AttributeOverride(name = "streetDetail", column = @Column(name = "street_detail")),
-        @AttributeOverride(name = "townDetail", column = @Column(name = "town_detail")),
-        @AttributeOverride(name = "stateOrProvince", column = @Column(name = "state_or_province")),
-        @AttributeOverride(name = "postalCode", column = @Column(name = "postal_code")),
-        @AttributeOverride(name = "country", column = @Column(name = "country"))
-    })
     private StreetAddress streetAddress;
 
     /**
      * Postal address for this organisation.
      */
     @Embedded
-    @AttributeOverrides({
-        @AttributeOverride(name = "streetDetail", column = @Column(name = "postal_street_detail")),
-        @AttributeOverride(name = "townDetail", column = @Column(name = "postal_town_detail")),
-        @AttributeOverride(name = "stateOrProvince", column = @Column(name = "postal_state_or_province")),
-        @AttributeOverride(name = "postalCode", column = @Column(name = "postal_postal_code")),
-        @AttributeOverride(name = "country", column = @Column(name = "postal_country"))
-    })
     private StreetAddress postalAddress;
 
     /**
@@ -76,10 +62,10 @@ public class Organisation {
      */
     @Embedded
     @AttributeOverrides({
-        @AttributeOverride(name = "areaCode", column = @Column(name = "phone1_area_code")),
-        @AttributeOverride(name = "cityCode", column = @Column(name = "phone1_city_code")),
-        @AttributeOverride(name = "localNumber", column = @Column(name = "phone1_local_number")),
-        @AttributeOverride(name = "extension", column = @Column(name = "phone1_extension"))
+        @AttributeOverride(name = "areaCode", column = @Column(name = "org_phone1_area_code")),
+        @AttributeOverride(name = "cityCode", column = @Column(name = "org_phone1_city_code")),
+        @AttributeOverride(name = "localNumber", column = @Column(name = "org_phone1_local_number")),
+        @AttributeOverride(name = "extension", column = @Column(name = "org_phone1_extension"))
     })
     private PhoneNumber phone1;
 
@@ -88,10 +74,10 @@ public class Organisation {
      */
     @Embedded
     @AttributeOverrides({
-        @AttributeOverride(name = "areaCode", column = @Column(name = "phone2_area_code")),
-        @AttributeOverride(name = "cityCode", column = @Column(name = "phone2_city_code")),
-        @AttributeOverride(name = "localNumber", column = @Column(name = "phone2_local_number")),
-        @AttributeOverride(name = "extension", column = @Column(name = "phone2_extension"))
+        @AttributeOverride(name = "areaCode", column = @Column(name = "org_phone2_area_code")),
+        @AttributeOverride(name = "cityCode", column = @Column(name = "org_phone2_city_code")),
+        @AttributeOverride(name = "localNumber", column = @Column(name = "org_phone2_local_number")),
+        @AttributeOverride(name = "extension", column = @Column(name = "org_phone2_extension"))
     })
     private PhoneNumber phone2;
 
