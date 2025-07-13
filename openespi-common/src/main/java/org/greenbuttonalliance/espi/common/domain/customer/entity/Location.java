@@ -80,26 +80,16 @@ public abstract class Location implements Serializable {
 
     /**
      * Phone number.
+     * Transient field - phone numbers are managed separately via PhoneNumberEntity.
      */
-    @Embedded
-    @AttributeOverrides({
-        @AttributeOverride(name = "areaCode", column = @Column(name = "phone1_area_code")),
-        @AttributeOverride(name = "cityCode", column = @Column(name = "phone1_city_code")),
-        @AttributeOverride(name = "localNumber", column = @Column(name = "phone1_local_number")),
-        @AttributeOverride(name = "extension", column = @Column(name = "phone1_extension"))
-    })
+    @Transient
     private Organisation.PhoneNumber phone1;
 
     /**
      * Additional phone number.
+     * Transient field - phone numbers are managed separately via PhoneNumberEntity.
      */
-    @Embedded
-    @AttributeOverrides({
-        @AttributeOverride(name = "areaCode", column = @Column(name = "phone2_area_code")),
-        @AttributeOverride(name = "cityCode", column = @Column(name = "phone2_city_code")),
-        @AttributeOverride(name = "localNumber", column = @Column(name = "phone2_local_number")),
-        @AttributeOverride(name = "extension", column = @Column(name = "phone2_extension"))
-    })
+    @Transient
     private Organisation.PhoneNumber phone2;
 
     /**

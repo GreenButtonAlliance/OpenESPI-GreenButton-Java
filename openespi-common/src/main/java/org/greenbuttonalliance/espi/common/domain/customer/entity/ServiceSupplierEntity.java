@@ -27,7 +27,9 @@ import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
 import org.greenbuttonalliance.espi.common.domain.customer.enums.SupplierKind;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Where;
 import java.time.OffsetDateTime;
+import java.util.List;
 
 /**
  * Pure JPA/Hibernate entity for ServiceSupplier without JAXB concerns.
@@ -60,14 +62,6 @@ public class ServiceSupplierEntity extends IdentifiedObject {
         @AttributeOverride(name = "postalAddress.stateOrProvince", column = @Column(name = "supplier_postal_state_or_province")),
         @AttributeOverride(name = "postalAddress.postalCode", column = @Column(name = "supplier_postal_postal_code")),
         @AttributeOverride(name = "postalAddress.country", column = @Column(name = "supplier_postal_country")),
-        @AttributeOverride(name = "phone1.areaCode", column = @Column(name = "supplier_org_phone1_area_code")),
-        @AttributeOverride(name = "phone1.cityCode", column = @Column(name = "supplier_org_phone1_city_code")),
-        @AttributeOverride(name = "phone1.localNumber", column = @Column(name = "supplier_org_phone1_local_number")),
-        @AttributeOverride(name = "phone1.extension", column = @Column(name = "supplier_org_phone1_extension")),
-        @AttributeOverride(name = "phone2.areaCode", column = @Column(name = "supplier_org_phone2_area_code")),
-        @AttributeOverride(name = "phone2.cityCode", column = @Column(name = "supplier_org_phone2_city_code")),
-        @AttributeOverride(name = "phone2.localNumber", column = @Column(name = "supplier_org_phone2_local_number")),
-        @AttributeOverride(name = "phone2.extension", column = @Column(name = "supplier_org_phone2_extension")),
         @AttributeOverride(name = "electronicAddress.email1", column = @Column(name = "supplier_email1")),
         @AttributeOverride(name = "electronicAddress.email2", column = @Column(name = "supplier_email2")),
         @AttributeOverride(name = "electronicAddress.web", column = @Column(name = "supplier_web")),
@@ -95,4 +89,13 @@ public class ServiceSupplierEntity extends IdentifiedObject {
      */
     @Column(name = "effective_date")
     private OffsetDateTime effectiveDate;
+
+    /**
+     * Phone numbers for this service supplier's organisation.
+     * Managed via separate PhoneNumberEntity to avoid column conflicts.
+     */
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_entity_uuid", referencedColumnName = "uuid")
+    @Where(clause = "parent_entity_type = 'ServiceSupplierEntity'")
+    private List<PhoneNumberEntity> phoneNumbers;
 }

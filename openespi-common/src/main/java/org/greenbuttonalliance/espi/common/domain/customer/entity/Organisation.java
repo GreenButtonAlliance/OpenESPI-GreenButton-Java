@@ -59,26 +59,16 @@ public class Organisation {
 
     /**
      * Primary phone number for this organisation.
+     * Transient field - phone numbers are managed separately via PhoneNumberEntity.
      */
-    @Embedded
-    @AttributeOverrides({
-        @AttributeOverride(name = "areaCode", column = @Column(name = "org_phone1_area_code")),
-        @AttributeOverride(name = "cityCode", column = @Column(name = "org_phone1_city_code")),
-        @AttributeOverride(name = "localNumber", column = @Column(name = "org_phone1_local_number")),
-        @AttributeOverride(name = "extension", column = @Column(name = "org_phone1_extension"))
-    })
+    @Transient
     private PhoneNumber phone1;
 
     /**
      * Secondary phone number for this organisation.
+     * Transient field - phone numbers are managed separately via PhoneNumberEntity.
      */
-    @Embedded
-    @AttributeOverrides({
-        @AttributeOverride(name = "areaCode", column = @Column(name = "org_phone2_area_code")),
-        @AttributeOverride(name = "cityCode", column = @Column(name = "org_phone2_city_code")),
-        @AttributeOverride(name = "localNumber", column = @Column(name = "org_phone2_local_number")),
-        @AttributeOverride(name = "extension", column = @Column(name = "org_phone2_extension"))
-    })
+    @Transient
     private PhoneNumber phone2;
 
     /**

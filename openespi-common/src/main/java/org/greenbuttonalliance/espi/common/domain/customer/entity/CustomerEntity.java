@@ -28,6 +28,7 @@ import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
 import org.greenbuttonalliance.espi.common.domain.usage.TimeConfigurationEntity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Where;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -69,14 +70,6 @@ public class CustomerEntity extends IdentifiedObject {
         @AttributeOverride(name = "postalAddress.stateOrProvince", column = @Column(name = "customer_postal_state_or_province")),
         @AttributeOverride(name = "postalAddress.postalCode", column = @Column(name = "customer_postal_postal_code")),
         @AttributeOverride(name = "postalAddress.country", column = @Column(name = "customer_postal_country")),
-        @AttributeOverride(name = "phone1.areaCode", column = @Column(name = "customer_org_phone1_area_code")),
-        @AttributeOverride(name = "phone1.cityCode", column = @Column(name = "customer_org_phone1_city_code")),
-        @AttributeOverride(name = "phone1.localNumber", column = @Column(name = "customer_org_phone1_local_number")),
-        @AttributeOverride(name = "phone1.extension", column = @Column(name = "customer_org_phone1_extension")),
-        @AttributeOverride(name = "phone2.areaCode", column = @Column(name = "customer_org_phone2_area_code")),
-        @AttributeOverride(name = "phone2.cityCode", column = @Column(name = "customer_org_phone2_city_code")),
-        @AttributeOverride(name = "phone2.localNumber", column = @Column(name = "customer_org_phone2_local_number")),
-        @AttributeOverride(name = "phone2.extension", column = @Column(name = "customer_org_phone2_extension")),
         @AttributeOverride(name = "electronicAddress.email1", column = @Column(name = "customer_email1")),
         @AttributeOverride(name = "electronicAddress.email2", column = @Column(name = "customer_email2")),
         @AttributeOverride(name = "electronicAddress.web", column = @Column(name = "customer_web")),
@@ -165,6 +158,15 @@ public class CustomerEntity extends IdentifiedObject {
      */
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<StatementEntity> statements;
+
+    /**
+     * Phone numbers for this customer's organisation.
+     * Managed via separate PhoneNumberEntity to avoid column conflicts.
+     */
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_entity_uuid", referencedColumnName = "uuid")
+    @Where(clause = "parent_entity_type = 'CustomerEntity'")
+    private List<PhoneNumberEntity> phoneNumbers;
 
     /**
      * Embeddable class for Status
