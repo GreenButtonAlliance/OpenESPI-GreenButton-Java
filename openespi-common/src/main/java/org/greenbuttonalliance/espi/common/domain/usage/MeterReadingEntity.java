@@ -61,11 +61,10 @@ public class MeterReadingEntity extends IdentifiedObject {
     /**
      * Reading type that defines what this meter reading measures.
      * Many meter readings can share the same reading type.
-     * Optimized with lazy loading and batch size to prevent N+1 queries.
+     * Optimized with lazy loading to prevent N+1 queries.
      */
     @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "reading_type_id")
-    @BatchSize(size = 50)
     private ReadingTypeEntity readingType;
 
     /**

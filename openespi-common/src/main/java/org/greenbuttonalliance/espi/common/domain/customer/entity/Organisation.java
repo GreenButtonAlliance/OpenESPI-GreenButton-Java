@@ -49,24 +49,50 @@ public class Organisation {
      * Street address for this organisation.
      */
     @Embedded
+    @AttributeOverrides({
+        @AttributeOverride(name = "streetDetail", column = @Column(name = "street_detail")),
+        @AttributeOverride(name = "townDetail", column = @Column(name = "town_detail")),
+        @AttributeOverride(name = "stateOrProvince", column = @Column(name = "state_or_province")),
+        @AttributeOverride(name = "postalCode", column = @Column(name = "postal_code")),
+        @AttributeOverride(name = "country", column = @Column(name = "country"))
+    })
     private StreetAddress streetAddress;
 
     /**
      * Postal address for this organisation.
      */
     @Embedded
+    @AttributeOverrides({
+        @AttributeOverride(name = "streetDetail", column = @Column(name = "postal_street_detail")),
+        @AttributeOverride(name = "townDetail", column = @Column(name = "postal_town_detail")),
+        @AttributeOverride(name = "stateOrProvince", column = @Column(name = "postal_state_or_province")),
+        @AttributeOverride(name = "postalCode", column = @Column(name = "postal_postal_code")),
+        @AttributeOverride(name = "country", column = @Column(name = "postal_country"))
+    })
     private StreetAddress postalAddress;
 
     /**
      * Primary phone number for this organisation.
      */
     @Embedded
+    @AttributeOverrides({
+        @AttributeOverride(name = "areaCode", column = @Column(name = "phone1_area_code")),
+        @AttributeOverride(name = "cityCode", column = @Column(name = "phone1_city_code")),
+        @AttributeOverride(name = "localNumber", column = @Column(name = "phone1_local_number")),
+        @AttributeOverride(name = "extension", column = @Column(name = "phone1_extension"))
+    })
     private PhoneNumber phone1;
 
     /**
      * Secondary phone number for this organisation.
      */
     @Embedded
+    @AttributeOverrides({
+        @AttributeOverride(name = "areaCode", column = @Column(name = "phone2_area_code")),
+        @AttributeOverride(name = "cityCode", column = @Column(name = "phone2_city_code")),
+        @AttributeOverride(name = "localNumber", column = @Column(name = "phone2_local_number")),
+        @AttributeOverride(name = "extension", column = @Column(name = "phone2_extension"))
+    })
     private PhoneNumber phone2;
 
     /**
@@ -82,19 +108,10 @@ public class Organisation {
     @Data
     @NoArgsConstructor
     public static class StreetAddress {
-        @Column(name = "street_detail", length = 256)
         private String streetDetail;
-        
-        @Column(name = "town_detail", length = 256)
         private String townDetail;
-        
-        @Column(name = "state_or_province", length = 256)
         private String stateOrProvince;
-        
-        @Column(name = "postal_code", length = 256)
         private String postalCode;
-        
-        @Column(name = "country", length = 256)
         private String country;
     }
 
@@ -105,16 +122,9 @@ public class Organisation {
     @Data
     @NoArgsConstructor
     public static class PhoneNumber {
-        @Column(name = "area_code", length = 256)
         private String areaCode;
-        
-        @Column(name = "city_code", length = 256)
         private String cityCode;
-        
-        @Column(name = "local_number", length = 256)
         private String localNumber;
-        
-        @Column(name = "extension", length = 256)
         private String extension;
     }
 

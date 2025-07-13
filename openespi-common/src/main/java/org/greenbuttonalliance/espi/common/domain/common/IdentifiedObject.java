@@ -102,7 +102,8 @@ public abstract class IdentifiedObject implements Serializable {
     @Valid
     @AttributeOverrides({
         @AttributeOverride(name = "rel", column = @Column(name = "up_link_rel")),
-        @AttributeOverride(name = "href", column = @Column(name = "up_link_href"))
+        @AttributeOverride(name = "href", column = @Column(name = "up_link_href")),
+        @AttributeOverride(name = "type", column = @Column(name = "up_link_type"))
     })
     private LinkType upLink;
 
@@ -114,7 +115,8 @@ public abstract class IdentifiedObject implements Serializable {
     @Valid
     @AttributeOverrides({
         @AttributeOverride(name = "rel", column = @Column(name = "self_link_rel")),
-        @AttributeOverride(name = "href", column = @Column(name = "self_link_href"))
+        @AttributeOverride(name = "href", column = @Column(name = "self_link_href")),
+        @AttributeOverride(name = "type", column = @Column(name = "self_link_type"))
     })
     private LinkType selfLink;
 
@@ -129,7 +131,8 @@ public abstract class IdentifiedObject implements Serializable {
     )
     @AttributeOverrides({
         @AttributeOverride(name = "rel", column = @Column(name = "rel")),
-        @AttributeOverride(name = "href", column = @Column(name = "href"))
+        @AttributeOverride(name = "href", column = @Column(name = "href")),
+        @AttributeOverride(name = "type", column = @Column(name = "link_type"))
     })
     private List<LinkType> relatedLinks = new ArrayList<>();
 

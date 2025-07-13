@@ -84,7 +84,7 @@ public class CustomerAccountEntity extends IdentifiedObject {
     /**
      * Type of this document.
      */
-    @Column(name = "type", length = 256)
+    @Column(name = "document_type", length = 256)
     private String type;
 
     // CustomerAccount specific fields
@@ -111,15 +111,15 @@ public class CustomerAccountEntity extends IdentifiedObject {
     /**
      * Set of customer account notifications.
      */
-    @OneToMany(mappedBy = "customerAccount", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "customer_account_notifications", joinColumns = @JoinColumn(name = "customer_account_id"))
     private List<AccountNotification> notifications;
 
     /**
      * [extension] Customer contact information used to identify individual 
      * responsible for billing and payment of CustomerAccount.
      */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "contact_info_id")
+    @Embedded
     private Organisation contactInfo;
 
     /**

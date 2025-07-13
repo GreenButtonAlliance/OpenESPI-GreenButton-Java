@@ -48,6 +48,31 @@ public class ServiceSupplierEntity extends IdentifiedObject {
      * Organisation having this role.
      */
     @Embedded
+    @AttributeOverrides({
+        @AttributeOverride(name = "organisationName", column = @Column(name = "supplier_organisation_name")),
+        @AttributeOverride(name = "streetAddress.streetDetail", column = @Column(name = "supplier_street_detail")),
+        @AttributeOverride(name = "streetAddress.townDetail", column = @Column(name = "supplier_town_detail")),
+        @AttributeOverride(name = "streetAddress.stateOrProvince", column = @Column(name = "supplier_state_or_province")),
+        @AttributeOverride(name = "streetAddress.postalCode", column = @Column(name = "supplier_postal_code")),
+        @AttributeOverride(name = "streetAddress.country", column = @Column(name = "supplier_country")),
+        @AttributeOverride(name = "postalAddress.streetDetail", column = @Column(name = "supplier_postal_street_detail")),
+        @AttributeOverride(name = "postalAddress.townDetail", column = @Column(name = "supplier_postal_town_detail")),
+        @AttributeOverride(name = "postalAddress.stateOrProvince", column = @Column(name = "supplier_postal_state_or_province")),
+        @AttributeOverride(name = "postalAddress.postalCode", column = @Column(name = "supplier_postal_postal_code")),
+        @AttributeOverride(name = "postalAddress.country", column = @Column(name = "supplier_postal_country")),
+        @AttributeOverride(name = "phone1.areaCode", column = @Column(name = "supplier_phone1_area_code")),
+        @AttributeOverride(name = "phone1.cityCode", column = @Column(name = "supplier_phone1_city_code")),
+        @AttributeOverride(name = "phone1.localNumber", column = @Column(name = "supplier_phone1_local_number")),
+        @AttributeOverride(name = "phone1.extension", column = @Column(name = "supplier_phone1_extension")),
+        @AttributeOverride(name = "phone2.areaCode", column = @Column(name = "supplier_phone2_area_code")),
+        @AttributeOverride(name = "phone2.cityCode", column = @Column(name = "supplier_phone2_city_code")),
+        @AttributeOverride(name = "phone2.localNumber", column = @Column(name = "supplier_phone2_local_number")),
+        @AttributeOverride(name = "phone2.extension", column = @Column(name = "supplier_phone2_extension")),
+        @AttributeOverride(name = "electronicAddress.email1", column = @Column(name = "supplier_email1")),
+        @AttributeOverride(name = "electronicAddress.email2", column = @Column(name = "supplier_email2")),
+        @AttributeOverride(name = "electronicAddress.web", column = @Column(name = "supplier_web")),
+        @AttributeOverride(name = "electronicAddress.radio", column = @Column(name = "supplier_radio"))
+    })
     private Organisation organisation;
 
     /**
