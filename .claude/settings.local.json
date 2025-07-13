@@ -36,7 +36,9 @@
       "Bash(SPRING_PROFILES_ACTIVE=local java -Xmx512m -jar target/OpenESPI-DataCustodian.jar)",
       "Bash(SPRING_PROFILES_ACTIVE=local java -Xmx512m -Dlogging.config=classpath:logback-spring.xml -jar target/OpenESPI-DataCustodian.jar)",
       "Bash(timeout 30 mvn spring-boot:run:*)",
-      "Bash(timeout 20 mvn spring-boot:run:*)"
+      "Bash(timeout 20 mvn spring-boot:run:*)",
+      "Bash(jar:*)",
+      "Bash(timeout 30s mvn spring-boot:run -q)"
     ],
     "deny": []
   }
