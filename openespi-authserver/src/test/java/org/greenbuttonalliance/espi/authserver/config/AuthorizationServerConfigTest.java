@@ -20,6 +20,7 @@
 
 package org.greenbuttonalliance.espi.authserver.config;
 
+import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.JWKSource;
@@ -46,8 +47,10 @@ import org.springframework.security.oauth2.server.authorization.settings.OAuth2T
 import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.DefaultSecurityFilterChain;
 
 import java.time.Duration;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
@@ -91,7 +94,7 @@ class AuthorizationServerConfigTest {
             HttpSecurity mockHttpSecurity = mock(HttpSecurity.class, RETURNS_DEEP_STUBS);
             SecurityFilterChain mockFilterChain = mock(SecurityFilterChain.class);
             
-            when(mockHttpSecurity.build()).thenReturn(mockFilterChain);
+            when(mockHttpSecurity.build()).thenReturn((DefaultSecurityFilterChain) mockFilterChain);
 
             // When
             SecurityFilterChain filterChain = config.authorizationServerSecurityFilterChain(mockHttpSecurity);
@@ -108,7 +111,7 @@ class AuthorizationServerConfigTest {
             HttpSecurity mockHttpSecurity = mock(HttpSecurity.class, RETURNS_DEEP_STUBS);
             SecurityFilterChain mockFilterChain = mock(SecurityFilterChain.class);
             
-            when(mockHttpSecurity.build()).thenReturn(mockFilterChain);
+            when(mockHttpSecurity.build()).thenReturn((DefaultSecurityFilterChain) mockFilterChain);
 
             // When
             SecurityFilterChain filterChain = config.defaultSecurityFilterChain(mockHttpSecurity);
@@ -127,7 +130,7 @@ class AuthorizationServerConfigTest {
         @DisplayName("Should create registered client repository with default ESPI clients")
         void shouldCreateRegisteredClientRepositoryWithDefaultEspiClients() {
             // Given
-            when(jdbcTemplate.queryForObject(anyString(), any(), anyString())).thenReturn(null);
+            when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(null);
 
             // When
             RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate);
@@ -137,7 +140,7 @@ class AuthorizationServerConfigTest {
             assertThat(repository).isInstanceOf(JdbcRegisteredClientRepository.class);
             
             // Verify default clients are attempted to be saved
-            verify(jdbcTemplate, atLeast(3)).queryForObject(anyString(), any(), anyString());
+            verify(jdbcTemplate, atLeast(3)).queryForObject(anyString(), any(Class.class), anyString());
         }
 
         @Test
@@ -145,7 +148,7 @@ class AuthorizationServerConfigTest {
         void shouldNotOverwriteExistingClients() {
             // Given
             RegisteredClient existingClient = mock(RegisteredClient.class);
-            when(jdbcTemplate.queryForObject(anyString(), any(), anyString())).thenReturn(existingClient);
+            when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(existingClient);
 
             // When
             RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate);
@@ -154,8 +157,8 @@ class AuthorizationServerConfigTest {
             assertThat(repository).isNotNull();
             
             // Verify existing clients are found but not overwritten
-            verify(jdbcTemplate, atLeast(3)).queryForObject(anyString(), any(), anyString());
-            verify(jdbcTemplate, never()).update(anyString(), any());
+            verify(jdbcTemplate, atLeast(3)).queryForObject(anyString(), any(Class.class), anyString());
+            verify(jdbcTemplate, never()).update(anyString(), any(Object[].class));
         }
 
         @Test
@@ -163,39 +166,39 @@ class AuthorizationServerConfigTest {
         void shouldConfigureDataCustodianAdminClientCorrectly() {
             // Given
             JdbcRegisteredClientRepository mockRepo = mock(JdbcRegisteredClientRepository.class);
-            when(jdbcTemplate.queryForObject(anyString(), any(), anyString())).thenReturn(null);
+            when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(null);
 
             // When
             RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate);
 
             // Then - Verify DataCustodian admin client configuration through method calls
-            verify(jdbcTemplate, atLeastOnce()).queryForObject(anyString(), any(), eq("data_custodian_admin"));
+            verify(jdbcTemplate, atLeastOnce()).queryForObject(anyString(), any(Class.class), eq("data_custodian_admin"));
         }
 
         @Test
         @DisplayName("Should configure ThirdParty client correctly")
         void shouldConfigureThirdPartyClientCorrectly() {
             // Given
-            when(jdbcTemplate.queryForObject(anyString(), any(), anyString())).thenReturn(null);
+            when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(null);
 
             // When
             RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate);
 
             // Then - Verify ThirdParty client configuration through method calls
-            verify(jdbcTemplate, atLeastOnce()).queryForObject(anyString(), any(), eq("third_party"));
+            verify(jdbcTemplate, atLeastOnce()).queryForObject(anyString(), any(Class.class), eq("third_party"));
         }
 
         @Test
         @DisplayName("Should configure ThirdParty admin client correctly")
         void shouldConfigureThirdPartyAdminClientCorrectly() {
             // Given
-            when(jdbcTemplate.queryForObject(anyString(), any(), anyString())).thenReturn(null);
+            when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(null);
 
             // When
             RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate);
 
             // Then - Verify ThirdParty admin client configuration through method calls
-            verify(jdbcTemplate, atLeastOnce()).queryForObject(anyString(), any(), eq("third_party_admin"));
+            verify(jdbcTemplate, atLeastOnce()).queryForObject(anyString(), any(Class.class), eq("third_party_admin"));
         }
     }
 
@@ -205,7 +208,7 @@ class AuthorizationServerConfigTest {
 
         @Test
         @DisplayName("Should create JWK source with RSA key")
-        void shouldCreateJwkSourceWithRsaKey() {
+        void shouldCreateJwkSourceWithRsaKey() throws Exception {
             // When
             JWKSource<SecurityContext> jwkSource = config.jwkSource();
 
@@ -213,12 +216,12 @@ class AuthorizationServerConfigTest {
             assertThat(jwkSource).isNotNull();
             
             // Verify JWK set contains RSA key
-            JWKSet jwkSet = jwkSource.getJWKSet();
-            assertThat(jwkSet).isNotNull();
-            assertThat(jwkSet.getKeys()).hasSize(1);
-            assertThat(jwkSet.getKeys().get(0)).isInstanceOf(RSAKey.class);
+            List<JWK> jwkList = jwkSource.get(null, null);
+            assertThat(jwkList).isNotNull();
+            assertThat(jwkList).hasSize(1);
+            assertThat(jwkList.get(0)).isInstanceOf(RSAKey.class);
             
-            RSAKey rsaKey = (RSAKey) jwkSet.getKeys().get(0);
+            RSAKey rsaKey = (RSAKey) jwkList.get(0);
             assertThat(rsaKey.getKeyID()).isNotNull();
             assertThat(rsaKey.toRSAPublicKey()).isNotNull();
             assertThat(rsaKey.toRSAPrivateKey()).isNotNull();
@@ -239,14 +242,14 @@ class AuthorizationServerConfigTest {
 
         @Test
         @DisplayName("Should generate different keys on each call")
-        void shouldGenerateDifferentKeysOnEachCall() {
+        void shouldGenerateDifferentKeysOnEachCall() throws Exception {
             // When
             JWKSource<SecurityContext> jwkSource1 = config.jwkSource();
             JWKSource<SecurityContext> jwkSource2 = config.jwkSource();
 
             // Then
-            RSAKey key1 = (RSAKey) jwkSource1.getJWKSet().getKeys().get(0);
-            RSAKey key2 = (RSAKey) jwkSource2.getJWKSet().getKeys().get(0);
+            RSAKey key1 = (RSAKey) jwkSource1.get(null, null).get(0);
+            RSAKey key2 = (RSAKey) jwkSource2.get(null, null).get(0);
             
             assertThat(key1.getKeyID()).isNotEqualTo(key2.getKeyID());
             assertThat(key1.toRSAPublicKey()).isNotEqualTo(key2.toRSAPublicKey());
@@ -323,7 +326,7 @@ class AuthorizationServerConfigTest {
         @DisplayName("Should configure clients with opaque token format (ESPI standard)")
         void shouldConfigureClientsWithOpaqueTokenFormat() {
             // Given
-            when(jdbcTemplate.queryForObject(anyString(), any(), anyString())).thenReturn(null);
+            when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(null);
 
             // When
             RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate);
@@ -331,44 +334,44 @@ class AuthorizationServerConfigTest {
             // Then
             // The verification is indirect through repository calls since we can't directly 
             // access the created clients, but the configuration should use OAuth2TokenFormat.REFERENCE
-            verify(jdbcTemplate, atLeast(3)).queryForObject(anyString(), any(), anyString());
+            verify(jdbcTemplate, atLeast(3)).queryForObject(anyString(), any(Class.class), anyString());
         }
 
         @Test
         @DisplayName("Should support ESPI scopes for ThirdParty client")
         void shouldSupportEspiScopesForThirdPartyClient() {
             // Given
-            when(jdbcTemplate.queryForObject(anyString(), any(), anyString())).thenReturn(null);
+            when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(null);
 
             // When
             RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate);
 
             // Then
             // Verify that ThirdParty client is queried (which means it was configured)
-            verify(jdbcTemplate, atLeastOnce()).queryForObject(anyString(), any(), eq("third_party"));
+            verify(jdbcTemplate, atLeastOnce()).queryForObject(anyString(), any(Class.class), eq("third_party"));
         }
 
         @Test
         @DisplayName("Should configure proper grant types for ESPI clients")
         void shouldConfigureProperGrantTypesForEspiClients() {
             // Given
-            when(jdbcTemplate.queryForObject(anyString(), any(), anyString())).thenReturn(null);
+            when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(null);
 
             // When
             RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate);
 
             // Then
             // Verify all default ESPI clients are configured
-            verify(jdbcTemplate, atLeastOnce()).queryForObject(anyString(), any(), eq("data_custodian_admin"));
-            verify(jdbcTemplate, atLeastOnce()).queryForObject(anyString(), any(), eq("third_party"));
-            verify(jdbcTemplate, atLeastOnce()).queryForObject(anyString(), any(), eq("third_party_admin"));
+            verify(jdbcTemplate, atLeastOnce()).queryForObject(anyString(), any(Class.class), eq("data_custodian_admin"));
+            verify(jdbcTemplate, atLeastOnce()).queryForObject(anyString(), any(Class.class), eq("third_party"));
+            verify(jdbcTemplate, atLeastOnce()).queryForObject(anyString(), any(Class.class), eq("third_party_admin"));
         }
 
         @Test
         @DisplayName("Should configure appropriate token lifetimes for ESPI")
         void shouldConfigureAppropriateTokenLifetimesForEspi() {
             // Given
-            when(jdbcTemplate.queryForObject(anyString(), any(), anyString())).thenReturn(null);
+            when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(null);
 
             // When
             RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate);
@@ -383,7 +386,7 @@ class AuthorizationServerConfigTest {
         @DisplayName("Should configure consent requirements correctly")
         void shouldConfigureConsentRequirementsCorrectly() {
             // Given
-            when(jdbcTemplate.queryForObject(anyString(), any(), anyString())).thenReturn(null);
+            when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(null);
 
             // When
             RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate);
@@ -403,7 +406,7 @@ class AuthorizationServerConfigTest {
         @DisplayName("Should handle JdbcTemplate exceptions gracefully")
         void shouldHandleJdbcTemplateExceptionsGracefully() {
             // Given
-            when(jdbcTemplate.queryForObject(anyString(), any(), anyString()))
+            when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString()))
                     .thenThrow(new RuntimeException("Database error"));
 
             // When & Then - Should not throw exception
@@ -432,7 +435,7 @@ class AuthorizationServerConfigTest {
         @DisplayName("Should create all required beans")
         void shouldCreateAllRequiredBeans() {
             // Given
-            when(jdbcTemplate.queryForObject(anyString(), any(), anyString())).thenReturn(null);
+            when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(null);
 
             // When
             RegisteredClientRepository clientRepository = config.registeredClientRepository(jdbcTemplate);
@@ -453,7 +456,7 @@ class AuthorizationServerConfigTest {
         @DisplayName("Should create beans with correct types")
         void shouldCreateBeansWithCorrectTypes() {
             // Given
-            when(jdbcTemplate.queryForObject(anyString(), any(), anyString())).thenReturn(null);
+            when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(null);
 
             // When & Then
             assertThat(config.registeredClientRepository(jdbcTemplate))
@@ -481,7 +484,7 @@ class AuthorizationServerConfigTest {
         @DisplayName("Should work with complete configuration")
         void shouldWorkWithCompleteConfiguration() {
             // Given
-            when(jdbcTemplate.queryForObject(anyString(), any(), anyString())).thenReturn(null);
+            when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(null);
 
             // When
             RegisteredClientRepository clientRepository = config.registeredClientRepository(jdbcTemplate);
@@ -509,7 +512,7 @@ class AuthorizationServerConfigTest {
         @DisplayName("Should maintain ESPI compliance across all components")
         void shouldMaintainEspiComplianceAcrossAllComponents() {
             // Given
-            when(jdbcTemplate.queryForObject(anyString(), any(), anyString())).thenReturn(null);
+            when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(null);
 
             // When
             RegisteredClientRepository clientRepository = config.registeredClientRepository(jdbcTemplate);

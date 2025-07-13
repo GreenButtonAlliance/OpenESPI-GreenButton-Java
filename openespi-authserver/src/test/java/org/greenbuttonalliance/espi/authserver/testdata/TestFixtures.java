@@ -25,11 +25,12 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
-import org.springframework.security.oauth2.core.OAuth2TokenType;
+import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -156,7 +157,7 @@ public final class TestFixtures {
             .map(SimpleGrantedAuthority::new)
             .toList();
         
-        when(authentication.getAuthorities()).thenReturn(grantedAuthorities);
+        when(authentication.getAuthorities()).thenReturn((Collection) grantedAuthorities);
         return authentication;
     }
 
@@ -346,7 +347,7 @@ public final class TestFixtures {
                 .redirectUri(DATACUSTODIAN_CALLBACK_URI);
         }
 
-        public static TokenRequest refreshToken(String refreshToken) {
+        public static TokenRequest createRefreshTokenRequest(String refreshToken) {
             return new TokenRequest()
                 .grantType(REFRESH_TOKEN_GRANT)
                 .refreshToken(refreshToken);
@@ -354,7 +355,7 @@ public final class TestFixtures {
 
         public static TokenRequest invalid() {
             return new TokenRequest()
-                .grantType(IMPLICIT_GRANT) // Not supported
+                .grantType(AUTHORIZATION_CODE_GRANT) // IMPLICIT removed in OAuth 2.1
                 .scope("invalid_scope");
         }
     }

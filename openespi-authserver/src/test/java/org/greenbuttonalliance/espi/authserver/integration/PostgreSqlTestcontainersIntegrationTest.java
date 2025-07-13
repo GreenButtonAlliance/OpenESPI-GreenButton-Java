@@ -354,8 +354,8 @@ class PostgreSqlTestcontainersIntegrationTest {
             assertThat(retrieved.getClientSecretExpiresAt()).isNotNull();
             
             // PostgreSQL should preserve timestamp precision
-            assertThat(retrieved.getClientIdIssuedAt()).isEqualToIgnoringNanos(now);
-            assertThat(retrieved.getClientSecretExpiresAt()).isEqualToIgnoringNanos(futureExpiry);
+            assertThat(retrieved.getClientIdIssuedAt()).isEqualTo(now);
+            assertThat(retrieved.getClientSecretExpiresAt()).isEqualTo(futureExpiry);
         }
     }
 

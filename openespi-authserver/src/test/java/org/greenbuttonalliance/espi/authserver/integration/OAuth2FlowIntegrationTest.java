@@ -47,6 +47,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -262,10 +263,10 @@ class OAuth2FlowIntegrationTest {
             
             // Opaque tokens should not be JWT format (no dots)
             assertThat(accessToken).doesNotContain(".");
-            assertThat(accessToken).hasLengthGreaterThan(10);
+            assertThat(accessToken.length()).isGreaterThan(10);
             
             // Should not be a valid JWT (can't decode base64 parts)
-            assertThat(accessToken.split("\\.")).hasLengthLessThan(3);
+            assertThat(accessToken.split("\\.").length).isLessThan(3);
         }
 
         @Test

@@ -29,12 +29,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
-import org.springframework.security.oauth2.core.OAuth2TokenType;
+import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.Collection;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -232,7 +233,7 @@ class EspiTokenCustomizerTest {
         void shouldHandleMultipleAuthoritiesCorrectly() {
             // Given
             Authentication principal = mock(Authentication.class);
-            when(principal.getAuthorities()).thenReturn(List.of(
+            when(principal.getAuthorities()).thenReturn((Collection) List.of(
                     new SimpleGrantedAuthority("ROLE_USER"),
                     new SimpleGrantedAuthority("ROLE_DC_ADMIN"),
                     new SimpleGrantedAuthority("ROLE_TP_ADMIN")
@@ -497,7 +498,7 @@ class EspiTokenCustomizerTest {
         when(context.getAuthorizationGrantType()).thenReturn(AuthorizationGrantType.AUTHORIZATION_CODE);
         
         Authentication principal = mock(Authentication.class);
-        when(principal.getAuthorities()).thenReturn(List.of(new SimpleGrantedAuthority("ROLE_USER")));
+        when(principal.getAuthorities()).thenReturn((Collection) List.of(new SimpleGrantedAuthority("ROLE_USER")));
         when(context.getPrincipal()).thenReturn(principal);
         
         return context;
@@ -505,7 +506,7 @@ class EspiTokenCustomizerTest {
 
     private JwtEncodingContext createClientCredentialsContext(String clientId, String authority) {
         Authentication principal = mock(Authentication.class);
-        when(principal.getAuthorities()).thenReturn(List.of(new SimpleGrantedAuthority(authority)));
+        when(principal.getAuthorities()).thenReturn((Collection) List.of(new SimpleGrantedAuthority(authority)));
         
         return createClientCredentialsContextWithPrincipal(clientId, principal);
     }
@@ -535,7 +536,7 @@ class EspiTokenCustomizerTest {
         when(context.getAuthorizationGrantType()).thenReturn(AuthorizationGrantType.AUTHORIZATION_CODE);
         
         Authentication principal = mock(Authentication.class);
-        when(principal.getAuthorities()).thenReturn(List.of(new SimpleGrantedAuthority("ROLE_USER")));
+        when(principal.getAuthorities()).thenReturn((Collection) List.of(new SimpleGrantedAuthority("ROLE_USER")));
         when(context.getPrincipal()).thenReturn(principal);
         
         return context;
@@ -552,7 +553,7 @@ class EspiTokenCustomizerTest {
         when(context.getAuthorizationGrantType()).thenReturn(AuthorizationGrantType.REFRESH_TOKEN);
         
         Authentication principal = mock(Authentication.class);
-        when(principal.getAuthorities()).thenReturn(List.of(new SimpleGrantedAuthority("ROLE_USER")));
+        when(principal.getAuthorities()).thenReturn((Collection) List.of(new SimpleGrantedAuthority("ROLE_USER")));
         when(context.getPrincipal()).thenReturn(principal);
         
         return context;

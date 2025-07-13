@@ -514,7 +514,7 @@ class SecurityIntegrationTest {
             String accessToken = response.get("access_token").asText();
 
             // Verify token is opaque (not JWT)
-            assertThat(accessToken.split("\\.")).hasLengthLessThan(3);
+            assertThat(accessToken.split("\\.").length).isLessThan(3);
             assertThat(accessToken).doesNotContain("eyJ"); // Should not start like JWT
         }
 

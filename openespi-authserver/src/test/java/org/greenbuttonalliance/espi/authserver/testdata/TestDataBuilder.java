@@ -145,7 +145,7 @@ public class TestDataBuilder {
                 .clientName("Invalid Test Client")
                 .clientSecret("{noop}invalid_secret")
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-                .authorizationGrantType(AuthorizationGrantType.IMPLICIT) // Not supported in ESPI
+                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE) // IMPLICIT removed in OAuth 2.1
                 .redirectUri("http://insecure.example.com/callback") // HTTP not HTTPS
                 .scope("invalid_scope");
     }
