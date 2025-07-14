@@ -51,7 +51,7 @@
         
         <!-- Database Versions - Aligned with OpenESPI-DataCustodian standards -->
         <mysql.version>8.4.0</mysql.version>
-        <postgresql.version>42.7.4</postgresql.version>
+        <postgresql.version>42.7.7</postgresql.version>
         <h2.version>2.3.232</h2.version>
         
         <!-- Testing - Aligned with OpenESPI-Common main branch -->
