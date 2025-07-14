@@ -164,7 +164,7 @@ public class CustomerEntity extends IdentifiedObject {
      * Managed via separate PhoneNumberEntity to avoid column conflicts.
      */
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JoinColumn(name = "parent_entity_uuid", referencedColumnName = "uuid")
+    @JoinColumn(name = "parent_entity_uuid", referencedColumnName = "id")
     @Where(clause = "parent_entity_type = 'CustomerEntity'")
     private List<PhoneNumberEntity> phoneNumbers;
 

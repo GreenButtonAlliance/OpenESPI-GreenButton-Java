@@ -26,6 +26,7 @@ import lombok.ToString;
 import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Where;
 import java.util.List;
 
 /**
@@ -84,6 +85,7 @@ public class ServiceLocationEntity extends IdentifiedObject {
      */
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @JoinColumn(name = "parent_entity_uuid", referencedColumnName = "id")
+    @Where(clause = "parent_entity_type = 'ServiceLocationEntity'")
     @ToString.Exclude
     private List<PhoneNumberEntity> phoneNumbers;
 
