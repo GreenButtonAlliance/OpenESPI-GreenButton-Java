@@ -100,6 +100,16 @@ public class WebClientService {
     }
 
     /**
+     * Gets a WebClient with Bearer token authentication (alias for createAuthenticatedWebClient).
+     *
+     * @param accessToken the OAuth2 access token
+     * @return configured WebClient
+     */
+    public WebClient getAuthenticatedWebClient(String accessToken) {
+        return createAuthenticatedWebClient(accessToken);
+    }
+
+    /**
      * Performs a blocking GET request.
      *
      * @param url the URL to request

@@ -78,19 +78,8 @@ public abstract class Location implements Serializable {
     })
     private Organisation.StreetAddress secondaryAddress;
 
-    /**
-     * Phone number.
-     * Transient field - phone numbers are managed separately via PhoneNumberEntity.
-     */
-    @Transient
-    private Organisation.PhoneNumber phone1;
-
-    /**
-     * Additional phone number.
-     * Transient field - phone numbers are managed separately via PhoneNumberEntity.
-     */
-    @Transient
-    private Organisation.PhoneNumber phone2;
+    // PhoneNumber fields removed - phone numbers are managed separately via PhoneNumberEntity
+    // to avoid JPA column mapping conflicts in embedded contexts
 
     /**
      * Electronic address.

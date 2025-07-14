@@ -79,9 +79,9 @@ public interface ServiceLocationRepository extends JpaRepository<ServiceLocation
     List<ServiceLocationEntity> findByType(@Param("type") String type);
 
     /**
-     * Find service locations by phone1 area code.
+     * Find service locations by phone area code.
      */
-    @Query("SELECT sl FROM ServiceLocationEntity sl WHERE sl.phone1.areaCode = :areaCode")
+    @Query("SELECT sl FROM ServiceLocationEntity sl JOIN sl.phoneNumbers pn WHERE pn.areaCode = :areaCode")
     List<ServiceLocationEntity> findByPhone1AreaCode(@Param("areaCode") String areaCode);
 
     /**

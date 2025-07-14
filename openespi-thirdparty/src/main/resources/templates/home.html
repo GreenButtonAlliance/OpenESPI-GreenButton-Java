@@ -85,6 +85,61 @@
         </div>
     </div>
 
+    <!-- OAuth2 Authorization Section (for authenticated users) -->
+    <div class="row mb-4" sec:authorize="isAuthenticated()">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Data Access Authorization</h4>
+                </div>
+                <div class="card-body">
+                    <p>Authorize this application to access your energy usage data from the Data Custodian. Choose the appropriate access level based on your needs:</p>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-calendar-month text-success" style="font-size: 2rem;"></i>
+                                    <h5 class="card-title mt-2">Monthly Data</h5>
+                                    <p class="card-text small">Access monthly usage data with 1-hour intervals for up to 13 months of history.</p>
+                                    <a href="/oauth2/authorize/monthly" class="btn btn-success btn-sm">
+                                        <i class="bi bi-shield-check"></i> Authorize Monthly Access
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-calendar-day text-info" style="font-size: 2rem;"></i>
+                                    <h5 class="card-title mt-2">Daily Data</h5>
+                                    <p class="card-text small">Access daily usage data with 15-minute intervals for up to 7 days of history.</p>
+                                    <a href="/oauth2/authorize/daily" class="btn btn-info btn-sm">
+                                        <i class="bi bi-shield-check"></i> Authorize Daily Access
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-gear text-warning" style="font-size: 2rem;"></i>
+                                    <h5 class="card-title mt-2">Admin Access</h5>
+                                    <p class="card-text small">Administrative access for third party application management and configuration.</p>
+                                    <a href="/oauth2/authorize/admin" class="btn btn-warning btn-sm">
+                                        <i class="bi bi-shield-exclamation"></i> Authorize Admin Access
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Features Row -->
     <div class="row g-4">
         <div class="col-md-4">

@@ -30,11 +30,7 @@ import org.greenbuttonalliance.espi.common.service.RetailCustomerService;
 import org.greenbuttonalliance.espi.thirdparty.repository.UsagePointRESTRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Repository;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.greenbuttonalliance.espi.common.dto.atom.AtomFeedDto;
 import org.greenbuttonalliance.espi.common.dto.usage.UsagePointDto;
@@ -50,9 +46,6 @@ import java.util.stream.Collectors;
 
 @Repository
 public class UsagePointRESTRepositoryImpl implements UsagePointRESTRepository {
-	@Autowired
-	@Qualifier("restTemplate")
-	private RestTemplate template;
 
 	@Autowired
 	private AuthorizationService authorizationService;
@@ -99,9 +92,6 @@ public class UsagePointRESTRepositoryImpl implements UsagePointRESTRepository {
 		this.usagePointRepository = usagePointRepository;
 	}
 
-	public void setTemplate(RestTemplate template) {
-		this.template = template;
-	}
 
 	public void setAuthorizationService(
 			AuthorizationService authorizationService) {
@@ -151,16 +141,6 @@ public class UsagePointRESTRepositoryImpl implements UsagePointRESTRepository {
 		return null;
 	}
 
-	private HttpEntity<String> getUsagePoints(AuthorizationEntity authorization) {
-		HttpHeaders requestHeaders = new HttpHeaders();
-		requestHeaders.set("Authorization",
-				"Bearer " + authorization.getAccessToken());
-		@SuppressWarnings({ "rawtypes", "unchecked" })
-		HttpEntity<?> requestEntity = new HttpEntity(requestHeaders);
-
-		return template.exchange(authorization.getResourceURI(),
-				HttpMethod.GET, requestEntity, String.class);
-	}
 
 	private AuthorizationEntity findAuthorization(Long retailCustomerId) {
 		List<AuthorizationEntity> authorizations = authorizationService

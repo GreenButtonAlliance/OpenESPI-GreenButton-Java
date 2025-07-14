@@ -31,16 +31,13 @@ import org.greenbuttonalliance.espi.common.dto.atom.AtomEntryDto;
 import org.greenbuttonalliance.espi.common.service.RetailCustomerService;
 import org.greenbuttonalliance.espi.thirdparty.web.BaseController;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.io.ByteArrayInputStream;
 import java.util.List;
@@ -53,8 +50,7 @@ public class AdministratorController extends BaseController {
 	private RetailCustomerService service;
 
 	@Autowired
-	@Qualifier("restTemplate")
-	private RestTemplate restTemplate;
+	private WebClient webClient;
 
 	// ResourceService and ImportService removed in migration
 	// @Autowired
@@ -84,18 +80,17 @@ public class AdministratorController extends BaseController {
 
 		try {
 
-			HttpHeaders requestHeaders = new HttpHeaders();
-			requestHeaders.set("Authorization", "Bearer " + accessToken);
-			@SuppressWarnings({ "unchecked", "rawtypes" })
-			HttpEntity<?> requestEntity = new HttpEntity(requestHeaders);
+			// get the subscription using WebClient
+			Mono<String> resultMono = webClient.get()
+					.uri(statusUri)
+					.headers(headers -> headers.setBearerAuth(accessToken))
+					.retrieve()
+					.bodyToMono(String.class);
 
-			// get the subscription
-			HttpEntity<String> httpResult = restTemplate.exchange(statusUri,
-					HttpMethod.GET, requestEntity, String.class);
+			String result = resultMono.block();
 
 			// import it into the repository
-			ByteArrayInputStream bs = new ByteArrayInputStream(httpResult
-					.getBody().toString().getBytes());
+			ByteArrayInputStream bs = new ByteArrayInputStream(result.getBytes());
 
 			// TODO: Replace with modern import/parsing using openespi-common DTOs
 			// importService.importData(bs, retailCustomer.getId());
@@ -123,12 +118,12 @@ public class AdministratorController extends BaseController {
 		return this.service;
 	}
 
-	public void setRestTemplate(RestTemplate restTemplate) {
-		this.restTemplate = restTemplate;
+	public void setWebClient(WebClient webClient) {
+		this.webClient = webClient;
 	}
 
-	public RestTemplate getRestTemplate() {
-		return this.restTemplate;
+	public WebClient getWebClient() {
+		return this.webClient;
 	}
 
 	// ResourceService and ImportService removed in migration

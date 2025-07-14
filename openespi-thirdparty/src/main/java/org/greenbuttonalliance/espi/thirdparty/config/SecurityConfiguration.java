@@ -23,11 +23,20 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProvider;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProviderBuilder;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizedClientManager;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
+import org.springframework.security.oauth2.client.web.reactive.function.client.ServletOAuth2AuthorizedClientExchangeFilterFunction;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.Arrays;
 
@@ -74,6 +83,55 @@ public class SecurityConfiguration {
             .csrf(csrf -> csrf.disable()); // Disabled for API access patterns
 
         return http.build();
+    }
+
+    /**
+     * OAuth2 Authorized Client Manager for handling OAuth2 flows.
+     * Supports authorization_code, refresh_token flows with automatic token refresh.
+     */
+    @Bean
+    public OAuth2AuthorizedClientManager authorizedClientManager(
+            ClientRegistrationRepository clientRegistrationRepository,
+            OAuth2AuthorizedClientRepository authorizedClientRepository) {
+
+        OAuth2AuthorizedClientProvider authorizedClientProvider =
+                OAuth2AuthorizedClientProviderBuilder.builder()
+                        .authorizationCode()
+                        .refreshToken()
+                        .build();
+
+        DefaultOAuth2AuthorizedClientManager authorizedClientManager =
+                new DefaultOAuth2AuthorizedClientManager(
+                        clientRegistrationRepository, authorizedClientRepository);
+        
+        authorizedClientManager.setAuthorizedClientProvider(authorizedClientProvider);
+
+        return authorizedClientManager;
+    }
+
+    /**
+     * WebClient configured with OAuth2 support for making authenticated API calls.
+     * This is the PREFERRED method for HTTP calls - replaces RestTemplate.
+     */
+    @Bean
+    public WebClient webClient(OAuth2AuthorizedClientManager authorizedClientManager) {
+        ServletOAuth2AuthorizedClientExchangeFilterFunction oauth2Client =
+                new ServletOAuth2AuthorizedClientExchangeFilterFunction(authorizedClientManager);
+        
+        return WebClient.builder()
+                .apply(oauth2Client.oauth2Configuration())
+                .build();
+    }
+
+    /**
+     * Legacy RestTemplate bean for backward compatibility.
+     * TODO: Replace all RestTemplate usage with OAuth2-enabled WebClient.
+     * @deprecated Use webClient() bean instead for OAuth2-aware HTTP calls.
+     */
+    @Bean("restTemplate")
+    @Deprecated
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
     }
 
     @Bean

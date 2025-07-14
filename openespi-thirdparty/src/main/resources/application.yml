@@ -86,13 +86,36 @@ spring:
     oauth2:
       client:
         registration:
-          datacustodian:
+          # Monthly usage data with 1-hour intervals
+          datacustodian-monthly:
             client-id: ${OAUTH2_CLIENT_ID:third_party}
             client-secret: ${OAUTH2_CLIENT_SECRET:secret}
             authorization-grant-type: authorization_code
-            redirect-uri: "${espi.thirdparty.base-url}/login/oauth2/code/datacustodian"
+            redirect-uri: "${espi.thirdparty.base-url}/login/oauth2/code/datacustodian-monthly"
             scope: "openid,profile,FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"
-            client-name: Data Custodian
+            client-name: Data Custodian (Monthly)
+            provider: datacustodian
+          
+          # Daily usage data with 15-minute intervals
+          datacustodian-daily:
+            client-id: ${OAUTH2_CLIENT_ID:third_party}
+            client-secret: ${OAUTH2_CLIENT_SECRET:secret}
+            authorization-grant-type: authorization_code
+            redirect-uri: "${espi.thirdparty.base-url}/login/oauth2/code/datacustodian-daily"
+            scope: "openid,profile,FB=4_5_15;IntervalDuration=900;BlockDuration=daily;HistoryLength=7"
+            client-name: Data Custodian (Daily)
+            provider: datacustodian
+          
+          # Admin access for third party applications
+          datacustodian-admin:
+            client-id: ${OAUTH2_CLIENT_ID:third_party}
+            client-secret: ${OAUTH2_CLIENT_SECRET:secret}
+            authorization-grant-type: authorization_code
+            redirect-uri: "${espi.thirdparty.base-url}/login/oauth2/code/datacustodian-admin"
+            scope: "openid,profile,ThirdParty_Admin_Access"
+            client-name: Data Custodian (Admin)
+            provider: datacustodian
+            
         provider:
           datacustodian:
             authorization-uri: ${OAUTH2_AUTHORIZATION_URI:http://localhost:9999/oauth2/authorize}

@@ -66,6 +66,9 @@ public class NotificationController extends BaseController {
 	@Autowired
 	private WebClientService webClientService;
 
+	@Autowired
+	private WebClient webClient;
+
 	private static final Logger logger = LoggerFactory.getLogger(NotificationController.class);
 
 	@Autowired

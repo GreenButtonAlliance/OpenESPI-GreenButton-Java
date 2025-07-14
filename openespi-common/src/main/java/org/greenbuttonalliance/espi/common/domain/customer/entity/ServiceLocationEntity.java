@@ -42,7 +42,7 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
-@ToString(callSuper = true, exclude = {"usagePoints"})
+@ToString(callSuper = true)
 public class ServiceLocationEntity extends IdentifiedObject {
 
     // Location fields (previously inherited from Location superclass)
@@ -79,28 +79,13 @@ public class ServiceLocationEntity extends IdentifiedObject {
     private Organisation.StreetAddress secondaryAddress;
 
     /**
-     * Phone number.
+     * Phone numbers associated with this service location.
+     * Uses separate PhoneNumberEntity table to avoid JPA mapping conflicts.
      */
-    @Embedded
-    @AttributeOverrides({
-        @AttributeOverride(name = "areaCode", column = @Column(name = "phone1_area_code")),
-        @AttributeOverride(name = "cityCode", column = @Column(name = "phone1_city_code")),
-        @AttributeOverride(name = "localNumber", column = @Column(name = "phone1_local_number")),
-        @AttributeOverride(name = "extension", column = @Column(name = "phone1_extension"))
-    })
-    private Organisation.PhoneNumber phone1;
-
-    /**
-     * Additional phone number.
-     */
-    @Embedded
-    @AttributeOverrides({
-        @AttributeOverride(name = "areaCode", column = @Column(name = "phone2_area_code")),
-        @AttributeOverride(name = "cityCode", column = @Column(name = "phone2_city_code")),
-        @AttributeOverride(name = "localNumber", column = @Column(name = "phone2_local_number")),
-        @AttributeOverride(name = "extension", column = @Column(name = "phone2_extension"))
-    })
-    private Organisation.PhoneNumber phone2;
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @JoinColumn(name = "parent_entity_uuid", referencedColumnName = "id")
+    @ToString.Exclude
+    private List<PhoneNumberEntity> phoneNumbers;
 
     /**
      * Electronic address.

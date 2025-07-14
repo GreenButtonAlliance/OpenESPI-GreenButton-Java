@@ -24,45 +24,58 @@ import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
 import org.greenbuttonalliance.espi.thirdparty.repository.ResourceRESTRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.oxm.jaxb.Jaxb2Marshaller;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
+import org.springframework.security.oauth2.client.OAuth2AuthorizeRequest;
 import org.springframework.stereotype.Repository;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import javax.xml.transform.stream.StreamSource;
+import java.io.StringReader;
 
 @Repository
 public class ResourceRESTRepositoryImpl implements ResourceRESTRepository {
+
 	@Autowired
-	@Qualifier("restTemplate")
-	private RestTemplate template;
+	private WebClient webClient;
+
+	@Autowired
+	private OAuth2AuthorizedClientManager authorizedClientManager;
 
 	@Autowired
 	@Qualifier(value = "atomMarshaller")
 	private Jaxb2Marshaller marshaller;
 
 	public IdentifiedObject get(AuthorizationEntity authorization, String url) {
-		HttpHeaders requestHeaders = new HttpHeaders();
-		requestHeaders.set("Authorization",
-				"Bearer " + authorization.getAccessToken());
-		@SuppressWarnings({ "rawtypes", "unchecked" })
-		HttpEntity<?> requestEntity = new HttpEntity(requestHeaders);
+		// Use OAuth2 client registration to get authorized client
+		OAuth2AuthorizeRequest authorizeRequest = OAuth2AuthorizeRequest
+				.withClientRegistrationId("datacustodian-monthly")
+				.principal(authorization.getRetailCustomer().getUsername())
+				.build();
 
-		HttpEntity<String> response = template.exchange(url, HttpMethod.GET,
-				requestEntity, String.class);
+		OAuth2AuthorizedClient authorizedClient = authorizedClientManager.authorize(authorizeRequest);
+
+		// Make authenticated request using WebClient with OAuth2 support
+		Mono<String> responseMono = webClient.get()
+				.uri(url)
+				.attributes(static1 -> static1.put("oauth2AuthorizedClient", authorizedClient))
+				.retrieve()
+				.bodyToMono(String.class);
+
+		String responseBody = responseMono.block();
 
 		return (IdentifiedObject) marshaller.unmarshal(new StreamSource(
-				response.getBody()));
+				new StringReader(responseBody)));
 	}
 
-	public void setRestTemplate(RestTemplate template) {
-		this.template = template;
+	public void setWebClient(WebClient webClient) {
+		this.webClient = webClient;
 	}
 
-	public RestTemplate getRestTemplate() {
-		return this.template;
+	public WebClient getWebClient() {
+		return this.webClient;
 	}
 
 	public void setJaxb2Marshaller(Jaxb2Marshaller marshaller) {

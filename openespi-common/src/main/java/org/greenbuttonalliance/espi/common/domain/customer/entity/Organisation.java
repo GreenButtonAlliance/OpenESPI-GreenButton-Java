@@ -57,19 +57,8 @@ public class Organisation {
     @Embedded
     private StreetAddress postalAddress;
 
-    /**
-     * Primary phone number for this organisation.
-     * Transient field - phone numbers are managed separately via PhoneNumberEntity.
-     */
-    @Transient
-    private PhoneNumber phone1;
-
-    /**
-     * Secondary phone number for this organisation.
-     * Transient field - phone numbers are managed separately via PhoneNumberEntity.
-     */
-    @Transient
-    private PhoneNumber phone2;
+    // PhoneNumber fields removed - phone numbers are managed separately via PhoneNumberEntity
+    // to avoid JPA column mapping conflicts in embedded contexts
 
     /**
      * Electronic address for this organisation.
@@ -91,18 +80,7 @@ public class Organisation {
         private String country;
     }
 
-    /**
-     * Embeddable class for PhoneNumber
-     */
-    @Embeddable
-    @Data
-    @NoArgsConstructor
-    public static class PhoneNumber {
-        private String areaCode;
-        private String cityCode;
-        private String localNumber;
-        private String extension;
-    }
+    // PhoneNumber embeddable class removed - using separate PhoneNumberEntity table instead
 
     /**
      * Embeddable class for ElectronicAddress

@@ -54,7 +54,7 @@ class DataCustodianListController { // Disabled during migration
 	}
 
 	public ApplicationInformationService getApplicationInformationService() {
-		return this.resourceService;
+		return this.applicationInformationService;
 	}
 
 }
