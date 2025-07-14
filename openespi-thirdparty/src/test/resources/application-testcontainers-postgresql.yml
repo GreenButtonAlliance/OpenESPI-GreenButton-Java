@@ -1,0 +1,56 @@
+# TestContainers PostgreSQL Test Configuration
+spring:
+  datasource:
+    # These properties will be overridden by TestContainers
+    url: jdbc:postgresql://localhost:5432/testdb
+    username: test
+    password: test
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      idle-timeout: 300000
+      pool-name: TestContainersPostgreSQLHikariCP
+      auto-commit: false
+      connection-test-query: SELECT 1
+  
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        generate_statistics: false
+        
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration/postgresql
+    
+  # Faster testing configuration
+  main:
+    lazy-initialization: true
+  jmx:
+    enabled: false
+
+# Reduced logging for tests
+logging:
+  level:
+    org.greenbuttonalliance.espi: WARN
+    org.springframework.security: WARN
+    org.springframework.oauth2: WARN
+    org.hibernate: WARN
+    org.flywaydb: INFO
+    org.testcontainers: INFO
+    com.github.dockerjava: WARN
+
+espi:
+  thirdparty:
+    base-url: http://localhost:8082/ThirdParty
+  datacustodian:
+    base-url: http://localhost:8081/DataCustodian
+  authorization-server:
+    issuer-uri: http://localhost:9999
+    authorization-endpoint: http://localhost:9999/oauth2/authorize
+    token-endpoint: http://localhost:9999/oauth2/token

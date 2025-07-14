@@ -22,10 +22,16 @@ package org.greenbuttonalliance.espi.thirdparty.web;
 import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.ApplicationInformationEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
+import org.greenbuttonalliance.espi.common.domain.common.GrantType;
+import org.greenbuttonalliance.espi.common.domain.common.TokenType;
+import org.greenbuttonalliance.espi.common.domain.common.OAuthError;
 import org.greenbuttonalliance.espi.common.service.AuthorizationService;
 import org.greenbuttonalliance.espi.common.service.RetailCustomerService;
+import org.greenbuttonalliance.espi.common.repositories.usage.AuthorizationEntityRepository;
 import org.greenbuttonalliance.espi.thirdparty.repository.UsagePointRESTRepository;
 import org.greenbuttonalliance.espi.thirdparty.service.WebClientService;
+import org.greenbuttonalliance.espi.thirdparty.dto.AccessTokenDto;
+import org.greenbuttonalliance.espi.thirdparty.exception.UserDeniedAuthorizationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,11 +45,15 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.HttpClientErrorException;
 
 import jakarta.persistence.NoResultException;
 import jakarta.xml.bind.JAXBException;
 import java.security.Principal;
 import java.time.LocalDateTime;
+import java.util.GregorianCalendar;
+import java.util.UUID;
 
 @Controller
 public class AuthorizationController {
@@ -52,6 +62,9 @@ public class AuthorizationController {
 
 	@Autowired
 	private AuthorizationService authorizationService;
+	
+	@Autowired
+	private AuthorizationEntityRepository authorizationRepository;
 	
 	@Autowired
 	private RetailCustomerService retailCustomerService;
@@ -64,6 +77,9 @@ public class AuthorizationController {
 
 	@Autowired
 	private ClientWebClientFactory clientWebClientFactory;
+	
+	@Autowired
+	private RestTemplate restTemplate;
 
 	@GetMapping("/oauth/callback")
 	public String authorization(
@@ -79,11 +95,11 @@ public class AuthorizationController {
 
 			// Is /oauth/authorization response valid (i.e. is the "state"
 			// element correct)?
-			Authorization authorization = authorizationService
+			AuthorizationEntity authorization = authorizationService
 					.findByState(state);
 
 			// Process valid /oauth/authorization response
-			ApplicationInformation applicationInformation = authorization
+			ApplicationInformationEntity applicationInformation = authorization
 					.getApplicationInformation();
 
 			// Verify /oauth/authorization Endpoint process completed
@@ -94,8 +110,8 @@ public class AuthorizationController {
 					// Update Authorization record with returned authorization
 					// code for audit purposes
 					authorization.setCode(code);
-					authorization.setGrantType("authorization_code");
-					authorization.setUpdated(new GregorianCalendar());
+					authorization.setGrantType(GrantType.AUTHORIZATION_CODE);
+					authorization.setUpdated(LocalDateTime.now());
 					authorizationService.merge(authorization);
 
 					// Format /oauth/token Endpoint request
@@ -113,21 +129,21 @@ public class AuthorizationController {
 									applicationInformation.getClientSecret());
 
 					// Issue /oauth/token Endpoint request
-					AccessToken token = restTemplate.getForObject(url,
-							AccessToken.class);
+					AccessTokenDto token = restTemplate.getForObject(url,
+							AccessTokenDto.class);
 
 					// Process /oauth/token Endpoint response
 
 					if (token.getAccessToken() != null) {
 						authorization.setAccessToken(token.getAccessToken());
-						authorization.setTokenType(token.getTokenType());
+						authorization.setTokenType(TokenType.fromValue(token.getTokenType()));
 						authorization.setExpiresIn(token.getExpiresIn());
 						authorization.setRefreshToken(token.getRefreshToken());
 						authorization.setScope(token.getScope());
 						authorization.setAuthorizationURI(token
 								.getAuthorizationURI());
 						authorization.setResourceURI(token.getResourceURI());
-						authorization.setUpdated(new GregorianCalendar());
+						authorization.setUpdated(LocalDateTime.now());
 						authorization.setStatus("1"); // Set authorization
 														// record status as
 														// "Active"
@@ -144,12 +160,12 @@ public class AuthorizationController {
 						// or the UX call for it.
 						// TODO: create a Subscription to work with if needed
 
-						RetailCustomer currentCustomer = currentCustomer(principal);
+						RetailCustomerEntity currentCustomer = getCurrentCustomer(principal);
 
 						try {
 							usagePointRESTRepository
-									.findAllByRetailCustomerId(currentCustomer
-											.getId());
+									.findAllByRetailCustomerId((long) currentCustomer
+											.getId().hashCode());
 
 						} catch (JAXBException e) {
 							// nothing there, so log the fact and move on. It
@@ -175,10 +191,10 @@ public class AuthorizationController {
 					System.out.printf("\nHTTPClientException: %s\n",
 							x.toString());
 
-					authorization.setError(error);
+					authorization.setError(error != null ? OAuthError.fromValue(error) : null);
 					authorization.setErrorDescription(error_description);
 					authorization.setErrorUri(error_uri);
-					authorization.setUpdated(new GregorianCalendar());
+					authorization.setUpdated(LocalDateTime.now());
 					authorization.setStatus("2"); // Set authorization record
 													// status as "Denied"
 					authorization.setState(null); // Clear State as a security
@@ -199,10 +215,10 @@ public class AuthorizationController {
 				System.out.printf("Error_uri:         " + error_uri + "\n");
 
 				// Update authorization record with error response
-				authorization.setError(error);
+				authorization.setError(error != null ? OAuthError.fromValue(error) : null);
 				authorization.setErrorDescription(error_description);
 				authorization.setErrorUri(error_uri);
-				authorization.setUpdated(new GregorianCalendar());
+				authorization.setUpdated(LocalDateTime.now());
 				authorization.setStatus("2"); // Set authorization record status
 												// as "Denied"
 				authorization.setState(null); // Clear State as a security
@@ -222,7 +238,7 @@ public class AuthorizationController {
 
 		}
 
-		return "redirect:/RetailCustomer/" + currentCustomer(principal).getId()
+		return "redirect:/RetailCustomer/" + getCurrentCustomer(principal).getId()
 				+ "/AuthorizationList";
 	}
 
@@ -230,7 +246,7 @@ public class AuthorizationController {
 	public String index(ModelMap model, Authentication principal) {
 		model.put(
 				"authorizationList",
-				authorizationService.findAllByRetailCustomerId(currentCustomer(
+				authorizationRepository.findAllByRetailCustomerId(getCurrentCustomer(
 						principal).getId()));
 		return "/RetailCustomer/AuthorizationList/index";
 	}
@@ -260,6 +276,14 @@ public class AuthorizationController {
 
 	public ClientWebClientFactory getClientWebClientFactory() {
 		return this.clientWebClientFactory;
+	}
+
+	private RetailCustomerEntity getCurrentCustomer(Principal principal) {
+		try {
+			return retailCustomerService.findByUsername(principal.getName());
+		} catch (Exception e) {
+			throw new RuntimeException("Unable to find current customer: " + principal.getName(), e);
+		}
 	}
 
 }

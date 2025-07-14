@@ -22,6 +22,9 @@ package org.greenbuttonalliance.espi.thirdparty.web;
 import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.ApplicationInformationEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
+import org.greenbuttonalliance.espi.common.domain.common.GrantType;
+import org.greenbuttonalliance.espi.common.domain.common.TokenType;
+import org.greenbuttonalliance.espi.common.domain.common.OAuthError;
 import org.greenbuttonalliance.espi.common.service.AuthorizationService;
 import org.greenbuttonalliance.espi.common.service.RetailCustomerService;
 import org.greenbuttonalliance.espi.thirdparty.repository.UsagePointRESTRepository;
@@ -145,7 +148,7 @@ public class ModernAuthorizationController {
         try {
             // Update authorization record with code
             authorization.setCode(code);
-            authorization.setGrantType("authorization_code");
+            authorization.setGrantType(GrantType.AUTHORIZATION_CODE);
             authorization.setUpdated(LocalDateTime.now());
             authorizationService.merge(authorization);
 
@@ -193,7 +196,7 @@ public class ModernAuthorizationController {
      */
     private void updateAuthorizationWithToken(AuthorizationEntity authorization, Map<String, Object> tokenResponse) {
         authorization.setAccessToken((String) tokenResponse.get("access_token"));
-        authorization.setTokenType((String) tokenResponse.get("token_type"));
+        authorization.setTokenType(TokenType.fromValue((String) tokenResponse.get("token_type")));
         authorization.setExpiresIn(getLongValue(tokenResponse, "expires_in"));
         authorization.setRefreshToken((String) tokenResponse.get("refresh_token"));
         authorization.setScope((String) tokenResponse.get("scope"));
@@ -214,7 +217,7 @@ public class ModernAuthorizationController {
                                         String error, 
                                         String errorDescription, 
                                         String errorUri) {
-        authorization.setError(error);
+        authorization.setError(error != null ? OAuthError.fromValue(error) : null);
         authorization.setErrorDescription(errorDescription);
         authorization.setErrorUri(errorUri);
         authorization.setUpdated(LocalDateTime.now());
@@ -228,7 +231,7 @@ public class ModernAuthorizationController {
      * Marks authorization as failed with error details.
      */
     private void markAuthorizationAsFailed(AuthorizationEntity authorization, String error, String description) {
-        authorization.setError(error);
+        authorization.setError(error != null ? OAuthError.fromValue(error) : null);
         authorization.setErrorDescription(description);
         authorization.setUpdated(LocalDateTime.now());
         authorization.setStatus("2"); // Failed
@@ -259,7 +262,7 @@ public class ModernAuthorizationController {
         if (principal instanceof Authentication auth) {
             var customer = retailCustomerService.findByUsername(auth.getName());
             if (customer != null) {
-                return customer.getId();
+                return (long) customer.getId().hashCode();
             }
         }
         throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Customer not found");

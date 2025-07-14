@@ -65,7 +65,7 @@ public class RetailCustomerController extends BaseController {
 
 	@RequestMapping(value = "/custodian/retailcustomers/form", method = RequestMethod.GET)
 	public String form(ModelMap model) {
-		model.put("retailCustomer", new RetailCustomer());
+		model.put("retailCustomer", new RetailCustomerEntity());
 
 		return "retailcustomers/form";
 	}
@@ -96,7 +96,7 @@ public class RetailCustomerController extends BaseController {
 	public static class RetailCustomerValidator implements Validator {
 
 		public boolean supports(@SuppressWarnings("rawtypes") Class clazz) {
-			return RetailCustomer.class.isAssignableFrom(clazz);
+			return RetailCustomerEntity.class.isAssignableFrom(clazz);
 		}
 
 		public void validate(Object target, Errors errors) {

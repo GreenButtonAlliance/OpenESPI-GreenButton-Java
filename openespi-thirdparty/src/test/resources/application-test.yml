@@ -1,0 +1,53 @@
+# Test Configuration
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        generate_statistics: false
+  
+  flyway:
+    enabled: false
+  
+  security:
+    oauth2:
+      client:
+        registration:
+          datacustodian:
+            client-id: test-client
+            client-secret: test-secret
+            authorization-grant-type: authorization_code
+            redirect-uri: "http://localhost:8082/ThirdParty/login/oauth2/code/datacustodian"
+            scope: "openid,profile,FB=4_5_15"
+        provider:
+          datacustodian:
+            authorization-uri: http://localhost:9999/oauth2/authorize
+            token-uri: http://localhost:9999/oauth2/token
+            user-info-uri: http://localhost:8081/DataCustodian/espi/1_1/resource/Authorization
+
+logging:
+  level:
+    org.greenbuttonalliance.espi: DEBUG
+    org.springframework.security: WARN
+    org.springframework.oauth2: WARN
+    org.hibernate: WARN
+    org.flywaydb: WARN
+
+espi:
+  thirdparty:
+    base-url: http://localhost:8082/ThirdParty
+  datacustodian:
+    base-url: http://localhost:8081/DataCustodian
+  authorization-server:
+    issuer-uri: http://localhost:9999
+    authorization-endpoint: http://localhost:9999/oauth2/authorize
+    token-endpoint: http://localhost:9999/oauth2/token

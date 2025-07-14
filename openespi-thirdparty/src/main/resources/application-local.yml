@@ -1,0 +1,60 @@
+# Local Development H2 Profile Configuration
+# Fast startup for local development and testing
+spring:
+  datasource:
+    url: jdbc:h2:mem:thirdparty;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=MySQL;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      idle-timeout: 300000
+      pool-name: ThirdPartyH2HikariCP
+      auto-commit: false
+      connection-test-query: SELECT 1
+  
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        generate_statistics: true
+        format_sql: true
+        
+  flyway:
+    enabled: false # Use JPA DDL auto for H2 local development
+  
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+      settings:
+        web-allow-others: true
+
+# Development-specific logging
+logging:
+  level:
+    org.greenbuttonalliance.espi: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.oauth2: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.h2.server: INFO
+  
+server:
+  port: 8082
+
+espi:
+  thirdparty:
+    base-url: http://localhost:8082/ThirdParty
+  datacustodian:
+    base-url: http://localhost:8081/DataCustodian
+  authorization-server:
+    issuer-uri: http://localhost:9999
+    authorization-endpoint: http://localhost:9999/oauth2/authorize
+    token-endpoint: http://localhost:9999/oauth2/token
+    client-id: third_party
+    client-secret: secret

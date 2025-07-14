@@ -1,27 +1,87 @@
 # OpenESPI Third Party (OAuth2 Client) Application Configuration
+# Spring Boot 3.5 configuration with multi-environment support
 
 spring:
   application:
-    name: openespi-thirdparty
+    name: OpenESPI-ThirdParty
   
   profiles:
-    active: dev
+    active: ${SPRING_PROFILES_ACTIVE:dev-mysql}
   
+  # JPA Configuration
   jpa:
-    hibernate:
-      ddl-auto: update
+    open-in-view: false
     show-sql: false
+    hibernate:
+      ddl-auto: none
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+        generate_statistics: false
+        cache:
+          use_second_level_cache: false
+          use_query_cache: false
   
-  datasource:
-    url: ${DB_URL:jdbc:mysql://localhost:3306/openespi_thirdparty}
-    username: ${DB_USERNAME:espi_user}
-    password: ${DB_PASSWORD:espi_password}
-    driver-class-name: com.mysql.cj.jdbc.Driver
+  # Flyway Database Migration
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration/mysql
+    table: flyway_schema_history
   
+  # Jackson JSON Configuration
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+      indent-output: true
+    deserialization:
+      fail-on-unknown-properties: false
+    default-property-inclusion: NON_NULL
+    time-zone: UTC
+    date-format: yyyy-MM-dd'T'HH:mm:ss.SSSXXX
+  
+  # Cache Configuration
+  cache:
+    type: simple
+    cache-names:
+      - espi-resources
+      - espi-usage-points
+      - espi-authorizations
+  
+  # Thymeleaf Configuration
+  thymeleaf:
+    cache: false # Set to true in production
+    check-template: true
+    check-template-location: true
+    encoding: UTF-8
+    mode: HTML
+    prefix: classpath:/templates/
+    suffix: .html
+    servlet:
+      content-type: text/html
+      produce-partial-output-while-processing: true
+
+  # Web Configuration
+  web:
+    resources:
+      add-mappings: true
+      static-locations: classpath:/static/
+      cache:
+        period: 3600s
+  
+  # MVC Configuration  
+  mvc:
+    view:
+      prefix: classpath:/templates/
+      suffix: .html
+    static-path-pattern: /**
+
+  # OAuth2 Client Configuration - ESPI Third Party
   security:
     oauth2:
       client:
@@ -30,45 +90,107 @@ spring:
             client-id: ${OAUTH2_CLIENT_ID:third_party}
             client-secret: ${OAUTH2_CLIENT_SECRET:secret}
             authorization-grant-type: authorization_code
-            redirect-uri: "https://localhost:8443/login/oauth2/code/datacustodian"
-            scope: "FB=1_3_4_5_13_14_15_16_39;IntervalDuration=monthly;BlockDuration=monthly;HistoryLength=13"
+            redirect-uri: "${espi.thirdparty.base-url}/login/oauth2/code/datacustodian"
+            scope: "openid,profile,FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"
             client-name: Data Custodian
         provider:
           datacustodian:
-            authorization-uri: ${OAUTH2_AUTHORIZATION_URI:https://localhost:8443/DataCustodian/oauth/authorize}
-            token-uri: ${OAUTH2_TOKEN_URI:https://localhost:8443/DataCustodian/oauth/token}
-            user-info-uri: ${OAUTH2_USER_INFO_URI:https://localhost:8443/DataCustodian/espi/1_1/resource/Authorization}
+            authorization-uri: ${OAUTH2_AUTHORIZATION_URI:http://localhost:9999/oauth2/authorize}
+            token-uri: ${OAUTH2_TOKEN_URI:http://localhost:9999/oauth2/token}
+            user-info-uri: ${OAUTH2_USER_INFO_URI:http://localhost:8081/DataCustodian/espi/1_1/resource/Authorization}
             user-name-attribute: uuid
 
-# Server configuration
+# Server Configuration  
 server:
-  port: 8080
+  port: 8082
   servlet:
     context-path: /ThirdParty
-  ssl:
-    enabled: false
-    
-# Logging configuration
-logging:
-  level:
-    org.greenbuttonalliance.espi: DEBUG
-    org.springframework.security: DEBUG
-    org.springframework.web: DEBUG
-  pattern:
-    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain,application/atom+xml
+  error:
+    include-stacktrace: never
+    include-message: always
 
-# Application specific configuration
-espi:
-  base-url: ${ESPI_BASE_URL:http://localhost:8080/ThirdParty}
-  datacustodian:
-    base-url: ${DATACUSTODIAN_BASE_URL:https://localhost:8443/DataCustodian}
-  
-# Management endpoints
+# Actuator Configuration
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics,prometheus
+      base-path: /actuator
   endpoint:
     health:
       show-details: when-authorized
+    metrics:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name}
+
+# ESPI Third Party Configuration
+espi:
+  thirdparty:
+    base-url: ${THIRDPARTY_BASE_URL:http://localhost:8082/ThirdParty}
+    name: "Green Button Alliance Third Party"
+    description: "NAESB ESPI 1.0 Third Party Client Implementation"
+    contact:
+      name: "Green Button Alliance"
+      url: "https://www.greenbuttonalliance.org"
+      email: "info@greenbuttonalliance.org"
+  
+  datacustodian:
+    base-url: ${DATACUSTODIAN_BASE_URL:http://localhost:8081/DataCustodian}
+  
+  authorization-server:
+    issuer-uri: ${AUTHORIZATION_SERVER_ISSUER_URI:http://localhost:9999}
+    authorization-endpoint: ${AUTHORIZATION_SERVER_AUTHORIZATION_ENDPOINT:http://localhost:9999/oauth2/authorize}
+    token-endpoint: ${AUTHORIZATION_SERVER_TOKEN_ENDPOINT:http://localhost:9999/oauth2/token}
+    client-id: ${AUTHORIZATION_SERVER_CLIENT_ID:third_party}
+    client-secret: ${AUTHORIZATION_SERVER_CLIENT_SECRET:secret}
+  
+  # ESPI Resource Configuration
+  resources:
+    base-uri: ${espi.datacustodian.base-url}/espi/1_1/resource
+    page-size: 50
+    max-page-size: 200
+    
+  # XML Processing Configuration
+  xml:
+    pretty-print: true
+    include-namespaces: true
+
+# Logging Configuration
+logging:
+  level:
+    org.greenbuttonalliance.espi: INFO
+    org.springframework.security: INFO
+    org.springframework.web: INFO
+    org.springframework.oauth2: INFO
+    org.hibernate.SQL: WARN
+    org.hibernate.type: WARN
+    org.flywaydb: INFO
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# SpringDoc OpenAPI Configuration
+springdoc:
+  api-docs:
+    path: /api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    operations-sorter: alpha
+    tags-sorter: alpha
+  show-actuator: true
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json

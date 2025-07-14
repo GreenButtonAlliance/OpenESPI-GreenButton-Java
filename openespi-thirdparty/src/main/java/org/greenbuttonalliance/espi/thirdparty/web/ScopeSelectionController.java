@@ -21,6 +21,7 @@ package org.greenbuttonalliance.espi.thirdparty.web;
 
 import org.greenbuttonalliance.espi.common.domain.usage.ApplicationInformationEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
+import org.greenbuttonalliance.espi.common.domain.common.ResponseType;
 //  // TODO: Find correct Routes import
 import org.greenbuttonalliance.espi.common.service.ApplicationInformationService;
 import org.greenbuttonalliance.espi.common.service.AuthorizationService;
@@ -101,7 +102,7 @@ public class ScopeSelectionController extends BaseController {
 		try {
 			// Does an ACTIVE authorization record exist for the requested Scope
 			AuthorizationEntity currentAuthorization = authorizationService
-					.findByScope(scope, currentCustomer(principal).getId());
+					.findByScope(scope, (long) currentCustomer(principal).getId().hashCode());
 
 			// Is this a valid authorization record?
 			if (currentAuthorization.getStatus() == null) {
@@ -131,8 +132,8 @@ public class ScopeSelectionController extends BaseController {
 			authorization.setThirdParty(applicationInformation.getClientId());
 			authorization.setRetailCustomer(currentCustomer(principal));
 			authorization.setState(stateService.newState());
-			authorization.setUUID(UUID.randomUUID());
-			authorization.setResponseType("code");
+			authorization.setId(UUID.randomUUID());
+			authorization.setResponseType(ResponseType.CODE);
 			authorization.setScope(scope);
 			authorizationService.persist(authorization);
 
