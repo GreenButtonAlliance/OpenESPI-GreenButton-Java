@@ -41,7 +41,8 @@
       "Bash(timeout 30s mvn spring-boot:run -q)",
       "Bash(cat:*)",
       "WebFetch(domain:github.com)",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "Bash(git stash:*)"
     ],
     "deny": []
   }

@@ -87,8 +87,8 @@ public class CustomerAccountServiceImpl implements CustomerAccountService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<CustomerAccountEntity> findByContactInfoId(Long organisationId) {
-        return customerAccountRepository.findByContactInfoId(organisationId);
+    public List<CustomerAccountEntity> findByContactInfo(String contactInfo) {
+        return customerAccountRepository.findByContactInfo(contactInfo);
     }
 
     @Override

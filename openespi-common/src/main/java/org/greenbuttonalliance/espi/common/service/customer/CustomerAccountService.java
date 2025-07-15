@@ -70,7 +70,7 @@ public interface CustomerAccountService {
     /**
      * Find customer accounts by contact info organisation ID.
      */
-    List<CustomerAccountEntity> findByContactInfoId(Long organisationId);
+    List<CustomerAccountEntity> findByContactInfo(String contactInfo);
 
     /**
      * Find customer accounts by last bill amount greater than specified value.
