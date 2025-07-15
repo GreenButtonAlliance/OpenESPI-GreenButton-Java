@@ -60,10 +60,11 @@ public class ServiceLocationEntity extends IdentifiedObject {
      */
     @Embedded
     @AttributeOverrides({
-        @AttributeOverride(name = "poBox", column = @Column(name = "main_po_box")),
-        @AttributeOverride(name = "street", column = @Column(name = "main_street")),
-        @AttributeOverride(name = "streetSuffix", column = @Column(name = "main_street_suffix")),
-        @AttributeOverride(name = "suite", column = @Column(name = "main_suite"))
+        @AttributeOverride(name = "streetDetail", column = @Column(name = "main_street_detail")),
+        @AttributeOverride(name = "townDetail", column = @Column(name = "main_town_detail")),
+        @AttributeOverride(name = "stateOrProvince", column = @Column(name = "main_state_or_province")),
+        @AttributeOverride(name = "postalCode", column = @Column(name = "main_postal_code")),
+        @AttributeOverride(name = "country", column = @Column(name = "main_country"))
     })
     private Organisation.StreetAddress mainAddress;
 
@@ -72,10 +73,11 @@ public class ServiceLocationEntity extends IdentifiedObject {
      */
     @Embedded
     @AttributeOverrides({
-        @AttributeOverride(name = "poBox", column = @Column(name = "secondary_po_box")),
-        @AttributeOverride(name = "street", column = @Column(name = "secondary_street")),
-        @AttributeOverride(name = "streetSuffix", column = @Column(name = "secondary_street_suffix")),
-        @AttributeOverride(name = "suite", column = @Column(name = "secondary_suite"))
+        @AttributeOverride(name = "streetDetail", column = @Column(name = "secondary_street_detail")),
+        @AttributeOverride(name = "townDetail", column = @Column(name = "secondary_town_detail")),
+        @AttributeOverride(name = "stateOrProvince", column = @Column(name = "secondary_state_or_province")),
+        @AttributeOverride(name = "postalCode", column = @Column(name = "secondary_postal_code")),
+        @AttributeOverride(name = "country", column = @Column(name = "secondary_country"))
     })
     private Organisation.StreetAddress secondaryAddress;
 

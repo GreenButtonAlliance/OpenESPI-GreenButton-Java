@@ -109,6 +109,11 @@ public class EndDeviceEntity extends IdentifiedObject {
      * Information on acceptance test.
      */
     @Embedded
+    @AttributeOverrides({
+        @AttributeOverride(name = "dateTime", column = @Column(name = "acceptance_test_date_time")),
+        @AttributeOverride(name = "success", column = @Column(name = "acceptance_test_success")),
+        @AttributeOverride(name = "type", column = @Column(name = "acceptance_test_type"))
+    })
     private Asset.AcceptanceTest acceptanceTest;
 
     /**
@@ -128,6 +133,11 @@ public class EndDeviceEntity extends IdentifiedObject {
      * Status of this asset.
      */
     @Embedded
+    @AttributeOverrides({
+        @AttributeOverride(name = "value", column = @Column(name = "status_value")),
+        @AttributeOverride(name = "dateTime", column = @Column(name = "status_date_time")),
+        @AttributeOverride(name = "reason", column = @Column(name = "status_reason"))
+    })
     private CustomerEntity.Status status;
 
     // AssetContainer fields (AssetContainer is simply an Asset that can contain other assets - no additional fields)

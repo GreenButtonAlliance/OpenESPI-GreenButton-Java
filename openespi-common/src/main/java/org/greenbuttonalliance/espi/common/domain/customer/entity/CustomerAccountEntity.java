@@ -119,8 +119,8 @@ public class CustomerAccountEntity extends IdentifiedObject {
      * [extension] Customer contact information used to identify individual 
      * responsible for billing and payment of CustomerAccount.
      */
-    @Embedded
-    private Organisation contactInfo;
+    @Column(name = "contact_name", length = 256)
+    private String contactInfo;
 
     /**
      * [extension] Customer account identifier

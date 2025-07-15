@@ -38,7 +38,10 @@
       "Bash(timeout 30 mvn spring-boot:run:*)",
       "Bash(timeout 20 mvn spring-boot:run:*)",
       "Bash(jar:*)",
-      "Bash(timeout 30s mvn spring-boot:run -q)"
+      "Bash(timeout 30s mvn spring-boot:run -q)",
+      "Bash(cat:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(pkill:*)"
     ],
     "deny": []
   }
