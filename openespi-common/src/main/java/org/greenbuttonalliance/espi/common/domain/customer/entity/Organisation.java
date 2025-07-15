@@ -73,10 +73,19 @@ public class Organisation {
     @Data
     @NoArgsConstructor
     public static class StreetAddress {
+        @Column(name = "street_detail", length = 256)
         private String streetDetail;
+        
+        @Column(name = "town_detail", length = 256)
         private String townDetail;
+        
+        @Column(name = "state_or_province", length = 256)
         private String stateOrProvince;
+        
+        @Column(name = "postal_code", length = 256)
         private String postalCode;
+        
+        @Column(name = "country", length = 256)
         private String country;
     }
 

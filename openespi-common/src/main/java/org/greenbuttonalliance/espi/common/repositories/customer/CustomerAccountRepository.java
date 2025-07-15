@@ -67,10 +67,10 @@ public interface CustomerAccountRepository extends JpaRepository<CustomerAccount
     List<CustomerAccountEntity> findBudgetBillAccounts();
 
     /**
-     * Find customer accounts by contact info organisation ID.
+     * Find customer accounts by contact info (now simplified to String).
      */
-    @Query("SELECT ca FROM CustomerAccountEntity ca WHERE ca.contactInfo.id = :organisationId")
-    List<CustomerAccountEntity> findByContactInfoId(@Param("organisationId") Long organisationId);
+    @Query("SELECT ca FROM CustomerAccountEntity ca WHERE ca.contactInfo = :contactInfo")
+    List<CustomerAccountEntity> findByContactInfo(@Param("contactInfo") String contactInfo);
 
     /**
      * Find customer accounts with last bill amount greater than specified value.
