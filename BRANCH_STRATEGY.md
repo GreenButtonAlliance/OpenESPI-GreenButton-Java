@@ -21,6 +21,11 @@ Create a new feature branch for each distinct task or feature:
 - `feature/oauth2-integration-testing` - Complete OAuth2AuthorizedClientManager integration testing
 - `feature/authorization-server-integration` - Complete Spring Authorization Server migration
 
+**Additional Entity Mapping Issues (identified in Continue_the_search.md analysis):**
+- `feature/fix-customer-account-repository` - Fix CustomerAccountRepository references to non-existent `isPrePay` field in CustomerAccountEntity
+- `feature/database-migration-alignment` - Ensure database migration scripts include all entity-defined columns
+- `feature/jpa-schema-validation` - Resolve mismatches between JPA entity definitions and actual database schema
+
 **Future Tasks:**
 - `feature/performance-security-review` - Review JPA performance and security configurations
 - `feature/documentation-cleanup` - Update API documentation and clean up legacy code
