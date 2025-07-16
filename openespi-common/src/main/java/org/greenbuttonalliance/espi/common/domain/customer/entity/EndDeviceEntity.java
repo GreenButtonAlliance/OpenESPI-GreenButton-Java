@@ -97,6 +97,12 @@ public class EndDeviceEntity extends IdentifiedObject {
      * Electronic address.
      */
     @Embedded
+    @AttributeOverrides({
+        @AttributeOverride(name = "email1", column = @Column(name = "end_device_email1")),
+        @AttributeOverride(name = "email2", column = @Column(name = "end_device_email2")),
+        @AttributeOverride(name = "web", column = @Column(name = "end_device_web")),
+        @AttributeOverride(name = "radio", column = @Column(name = "end_device_radio"))
+    })
     private Organisation.ElectronicAddress electronicAddress;
 
     /**
