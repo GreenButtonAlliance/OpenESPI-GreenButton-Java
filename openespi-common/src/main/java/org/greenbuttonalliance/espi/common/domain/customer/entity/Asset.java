@@ -88,6 +88,12 @@ public abstract class Asset implements Serializable {
      * Electronic address.
      */
     @Embedded
+    @AttributeOverrides({
+        @AttributeOverride(name = "email1", column = @Column(name = "asset_email1")),
+        @AttributeOverride(name = "email2", column = @Column(name = "asset_email2")),
+        @AttributeOverride(name = "web", column = @Column(name = "asset_web")),
+        @AttributeOverride(name = "radio", column = @Column(name = "asset_radio"))
+    })
     private Organisation.ElectronicAddress electronicAddress;
 
     /**
