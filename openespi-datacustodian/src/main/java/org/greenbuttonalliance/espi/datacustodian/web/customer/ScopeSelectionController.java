@@ -22,7 +22,7 @@ package org.greenbuttonalliance.espi.datacustodian.web.customer;
 
 import org.greenbuttonalliance.espi.common.domain.usage.ApplicationInformationEntity;
 // import org.greenbuttonalliance.espi.common.domain.usage.Routes; // Missing class
-import org.greenbuttonalliance.espi.common.repositories.usage.ApplicationInformationEntityRepository;
+import org.greenbuttonalliance.espi.common.repositories.usage.ApplicationInformationRepository;
 import org.greenbuttonalliance.espi.datacustodian.web.BaseController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -42,7 +42,7 @@ import static org.greenbuttonalliance.espi.datacustodian.utils.URLHelper.newScop
 public class ScopeSelectionController extends BaseController {
 
 	@Autowired
-	private ApplicationInformationEntityRepository applicationInformationRepository;
+	private ApplicationInformationRepository applicationInformationRepository;
 
 	@ExceptionHandler(Exception.class)
 	@ResponseStatus(value = HttpStatus.FORBIDDEN, reason = "Access Not Authorized")
@@ -77,7 +77,7 @@ public class ScopeSelectionController extends BaseController {
 	}
 
 	public void setApplicationInformationRepository(
-			ApplicationInformationEntityRepository applicationInformationRepository) {
+			ApplicationInformationRepository applicationInformationRepository) {
 		this.applicationInformationRepository = applicationInformationRepository;
 	}
 }

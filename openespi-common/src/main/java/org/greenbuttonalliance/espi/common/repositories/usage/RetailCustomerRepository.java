@@ -34,7 +34,7 @@ import java.util.UUID;
  * Replaces the legacy RetailCustomerRepositoryImpl with modern Spring Data patterns.
  */
 @Repository
-public interface RetailCustomerEntityRepository extends JpaRepository<RetailCustomerEntity, UUID> {
+public interface RetailCustomerRepository extends JpaRepository<RetailCustomerEntity, UUID> {
 
     // JpaRepository provides: save(), findById(), findAll(), deleteById(), etc.
 

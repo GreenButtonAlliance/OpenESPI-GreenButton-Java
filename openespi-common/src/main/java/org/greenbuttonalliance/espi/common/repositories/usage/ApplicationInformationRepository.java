@@ -33,8 +33,8 @@ import java.util.UUID;
  * Modern Spring Data JPA repository for ApplicationInformationEntity entities.
  * Specifically handles UUID-based ApplicationInformationEntity, not legacy ApplicationInformation.
  */
-@Repository("applicationInformationEntityRepository")
-public interface ApplicationInformationEntityRepository extends JpaRepository<ApplicationInformationEntity, UUID> {
+@Repository
+public interface ApplicationInformationRepository extends JpaRepository<ApplicationInformationEntity, UUID> {
 
     /**
      * Find application information by UUID.

@@ -52,3 +52,7 @@ test-output/
 *.swp
 *.swo
 *~
+
+# Temporary workaround directories - should not be committed
+temp-services/
+*/temp-services/
