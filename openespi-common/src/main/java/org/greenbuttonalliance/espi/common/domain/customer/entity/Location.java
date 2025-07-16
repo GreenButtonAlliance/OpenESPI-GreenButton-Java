@@ -59,10 +59,11 @@ public abstract class Location implements Serializable {
      */
     @Embedded
     @AttributeOverrides({
-        @AttributeOverride(name = "poBox", column = @Column(name = "main_po_box")),
-        @AttributeOverride(name = "street", column = @Column(name = "main_street")),
-        @AttributeOverride(name = "streetSuffix", column = @Column(name = "main_street_suffix")),
-        @AttributeOverride(name = "suite", column = @Column(name = "main_suite"))
+        @AttributeOverride(name = "streetDetail", column = @Column(name = "location_main_street_detail")),
+        @AttributeOverride(name = "townDetail", column = @Column(name = "location_main_town_detail")),
+        @AttributeOverride(name = "stateOrProvince", column = @Column(name = "location_main_state_or_province")),
+        @AttributeOverride(name = "postalCode", column = @Column(name = "location_main_postal_code")),
+        @AttributeOverride(name = "country", column = @Column(name = "location_main_country"))
     })
     private Organisation.StreetAddress mainAddress;
 
@@ -71,10 +72,11 @@ public abstract class Location implements Serializable {
      */
     @Embedded
     @AttributeOverrides({
-        @AttributeOverride(name = "poBox", column = @Column(name = "secondary_po_box")),
-        @AttributeOverride(name = "street", column = @Column(name = "secondary_street")),
-        @AttributeOverride(name = "streetSuffix", column = @Column(name = "secondary_street_suffix")),
-        @AttributeOverride(name = "suite", column = @Column(name = "secondary_suite"))
+        @AttributeOverride(name = "streetDetail", column = @Column(name = "location_secondary_street_detail")),
+        @AttributeOverride(name = "townDetail", column = @Column(name = "location_secondary_town_detail")),
+        @AttributeOverride(name = "stateOrProvince", column = @Column(name = "location_secondary_state_or_province")),
+        @AttributeOverride(name = "postalCode", column = @Column(name = "location_secondary_postal_code")),
+        @AttributeOverride(name = "country", column = @Column(name = "location_secondary_country"))
     })
     private Organisation.StreetAddress secondaryAddress;
 
@@ -86,10 +88,10 @@ public abstract class Location implements Serializable {
      */
     @Embedded
     @AttributeOverrides({
-        @AttributeOverride(name = "email1", column = @Column(name = "electronic_email1")),
-        @AttributeOverride(name = "email2", column = @Column(name = "electronic_email2")),
-        @AttributeOverride(name = "web", column = @Column(name = "electronic_web")),
-        @AttributeOverride(name = "radio", column = @Column(name = "electronic_radio"))
+        @AttributeOverride(name = "email1", column = @Column(name = "location_email1")),
+        @AttributeOverride(name = "email2", column = @Column(name = "location_email2")),
+        @AttributeOverride(name = "web", column = @Column(name = "location_web")),
+        @AttributeOverride(name = "radio", column = @Column(name = "location_radio"))
     })
     private Organisation.ElectronicAddress electronicAddress;
 
