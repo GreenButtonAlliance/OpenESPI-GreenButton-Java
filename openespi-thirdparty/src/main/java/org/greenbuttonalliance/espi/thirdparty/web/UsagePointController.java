@@ -23,7 +23,7 @@ import org.greenbuttonalliance.espi.common.domain.usage.*;
 import org.greenbuttonalliance.espi.common.domain.common.*;
 import org.greenbuttonalliance.espi.common.service.ApplicationInformationService;
 import org.greenbuttonalliance.espi.common.repositories.usage.UsagePointRepository;
-import org.greenbuttonalliance.espi.common.repositories.usage.ApplicationInformationEntityRepository;
+import org.greenbuttonalliance.espi.common.repositories.usage.ApplicationInformationRepository;
 // ResourceService removed in migration
 // import org.greenbuttonalliance.espi.common.service.ResourceService;
 // import org.greenbuttonalliance.espi.common.service.UsagePointService;
@@ -58,7 +58,7 @@ public class UsagePointController extends BaseController {
 	private UsagePointRepository usagePointRepository;
 
 	@Autowired
-	private ApplicationInformationEntityRepository applicationInformationRepository;
+	private ApplicationInformationRepository applicationInformationRepository;
 
 	// ResourceService removed in migration
 	// @Autowired
