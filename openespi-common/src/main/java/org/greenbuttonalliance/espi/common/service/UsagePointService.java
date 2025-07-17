@@ -58,7 +58,7 @@ public interface UsagePointService {
 
 	void setResourceService(ResourceService resourceService);
 
-	void persist(UsagePointEntity usagePoint);
+	UsagePointEntity save(UsagePointEntity usagePoint);
  
 	UsagePointEntity findById(Long usagePointId);
 

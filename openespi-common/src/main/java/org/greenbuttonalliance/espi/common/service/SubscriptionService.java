@@ -33,7 +33,7 @@ public interface SubscriptionService {
 
 	void setRepository(SubscriptionRepository subscriptionRepository);
 
-	void merge(SubscriptionEntity subscription);
+	SubscriptionEntity save(SubscriptionEntity subscription);
 
 	SubscriptionEntity findById(Long subscriptionId);
 

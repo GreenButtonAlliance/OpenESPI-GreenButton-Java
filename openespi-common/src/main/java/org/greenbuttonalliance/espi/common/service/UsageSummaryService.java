@@ -41,7 +41,7 @@ public interface UsageSummaryService {
 
     void associateByUUID(UsagePointEntity usagePoint, UUID uuid);
 
-    void persist(UsageSummaryEntity usageSummary);
+    UsageSummaryEntity save(UsageSummaryEntity usageSummary);
 
     UsageSummaryEntity findById(Long usageSummaryId);
 

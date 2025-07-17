@@ -51,7 +51,7 @@ public interface TimeConfigurationService {
  
 	void setRepository(TimeConfigurationRepository timeConfigurationRepository);
 
-	void persist(TimeConfiguration timeConfiguration);
+	TimeConfiguration save(TimeConfiguration timeConfiguration);
  
 	TimeConfiguration findById(Long timeConfigurationId);
 

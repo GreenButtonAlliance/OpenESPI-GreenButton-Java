@@ -56,9 +56,7 @@ public interface AuthorizationService {
 	AuthorizationEntity findByURI(String uri);
 
 	// persistence management services
-	void persist(AuthorizationEntity authorization);
-
-	void merge(AuthorizationEntity authorization);
+	AuthorizationEntity save(AuthorizationEntity authorization);
 
 	// accessor services
 	AuthorizationEntity findById(Long authorizationId);

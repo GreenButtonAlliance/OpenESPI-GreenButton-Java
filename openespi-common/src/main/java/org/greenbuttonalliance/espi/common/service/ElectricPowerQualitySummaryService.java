@@ -44,7 +44,7 @@ public interface ElectricPowerQualitySummaryService {
 
 	void associateByUUID(UsagePointEntity usagePoint, UUID uuid);
 
-	void persist(ElectricPowerQualitySummaryEntity electricPowerQualitySummary);
+	ElectricPowerQualitySummaryEntity save(ElectricPowerQualitySummaryEntity electricPowerQualitySummary);
 
 	void add(ElectricPowerQualitySummaryEntity electricPowerQualitySummary);
 

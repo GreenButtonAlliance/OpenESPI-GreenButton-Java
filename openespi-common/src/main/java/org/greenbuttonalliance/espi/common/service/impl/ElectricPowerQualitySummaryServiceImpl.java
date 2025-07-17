@@ -59,8 +59,8 @@ public class ElectricPowerQualitySummaryServiceImpl implements
 	}
 
 	@Override
-	public void persist(ElectricPowerQualitySummary electricPowerQualitySummary) {
-		electricPowerQualitySummaryRepository
+	public ElectricPowerQualitySummary save(ElectricPowerQualitySummary electricPowerQualitySummary) {
+		return electricPowerQualitySummaryRepository
 				.save(electricPowerQualitySummary);
 	}
 

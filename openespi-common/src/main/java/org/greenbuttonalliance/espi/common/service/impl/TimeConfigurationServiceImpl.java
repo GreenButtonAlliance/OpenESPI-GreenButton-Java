@@ -88,8 +88,8 @@ public class TimeConfigurationServiceImpl implements TimeConfigurationService {
 	}
 
 	@Override
-	public void persist(TimeConfiguration timeConfiguration) {
-		timeConfigurationRepository.save(timeConfiguration);
+	public TimeConfiguration save(TimeConfiguration timeConfiguration) {
+		return timeConfigurationRepository.save(timeConfiguration);
 	}
 
 	@Override
