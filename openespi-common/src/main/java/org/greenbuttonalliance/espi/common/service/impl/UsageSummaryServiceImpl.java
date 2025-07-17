@@ -19,16 +19,17 @@
 
 package org.greenbuttonalliance.espi.common.service.impl;
 
-import org.greenbuttonalliance.espi.common.domain.legacy.UsagePoint;
-import org.greenbuttonalliance.espi.common.domain.legacy.UsageSummary;
-import org.greenbuttonalliance.espi.common.domain.legacy.atom.EntryType;
+import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.UsageSummaryEntity;
+import org.greenbuttonalliance.espi.common.dto.usage.UsageSummaryDto;
+import org.greenbuttonalliance.espi.common.mapper.usage.UsageSummaryMapper;
 import org.greenbuttonalliance.espi.common.repositories.usage.UsageSummaryRepository;
-import org.greenbuttonalliance.espi.common.service.ImportService;
-import org.greenbuttonalliance.espi.common.service.ResourceService;
 import org.greenbuttonalliance.espi.common.service.UsageSummaryService;
-import org.greenbuttonalliance.espi.common.utils.EntryTypeIterator;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -36,153 +37,98 @@ import java.util.List;
 import java.util.UUID;
 
 /**
+ * Modern UsageSummary service implementation using entity classes.
  * Created by Donald F. Coffin on 06/28/2019 at 23:04
+ * Modernized for Spring Boot 3.5 compatibility.
  */
 
 @Service
+@Transactional(rollbackFor = { jakarta.xml.bind.JAXBException.class }, noRollbackFor = {
+		jakarta.persistence.NoResultException.class,
+		org.springframework.dao.EmptyResultDataAccessException.class })
 public class UsageSummaryServiceImpl implements UsageSummaryService {
+
+    private final Log logger = LogFactory.getLog(getClass());
 
     @Autowired
     private UsageSummaryRepository usageSummaryRepository;
 
     @Autowired
-    private ResourceService resourceService;
-
-    @Autowired
-    private ImportService importService;
+    private UsageSummaryMapper usageSummaryMapper;
 
     @Override
-    public UsageSummary findByUUID(UUID uuid) {
+    public UsageSummaryEntity findByUUID(UUID uuid) {
         return usageSummaryRepository.findByUuid(uuid).orElse(null);
     }
 
-    public UsageSummary findById(Long usageSummaryId) {
-        return usageSummaryRepository
-                .findById(usageSummaryId).orElse(null);
+    @Override
+    public UsageSummaryEntity findById(Long usageSummaryId) {
+        return usageSummaryRepository.findById(usageSummaryId).orElse(null);
     }
 
     @Override
-    public UsageSummary save(UsageSummary usageSummary) {
+    public UsageSummaryEntity save(UsageSummaryEntity usageSummary) {
         return usageSummaryRepository.save(usageSummary);
     }
 
     @Override
-    public String feedFor(
-            List<UsageSummary> electricPowerUsageSummaries) {
-        // TODO Auto-generated method stub
+    public String feedFor(List<UsageSummaryEntity> usageSummaries) {
+        // TODO: Implement modern feed generation using DTOs
+        logger.info("Generating feed for " + usageSummaries.size() + " usage summaries");
         return null;
     }
 
     @Override
-    public String entryFor(UsageSummary usageSummary) {
-        // TODO Auto-generated method stub
+    public String entryFor(UsageSummaryEntity usageSummary) {
+        // TODO: Implement modern entry generation using DTOs
+        logger.info("Generating entry for usage summary: " + usageSummary.getId());
         return null;
     }
 
     @Override
-    public void associateByUUID(UsagePoint usagePoint, UUID uuid) {
-        // TODO Auto-generated method stub
-    }
-
-    @Override
-    public void delete(UsageSummary usageSummary) {
-        usageSummaryRepository
-                .deleteById(usageSummary.getId());
-    }
-
-    @Override
-    public List<UsageSummary> findAllByUsagePoint(
-            UsagePoint usagePoint) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public EntryTypeIterator findEntryTypeIterator(Long retailCustomerId, Long usagePointId) {
-        EntryTypeIterator result = null;
-        try {
-            // TODO - this is sub-optimal (but defers the need to understan
-            // creation of an EntryType
-            List<Long> temp = new ArrayList<Long>();
-            temp = resourceService.findAllIdsByXPath(retailCustomerId,
-                    usagePointId, UsageSummary.class);
-            result = (new EntryTypeIterator(resourceService, temp,
-                    UsageSummary.class));
-        } catch (Exception e) {
-            // TODO need a log file entry as we are going to return a null if
-            // it's not found
-            result = null;
+    public void associateByUUID(UsagePointEntity usagePoint, UUID uuid) {
+        UsageSummaryEntity entity = usageSummaryRepository.findByUuid(uuid).orElse(null);
+        if (entity != null) {
+            entity.setUsagePointEntity(usagePoint);
+            usageSummaryRepository.save(entity);
+            logger.info("Associated usage summary " + uuid + " with usage point " + usagePoint.getId());
         }
-        return result;
     }
 
     @Override
-    public EntryType findEntryType(Long retailCustomerId, Long usagePointId, Long usageSummaryId) {
-        EntryType result = null;
+    public void delete(UsageSummaryEntity usageSummary) {
+        usageSummaryRepository.deleteById(usageSummary.getId());
+        logger.info("Deleted usage summary: " + usageSummary.getId());
+    }
+
+    @Override
+    public List<UsageSummaryEntity> findAllByUsagePoint(UsagePointEntity usagePoint) {
+        return usageSummaryRepository.findByUsagePointEntity(usagePoint);
+    }
+
+    @Override
+    public void add(UsageSummaryEntity usageSummary) {
+        usageSummaryRepository.save(usageSummary);
+        logger.info("Added usage summary: " + usageSummary.getId());
+    }
+
+    @Override
+    public UsageSummaryEntity importResource(InputStream stream) {
         try {
-            // TODO - this is sub-optimal (but defers the need to understand creation of an EntryType
-            List<Long> temp = new ArrayList<Long>();
-            temp = resourceService.findAllIdsByXPath(retailCustomerId,
-                    usagePointId, UsageSummary.class);
-            // temp.add(usageSummaryId);
-            if (temp.contains(usageSummaryId)) {
-                temp.clear();
-                temp.add(usageSummaryId);
-            } else {
-                temp.clear();
-            }
-
-            result = (new EntryTypeIterator(resourceService, temp,
-                    UsageSummary.class))
-                    .nextEntry(UsageSummary.class);
+            // Use JAXB to parse XML stream to DTO
+            jakarta.xml.bind.JAXBContext context = jakarta.xml.bind.JAXBContext.newInstance(UsageSummaryDto.class);
+            jakarta.xml.bind.Unmarshaller unmarshaller = context.createUnmarshaller();
+            UsageSummaryDto dto = (UsageSummaryDto) unmarshaller.unmarshal(stream);
+            
+            // Convert DTO to Entity using mapper
+            UsageSummaryEntity entity = usageSummaryMapper.toEntity(dto);
+            
+            // Save and return entity
+            return usageSummaryRepository.save(entity);
+            
         } catch (Exception e) {
-            // TODO need a log file entry as we are going to return a null if it's not found
-            result = null;
-        }
-        return result;
-    }
-
-    @Override
-    public void add(UsageSummary usageSummary) {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public UsageSummary importResource(InputStream stream) {
-        try {
-            importService.importData(stream, null);
-            // TODO: Implement modern import logic using DTOs
-            // Legacy getContent().getUsageSummary() no longer supported
-            UsageSummary usageSummary = null; // Placeholder
-            return usageSummary;
-
-        } catch (Exception e) {
+            logger.error("Failed to import UsageSummary resource", e);
             return null;
         }
-    }
-
-    public void setUsageSummaryRepository(UsageSummaryRepository usageSummaryRepository) {
-        this.usageSummaryRepository = usageSummaryRepository;
-    }
-
-    public UsageSummaryRepository getUsageSummaryRepository() {
-        return this.usageSummaryRepository;
-    }
-
-    public void setResourceService(ResourceService resourceService) {
-        this.resourceService = resourceService;
-    }
-
-    public ResourceService getResourceService() {
-        return this.resourceService;
-    }
-
-    public void setImportService(ImportService importService) {
-        this.importService = importService;
-    }
-
-    public ImportService getImportService() {
-        return this.importService;
     }
 }
