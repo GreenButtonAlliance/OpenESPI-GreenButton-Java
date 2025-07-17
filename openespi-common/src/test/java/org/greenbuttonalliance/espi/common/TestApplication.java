@@ -30,7 +30,10 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
  */
 @SpringBootApplication
 @Profile("test")
-@EntityScan(basePackages = "org.greenbuttonalliance.espi.common.domain")
+@EntityScan(basePackages = {
+    "org.greenbuttonalliance.espi.common.domain.usage",
+    "org.greenbuttonalliance.espi.common.domain.customer"
+})
 @EnableJpaRepositories(basePackages = "org.greenbuttonalliance.espi.common.repositories.jpa")
 public class TestApplication {
 
