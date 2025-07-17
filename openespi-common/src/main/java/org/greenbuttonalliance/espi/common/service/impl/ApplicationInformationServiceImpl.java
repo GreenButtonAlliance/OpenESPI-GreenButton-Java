@@ -20,15 +20,14 @@
 package org.greenbuttonalliance.espi.common.service.impl;
 
 import org.greenbuttonalliance.espi.common.domain.legacy.ApplicationInformation;
+import org.greenbuttonalliance.espi.common.domain.usage.ApplicationInformationEntity;
+import org.greenbuttonalliance.espi.common.repositories.usage.ApplicationInformationRepository;
 import org.greenbuttonalliance.espi.common.service.ApplicationInformationService;
 import org.greenbuttonalliance.espi.common.service.ImportService;
 import org.greenbuttonalliance.espi.common.service.ResourceService;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-// Spring Security removed - authentication moved to DataCustodian/ThirdParty
-// import org.greenbuttonalliance.espi.common.security.EspiSecurityExpressions;
 import org.springframework.beans.factory.annotation.Autowired;
-// import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
@@ -36,6 +35,7 @@ import org.springframework.util.Assert;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Transactional(rollbackFor = { jakarta.xml.bind.JAXBException.class }, noRollbackFor = {
@@ -45,6 +45,9 @@ public class ApplicationInformationServiceImpl implements
 		ApplicationInformationService {
 
 	private final Log logger = LogFactory.getLog(getClass());
+
+	@Autowired
+	private ApplicationInformationRepository applicationInformationRepository;
 
 	@Autowired
 	private ResourceService resourceService;
@@ -64,11 +67,18 @@ public class ApplicationInformationServiceImpl implements
 	public ApplicationInformation findByClientId(String clientId) {
 		Assert.notNull(clientId, "clientID is required");
 		
-		// For now, this legacy method returns null
-		// Modern applications should use repository methods directly with entities
-		logger.warn("Legacy findByClientId method called - consider using repository directly");
+		// Use Spring Data JPA repository to find by client ID
+		Optional<ApplicationInformationEntity> entityOpt = applicationInformationRepository.findByClientId(clientId);
 		
-		return null;
+		if (entityOpt.isPresent()) {
+			// TODO: Convert entity to legacy domain object when needed
+			// For now, return null to maintain backward compatibility
+			logger.info("Found ApplicationInformation entity for clientId: " + clientId);
+			return null; // Placeholder until full migration
+		} else {
+			logger.warn("ApplicationInformation not found for clientId: " + clientId);
+			return null;
+		}
 	}
 
 	@Override

@@ -45,7 +45,7 @@ public interface IntervalBlockService {
 
 	void setRepository(IntervalBlockRepository repository);
 
-	void persist(IntervalBlock intervalBlock);
+	IntervalBlock save(IntervalBlock intervalBlock);
 
 	IntervalBlock findById(long retailCustomerId, long usagePointId,
 						   long meterReadingId, long intervalBlockId);

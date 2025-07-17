@@ -68,11 +68,11 @@ public class RetailCustomerServiceImpl implements RetailCustomerService {
 	}
 
 	@Override
-	public void persist(RetailCustomer customer) {
+	public RetailCustomer save(RetailCustomer customer) {
 		if (customer.getUUID() == null) {
 			customer.setUUID(UUID.randomUUID());
 		}
-		retailCustomerRepository.save(customer);
+		return retailCustomerRepository.save(customer);
 	}
 
 	@Override

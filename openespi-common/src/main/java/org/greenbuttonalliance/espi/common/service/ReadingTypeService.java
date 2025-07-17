@@ -40,7 +40,7 @@ public interface ReadingTypeService {
 
 	void setReadingTypeRepository(ReadingTypeRepository repository);
 
-	void persist(ReadingTypeEntity readingType);
+	ReadingTypeEntity save(ReadingTypeEntity readingType);
 
 	ReadingTypeEntity findById(Long readingTypeId);
 

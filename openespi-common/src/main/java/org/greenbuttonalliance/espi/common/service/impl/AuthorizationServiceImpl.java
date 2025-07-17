@@ -147,13 +147,8 @@ public class AuthorizationServiceImpl implements AuthorizationService {
 
 	// persistence management services
 	@Override
-	public void persist(Authorization authorization) {
-		authorizationRepository.save(authorization);
-	}
-
-	@Override
-	public void merge(Authorization authorization) {
-		authorizationRepository.save(authorization);
+	public Authorization save(Authorization authorization) {
+		return authorizationRepository.save(authorization);
 	}
 
 	// accessor services

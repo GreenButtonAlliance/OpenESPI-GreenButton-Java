@@ -31,7 +31,7 @@ public interface RetailCustomerService {
 
 	RetailCustomerEntity findByHashedId(Long retailCustomerId);
 
-	void persist(RetailCustomerEntity customer);
+	RetailCustomerEntity save(RetailCustomerEntity customer);
 
 	RetailCustomerEntity findById(Long retailCustomerId);
 

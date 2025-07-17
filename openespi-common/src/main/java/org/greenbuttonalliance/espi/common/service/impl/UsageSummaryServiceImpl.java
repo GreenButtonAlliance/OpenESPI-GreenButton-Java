@@ -62,8 +62,8 @@ public class UsageSummaryServiceImpl implements UsageSummaryService {
     }
 
     @Override
-    public void persist(UsageSummary usageSummary) {
-        usageSummaryRepository.save(usageSummary);
+    public UsageSummary save(UsageSummary usageSummary) {
+        return usageSummaryRepository.save(usageSummary);
     }
 
     @Override

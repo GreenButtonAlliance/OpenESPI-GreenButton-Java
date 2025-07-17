@@ -64,8 +64,8 @@ public class ReadingTypeServiceImpl implements ReadingTypeService {
 	}
 
 	@Override
-	public void persist(ReadingType readingType) {
-		readingTypeRepository.save(readingType);
+	public ReadingType save(ReadingType readingType) {
+		return readingTypeRepository.save(readingType);
 	}
 
 	@Override

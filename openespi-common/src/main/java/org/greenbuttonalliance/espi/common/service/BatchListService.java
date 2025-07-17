@@ -25,7 +25,7 @@ import java.util.List;
 
 public interface BatchListService {
 
-	void persist(BatchListEntity batchList);
+	BatchListEntity save(BatchListEntity batchList);
 
 	List<BatchListEntity> findAll();
 }

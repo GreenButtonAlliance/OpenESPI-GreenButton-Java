@@ -89,9 +89,9 @@ public class UsagePointServiceImpl implements UsagePointService {
 	}
 
 	@Override
-	public void persist(UsagePointEntity up) {
+	public UsagePointEntity save(UsagePointEntity up) {
 		// TODO: Implement domain to entity conversion
-		// this.usagePointRepository.save(up);
+		return this.usagePointRepository.save(up);
 	}
 
 	@Override

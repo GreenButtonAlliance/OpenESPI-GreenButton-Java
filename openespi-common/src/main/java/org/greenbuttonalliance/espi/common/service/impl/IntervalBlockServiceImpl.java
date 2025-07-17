@@ -98,8 +98,8 @@ public class IntervalBlockServiceImpl implements IntervalBlockService {
 	}
 
 	@Override
-	public void persist(IntervalBlock intervalBlock) {
-		intervalBlockRepository.save(intervalBlock);
+	public IntervalBlock save(IntervalBlock intervalBlock) {
+		return intervalBlockRepository.save(intervalBlock);
 	}
 
 	@Override
