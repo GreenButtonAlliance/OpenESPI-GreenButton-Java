@@ -19,11 +19,9 @@
 
 package org.greenbuttonalliance.espi.common.service;
 
-import org.greenbuttonalliance.espi.common.domain.usage.IntervalBlock;
+import org.greenbuttonalliance.espi.common.domain.usage.IntervalBlockEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.MeterReadingEntity;
-import org.greenbuttonalliance.espi.common.domain.usage.atom.EntryType;
 import org.greenbuttonalliance.espi.common.repositories.usage.IntervalBlockRepository;
-import org.greenbuttonalliance.espi.common.utils.EntryTypeIterator;
 
 import java.io.InputStream;
 import java.util.List;
@@ -31,37 +29,31 @@ import java.util.UUID;
 
 public interface IntervalBlockService {
 
-	List<IntervalBlock> findAllByMeterReadingId(Long meterReadingId);
+	List<IntervalBlockEntity> findAllByMeterReadingId(Long meterReadingId);
 
-	String feedFor(List<IntervalBlock> intervalBlocks);
+	String feedFor(List<IntervalBlockEntity> intervalBlocks);
 
-	IntervalBlock findByURI(String uri);
+	IntervalBlockEntity findByURI(String uri);
 
-	String entryFor(IntervalBlock intervalBlock);
+	String entryFor(IntervalBlockEntity intervalBlock);
 
-	void associateByUUID(MeterReading meterReading, UUID uuid);
+	void associateByUUID(MeterReadingEntity meterReading, UUID uuid);
 
-	List<IntervalBlock> findAllByMeterReading(MeterReading meterReading);
+	List<IntervalBlockEntity> findAllByMeterReading(MeterReadingEntity meterReading);
 
 	void setRepository(IntervalBlockRepository repository);
 
-	IntervalBlock save(IntervalBlock intervalBlock);
+	IntervalBlockEntity save(IntervalBlockEntity intervalBlock);
 
-	IntervalBlock findById(long retailCustomerId, long usagePointId,
+	IntervalBlockEntity findById(long retailCustomerId, long usagePointId,
 						   long meterReadingId, long intervalBlockId);
 
-	EntryType findEntryType(Long retailCustomerId, Long usagePointId,
-							Long meterReadingId, Long intervalBlockId);
+	void delete(IntervalBlockEntity intervalBlock);
 
-	EntryTypeIterator findEntryTypeIterator(Long retailCustomerId,
-											Long usagePointId, Long meterReadingId);
+	void add(IntervalBlockEntity intervalBlock);
 
-	void delete(IntervalBlock intervalBlock);
+	IntervalBlockEntity importResource(InputStream stream);
 
-	void add(IntervalBlock intervalBlock);
-
-	IntervalBlock importResource(InputStream stream);
-
-	IntervalBlock findById(long intervalBlockId);
+	IntervalBlockEntity findById(long intervalBlockId);
 
 }

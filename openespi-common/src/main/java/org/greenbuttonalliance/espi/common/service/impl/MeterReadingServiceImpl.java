@@ -19,75 +19,64 @@
 
 package org.greenbuttonalliance.espi.common.service.impl;
 
-import org.greenbuttonalliance.espi.common.domain.legacy.MeterReading;
-import org.greenbuttonalliance.espi.common.domain.legacy.atom.EntryType;
+import org.greenbuttonalliance.espi.common.domain.usage.MeterReadingEntity;
+import org.greenbuttonalliance.espi.common.dto.usage.MeterReadingDto;
+import org.greenbuttonalliance.espi.common.mapper.usage.MeterReadingMapper;
 import org.greenbuttonalliance.espi.common.repositories.usage.MeterReadingRepository;
-import org.greenbuttonalliance.espi.common.service.ImportService;
 import org.greenbuttonalliance.espi.common.service.MeterReadingService;
-import org.greenbuttonalliance.espi.common.service.ResourceService;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.InputStream;
 
 @Service
+@Transactional(rollbackFor = { jakarta.xml.bind.JAXBException.class }, noRollbackFor = {
+		jakarta.persistence.NoResultException.class,
+		org.springframework.dao.EmptyResultDataAccessException.class })
 public class MeterReadingServiceImpl implements MeterReadingService {
 
-	@Autowired
-	private ImportService importService;
+	private final Log logger = LogFactory.getLog(getClass());
 
 	@Autowired
 	protected MeterReadingRepository meterReadingRepository;
 
 	@Autowired
-	private ResourceService resourceService;
+	private MeterReadingMapper meterReadingMapper;
 
 	@Override
-	public MeterReading findById(Long retailCustomerId, Long usagePointId,
+	public MeterReadingEntity findById(Long retailCustomerId, Long usagePointId,
 			Long meterReadingId) {
-		// TODO need to scope to the retailCustomer.usagePoint.meterReading
-		// for now, just do it the old way
+		// TODO: Implement scoped query for retailCustomer.usagePoint.meterReading
 		return meterReadingRepository.findById(meterReadingId).orElse(null);
 	}
 
 	@Override
-	public MeterReading importResource(InputStream stream) {
+	public MeterReadingEntity importResource(InputStream stream) {
 		try {
-			importService.importData(stream, null);
-			// TODO: Implement modern import logic using DTOs
-			// Legacy getContent().getMeterReading() no longer supported
-			MeterReading meterReading = null; // Placeholder
-			return meterReading;
+			// Use JAXB to parse XML stream to DTO
+			jakarta.xml.bind.JAXBContext context = jakarta.xml.bind.JAXBContext.newInstance(MeterReadingDto.class);
+			jakarta.xml.bind.Unmarshaller unmarshaller = context.createUnmarshaller();
+			MeterReadingDto dto = (MeterReadingDto) unmarshaller.unmarshal(stream);
+			
+			// Convert DTO to Entity using mapper
+			MeterReadingEntity entity = meterReadingMapper.toEntity(dto);
+			
+			// Save and return entity
+			return meterReadingRepository.save(entity);
+			
 		} catch (Exception e) {
-
+			logger.error("Failed to import MeterReading resource", e);
 			return null;
 		}
-	}
-
-	public void setImportService(ImportService importService) {
-		this.importService = importService;
-	}
-
-	public ImportService getImportService() {
-		return this.importService;
 	}
 
 	@Override
 	public void setMeterReadingRepository(
 			MeterReadingRepository meterReadingRepository) {
 		this.meterReadingRepository = meterReadingRepository;
-	}
-
-	public MeterReadingRepository getMeterReadingRepository() {
-		return this.meterReadingRepository;
-	}
-
-	public void setResourceService(ResourceService resourceService) {
-		this.resourceService = resourceService;
-	}
-
-	public ResourceService getResourceService() {
-		return this.resourceService;
 	}
 
 }

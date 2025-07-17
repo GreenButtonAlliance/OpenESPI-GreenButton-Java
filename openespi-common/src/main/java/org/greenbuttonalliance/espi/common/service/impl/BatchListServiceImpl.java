@@ -19,7 +19,7 @@
 
 package org.greenbuttonalliance.espi.common.service.impl;
 
-import org.greenbuttonalliance.espi.common.domain.legacy.BatchList;
+import org.greenbuttonalliance.espi.common.domain.usage.BatchListEntity;
 import org.greenbuttonalliance.espi.common.repositories.usage.BatchListRepository;
 import org.greenbuttonalliance.espi.common.service.BatchListService;
 import org.springframework.stereotype.Service;
@@ -40,12 +40,12 @@ public class BatchListServiceImpl implements BatchListService {
 	}
 
 	@Override
-	public BatchList save(BatchList batchList) {
+	public BatchListEntity save(BatchListEntity batchList) {
 		return repository.save(batchList);
 	}
 
 	@Override
-	public List<BatchList> findAll() {
+	public List<BatchListEntity> findAll() {
 		return repository.findAll();
 	}
 

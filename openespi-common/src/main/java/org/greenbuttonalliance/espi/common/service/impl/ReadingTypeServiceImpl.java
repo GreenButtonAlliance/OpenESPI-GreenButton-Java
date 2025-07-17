@@ -19,15 +19,16 @@
 
 package org.greenbuttonalliance.espi.common.service.impl;
 
-import org.greenbuttonalliance.espi.common.domain.legacy.MeterReading;
-import org.greenbuttonalliance.espi.common.domain.legacy.ReadingType;
-import org.greenbuttonalliance.espi.common.domain.legacy.atom.EntryType;
+import org.greenbuttonalliance.espi.common.domain.usage.MeterReadingEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.ReadingTypeEntity;
+import org.greenbuttonalliance.espi.common.dto.usage.ReadingTypeDto;
+import org.greenbuttonalliance.espi.common.mapper.usage.ReadingTypeMapper;
 import org.greenbuttonalliance.espi.common.repositories.usage.ReadingTypeRepository;
-import org.greenbuttonalliance.espi.common.service.ImportService;
 import org.greenbuttonalliance.espi.common.service.ReadingTypeService;
-import org.greenbuttonalliance.espi.common.service.ResourceService;
-import org.greenbuttonalliance.espi.common.utils.EntryTypeIterator;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -35,18 +36,20 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
+@Transactional(rollbackFor = { jakarta.xml.bind.JAXBException.class }, noRollbackFor = {
+		jakarta.persistence.NoResultException.class,
+		org.springframework.dao.EmptyResultDataAccessException.class })
 public class ReadingTypeServiceImpl implements ReadingTypeService {
 
+	private final Log logger = LogFactory.getLog(getClass());
+
 	private final ReadingTypeRepository readingTypeRepository;
-	private final ResourceService resourceService;
-	private final ImportService importService;
+	private final ReadingTypeMapper readingTypeMapper;
 
 	public ReadingTypeServiceImpl(ReadingTypeRepository readingTypeRepository,
-								  ResourceService resourceService,
-								  ImportService importService) {
+								  ReadingTypeMapper readingTypeMapper) {
 		this.readingTypeRepository = readingTypeRepository;
-		this.resourceService = resourceService;
-		this.importService = importService;
+		this.readingTypeMapper = readingTypeMapper;
 	}
 
 	@Override
@@ -55,98 +58,78 @@ public class ReadingTypeServiceImpl implements ReadingTypeService {
 	}
 
 	@Override
-	public ReadingType findByUUID(UUID uuid) {
+	public ReadingTypeEntity findByUUID(UUID uuid) {
 		return readingTypeRepository.findByUuid(uuid).orElse(null);
 	}
 
-	public ReadingType findById(Long readingTypeId) {
+	@Override
+	public ReadingTypeEntity findById(Long readingTypeId) {
 		return readingTypeRepository.findById(readingTypeId).orElse(null);
 	}
 
 	@Override
-	public ReadingType save(ReadingType readingType) {
+	public ReadingTypeEntity save(ReadingTypeEntity readingType) {
 		return readingTypeRepository.save(readingType);
 	}
 
 	@Override
-	public String feedFor(ReadingType readingType) {
-		// TODO Auto-generated method stub
+	public String feedFor(ReadingTypeEntity readingType) {
+		// TODO: Implement modern feed generation using DTOs
+		logger.info("Generating feed for reading type: " + readingType.getId());
 		return null;
 	}
 
 	@Override
-	public String entryFor(ReadingType readingType) {
-		// TODO Auto-generated method stub
+	public String entryFor(ReadingTypeEntity readingType) {
+		// TODO: Implement modern entry generation using DTOs
+		logger.info("Generating entry for reading type: " + readingType.getId());
 		return null;
 	}
 
 	@Override
-	public void associateByUUID(MeterReading meterReading, UUID uuid) {
-		// TODO Auto-generated method stub
-
+	public void associateByUUID(MeterReadingEntity meterReading, UUID uuid) {
+		ReadingTypeEntity entity = readingTypeRepository.findByUuid(uuid).orElse(null);
+		if (entity != null) {
+			entity.setMeterReadingEntity(meterReading);
+			readingTypeRepository.save(entity);
+			logger.info("Associated reading type " + uuid + " with meter reading " + meterReading.getId());
+		}
 	}
 
 	@Override
 	public void deleteById(long readingTypeId) {
 		readingTypeRepository.deleteById(readingTypeId);
+		logger.info("Deleted reading type with ID: " + readingTypeId);
 	}
 
 	@Override
-	public EntryTypeIterator findEntryTypeIterator(Long retailCustomerId,
-			Long usagePointId) {
-		EntryTypeIterator result = null;
-		try {
-			// TODO - this is sub-optimal (but defers the need to understand
-			// creation of an EntryType
-			List<Long> temp = new ArrayList<Long>();
-			temp = resourceService.findAllIds(ReadingType.class);
-			result = (new EntryTypeIterator(resourceService, temp,
-					ReadingType.class));
-		} catch (Exception e) {
-			// TODO need a log file entry as we are going to return a null if
-			// it's not found
-			result = null;
-		}
-		return result;
+	public void add(ReadingTypeEntity readingType) {
+		readingTypeRepository.save(readingType);
+		logger.info("Added reading type: " + readingType.getId());
 	}
 
 	@Override
-	public EntryType findEntryType(Long retailCustomerId, Long usagePointId,
-			Long meterReadingId, Long readingTypeId) {
-		EntryType result = null;
-		try {
-			List<Long> allIds = new ArrayList<Long>();
-			allIds.add(readingTypeId);
-			result = (new EntryTypeIterator(resourceService, allIds,
-					ReadingType.class)).nextEntry(ReadingType.class);
-		} catch (Exception e) {
-			// TODO need a log file entry as we are going to return a null if
-			// it's not found
-			result = null;
-		}
-		return result;
-	}
-
-	@Override
-	public void add(ReadingType readingType) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void delete(ReadingType readingType) {
+	public void delete(ReadingTypeEntity readingType) {
 		readingTypeRepository.deleteById(readingType.getId());
+		logger.info("Deleted reading type: " + readingType.getId());
 	}
 
 	@Override
-	public ReadingType importResource(InputStream stream) {
+	public ReadingTypeEntity importResource(InputStream stream) {
 		try {
-			importService.importData(stream, null);
-			// TODO: Implement modern import logic using DTOs
-			// Legacy getContent().getReadingType() no longer supported
-			ReadingType readingType = null; // Placeholder
-			return readingType;
+			// Use JAXB to parse XML stream to DTO
+			jakarta.xml.bind.JAXBContext context = jakarta.xml.bind.JAXBContext.newInstance(ReadingTypeDto.class);
+			jakarta.xml.bind.Unmarshaller unmarshaller = context.createUnmarshaller();
+			ReadingTypeDto dto = (ReadingTypeDto) unmarshaller.unmarshal(stream);
+			
+			// Convert DTO to Entity using mapper
+			ReadingTypeEntity entity = readingTypeMapper.toEntity(dto);
+			
+			// Save and return entity
+			return readingTypeRepository.save(entity);
+			
 		} catch (Exception e) {
+			logger.error("Failed to import ReadingType resource", e);
 			return null;
 		}
 	}

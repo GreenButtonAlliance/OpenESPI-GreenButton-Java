@@ -21,16 +21,12 @@ package org.greenbuttonalliance.espi.common.service.impl;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.greenbuttonalliance.espi.common.domain.legacy.RetailCustomer;
-import org.greenbuttonalliance.espi.common.domain.legacy.TimeConfiguration;
-import org.greenbuttonalliance.espi.common.domain.legacy.UsagePoint;
-import org.greenbuttonalliance.espi.common.domain.legacy.atom.EntryType;
+import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.TimeConfigurationEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 import org.greenbuttonalliance.espi.common.repositories.usage.TimeConfigurationRepository;
-import org.greenbuttonalliance.espi.common.service.ImportService;
-import org.greenbuttonalliance.espi.common.service.ResourceService;
 import org.greenbuttonalliance.espi.common.service.TimeConfigurationService;
-import org.greenbuttonalliance.espi.common.utils.EntryTypeIterator;
-import org.greenbuttonalliance.espi.common.utils.ExportFilter;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -40,34 +36,13 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
+@Transactional
 public class TimeConfigurationServiceImpl implements TimeConfigurationService {
 
 	private final Log logger = LogFactory.getLog(getClass());
 
 	@Autowired
 	protected TimeConfigurationRepository timeConfigurationRepository;
-
-	@Autowired
-	private ResourceService resourceService;
-
-	@Autowired
-	private ImportService importService;
-
-	public void setImportService(ImportService importService) {
-		this.importService = importService;
-	}
-
-	public ImportService getImportService() {
-		return this.importService;
-	}
-
-	public void setResourceService(ResourceService resourceService) {
-		this.resourceService = resourceService;
-	}
-
-	public ResourceService getResourceService() {
-		return this.resourceService;
-	}
 
 	public void setRepository(
 			TimeConfigurationRepository timeConfigurationRepository) {
@@ -79,127 +54,79 @@ public class TimeConfigurationServiceImpl implements TimeConfigurationService {
 	}
 
 	@Override
-	public TimeConfiguration findByUUID(UUID uuid) {
+	public TimeConfigurationEntity findByUUID(UUID uuid) {
 		return timeConfigurationRepository.findByUuid(uuid).orElse(null);
 	}
 
-	public TimeConfiguration findById(Long timeConfigurationId) {
+	public TimeConfigurationEntity findById(UUID timeConfigurationId) {
 		return timeConfigurationRepository.findById(timeConfigurationId).orElse(null);
 	}
 
 	@Override
-	public TimeConfiguration save(TimeConfiguration timeConfiguration) {
+	public TimeConfigurationEntity save(TimeConfigurationEntity timeConfiguration) {
 		return timeConfigurationRepository.save(timeConfiguration);
 	}
 
 	@Override
-	public List<TimeConfiguration> findAllByRetailCustomer(
-			RetailCustomer retailCustomer) {
-		// TODO Auto-generated method stub
+	public List<TimeConfigurationEntity> findAllByRetailCustomer(
+			RetailCustomerEntity retailCustomer) {
+		// TODO: Implement query to find time configurations by retail customer
+		return new ArrayList<>();
+	}
+
+	@Override
+	public void associateByUUID(UsagePointEntity usagePoint, UUID uuid) {
+		TimeConfigurationEntity timeConfiguration = findByUUID(uuid);
+		if (timeConfiguration != null && usagePoint != null) {
+			usagePoint.setLocalTimeParameters(timeConfiguration);
+			// Note: Application handles bidirectional relationship management
+		}
+	}
+
+	@Override
+	public TimeConfigurationEntity importTimeConfiguration(InputStream stream) {
+		// TODO: Implement modern import logic using DTOs
 		return null;
 	}
 
 	@Override
-	public String feedFor(List<TimeConfiguration> timeConfiguration) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public String entryFor(TimeConfiguration timeConfiguration) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public void associateByUUID(UsagePoint usagePoint, UUID uuid) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public TimeConfiguration importTimeConfiguration(InputStream stream) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public void deleteById(long timeConfigurationId) {
+	public void deleteById(UUID timeConfigurationId) {
 		timeConfigurationRepository.deleteById(timeConfigurationId);
 	}
 
 	@Override
-	public UsagePoint getUsagePoint() {
-		// TODO Auto-generated method stub
+	public UsagePointEntity getUsagePoint() {
+		// TODO: Implement logic to get usage point
 		return null;
 	}
 
+	// Legacy EntryType methods removed - modern architecture uses DTOs and export services
+
 	@Override
-	public EntryType findEntryType(Long retailCustomerId, Long usagePointId,
-			Long timeConfigurationId, ExportFilter params) {
-		EntryType result = null;
-		try {
-			// TODO - this is sub-optimal (but defers the need to understand
-			// creation of an EntryType
-			List<Long> temp = new ArrayList<Long>();
-			temp.add(timeConfigurationId);
-			result = (new EntryTypeIterator(resourceService, temp,
-					TimeConfiguration.class))
-					.nextEntry(TimeConfiguration.class);
-		} catch (Exception e) {
-			// TODO need a log file entry as we are going to return a null if
-			// it's not found
-			result = null;
-		}
-		return result;
+	public void add(TimeConfigurationEntity timeConfiguration) {
+		timeConfigurationRepository.save(timeConfiguration);
 	}
 
 	@Override
-	public EntryTypeIterator findEntryTypeIterator(Long retailCustomerId,
-			Long usagePointId, ExportFilter params) {
-		EntryTypeIterator result = null;
-		try {
-			// TODO - this is sub-optimal (but defers the need to understan
-			// creation of an EntryType
-			List<Long> temp = new ArrayList<Long>();
-			temp = resourceService.findAllIds(TimeConfiguration.class);
-			result = (new EntryTypeIterator(resourceService, temp,
-					TimeConfiguration.class));
-		} catch (Exception e) {
-			// TODO need a log file entry as we are going to return a null if
-			// it's not found
-			result = null;
-		}
-		return result;
-	}
-
-	@Override
-	public void add(TimeConfiguration timeConfiguration) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void delete(TimeConfiguration timeConfiguration) {
+	public void delete(TimeConfigurationEntity timeConfiguration) {
 		timeConfigurationRepository.deleteById(timeConfiguration.getId());
 	}
 
 	@Override
-	public TimeConfiguration importResource(InputStream stream) {
-		TimeConfiguration timeConfiguration = null;
+	public TimeConfigurationEntity importResource(InputStream stream) {
 		try {
-			importService.importData(stream, null);
-			// TODO: Implement modern import logic using DTOs
-			// Legacy getContent().getLocalTimeParameters() no longer supported
-			timeConfiguration = null; // Placeholder
-
+			// TODO: Implement modern JAXB import pattern using DTOs
+			// Similar to other modernized services:
+			// 1. Create JAXBContext for TimeConfigurationDto
+			// 2. Unmarshal stream to DTO
+			// 3. Use mapper to convert DTO to entity
+			// 4. Save and return entity
+			logger.info("TimeConfiguration import using legacy method - needs modern DTO implementation");
+			return null;
 		} catch (Exception e) {
-			if(logger.isErrorEnabled()) {
-				logger.error("**** importResource Exception: " + e.toString() + "&n");
-				e.printStackTrace();
-			}
+			logger.error("Failed to import TimeConfiguration resource: " + e.getMessage(), e);
+			return null;
 		}
-		return timeConfiguration;
 	}
 
 }

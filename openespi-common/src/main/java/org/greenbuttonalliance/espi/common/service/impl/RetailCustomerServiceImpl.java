@@ -19,15 +19,14 @@
 
 package org.greenbuttonalliance.espi.common.service.impl;
 
-import org.greenbuttonalliance.espi.common.domain.legacy.Authorization;
-import org.greenbuttonalliance.espi.common.domain.legacy.RetailCustomer;
-import org.greenbuttonalliance.espi.common.domain.legacy.ServiceCategory;
-import org.greenbuttonalliance.espi.common.domain.legacy.Subscription;
-import org.greenbuttonalliance.espi.common.domain.legacy.UsagePoint;
+import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.SubscriptionEntity;
+import org.greenbuttonalliance.espi.common.dto.usage.RetailCustomerDto;
+import org.greenbuttonalliance.espi.common.mapper.usage.RetailCustomerMapper;
 import org.greenbuttonalliance.espi.common.repositories.usage.RetailCustomerRepository;
 import org.greenbuttonalliance.espi.common.service.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,51 +36,51 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
+@Transactional(rollbackFor = { jakarta.xml.bind.JAXBException.class }, noRollbackFor = {
+		jakarta.persistence.NoResultException.class,
+		org.springframework.dao.EmptyResultDataAccessException.class })
 public class RetailCustomerServiceImpl implements RetailCustomerService {
 
-	private static final Logger logger = LoggerFactory.getLogger(RetailCustomerServiceImpl.class);
+	private final Log logger = LogFactory.getLog(getClass());
 
 	private final RetailCustomerRepository retailCustomerRepository;
-	private final ResourceService resourceService;
-	private final ImportService importService;
+	private final RetailCustomerMapper retailCustomerMapper;
 	private final AuthorizationService authorizationService;
 	private final SubscriptionService subscriptionService;
 	private final UsagePointService usagePointService;
 
 	public RetailCustomerServiceImpl(RetailCustomerRepository retailCustomerRepository,
-									 ResourceService resourceService,
-									 ImportService importService,
+									 RetailCustomerMapper retailCustomerMapper,
 									 AuthorizationService authorizationService,
 									 SubscriptionService subscriptionService,
 									 UsagePointService usagePointService) {
 		this.retailCustomerRepository = retailCustomerRepository;
-		this.resourceService = resourceService;
-		this.importService = importService;
+		this.retailCustomerMapper = retailCustomerMapper;
 		this.authorizationService = authorizationService;
 		this.subscriptionService = subscriptionService;
 		this.usagePointService = usagePointService;
 	}
 
 	@Override
-	public List<RetailCustomer> findAll() {
+	public List<RetailCustomerEntity> findAll() {
 		return retailCustomerRepository.findAll();
 	}
 
 	@Override
-	public RetailCustomer save(RetailCustomer customer) {
-		if (customer.getUUID() == null) {
-			customer.setUUID(UUID.randomUUID());
+	public RetailCustomerEntity save(RetailCustomerEntity customer) {
+		if (customer.getUuid() == null) {
+			customer.setUuid(UUID.randomUUID());
 		}
 		return retailCustomerRepository.save(customer);
 	}
 
 	@Override
-	public RetailCustomer findById(Long id) {
+	public RetailCustomerEntity findById(Long id) {
 		return retailCustomerRepository.findById(id).orElse(null);
 	}
 
 	@Override
-	public RetailCustomer findById(String retailCustomerId) {
+	public RetailCustomerEntity findById(String retailCustomerId) {
 		try {
 			Long id = Long.parseLong(retailCustomerId);
 			return retailCustomerRepository.findById(id).orElse(null);
@@ -91,124 +90,66 @@ public class RetailCustomerServiceImpl implements RetailCustomerService {
 	}
 
 	@Override
-	public RetailCustomer findByHashedId(Long retailCustomerId) {
+	public RetailCustomerEntity findByHashedId(Long retailCustomerId) {
 		return findById(retailCustomerId);
 	}
 
 	@Override
-	public RetailCustomer findByUsername(String username) {
+	public RetailCustomerEntity findByUsername(String username) {
 		try {
 			return retailCustomerRepository.findByUsername(username).orElse(null);
 		} catch (EmptyResultDataAccessException x) {
-			logger.warn("Unable to find user with username: {}", username);
+			logger.warn("Unable to find user with username: " + username);
 			return null;
 		}
 	}
 
 	@Override
-	public void add(RetailCustomer retailCustomer) {
-		// TODO Auto-generated method stub
-
+	public void add(RetailCustomerEntity retailCustomer) {
+		retailCustomerRepository.save(retailCustomer);
+		logger.info("Added retail customer: " + retailCustomer.getId());
 	}
 
 	@Override
-	public void delete(RetailCustomer retailCustomer) {
+	public void delete(RetailCustomerEntity retailCustomer) {
 		retailCustomerRepository.deleteById(retailCustomer.getId());
-
+		logger.info("Deleted retail customer: " + retailCustomer.getId());
 	}
 
 	@Override
-	public RetailCustomer importResource(InputStream stream) {
-		RetailCustomer retailCustomer = null;
+	public RetailCustomerEntity importResource(InputStream stream) {
 		try {
-			importService.importData(stream, null);
-			// TODO - Make RetailCustomer inherit from IdentifiedObject and add
-			// RetailCustomer to the entrytype structure
-
-			// EntryType entry = importService.getEntries().get(0);
-			// RetailCustomer retailCustomer =
-			// entry.getContent().getRetailCustomer();
-			// persist(retailCustomer);
+			// Use JAXB to parse XML stream to DTO
+			jakarta.xml.bind.JAXBContext context = jakarta.xml.bind.JAXBContext.newInstance(RetailCustomerDto.class);
+			jakarta.xml.bind.Unmarshaller unmarshaller = context.createUnmarshaller();
+			RetailCustomerDto dto = (RetailCustomerDto) unmarshaller.unmarshal(stream);
+			
+			// Convert DTO to Entity using mapper
+			RetailCustomerEntity entity = retailCustomerMapper.toEntity(dto);
+			
+			// Save and return entity
+			return retailCustomerRepository.save(entity);
+			
 		} catch (Exception e) {
 			// Security: Log error without exposing sensitive customer data
-			logger.error("RetailCustomerService.importResource failed: {}", e.getMessage());
-			logger.debug("RetailCustomerService.importResource stack trace", e);
+			logger.error("RetailCustomerService.importResource failed: " + e.getMessage());
+			return null;
 		}
-		return retailCustomer;
 	}
 
-	@Transactional
 	@Override
-	public Subscription associateByUUID(Long retailCustomerId, UUID uuid) {
-		Subscription subscription = null;
-		RetailCustomer retailCustomer = null;
-		UsagePoint usagePoint = null;
-
-		try {
-			retailCustomer = resourceService.findById(retailCustomerId,
-					RetailCustomer.class);
-			try {
-
-				// TODO: Fix this method call
-			usagePoint = null;
-
-			} catch (Exception e) {
-
-				usagePoint = new UsagePoint();
-				usagePoint.setUUID(uuid);
-				usagePoint.setDescription("A Temporary UsagePoint Description");
-				usagePoint.setServiceCategory(new ServiceCategory(
-						ServiceCategory.ELECTRICITY_SERVICE));
-				// TODO: Use UsagePointService instead
-				// usagePointService.persist(usagePoint);
-
-			}
-			usagePoint.setRetailCustomer(retailCustomer);
-			// TODO: Use specific service instead
-			// service.persist(usagePoint);
-
-			// now see if there are any authorizations for this information
-			//
-			try {
-
-				for (Authorization authorization : authorizationService
-						.findAllByRetailCustomerId(retailCustomer.getId())) {
-
-					String resourceUri = authorization.getResourceURI();
-					if (resourceUri == null) {
-
-						authorization
-								.setResourceURI(authorization
-										.getApplicationInformation()
-										.getDataCustodianResourceEndpoint()
-										+ "/Batch/Subscription/"
-										+ subscription.getId());
-						// TODO: Use specific service instead
-						// authorizationService.persist(authorization);
-
-					}
-
-					subscription = subscriptionService
-							.findByAuthorizationId(authorization.getId());
-
-					subscription.getUsagePoints().add(usagePoint);
-					// TODO: Use specific service instead
-					// subscriptionService.persist(subscription);
-				}
-			} catch (Exception e) {
-				// we get here if we don't have a subscription
-				return null;
-			}
-
-		} catch (Exception e) {
-			// Security: Log error without exposing sensitive customer or usage point data
-			logger.error("Error associating UsagePoint for customer ID: {} with usage point UUID: {}", 
-				retailCustomer != null ? retailCustomer.getId() : "null",
-				usagePoint != null && usagePoint.getUUID() != null ? usagePoint.getUUID() : "null");
-			logger.debug("AssociateByUUID error details", e);
+	public SubscriptionEntity associateByUUID(Long retailCustomerId, UUID uuid) {
+		// TODO: Implement modern association logic using entity classes
+		logger.info("Associating usage point UUID " + uuid + " with retail customer " + retailCustomerId);
+		
+		// Use the UsagePointService to handle the association
+		RetailCustomerEntity retailCustomer = findById(retailCustomerId);
+		if (retailCustomer != null) {
+			usagePointService.associateByUUID(retailCustomer, uuid);
 		}
-
-		return subscription;
+		
+		// TODO: Return appropriate subscription entity
+		return null;
 	}
 
 }

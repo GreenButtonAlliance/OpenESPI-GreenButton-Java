@@ -20,14 +20,14 @@
 
 package org.greenbuttonalliance.espi.common.service.impl;
 
-import org.greenbuttonalliance.espi.common.domain.legacy.RetailCustomer;
-import org.greenbuttonalliance.espi.common.domain.legacy.Subscription;
-import org.greenbuttonalliance.espi.common.domain.legacy.UsagePoint;
-import org.greenbuttonalliance.espi.common.domain.legacy.atom.EntryType;
+import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.SubscriptionEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 import org.greenbuttonalliance.espi.common.repositories.usage.SubscriptionRepository;
 import org.greenbuttonalliance.espi.common.repositories.usage.UsagePointRepository;
 import org.greenbuttonalliance.espi.common.service.*;
-import org.greenbuttonalliance.espi.common.utils.EntryTypeIterator;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,7 +35,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 
 @Service
+@Transactional(rollbackFor = { jakarta.xml.bind.JAXBException.class }, noRollbackFor = {
+		jakarta.persistence.NoResultException.class,
+		org.springframework.dao.EmptyResultDataAccessException.class })
 public class SubscriptionServiceImpl implements SubscriptionService {
+
+	private final Log logger = LogFactory.getLog(getClass());
+
 	@Autowired
 	private SubscriptionRepository subscriptionRepository;
 
@@ -46,40 +52,23 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 	private ApplicationInformationService applicationInformationService;
 
 	@Autowired
-	private ResourceService resourceService;
-
-	@Autowired
-	private ImportService importService;
-
-	@Autowired
 	private RetailCustomerService retailCustomerService;
 
 	@Override
-	@Transactional(rollbackFor = { jakarta.xml.bind.JAXBException.class }, noRollbackFor = {
-			jakarta.persistence.NoResultException.class,
-			org.springframework.dao.EmptyResultDataAccessException.class })
-	public Subscription createSubscription(String username, Set<String> roles, String clientId) {
-		Subscription subscription = new Subscription();
-		subscription.setUUID(UUID.randomUUID());
+	public SubscriptionEntity createSubscription(String username, Set<String> roles, String clientId) {
+		SubscriptionEntity subscription = new SubscriptionEntity();
+		subscription.setUuid(UUID.randomUUID());
 
 		if (roles.contains("ROLE_USER")) {
 			// For user-based subscriptions, find the retail customer by username
-			RetailCustomer retailCustomer = retailCustomerService.findByUsername(username);
+			RetailCustomerEntity retailCustomer = retailCustomerService.findByUsername(username);
 			if (retailCustomer != null) {
-				subscription.setRetailCustomer(retailCustomer);
-				subscription.setUsagePoints(new ArrayList<UsagePoint>());
-				// set up the subscription's usagePoints list. Keep in mind that right
-				// now this is ALL usage points belonging to the RetailCustomer.
+				subscription.setRetailCustomerEntity(retailCustomer);
+				subscription.setUsagePointEntities(new ArrayList<UsagePointEntity>());
 				// TODO - scope this to only a selected (proper) subset of the
-				// usagePoints as passed
-				// through from the UX or a restful call.
-				List<Long> upIds = resourceService.findAllIdsByXPath(retailCustomer.getId(), UsagePoint.class);
-				Iterator<Long> it = upIds.iterator();
-				while (it.hasNext()) {
-					UsagePoint usagePoint = resourceService.findById(it.next(),
-						UsagePoint.class);
-					subscription.getUsagePoints().add(usagePoint);
-				}
+				// usagePoints as passed through from the UX or a restful call.
+				List<UsagePointEntity> usagePoints = usagePointRepository.findAllByRetailCustomerEntity(retailCustomer);
+				subscription.setUsagePointEntities(usagePoints);
 			}
 		} else {
 			// For client-based subscriptions, process the client ID
@@ -94,164 +83,83 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 				if (ci.indexOf("_admin") != -1) {
 					ci = ci.substring(0, ci.indexOf("_admin"));
 				}
-				subscription.setApplicationInformation(applicationInformationService.findByClientId(ci));
+				subscription.setApplicationInformationEntity(applicationInformationService.findByClientId(ci));
 			}
-			subscription.setRetailCustomer(retailCustomerService.findById((long) 0));
+			subscription.setRetailCustomerEntity(retailCustomerService.findById((long) 0));
 		}
-		subscription.setLastUpdate(new GregorianCalendar());
+		subscription.setLastUpdateTime(new GregorianCalendar());
 		subscriptionRepository.save(subscription);
 
+		logger.info("Created subscription for username: " + username);
 		return subscription;
 	}
 
 	@Override
-	public Subscription findByHashedId(String hashedId) {
+	public SubscriptionEntity findByHashedId(String hashedId) {
 		return subscriptionRepository.findByHashedId(hashedId).orElse(null);
 	}
 
 	@Override
-	public EntryTypeIterator findEntriesByHashedId(String hashedId) {
-		Subscription subscription = subscriptionRepository
-				.findByHashedId(hashedId).orElse(null);
-		List<Long> subscriptionIds = new ArrayList<Long>();
-		subscriptionIds.add(subscription.getId());
-		return new EntryTypeIterator(resourceService, subscriptionIds,
-				Subscription.class);
-	}
-
 	public void setRepository(SubscriptionRepository subscriptionRepository) {
 		this.subscriptionRepository = subscriptionRepository;
 	}
 
 	@Override
-	public EntryType findEntryType(Long retailCustomerId, Long subscriptionId) {
-		EntryType result = null;
-		try {
-			List<Long> allIds = new ArrayList<Long>();
-			allIds.add(subscriptionId);
-			result = (new EntryTypeIterator(resourceService, allIds,
-					Subscription.class)).nextEntry(Subscription.class);
-		} catch (Exception e) {
-			// TODO need a log file entry as we are going to return a null if
-			// it's not found
-			result = null;
-		}
-		return result;
-	}
-
-	@Override
-	public EntryTypeIterator findEntryTypeIterator(Long subscriptionId) {
-		EntryTypeIterator result = null;
-		try {
-
-			result = (new EntryTypeIterator(resourceService,
-					findUsagePointIds(subscriptionId), Subscription.class));
-			result.setSubscriptionId(subscriptionId);
-
-		} catch (Exception e) {
-			// TODO need a log file entry as we are going to return a null if
-			// it's not found
-			result = null;
-		}
-		return result;
-	}
-
-	@Override
-	public Subscription save(Subscription subscription) {
+	public SubscriptionEntity save(SubscriptionEntity subscription) {
 		return subscriptionRepository.save(subscription);
 	}
 
 	@Override
-	public Subscription findById(Long subscriptionId) {
+	public SubscriptionEntity findById(Long subscriptionId) {
 		return subscriptionRepository.findById(subscriptionId).orElse(null);
 	}
 
 	@Override
 	public List<Long> findUsagePointIds(Long subscriptionId) {
-
 		List<Long> result = new ArrayList<Long>();
-		Subscription subscription = findById(subscriptionId);
-		for (UsagePoint up : subscription.getUsagePoints()) {
-			result.add(up.getId());
+		SubscriptionEntity subscription = findById(subscriptionId);
+		if (subscription != null && subscription.getUsagePointEntities() != null) {
+			for (UsagePointEntity up : subscription.getUsagePointEntities()) {
+				result.add(up.getId());
+			}
 		}
 		return result;
 	}
 
 	@Override
-	public Subscription findByAuthorizationId(Long id) {
+	public SubscriptionEntity findByAuthorizationId(Long id) {
 		return subscriptionRepository.findByAuthorizationId(id).orElse(null);
 	}
 
 	@Override
-	@Transactional(rollbackFor = { jakarta.xml.bind.JAXBException.class }, noRollbackFor = {
-			jakarta.persistence.NoResultException.class,
-			org.springframework.dao.EmptyResultDataAccessException.class })
-	public Subscription addUsagePoint(Subscription subscription,
-			UsagePoint usagePoint) {
-
-		subscription.getUsagePoints().add(usagePoint);
+	public SubscriptionEntity addUsagePoint(SubscriptionEntity subscription,
+			UsagePointEntity usagePoint) {
+		if (subscription.getUsagePointEntities() == null) {
+			subscription.setUsagePointEntities(new ArrayList<UsagePointEntity>());
+		}
+		subscription.getUsagePointEntities().add(usagePoint);
+		logger.info("Added usage point " + usagePoint.getId() + " to subscription " + subscription.getId());
 		return subscription;
-
 	}
 
 	@Override
 	public Long findRetailCustomerId(Long subscriptionId, Long usagePointId) {
 		Long result = null;
-		Subscription s = resourceService.findById(subscriptionId,
-				Subscription.class);
-		result = s.getRetailCustomer().getId();
-		if (result.equals(0L)) {
-			// we have a subscription that is based upon client credentials
-			// now we must find the actual retail customer associated with
-			// this particular usagePoint
-			result = resourceService.findById(usagePointId, UsagePoint.class)
-					.getRetailCustomer().getId();
+		SubscriptionEntity subscription = findById(subscriptionId);
+		if (subscription != null && subscription.getRetailCustomerEntity() != null) {
+			result = subscription.getRetailCustomerEntity().getId();
+			if (result.equals(0L)) {
+				// we have a subscription that is based upon client credentials
+				// now we must find the actual retail customer associated with
+				// this particular usagePoint
+				UsagePointEntity usagePoint = usagePointRepository.findById(usagePointId).orElse(null);
+				if (usagePoint != null && usagePoint.getRetailCustomerEntity() != null) {
+					result = usagePoint.getRetailCustomerEntity().getId();
+				}
+			}
 		}
-		s.getAuthorization().getRetailCustomer();
 		return result;
 	}
 
-	public void setSubscriptionRepository(
-			SubscriptionRepository subscriptionRepository) {
-		this.subscriptionRepository = subscriptionRepository;
-	}
-
-	public SubscriptionRepository getSubscriptionRepository() {
-		return this.subscriptionRepository;
-	}
-
-	public void setUsagePointRepository(
-			UsagePointRepository usagePointRepository) {
-		this.usagePointRepository = usagePointRepository;
-	}
-
-	public UsagePointRepository getUsagePointRepository() {
-		return this.usagePointRepository;
-	}
-
-	public void setApplicationInformationService(
-			ApplicationInformationService applicationInformationService) {
-		this.applicationInformationService = applicationInformationService;
-	}
-
-	public ApplicationInformationService getApplicationInformationService() {
-		return this.applicationInformationService;
-	}
-
-	public void setResourceService(ResourceService resourceService) {
-		this.resourceService = resourceService;
-	}
-
-	public ResourceService getResourceService() {
-		return this.resourceService;
-	}
-
-	public void setImportService(ImportService importService) {
-		this.importService = importService;
-	}
-
-	public ImportService getImportService() {
-		return this.importService;
-	}
 
 }

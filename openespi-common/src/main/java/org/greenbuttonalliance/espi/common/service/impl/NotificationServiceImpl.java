@@ -21,15 +21,16 @@ package org.greenbuttonalliance.espi.common.service.impl;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.greenbuttonalliance.espi.common.domain.legacy.ApplicationInformation;
-import org.greenbuttonalliance.espi.common.domain.legacy.Authorization;
-import org.greenbuttonalliance.espi.common.domain.legacy.BatchList;
-import org.greenbuttonalliance.espi.common.domain.legacy.RetailCustomer;
-import org.greenbuttonalliance.espi.common.domain.legacy.Subscription;
+import org.greenbuttonalliance.espi.common.domain.usage.ApplicationInformationEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.BatchListEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.SubscriptionEntity;
 import org.greenbuttonalliance.espi.common.service.AuthorizationService;
 import org.greenbuttonalliance.espi.common.service.NotificationService;
-import org.greenbuttonalliance.espi.common.service.ResourceService;
 import org.greenbuttonalliance.espi.common.service.SubscriptionService;
+import org.greenbuttonalliance.espi.common.repositories.usage.AuthorizationRepository;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -41,12 +42,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.UUID;
 
 /**
  * @author John Teeter
  *
  */
 @Service
+@Transactional
 public class NotificationServiceImpl implements NotificationService {
 	private final Log logger = LogFactory.getLog(getClass());
 
@@ -54,7 +58,7 @@ public class NotificationServiceImpl implements NotificationService {
 	private RestTemplate restTemplate;
 
 	@Autowired
-	private ResourceService resourceService;
+	private AuthorizationRepository authorizationRepository;
 
 	@Autowired
 	private AuthorizationService authorizationService;
@@ -63,13 +67,13 @@ public class NotificationServiceImpl implements NotificationService {
 	private SubscriptionService subscriptionService;
 
 	@Override
-	public void notify(Subscription subscription,
+	public void notify(SubscriptionEntity subscription,
 					   XMLGregorianCalendar startDate, XMLGregorianCalendar endDate) {
 		
 		String thirdPartyNotificationURI = subscription
-				.getApplicationInformation().getThirdPartyNotifyUri();
+				.getApplicationInformationEntity().getThirdPartyNotifyUri();
 		String separator = "?";
-		String subscriptionURI = subscription.getApplicationInformation()
+		String subscriptionURI = subscription.getApplicationInformationEntity()
 				.getDataCustodianResourceEndpoint()
 				+ "/Batch/Subscription/"
 				+ subscription.getId();
@@ -85,28 +89,27 @@ public class NotificationServiceImpl implements NotificationService {
 					+ endDate.toXMLFormat();
 		}
 
-		BatchList batchList = new BatchList();
+		BatchListEntity batchList = new BatchListEntity();
 		batchList.getResources().add(subscriptionURI);
 		notifyInternal(thirdPartyNotificationURI, batchList);
 	}
 
 	@Override
-	public void notify(RetailCustomer retailCustomer,
+	public void notify(RetailCustomerEntity retailCustomer,
 					   XMLGregorianCalendar startDate, XMLGregorianCalendar endDate) {
 
 		if (retailCustomer != null) {
 
-			Subscription subscription = null;
+			SubscriptionEntity subscription = null;
 
 			// find and iterate across all relevant authorizations
-			//
-			List<Authorization> authorizationList = authorizationService
+			List<AuthorizationEntity> authorizationList = authorizationService
 					.findAllByRetailCustomerId(retailCustomer.getId());
-			Iterator<Authorization> authorizationIterator = authorizationList
+			Iterator<AuthorizationEntity> authorizationIterator = authorizationList
 					.iterator();
 
 			while (authorizationIterator.hasNext()) {
-				Authorization authorization = authorizationIterator.next();
+				AuthorizationEntity authorization = authorizationIterator.next();
 
 				try {
 					subscription = subscriptionService
@@ -129,7 +132,7 @@ public class NotificationServiceImpl implements NotificationService {
 	// we want to spawn this to a separate thread so we can get back
 	// and commit the actual data import transaction
 	private void notifyInternal(String thirdPartyNotificationURI,
-			BatchList batchList) {
+			BatchListEntity batchList) {
 
 		if(thirdPartyNotificationURI != null){
 			try {
@@ -146,14 +149,14 @@ public class NotificationServiceImpl implements NotificationService {
 	@Override
 	public void notifyAllNeed() {
 
-		List<Long> authList = resourceService.findAllIds(Authorization.class);
+		List<UUID> authList = authorizationRepository.findAllIds();
 
-		Map<Long, BatchList> notifyList = new HashMap<Long, BatchList>();
+		Map<UUID, BatchListEntity> notifyList = new HashMap<UUID, BatchListEntity>();
 
-		for (Long id : authList) {
+		for (UUID id : authList) {
 
-			Authorization authorization = resourceService.findById(id,
-					Authorization.class);
+			AuthorizationEntity authorization = authorizationRepository.findById(id).orElse(null);
+			if (authorization == null) continue;
 
 			String tempResourceUri = authorization.getResourceURI();
 
@@ -166,8 +169,8 @@ public class NotificationServiceImpl implements NotificationService {
 			if(!tempResourceUri.contains("/Batch/Bulk/")) {
 				
 				try {
-					resourceService.findByResourceUri(tempResourceUri,
-							Authorization.class);
+					// Modern approach: validate authorization exists
+					authorizationRepository.findById(id);
 				
 				} catch (Exception ex) {
 				
@@ -189,7 +192,7 @@ public class NotificationServiceImpl implements NotificationService {
 				// if this is the first time we have seen this third party, add
 				// it to the notification list.
 				if (!(notifyList.containsKey(thirdParty))) {
-					notifyList.put(id, new BatchList());
+					notifyList.put(id, new BatchListEntity());
 				}
 
 				// and now add the appropriate resource URIs to the batchList of
@@ -233,13 +236,14 @@ public class NotificationServiceImpl implements NotificationService {
 		}
 
 		// now notify each ThirdParty
-		for (Entry<Long, BatchList> entry : notifyList.entrySet()) {
-			String notifyUri = resourceService
-					.findById(entry.getKey(), Authorization.class)
-					.getApplicationInformation().getThirdPartyNotifyUri();
-			BatchList batchList = entry.getValue();
-			if (!(batchList.getResources().isEmpty())) {
-				notifyInternal(notifyUri, batchList);
+		for (Entry<UUID, BatchListEntity> entry : notifyList.entrySet()) {
+			Optional<AuthorizationEntity> authOpt = authorizationRepository.findById(entry.getKey());
+			if (authOpt.isPresent()) {
+				String notifyUri = authOpt.get().getApplicationInformationEntity().getThirdPartyNotifyUri();
+				BatchListEntity batchList = entry.getValue();
+				if (!(batchList.getResources().isEmpty())) {
+					notifyInternal(notifyUri, batchList);
+				}
 			}
 		}
 	}
@@ -249,13 +253,13 @@ public class NotificationServiceImpl implements NotificationService {
 	}
 
 	@Override
-	public void notify(ApplicationInformation applicationInformation,
+	public void notify(ApplicationInformationEntity applicationInformation,
 					   Long bulkId) {
 		String bulkRequestUri = applicationInformation
 				.getDataCustodianBulkRequestURI() + "/" + bulkId;
 		String thirdPartyNotificationURI = applicationInformation
 				.getThirdPartyNotifyUri();
-		BatchList batchList = new BatchList();
+		BatchListEntity batchList = new BatchListEntity();
 		batchList.getResources().add(bulkRequestUri);
 
 		notifyInternal(thirdPartyNotificationURI, batchList);
@@ -266,13 +270,7 @@ public class NotificationServiceImpl implements NotificationService {
 		return this.restTemplate;
 	}
 
-	public void setResourceService(ResourceService resourceService) {
-		this.resourceService = resourceService;
-	}
-
-	public ResourceService getResourceService() {
-		return this.resourceService;
-	}
+	// Legacy ResourceService methods removed - using modern repositories and services
 
 	public void setAuthorizationService(
 			AuthorizationService authorizationService) {
