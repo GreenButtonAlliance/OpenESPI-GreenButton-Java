@@ -35,9 +35,9 @@ public interface MeterReadingService {
 	void setMeterReadingRepository(
 			MeterReadingRepository meterReadingRepository);
 
-	MeterReading findById(Long retailCustomerId, Long usagePointId,
+	MeterReadingEntity findById(Long retailCustomerId, Long usagePointId,
 						  Long meterReadingId);
 
-	MeterReading importResource(InputStream stream);
+	MeterReadingEntity importResource(InputStream stream);
 
 }

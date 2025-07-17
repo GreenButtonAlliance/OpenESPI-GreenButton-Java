@@ -19,12 +19,11 @@
 
 package org.greenbuttonalliance.espi.common.service.impl;
 
-import org.greenbuttonalliance.espi.common.domain.legacy.ApplicationInformation;
 import org.greenbuttonalliance.espi.common.domain.usage.ApplicationInformationEntity;
+import org.greenbuttonalliance.espi.common.dto.usage.ApplicationInformationDto;
+import org.greenbuttonalliance.espi.common.mapper.usage.ApplicationInformationMapper;
 import org.greenbuttonalliance.espi.common.repositories.usage.ApplicationInformationRepository;
 import org.greenbuttonalliance.espi.common.service.ApplicationInformationService;
-import org.greenbuttonalliance.espi.common.service.ImportService;
-import org.greenbuttonalliance.espi.common.service.ResourceService;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,31 +49,26 @@ public class ApplicationInformationServiceImpl implements
 	private ApplicationInformationRepository applicationInformationRepository;
 
 	@Autowired
-	private ResourceService resourceService;
-
-	@Autowired
-	private ImportService importService;
+	private ApplicationInformationMapper applicationInformationMapper;
 
 	@Override
-	public List<ApplicationInformation> findByKind(String kind) {
-		// For now, this legacy method returns empty list
-		// Modern applications should use repository methods directly with entities
-		logger.warn("Legacy findByKind method called - consider using repository directly");
+	public List<ApplicationInformationEntity> findByKind(String kind) {
+		// Use repository to find by kind - this would need a custom query
+		logger.info("Finding ApplicationInformation entities by kind: " + kind);
+		// TODO: Add repository method findByKind if needed
 		return new ArrayList<>();
 	}
 
 	@Override
-	public ApplicationInformation findByClientId(String clientId) {
+	public ApplicationInformationEntity findByClientId(String clientId) {
 		Assert.notNull(clientId, "clientID is required");
 		
 		// Use Spring Data JPA repository to find by client ID
 		Optional<ApplicationInformationEntity> entityOpt = applicationInformationRepository.findByClientId(clientId);
 		
 		if (entityOpt.isPresent()) {
-			// TODO: Convert entity to legacy domain object when needed
-			// For now, return null to maintain backward compatibility
 			logger.info("Found ApplicationInformation entity for clientId: " + clientId);
-			return null; // Placeholder until full migration
+			return entityOpt.get();
 		} else {
 			logger.warn("ApplicationInformation not found for clientId: " + clientId);
 			return null;
@@ -82,47 +76,33 @@ public class ApplicationInformationServiceImpl implements
 	}
 
 	@Override
-	public ApplicationInformation findByDataCustodianClientId(
+	public ApplicationInformationEntity findByDataCustodianClientId(
 			String dataCustodianClientId) {
 		Assert.notNull(dataCustodianClientId, "dataCustodianClientId is required");
 		
-		// For now, this legacy method returns null
-		// Modern applications should use repository methods directly with entities
-		logger.warn("Legacy findByDataCustodianClientId method called - consider using repository directly");
+		// TODO: Add repository method findByDataCustodianClientId if needed
+		logger.info("Finding ApplicationInformation by dataCustodianClientId: " + dataCustodianClientId);
 		
 		return null;
 	}
 
 	@Override
-	public ApplicationInformation importResource(InputStream stream) {
-
-		ApplicationInformation applicationInformation = null;
+	public ApplicationInformationEntity importResource(InputStream stream) {
 		try {
-			importService.importData(stream, null);
-			// TODO: Implement modern import logic for ApplicationInformation
-			// Legacy getContent().getApplicationInformation() no longer supported
-			applicationInformation = null; // Placeholder
+			// Use JAXB to parse XML stream to DTO
+			jakarta.xml.bind.JAXBContext context = jakarta.xml.bind.JAXBContext.newInstance(ApplicationInformationDto.class);
+			jakarta.xml.bind.Unmarshaller unmarshaller = context.createUnmarshaller();
+			ApplicationInformationDto dto = (ApplicationInformationDto) unmarshaller.unmarshal(stream);
+			
+			// Convert DTO to Entity using mapper
+			ApplicationInformationEntity entity = applicationInformationMapper.toEntity(dto);
+			
+			// Save and return entity
+			return applicationInformationRepository.save(entity);
+			
 		} catch (Exception e) {
 			logger.error("Failed to import ApplicationInformation resource", e);
- 		}
-		return applicationInformation;
+			return null;
+		}
 	}
-
-
-	public void setResourceService(ResourceService resourceService) {
-		this.resourceService = resourceService;
-	}
-
-	public ResourceService getResourceService() {
-		return this.resourceService;
-	}
-
-	public void setImportService(ImportService importService) {
-		this.importService = importService;
-	}
-
-	public ImportService getImportService() {
-		return this.importService;
-	}
-
 }
