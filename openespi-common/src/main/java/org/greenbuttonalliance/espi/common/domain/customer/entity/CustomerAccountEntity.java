@@ -43,6 +43,15 @@ import java.util.List;
 @Table(name = "customer_accounts", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"id"})
 })
+@AttributeOverrides({
+    // Resolve any potential column conflicts by ensuring unique column names
+    @AttributeOverride(name = "upLink.rel", column = @Column(name = "customer_account_up_link_rel")),
+    @AttributeOverride(name = "upLink.href", column = @Column(name = "customer_account_up_link_href")),
+    @AttributeOverride(name = "upLink.type", column = @Column(name = "customer_account_up_link_type")),
+    @AttributeOverride(name = "selfLink.rel", column = @Column(name = "customer_account_self_link_rel")),
+    @AttributeOverride(name = "selfLink.href", column = @Column(name = "customer_account_self_link_href")),
+    @AttributeOverride(name = "selfLink.type", column = @Column(name = "customer_account_self_link_type"))
+})
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
