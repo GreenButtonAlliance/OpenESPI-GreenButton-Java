@@ -20,12 +20,9 @@
 package org.greenbuttonalliance.espi.common.service;
 
 import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
-import org.greenbuttonalliance.espi.common.domain.legacy.TimeConfiguration;
+import org.greenbuttonalliance.espi.common.domain.usage.TimeConfigurationEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
-import org.greenbuttonalliance.espi.common.domain.legacy.atom.EntryType;
 import org.greenbuttonalliance.espi.common.repositories.usage.TimeConfigurationRepository;
-import org.greenbuttonalliance.espi.common.utils.EntryTypeIterator;
-import org.greenbuttonalliance.espi.common.utils.ExportFilter;
 
 import java.io.InputStream;
 import java.util.List;
@@ -33,36 +30,28 @@ import java.util.UUID;
 
 public interface TimeConfigurationService {
  
-	TimeConfiguration findByUUID(UUID uuid);
+	TimeConfigurationEntity findByUUID(UUID uuid);
 
-	List<TimeConfiguration> findAllByRetailCustomer(RetailCustomer retailCustomer);
+	List<TimeConfigurationEntity> findAllByRetailCustomer(RetailCustomerEntity retailCustomer);
 
-	String feedFor(List<TimeConfiguration> timeConfiguration);
+	void associateByUUID(UsagePointEntity usagePoint, UUID uuid);
 
-	String entryFor(TimeConfiguration timeConfiguration);
+	TimeConfigurationEntity importTimeConfiguration(InputStream stream);
 
-	void associateByUUID(UsagePoint usagePoint, UUID uuid);
+	void deleteById(UUID timeConfigurationId);
 
-	TimeConfiguration importTimeConfiguration(InputStream stream);
-
-	void deleteById(long timeConfigurationId);
-
-	UsagePoint getUsagePoint();
+	UsagePointEntity getUsagePoint();
  
 	void setRepository(TimeConfigurationRepository timeConfigurationRepository);
 
-	TimeConfiguration save(TimeConfiguration timeConfiguration);
+	TimeConfigurationEntity save(TimeConfigurationEntity timeConfiguration);
  
-	TimeConfiguration findById(Long timeConfigurationId);
+	TimeConfigurationEntity findById(UUID timeConfigurationId);
 
-	EntryType findEntryType(Long retailCustomerId, Long usagePointId, Long timeConfigurationId, ExportFilter params);
+	void add(TimeConfigurationEntity timeConfiguration);
 
-	EntryTypeIterator findEntryTypeIterator(Long retailCustomerId, Long usagePointId, ExportFilter params);
-
-	void add(TimeConfiguration timeConfiguration);
-
-	void delete(TimeConfiguration timeConfiguration);
+	void delete(TimeConfigurationEntity timeConfiguration);
  
-	TimeConfiguration importResource(InputStream stream);
+	TimeConfigurationEntity importResource(InputStream stream);
 
 }

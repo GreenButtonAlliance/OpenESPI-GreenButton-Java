@@ -19,23 +19,23 @@
 
 package org.greenbuttonalliance.espi.common.service;
 
-import org.greenbuttonalliance.espi.common.domain.legacy.ApplicationInformation;
+import org.greenbuttonalliance.espi.common.domain.usage.ApplicationInformationEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
-import org.greenbuttonalliance.espi.common.domain.legacy.Subscription;
+import org.greenbuttonalliance.espi.common.domain.usage.SubscriptionEntity;
 import org.springframework.stereotype.Service;
 
 import javax.xml.datatype.XMLGregorianCalendar;
 
 @Service
 public interface NotificationService {
-	void notify(Subscription subscription, XMLGregorianCalendar startDate,
+	void notify(SubscriptionEntity subscription, XMLGregorianCalendar startDate,
 			XMLGregorianCalendar endDate);
 
-	void notify(RetailCustomer retailCustomer, XMLGregorianCalendar startDate,
+	void notify(RetailCustomerEntity retailCustomer, XMLGregorianCalendar startDate,
 			XMLGregorianCalendar endDate);
 
 	void notifyAllNeed();
 
-	void notify(ApplicationInformation applicationInformation, Long bulkId);
+	void notify(ApplicationInformationEntity applicationInformation, Long bulkId);
 
 }
