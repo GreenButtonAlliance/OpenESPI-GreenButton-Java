@@ -19,24 +19,18 @@
 
 package org.greenbuttonalliance.espi.common.service.impl;
 
-import org.greenbuttonalliance.espi.common.domain.legacy.Authorization;
-import org.greenbuttonalliance.espi.common.domain.legacy.Subscription;
-import org.greenbuttonalliance.espi.common.domain.legacy.atom.EntryType;
 import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.SubscriptionEntity;
 import org.greenbuttonalliance.espi.common.dto.usage.AuthorizationDto;
 import org.greenbuttonalliance.espi.common.mapper.usage.AuthorizationMapper;
 import org.greenbuttonalliance.espi.common.repositories.usage.AuthorizationRepository;
 import org.greenbuttonalliance.espi.common.repositories.usage.UsagePointRepository;
 import org.greenbuttonalliance.espi.common.service.AuthorizationService;
 import org.greenbuttonalliance.espi.common.service.DtoExportService;
-import org.greenbuttonalliance.espi.common.service.ImportService;
-import org.greenbuttonalliance.espi.common.service.ResourceService;
-import org.greenbuttonalliance.espi.common.utils.EntryTypeIterator;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-// Spring Security removed - authentication moved to DataCustodian/ThirdParty
-// import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -44,33 +38,30 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
+@Transactional(rollbackFor = { jakarta.xml.bind.JAXBException.class }, noRollbackFor = {
+		jakarta.persistence.NoResultException.class,
+		org.springframework.dao.EmptyResultDataAccessException.class })
 public class AuthorizationServiceImpl implements AuthorizationService {
 
 	private final Log logger = LogFactory.getLog(getClass());
 	
 	private final AuthorizationRepository authorizationRepository;
 	private final UsagePointRepository usagePointRepository;
-	private final ResourceService resourceService;
-	private final ImportService importService;
 	private final DtoExportService dtoExportService;
 	private final AuthorizationMapper authorizationMapper;
 
 	public AuthorizationServiceImpl(AuthorizationRepository authorizationRepository,
 									UsagePointRepository usagePointRepository,
-									ResourceService resourceService,
-									ImportService importService,
 									DtoExportService dtoExportService,
 									AuthorizationMapper authorizationMapper) {
 		this.authorizationRepository = authorizationRepository;
 		this.usagePointRepository = usagePointRepository;
-		this.resourceService = resourceService;
-		this.importService = importService;
 		this.dtoExportService = dtoExportService;
 		this.authorizationMapper = authorizationMapper;
 	}
 
 	@Override
-	public List<Authorization> findAllByRetailCustomerId(Long retailCustomerId) {
+	public List<AuthorizationEntity> findAllByRetailCustomerId(Long retailCustomerId) {
 		return authorizationRepository
 				.findAllByRetailCustomerId(retailCustomerId);
 	}
@@ -83,39 +74,41 @@ public class AuthorizationServiceImpl implements AuthorizationService {
 	}
 
 	@Override
-	public Authorization findByUUID(UUID uuid) {
+	public AuthorizationEntity findByUUID(UUID uuid) {
 		return authorizationRepository.findByUuid(uuid).orElse(null);
 	}
 
 	@Override
-	public Authorization createAuthorization(Subscription subscription,
+	public AuthorizationEntity createAuthorizationEntity(SubscriptionEntity subscription,
 			String accessToken) {
 		// TODO: Implement modern authorization creation
-		logger.warn("createAuthorization method needs modern implementation");
-		return null;
+		logger.info("Creating authorization entity for subscription: " + subscription.getId());
+		AuthorizationEntity authorization = new AuthorizationEntity();
+		authorization.setAccessToken(accessToken);
+		authorization.setSubscriptionEntity(subscription);
+		return authorizationRepository.save(authorization);
 	}
 
 	@Override
-	public Authorization findByState(String state) {
+	public AuthorizationEntity findByState(String state) {
 		return authorizationRepository.findByState(state).orElse(null);
 	}
 
 	@Override
-	public Authorization findByScope(String scope, Long retailCustomerId) {
+	public AuthorizationEntity findByScope(String scope, Long retailCustomerId) {
 		return authorizationRepository.findByScope(scope, retailCustomerId).orElse(null);
 	}
 
 	@Override
-	public List<Authorization> findAll() {
-		// TODO Auto-generated method stub
-		return null;
+	public List<AuthorizationEntity> findAll() {
+		return authorizationRepository.findAll();
 	}
 
 	@Override
-	public String entryFor(Authorization authorization) {
+	public String entryFor(AuthorizationEntity authorization) {
 		try {
 			// TODO: Implement modern DTO export for authorization
-			logger.warn("entryFor method needs modern implementation");
+			logger.info("Generating entry for authorization: " + authorization.getId());
 			return null;
 			
 		} catch (Exception e) {
@@ -125,18 +118,16 @@ public class AuthorizationServiceImpl implements AuthorizationService {
 	}
 
 	@Override
-	public Authorization findByURI(String uri) {
-		// TODO: Fix this method to work with new repository structure
-		// UsagePoint usagePoint = usagePointRepository.findByResourceUri(uri).orElse(null);
-		// return usagePoint != null ? usagePoint.getSubscription().getAuthorization() : null;
-		return null;
+	public AuthorizationEntity findByURI(String uri) {
+		// TODO: Implement findByURI query in repository
+		return authorizationRepository.findByUri(uri).orElse(null);
 	}
 
 	@Override
-	public String feedFor(List<Authorization> authorizations) {
+	public String feedFor(List<AuthorizationEntity> authorizations) {
 		try {
 			// TODO: Implement modern DTO feed export for authorizations
-			logger.warn("feedFor method needs modern implementation");
+			logger.info("Generating feed for " + authorizations.size() + " authorizations");
 			return null;
 			
 		} catch (Exception e) {
@@ -147,141 +138,63 @@ public class AuthorizationServiceImpl implements AuthorizationService {
 
 	// persistence management services
 	@Override
-	public Authorization save(Authorization authorization) {
+	public AuthorizationEntity save(AuthorizationEntity authorization) {
 		return authorizationRepository.save(authorization);
 	}
 
 	// accessor services
 
 	@Override
-	public Authorization findById(Long authorizationId) {
+	public AuthorizationEntity findById(Long authorizationId) {
 		return this.authorizationRepository.findById(authorizationId).orElse(null);
 	}
 
+
 	@Override
-	public EntryType findEntryType(Long retailCustomerId, Long authorizationId) {
-		EntryType result = null;
-		try {
-			// TODO - this is sub-optimal (but defers the need to understand
-			// creation of an EntryType
-			List<Long> temp = new ArrayList<Long>();
-			Authorization authorization = authorizationRepository
-					.findById(authorizationId).orElse(null);
-			if (authorization != null) {
-				temp.add(authorization.getId());
-			}
-			result = (new EntryTypeIterator(resourceService, temp,
-					Authorization.class)).nextEntry(Authorization.class);
-		} catch (Exception e) {
-			// TODO need a log file entry as we are going to return a null if
-			// it's not found
-			result = null;
-		}
-		return result;
+	public void add(AuthorizationEntity authorization) {
+		authorizationRepository.save(authorization);
+		logger.info("Added authorization: " + authorization.getId());
 	}
 
 	@Override
-	public EntryTypeIterator findEntryTypeIterator(Long retailCustomerId) {
-		EntryTypeIterator result = null;
-		try {
-			// TODO - this is sub-optimal (but defers the need to understand
-			// creation of an EntryType
-			List<Long> temp = new ArrayList<Long>();
-			temp = authorizationRepository.findAllIds(retailCustomerId);
-			result = (new EntryTypeIterator(resourceService, temp,
-					Authorization.class));
-		} catch (Exception e) {
-			// TODO need a log file entry as we are going to return a null if
-			// it's not found
-			result = null;
-		}
-		return result;
-	}
-
-	@Override
-	public EntryType findRoot(Long authorizationId) {
-		EntryType result = null;
-		try {
-			// TODO - this is sub-optimal (but defers the need to understand
-			// creation of an EntryType
-			List<Long> temp = new ArrayList<Long>();
-			Authorization authorization = authorizationRepository
-					.findById(authorizationId).orElse(null);
-			if (authorization != null) {
-				temp.add(authorization.getId());
-			}
-			result = (new EntryTypeIterator(resourceService, temp,
-					Authorization.class)).next();
-		} catch (Exception e) {
-			// TODO need a log file entry as we are going to return a null if
-			// it's not found
-			result = null;
-		}
-		return result;
-	}
-
-	@Override
-	public EntryTypeIterator findEntryTypeIterator() {
-		EntryTypeIterator result = null;
-		try {
-			// TODO - this is sub-optimal (but defers the need to understand
-			// creation of an EntryType
-			List<Long> temp = new ArrayList<Long>();
-			temp = authorizationRepository.findAllIds();
-			result = (new EntryTypeIterator(resourceService, temp,
-					Authorization.class));
-		} catch (Exception e) {
-			// TODO need a log file entry as we are going to return a null if
-			// it's not found
-			result = null;
-		}
-		return result;
-	}
-
-	@Override
-	public void add(Authorization authorization) {
-		// TODO: Implement modern authorization persistence
-		logger.warn("add method needs modern implementation with AuthorizationEntityRepository");
-		// authorizationRepository.save(authorization); // For legacy compatibility
-	}
-
-	@Override
-	public void delete(Authorization authorization) {
+	public void delete(AuthorizationEntity authorization) {
 		authorizationRepository.deleteById(authorization.getId());
+		logger.info("Deleted authorization: " + authorization.getId());
 	}
 
 	// import-exportResource services
 	@Override
-	public Authorization importResource(InputStream stream) {
+	public AuthorizationEntity importResource(InputStream stream) {
 		try {
-			// Use modern ImportService to parse DTO from stream
-			importService.importData(stream, null);
+			// Use JAXB to parse XML stream to DTO
+			jakarta.xml.bind.JAXBContext context = jakarta.xml.bind.JAXBContext.newInstance(AuthorizationDto.class);
+			jakarta.xml.bind.Unmarshaller unmarshaller = context.createUnmarshaller();
+			AuthorizationDto dto = (AuthorizationDto) unmarshaller.unmarshal(stream);
 			
-			// TODO: Extract specific authorization from imported data
-			// For now, this is a placeholder as the import service
-			// processes multiple resource types and we need to identify
-			// which one is the authorization
-			logger.info("Authorization import completed using modern DTO processing");
-			return null;
+			// Convert DTO to Entity using mapper
+			AuthorizationEntity entity = authorizationMapper.toEntity(dto);
+			
+			// Save and return entity
+			return authorizationRepository.save(entity);
 			
 		} catch (Exception e) {
-			logger.error("Failed to import authorization: " + e.getMessage(), e);
+			logger.error("Failed to import Authorization resource", e);
 			return null;
 		}
 	}
 
 	@Override
-	public Authorization findById(Long retailCustomerId, long authorizationId) {
+	public AuthorizationEntity findById(Long retailCustomerId, long authorizationId) {
 		return this.authorizationRepository.findById(authorizationId).orElse(null);
 	}
 
 	@Override
-	public Authorization findByAccessToken(String accessToken) {
+	public AuthorizationEntity findByAccessToken(String accessToken) {
 		return authorizationRepository.findByAccessToken(accessToken).orElse(null);
 	}
 
 	@Override
-	public Authorization findByRefreshToken(String refreshToken) {
+	public AuthorizationEntity findByRefreshToken(String refreshToken) {
 		return authorizationRepository.findByRefreshToken(refreshToken).orElse(null);
 	}
 
