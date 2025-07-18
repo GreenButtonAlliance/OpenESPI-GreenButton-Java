@@ -42,7 +42,11 @@
       "Bash(cat:*)",
       "WebFetch(domain:github.com)",
       "Bash(pkill:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(./mvnw test)",
+      "Bash(git pull:*)",
+      "Bash(MAVEN_OPTS=\"-Dspring.jpa.show-sql=true\" mvn spring-boot:run -Dspring-boot.run.profiles=local -DskipTests=true -Dmaven.test.skip=true)",
+      "Bash(timeout 15 mvn:*)"
     ],
     "deny": []
   }
