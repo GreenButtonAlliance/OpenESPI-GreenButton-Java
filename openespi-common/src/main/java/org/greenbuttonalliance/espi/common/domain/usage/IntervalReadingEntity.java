@@ -19,7 +19,8 @@
 
 package org.greenbuttonalliance.espi.common.domain.usage;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
@@ -42,7 +43,8 @@ import java.util.List;
  */
 @Entity
 @Table(name = "interval_readings")
-@Data
+@Getter
+@Setter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @ToString(exclude = {"readingQualities", "intervalBlock"})

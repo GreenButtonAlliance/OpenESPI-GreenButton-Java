@@ -19,7 +19,8 @@
 
 package org.greenbuttonalliance.espi.common.domain.usage;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.NoArgsConstructor;
 
 import jakarta.persistence.*;
@@ -37,7 +38,8 @@ import java.io.Serializable;
  * so it does not extend IdentifiedObject and has no separate identity.
  */
 @Embeddable
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 public class ServiceDeliveryPointEntity implements Serializable {
 

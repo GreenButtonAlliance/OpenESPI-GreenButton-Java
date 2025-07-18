@@ -19,7 +19,8 @@
 
 package org.greenbuttonalliance.espi.common.domain.usage;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
@@ -48,7 +49,8 @@ import java.util.List;
     @Index(name = "idx_subscription_authorization", columnList = "authorization_id"),
     @Index(name = "idx_subscription_last_update", columnList = "last_update")
 })
-@Data
+@Getter
+@Setter
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @ToString(callSuper = true, exclude = {"retailCustomer", "authorization", "applicationInformation", "usagePoints"})

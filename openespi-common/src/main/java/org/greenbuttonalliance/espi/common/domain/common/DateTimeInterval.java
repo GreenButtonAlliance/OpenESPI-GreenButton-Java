@@ -19,10 +19,18 @@
 
 package org.greenbuttonalliance.espi.common.domain.common;
 
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 
 @Embeddable
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class DateTimeInterval {
 
 	@Column(name = "start")
@@ -31,27 +39,4 @@ public class DateTimeInterval {
 	@Column(name = "duration")
 	private Long duration;
 
-	public DateTimeInterval() {
-	}
-
-	public DateTimeInterval(Long start, Long duration) {
-		this.start = start;
-		this.duration = duration;
-	}
-
-	public Long getStart() {
-		return start;
-	}
-
-	public void setStart(Long start) {
-		this.start = start;
-	}
-
-	public Long getDuration() {
-		return duration;
-	}
-
-	public void setDuration(Long duration) {
-		this.duration = duration;
-	}
 }

@@ -19,10 +19,18 @@
 
 package org.greenbuttonalliance.espi.common.domain.common;
 
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 
 @Embeddable
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class LinkType {
 
 	@Column(name = "href")
@@ -34,41 +42,9 @@ public class LinkType {
 	@Column(name = "type")
 	private String type;
 
-	public LinkType() {
-	}
-
 	public LinkType(String href, String rel) {
 		this.href = href;
 		this.rel = rel;
 	}
 
-	public LinkType(String href, String rel, String type) {
-		this.href = href;
-		this.rel = rel;
-		this.type = type;
-	}
-
-	public String getHref() {
-		return href;
-	}
-
-	public void setHref(String href) {
-		this.href = href;
-	}
-
-	public String getRel() {
-		return rel;
-	}
-
-	public void setRel(String rel) {
-		this.rel = rel;
-	}
-
-	public String getType() {
-		return type;
-	}
-
-	public void setType(String type) {
-		this.type = type;
-	}
 }

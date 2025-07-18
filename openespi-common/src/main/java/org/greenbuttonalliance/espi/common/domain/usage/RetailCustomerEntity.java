@@ -20,7 +20,8 @@
 package org.greenbuttonalliance.espi.common.domain.usage;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
@@ -55,7 +56,8 @@ import java.util.UUID;
     @UniqueConstraint(columnNames = {"uuid"})
     // username uniqueness removed - authentication moved to DataCustodian/ThirdParty
 })
-@Data
+@Getter
+@Setter
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @ToString(callSuper = true, exclude = {"password", "usagePoints", "authorizations"})

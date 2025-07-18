@@ -19,7 +19,8 @@
 
 package org.greenbuttonalliance.espi.common.domain.usage;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
@@ -41,7 +42,8 @@ import jakarta.validation.constraints.Size;
     @Index(name = "idx_reading_quality_interval_reading", columnList = "interval_reading_id"),
     @Index(name = "idx_reading_quality_quality", columnList = "quality")
 })
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @ToString(exclude = {"intervalReading"})
 public class ReadingQualityEntity {
