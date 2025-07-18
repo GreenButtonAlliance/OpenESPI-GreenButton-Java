@@ -127,7 +127,7 @@ public class UsageSummaryEntity extends IdentifiedObject {
         @AttributeOverride(name = "timeStamp", column = @Column(name = "overall_consumption_last_period_timestamp")),
         @AttributeOverride(name = "uom", column = @Column(name = "overall_consumption_last_period_uom")),
         @AttributeOverride(name = "value", column = @Column(name = "overall_consumption_last_period_value")),
-        @AttributeOverride(name = "readingTypeRef", column = @Column(name = "overall_consumption_last_period_reading_type_ref"))
+        @AttributeOverride(name = "readingTypeRef", column = @Column(name = "overall_consumption_last_period_reading_type_ref", length = 512))
     })
     private SummaryMeasurement overallConsumptionLastPeriod;
 
@@ -140,7 +140,7 @@ public class UsageSummaryEntity extends IdentifiedObject {
         @AttributeOverride(name = "timeStamp", column = @Column(name = "current_billing_period_overall_consumption_timestamp")),
         @AttributeOverride(name = "uom", column = @Column(name = "current_billing_period_overall_consumption_uom")),
         @AttributeOverride(name = "value", column = @Column(name = "current_billing_period_overall_consumption_value")),
-        @AttributeOverride(name = "readingTypeRef", column = @Column(name = "current_billing_period_overall_consumption_reading_type_ref"))
+        @AttributeOverride(name = "readingTypeRef", column = @Column(name = "current_billing_period_overall_consumption_reading_type_ref", length = 512))
     })
     private SummaryMeasurement currentBillingPeriodOverAllConsumption;
 
@@ -153,7 +153,7 @@ public class UsageSummaryEntity extends IdentifiedObject {
         @AttributeOverride(name = "timeStamp", column = @Column(name = "current_day_last_year_net_consumption_timestamp")),
         @AttributeOverride(name = "uom", column = @Column(name = "current_day_last_year_net_consumption_uom")),
         @AttributeOverride(name = "value", column = @Column(name = "current_day_last_year_net_consumption_value")),
-        @AttributeOverride(name = "readingTypeRef", column = @Column(name = "current_day_last_year_net_consumption_reading_type_ref"))
+        @AttributeOverride(name = "readingTypeRef", column = @Column(name = "current_day_last_year_net_consumption_reading_type_ref", length = 512))
     })
     private SummaryMeasurement currentDayLastYearNetConsumption;
 
@@ -166,7 +166,7 @@ public class UsageSummaryEntity extends IdentifiedObject {
         @AttributeOverride(name = "timeStamp", column = @Column(name = "current_day_net_consumption_timestamp")),
         @AttributeOverride(name = "uom", column = @Column(name = "current_day_net_consumption_uom")),
         @AttributeOverride(name = "value", column = @Column(name = "current_day_net_consumption_value")),
-        @AttributeOverride(name = "readingTypeRef", column = @Column(name = "current_day_net_consumption_reading_type_ref"))
+        @AttributeOverride(name = "readingTypeRef", column = @Column(name = "current_day_net_consumption_reading_type_ref", length = 512))
     })
     private SummaryMeasurement currentDayNetConsumption;
 
@@ -179,7 +179,7 @@ public class UsageSummaryEntity extends IdentifiedObject {
         @AttributeOverride(name = "timeStamp", column = @Column(name = "current_day_overall_consumption_timestamp")),
         @AttributeOverride(name = "uom", column = @Column(name = "current_day_overall_consumption_uom")),
         @AttributeOverride(name = "value", column = @Column(name = "current_day_overall_consumption_value")),
-        @AttributeOverride(name = "readingTypeRef", column = @Column(name = "current_day_overall_consumption_reading_type_ref"))
+        @AttributeOverride(name = "readingTypeRef", column = @Column(name = "current_day_overall_consumption_reading_type_ref", length = 512))
     })
     private SummaryMeasurement currentDayOverallConsumption;
 
@@ -192,7 +192,7 @@ public class UsageSummaryEntity extends IdentifiedObject {
         @AttributeOverride(name = "timeStamp", column = @Column(name = "peak_demand_timestamp")),
         @AttributeOverride(name = "uom", column = @Column(name = "peak_demand_uom")),
         @AttributeOverride(name = "value", column = @Column(name = "peak_demand_value")),
-        @AttributeOverride(name = "readingTypeRef", column = @Column(name = "peak_demand_reading_type_ref"))
+        @AttributeOverride(name = "readingTypeRef", column = @Column(name = "peak_demand_reading_type_ref", length = 512))
     })
     private SummaryMeasurement peakDemand;
 
@@ -205,7 +205,7 @@ public class UsageSummaryEntity extends IdentifiedObject {
         @AttributeOverride(name = "timeStamp", column = @Column(name = "previous_day_last_year_overall_consumption_timestamp")),
         @AttributeOverride(name = "uom", column = @Column(name = "previous_day_last_year_overall_consumption_uom")),
         @AttributeOverride(name = "value", column = @Column(name = "previous_day_last_year_overall_consumption_value")),
-        @AttributeOverride(name = "readingTypeRef", column = @Column(name = "previous_day_last_year_overall_consumption_reading_type_ref"))
+        @AttributeOverride(name = "readingTypeRef", column = @Column(name = "previous_day_last_year_overall_consumption_reading_type_ref", length = 512))
     })
     private SummaryMeasurement previousDayLastYearOverallConsumption;
 
@@ -218,7 +218,7 @@ public class UsageSummaryEntity extends IdentifiedObject {
         @AttributeOverride(name = "timeStamp", column = @Column(name = "previous_day_net_consumption_timestamp")),
         @AttributeOverride(name = "uom", column = @Column(name = "previous_day_net_consumption_uom")),
         @AttributeOverride(name = "value", column = @Column(name = "previous_day_net_consumption_value")),
-        @AttributeOverride(name = "readingTypeRef", column = @Column(name = "previous_day_net_consumption_reading_type_ref"))
+        @AttributeOverride(name = "readingTypeRef", column = @Column(name = "previous_day_net_consumption_reading_type_ref", length = 512))
     })
     private SummaryMeasurement previousDayNetConsumption;
 
@@ -231,7 +231,7 @@ public class UsageSummaryEntity extends IdentifiedObject {
         @AttributeOverride(name = "timeStamp", column = @Column(name = "previous_day_overall_consumption_timestamp")),
         @AttributeOverride(name = "uom", column = @Column(name = "previous_day_overall_consumption_uom")),
         @AttributeOverride(name = "value", column = @Column(name = "previous_day_overall_consumption_value")),
-        @AttributeOverride(name = "readingTypeRef", column = @Column(name = "previous_day_overall_consumption_reading_type_ref"))
+        @AttributeOverride(name = "readingTypeRef", column = @Column(name = "previous_day_overall_consumption_reading_type_ref", length = 512))
     })
     private SummaryMeasurement previousDayOverallConsumption;
 
@@ -245,7 +245,7 @@ public class UsageSummaryEntity extends IdentifiedObject {
         @AttributeOverride(name = "timeStamp", column = @Column(name = "ratchet_demand_timestamp")),
         @AttributeOverride(name = "uom", column = @Column(name = "ratchet_demand_uom")),
         @AttributeOverride(name = "value", column = @Column(name = "ratchet_demand_value")),
-        @AttributeOverride(name = "readingTypeRef", column = @Column(name = "ratchet_demand_reading_type_ref"))
+        @AttributeOverride(name = "readingTypeRef", column = @Column(name = "ratchet_demand_reading_type_ref", length = 512))
     })
     private SummaryMeasurement ratchetDemand;
 
