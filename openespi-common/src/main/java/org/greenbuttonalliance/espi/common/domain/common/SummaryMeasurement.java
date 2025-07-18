@@ -39,4 +39,6 @@ public class SummaryMeasurement {
 	private String uom;
 
 	private Long value;
+
+	private String readingTypeRef;
 }
