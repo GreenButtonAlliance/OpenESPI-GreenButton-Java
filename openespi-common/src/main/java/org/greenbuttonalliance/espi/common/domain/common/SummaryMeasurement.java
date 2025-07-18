@@ -32,17 +32,14 @@ public class SummaryMeasurement {
 
 	private Long value;
 
-	private String readingTypeRef;
-
 	public SummaryMeasurement() {
 	}
 
-	public SummaryMeasurement(String powerOfTenMultiplier, Long timeStamp, String uom, Long value, String readingTypeRef) {
+	public SummaryMeasurement(String powerOfTenMultiplier, Long timeStamp, String uom, Long value) {
 		this.powerOfTenMultiplier = powerOfTenMultiplier;
 		this.timeStamp = timeStamp;
 		this.uom = uom;
 		this.value = value;
-		this.readingTypeRef = readingTypeRef;
 	}
 
 	public String getPowerOfTenMultiplier() {
@@ -75,13 +72,5 @@ public class SummaryMeasurement {
 
 	public void setValue(Long value) {
 		this.value = value;
-	}
-
-	public String getReadingTypeRef() {
-		return readingTypeRef;
-	}
-
-	public void setReadingTypeRef(String readingTypeRef) {
-		this.readingTypeRef = readingTypeRef;
 	}
 }

@@ -94,7 +94,6 @@ public class UsagePointEntity extends IdentifiedObject {
         @AttributeOverride(name = "timeStamp", column = @Column(name = "estimated_load_timestamp")),
         @AttributeOverride(name = "uom", column = @Column(name = "estimated_load_uom")),
         @AttributeOverride(name = "value", column = @Column(name = "estimated_load_value")),
-        @AttributeOverride(name = "readingTypeRef", column = @Column(name = "estimated_load_reading_type_ref"))
     })
     private SummaryMeasurement estimatedLoad;
 
@@ -108,7 +107,6 @@ public class UsagePointEntity extends IdentifiedObject {
         @AttributeOverride(name = "timeStamp", column = @Column(name = "nominal_voltage_timestamp")),
         @AttributeOverride(name = "uom", column = @Column(name = "nominal_voltage_uom")),
         @AttributeOverride(name = "value", column = @Column(name = "nominal_voltage_value")),
-        @AttributeOverride(name = "readingTypeRef", column = @Column(name = "nominal_voltage_reading_type_ref"))
     })
     private SummaryMeasurement nominalServiceVoltage;
 
@@ -122,7 +120,6 @@ public class UsagePointEntity extends IdentifiedObject {
         @AttributeOverride(name = "timeStamp", column = @Column(name = "rated_current_timestamp")),
         @AttributeOverride(name = "uom", column = @Column(name = "rated_current_uom")),
         @AttributeOverride(name = "value", column = @Column(name = "rated_current_value")),
-        @AttributeOverride(name = "readingTypeRef", column = @Column(name = "rated_current_reading_type_ref"))
     })
     private SummaryMeasurement ratedCurrent;
 
@@ -136,7 +133,6 @@ public class UsagePointEntity extends IdentifiedObject {
         @AttributeOverride(name = "timeStamp", column = @Column(name = "rated_power_timestamp")),
         @AttributeOverride(name = "uom", column = @Column(name = "rated_power_uom")),
         @AttributeOverride(name = "value", column = @Column(name = "rated_power_value")),
-        @AttributeOverride(name = "readingTypeRef", column = @Column(name = "rated_power_reading_type_ref"))
     })
     private SummaryMeasurement ratedPower;
 
