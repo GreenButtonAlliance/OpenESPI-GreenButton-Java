@@ -19,10 +19,18 @@
 
 package org.greenbuttonalliance.espi.common.domain.common;
 
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 
 @Embeddable
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class ReadingInterharmonic {
 
 	@Column(name = "denominator")
@@ -31,27 +39,4 @@ public class ReadingInterharmonic {
 	@Column(name = "numerator")
 	private Long numerator;
 
-	public ReadingInterharmonic() {
-	}
-
-	public ReadingInterharmonic(Long numerator, Long denominator) {
-		this.numerator = numerator;
-		this.denominator = denominator;
-	}
-
-	public Long getDenominator() {
-		return denominator;
-	}
-
-	public void setDenominator(Long denominator) {
-		this.denominator = denominator;
-	}
-
-	public Long getNumerator() {
-		return numerator;
-	}
-
-	public void setNumerator(Long numerator) {
-		this.numerator = numerator;
-	}
 }

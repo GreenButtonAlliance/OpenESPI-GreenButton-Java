@@ -19,11 +19,19 @@
 
 package org.greenbuttonalliance.espi.common.domain.common;
 
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import java.math.BigInteger;
 
 @Embeddable
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class RationalNumber {
 
 	@Column(name = "numerator")
@@ -32,27 +40,4 @@ public class RationalNumber {
 	@Column(name = "denominator")
 	private BigInteger denominator;
 
-	public RationalNumber() {
-	}
-
-	public RationalNumber(BigInteger numerator, BigInteger denominator) {
-		this.numerator = numerator;
-		this.denominator = denominator;
-	}
-
-	public BigInteger getNumerator() {
-		return numerator;
-	}
-
-	public void setNumerator(BigInteger numerator) {
-		this.numerator = numerator;
-	}
-
-	public BigInteger getDenominator() {
-		return denominator;
-	}
-
-	public void setDenominator(BigInteger denominator) {
-		this.denominator = denominator;
-	}
 }

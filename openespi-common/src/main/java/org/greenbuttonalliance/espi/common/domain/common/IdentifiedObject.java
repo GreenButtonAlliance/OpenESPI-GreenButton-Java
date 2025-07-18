@@ -19,7 +19,8 @@
 
 package org.greenbuttonalliance.espi.common.domain.common;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
@@ -47,7 +48,8 @@ import java.util.UUID;
  * - Link management for ATOM feed generation
  */
 @MappedSuperclass
-@Data
+@Getter
+@Setter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @ToString
 public abstract class IdentifiedObject implements Serializable {

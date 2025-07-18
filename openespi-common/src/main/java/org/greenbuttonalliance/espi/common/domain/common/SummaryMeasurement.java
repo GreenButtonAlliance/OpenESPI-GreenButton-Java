@@ -19,9 +19,17 @@
 
 package org.greenbuttonalliance.espi.common.domain.common;
 
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 import jakarta.persistence.Embeddable;
 
 @Embeddable
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class SummaryMeasurement {
 
 	private String powerOfTenMultiplier;
@@ -31,46 +39,4 @@ public class SummaryMeasurement {
 	private String uom;
 
 	private Long value;
-
-	public SummaryMeasurement() {
-	}
-
-	public SummaryMeasurement(String powerOfTenMultiplier, Long timeStamp, String uom, Long value) {
-		this.powerOfTenMultiplier = powerOfTenMultiplier;
-		this.timeStamp = timeStamp;
-		this.uom = uom;
-		this.value = value;
-	}
-
-	public String getPowerOfTenMultiplier() {
-		return powerOfTenMultiplier;
-	}
-
-	public void setPowerOfTenMultiplier(String powerOfTenMultiplier) {
-		this.powerOfTenMultiplier = powerOfTenMultiplier;
-	}
-
-	public Long getTimeStamp() {
-		return timeStamp;
-	}
-
-	public void setTimeStamp(Long timeStamp) {
-		this.timeStamp = timeStamp;
-	}
-
-	public String getUom() {
-		return uom;
-	}
-
-	public void setUom(String uom) {
-		this.uom = uom;
-	}
-
-	public Long getValue() {
-		return value;
-	}
-
-	public void setValue(Long value) {
-		this.value = value;
-	}
 }

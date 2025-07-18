@@ -19,7 +19,8 @@
 
 package org.greenbuttonalliance.espi.common.domain.usage;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
@@ -46,7 +47,8 @@ import java.time.ZoneId;
     @Index(name = "idx_line_item_date_time", columnList = "date_time"),
     @Index(name = "idx_line_item_amount", columnList = "amount")
 })
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @ToString(exclude = {"usageSummary"})
 public class LineItemEntity {

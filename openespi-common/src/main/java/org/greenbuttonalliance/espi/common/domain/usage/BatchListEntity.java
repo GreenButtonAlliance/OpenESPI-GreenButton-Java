@@ -19,7 +19,8 @@
 
 package org.greenbuttonalliance.espi.common.domain.usage;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.NoArgsConstructor;
 
 import jakarta.persistence.*;
@@ -45,7 +46,9 @@ import java.util.stream.Collectors;
     @Index(name = "idx_batch_list_created_at", columnList = "created_at"),
     @Index(name = "idx_batch_list_resource_count", columnList = "resource_count")
 })
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
 public class BatchListEntity {
 
     private static final long serialVersionUID = 1L;
@@ -116,13 +119,6 @@ public class BatchListEntity {
         this.updatedAt = this.createdAt;
     }
 
-    /**
-     * Default constructor required by JPA.
-     */
-    public BatchListEntity() {
-        this.createdAt = System.currentTimeMillis();
-        this.updatedAt = this.createdAt;
-    }
 
     /**
      * Constructor with initial resources.
@@ -130,7 +126,8 @@ public class BatchListEntity {
      * @param resources the initial list of resource URIs
      */
     public BatchListEntity(List<String> resources) {
-        this();
+        this.createdAt = System.currentTimeMillis();
+        this.updatedAt = this.createdAt;
         if (resources != null) {
             this.resources = new ArrayList<>(resources);
             updateResourceCount();
