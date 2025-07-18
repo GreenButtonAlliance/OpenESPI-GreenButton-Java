@@ -46,7 +46,8 @@
       "Bash(./mvnw test)",
       "Bash(git pull:*)",
       "Bash(MAVEN_OPTS=\"-Dspring.jpa.show-sql=true\" mvn spring-boot:run -Dspring-boot.run.profiles=local -DskipTests=true -Dmaven.test.skip=true)",
-      "Bash(timeout 15 mvn:*)"
+      "Bash(timeout 15 mvn:*)",
+      "WebFetch(domain:spring.io)"
     ],
     "deny": []
   }
