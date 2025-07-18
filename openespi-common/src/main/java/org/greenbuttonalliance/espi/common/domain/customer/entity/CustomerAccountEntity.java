@@ -44,7 +44,7 @@ import java.util.List;
     @UniqueConstraint(columnNames = {"id"})
 })
 @AttributeOverrides({
-    // Resolve any potential column conflicts by ensuring unique column names
+    // Resolve any potential column conflicts by ensuring unique column names  
     @AttributeOverride(name = "upLink.rel", column = @Column(name = "customer_account_up_link_rel")),
     @AttributeOverride(name = "upLink.href", column = @Column(name = "customer_account_up_link_href")),
     @AttributeOverride(name = "upLink.type", column = @Column(name = "customer_account_up_link_type")),

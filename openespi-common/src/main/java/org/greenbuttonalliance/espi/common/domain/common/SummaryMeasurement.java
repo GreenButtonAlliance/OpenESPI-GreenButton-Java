@@ -19,25 +19,19 @@
 
 package org.greenbuttonalliance.espi.common.domain.common;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 
 @Embeddable
 public class SummaryMeasurement {
 
-	@Column(name = "powerOfTenMultiplier")
 	private String powerOfTenMultiplier;
 
-	@Column(name = "timeStamp")
 	private Long timeStamp;
 
-	@Column(name = "uom")
 	private String uom;
 
-	@Column(name = "value")
 	private Long value;
 
-	@Column(name = "readingTypeRef")
 	private String readingTypeRef;
 
 	public SummaryMeasurement() {
