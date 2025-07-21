@@ -19,7 +19,7 @@
 
 package org.greenbuttonalliance.espi.common.service.impl;
 
-import com.sun.syndication.io.FeedException;
+import jakarta.xml.bind.JAXBException;
 import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.SubscriptionEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
@@ -63,10 +63,10 @@ public class UsagePointServiceImpl implements UsagePointService {
 		// Repository is injected via constructor
 	}
 
-	@Override
-	public void setResourceService(ResourceService resourceService) {
-		// ResourceService is no longer used - method kept for interface compatibility
-	}
+	// @Override
+	// public void setResourceService(ResourceService resourceService) {
+	//	// ResourceService is no longer used - removed for Spring Boot 3.5 migration
+	// }
 
 	@Override
 	public List<UsagePointEntity> findAllByRetailCustomer(RetailCustomerEntity customer) {
@@ -141,7 +141,7 @@ public class UsagePointServiceImpl implements UsagePointService {
 	}
 
 	@Override
-	public String feedFor(List<UsagePointEntity> usagePoints) throws FeedException {
+	public String feedFor(List<UsagePointEntity> usagePoints) throws JAXBException {
 		// TODO: Implement modern feed generation using DTOs
 		logger.info("Generating feed for " + usagePoints.size() + " usage points");
 		return null;
