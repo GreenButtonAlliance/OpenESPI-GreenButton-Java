@@ -20,7 +20,7 @@
 package org.greenbuttonalliance.espi.common.service;
 
 
-import com.sun.syndication.io.FeedException;
+import jakarta.xml.bind.JAXBException;
 import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.SubscriptionEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
@@ -48,7 +48,7 @@ public interface UsagePointService {
 
 	List<Long> findAllIdsForRetailCustomer(Long id);
 
-	String feedFor(List<UsagePointEntity> usagePoints) throws FeedException;
+	String feedFor(List<UsagePointEntity> usagePoints) throws JAXBException;
 
 	String entryFor(UsagePointEntity usagePoint);
 
@@ -56,7 +56,7 @@ public interface UsagePointService {
  
 	void setRepository(UsagePointRepository usagePointRepository);
 
-	void setResourceService(ResourceService resourceService);
+	// void setResourceService(ResourceService resourceService); // Removed for Spring Boot 3.5 migration
 
 	UsagePointEntity save(UsagePointEntity usagePoint);
  
