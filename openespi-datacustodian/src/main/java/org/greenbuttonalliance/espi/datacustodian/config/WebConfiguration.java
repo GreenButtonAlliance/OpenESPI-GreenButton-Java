@@ -22,11 +22,11 @@ package org.greenbuttonalliance.espi.datacustodian.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.Marshaller;
 import jakarta.xml.bind.Unmarshaller;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
@@ -34,6 +34,7 @@ import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.http.converter.xml.MarshallingHttpMessageConverter;
 import org.springframework.oxm.jaxb.Jaxb2Marshaller;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.servlet.config.annotation.*;
 
@@ -194,20 +195,20 @@ public class WebConfiguration implements WebMvcConfigurer {
     /**
      * JAXBContext for manual ESPI XML processing.
      */
-    @Bean
-    public JAXBContext espiJaxbContext() throws JAXBException {
-        return JAXBContext.newInstance(
-            "org.greenbuttonalliance.espi.common.domain:" +
-            "org.greenbuttonalliance.espi.common.models.atom"
-        );
-    }
+//    @Bean
+//    public JAXBContext espiJaxbContext() throws JAXBException {
+//        return JAXBContext.newInstance(
+//            "org.greenbuttonalliance.espi.common.domain:" +
+//            "org.greenbuttonalliance.espi.common.models.atom"
+//        );
+//    }
 
     /**
      * JAXB Marshaller for ESPI XML export.
      */
     @Bean
-    public Marshaller espiMarshaller(JAXBContext espiJaxbContext) throws JAXBException {
-        Marshaller marshaller = espiJaxbContext.createMarshaller();
+    public Marshaller espiMarshaller(Jaxb2Marshaller jaxb2Marshaller) throws JAXBException {
+        Marshaller marshaller = jaxb2Marshaller.createMarshaller();
         marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, xmlPrettyPrint);
         marshaller.setProperty(Marshaller.JAXB_ENCODING, "UTF-8");
         
@@ -223,7 +224,19 @@ public class WebConfiguration implements WebMvcConfigurer {
      * JAXB Unmarshaller for ESPI XML import.
      */
     @Bean 
-    public Unmarshaller espiUnmarshaller(JAXBContext espiJaxbContext) throws JAXBException {
-        return espiJaxbContext.createUnmarshaller();
+    public Unmarshaller espiUnmarshaller(Jaxb2Marshaller jaxb2Marshaller) throws JAXBException {
+        return jaxb2Marshaller.createUnmarshaller();
     }
+
+    /**
+     * Creates a RestTemplate bean using the auto-configured RestTemplateBuilder.
+     *
+     * @param builder the RestTemplateBuilder provided by Spring Boot.
+     * @return a new instance of RestTemplate.
+     */
+    @Bean
+    public RestTemplate restTemplate(RestTemplateBuilder builder) {
+        return builder.build();
+    }
+
 }
