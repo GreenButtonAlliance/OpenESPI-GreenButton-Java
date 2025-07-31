@@ -19,18 +19,18 @@
 
 package org.greenbuttonalliance.espi.common.domain.customer.entity;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.greenbuttonalliance.espi.common.domain.customer.enums.CustomerKind;
 import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
 import org.greenbuttonalliance.espi.common.domain.usage.TimeConfigurationEntity;
 
 import jakarta.persistence.*;
 import org.hibernate.annotations.Where;
+import org.hibernate.proxy.HibernateProxy;
+
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Pure JPA/Hibernate entity for Customer without JAXB concerns.
@@ -45,13 +45,10 @@ import java.util.List;
  * defined in a separate namespace.
  */
 @Entity
-@Table(name = "customers", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"uuid"})
-})
-@Data
-@EqualsAndHashCode(callSuper = true)
+@Table(name = "customers")
+@Getter
+@Setter
 @NoArgsConstructor
-@ToString(callSuper = true)
 public class CustomerEntity extends IdentifiedObject {
 
     /**
@@ -200,5 +197,40 @@ public class CustomerEntity extends IdentifiedObject {
         
         @Column(name = "type", length = 256)
         private String type;
+    }
+
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null) return false;
+        Class<?> oEffectiveClass = o instanceof HibernateProxy ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
+        if (thisEffectiveClass != oEffectiveClass) return false;
+        CustomerEntity that = (CustomerEntity) o;
+        return getId() != null && Objects.equals(getId(), that.getId());
+    }
+
+    @Override
+    public final int hashCode() {
+        return this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(" +
+                "id = " + getId() + ", " +
+                "organisation = " + getOrganisation() + ", " +
+                "kind = " + getKind() + ", " +
+                "specialNeed = " + getSpecialNeed() + ", " +
+                "vip = " + getVip() + ", " +
+                "pucNumber = " + getPucNumber() + ", " +
+                "status = " + getStatus() + ", " +
+                "priority = " + getPriority() + ", " +
+                "locale = " + getLocale() + ", " +
+                "customerName = " + getCustomerName() + ", " +
+                "description = " + getDescription() + ", " +
+                "created = " + getCreated() + ", " +
+                "updated = " + getUpdated() + ", " +
+                "published = " + getPublished() + ")";
     }
 }

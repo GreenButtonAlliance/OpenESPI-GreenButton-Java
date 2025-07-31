@@ -34,9 +34,9 @@ import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+import java.util.UUID;
 
-// @Controller - COMMENTED OUT: UI not needed in resource server
-// @Component
+@Controller
 @PreAuthorize("hasRole('ROLE_CUSTODIAN')")
 public class RetailCustomerController {
 
@@ -73,17 +73,17 @@ public class RetailCustomerController {
 		if (result.hasErrors()) {
 			return "retailcustomers/form";
 		} else {
-			try {
-				service.persist(retailCustomer);
-				return "redirect:/custodian/retailcustomers";
-			} catch (Exception e) {
-				return "retailcustomers/form";
-			}
+ 		try {
+ 			service.save(retailCustomer);
+ 			return "redirect:/custodian/retailcustomers";
+ 		} catch (Exception e) {
+ 			return "retailcustomers/form";
+ 		}
 		}
 	}
 
 	@GetMapping("/custodian/retailcustomers/{retailCustomerId}/show")
-	public String show(@PathVariable Long retailCustomerId, ModelMap model) {
+	public String show(@PathVariable UUID retailCustomerId, ModelMap model) {
 		RetailCustomerEntity retailCustomer = service.findById(retailCustomerId);
 		model.put("retailCustomer", retailCustomer);
 		return "/custodian/retailcustomers/show";

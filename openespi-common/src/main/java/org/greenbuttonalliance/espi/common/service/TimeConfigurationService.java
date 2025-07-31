@@ -22,7 +22,6 @@ package org.greenbuttonalliance.espi.common.service;
 import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.TimeConfigurationEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
-import org.greenbuttonalliance.espi.common.repositories.usage.TimeConfigurationRepository;
 
 import java.io.InputStream;
 import java.util.List;
@@ -41,8 +40,6 @@ public interface TimeConfigurationService {
 	void deleteById(UUID timeConfigurationId);
 
 	UsagePointEntity getUsagePoint();
- 
-	void setRepository(TimeConfigurationRepository timeConfigurationRepository);
 
 	TimeConfigurationEntity save(TimeConfigurationEntity timeConfiguration);
  

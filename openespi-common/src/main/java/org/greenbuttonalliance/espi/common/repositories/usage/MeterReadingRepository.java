@@ -44,12 +44,11 @@ public interface MeterReadingRepository extends JpaRepository<MeterReadingEntity
 	@Query("SELECT m.id FROM MeterReadingEntity m")
 	List<UUID> findAllIds();
 
-	Optional<MeterReadingEntity> findByUuid(UUID uuid);
+	// findById is already provided by JpaRepository<MeterReadingEntity, UUID>
+	// Optional<MeterReadingEntity> findById(UUID id) is inherited
 
-	@Modifying
-	@Transactional
-	@Query("DELETE FROM MeterReadingEntity m WHERE m.uuid = :uuid")
-	void deleteByUuid(@Param("uuid") UUID uuid);
+	// deleteById is already provided by JpaRepository<MeterReadingEntity, UUID>
+	// void deleteById(UUID id) is inherited
 
 	// Custom method for createOrReplaceByUUID - should be implemented in service layer
 

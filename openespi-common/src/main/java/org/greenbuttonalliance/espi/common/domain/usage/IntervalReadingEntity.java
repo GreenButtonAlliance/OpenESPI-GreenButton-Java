@@ -19,24 +19,20 @@
 
 package org.greenbuttonalliance.espi.common.domain.usage;
 
-import lombok.Getter;
-import lombok.Setter;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
-import org.greenbuttonalliance.espi.common.domain.common.DateTimeInterval;
-import org.hibernate.annotations.BatchSize;
-import org.hibernate.annotations.LazyCollection;
-import org.hibernate.annotations.LazyCollectionOption;
-
 import jakarta.persistence.*;
-import java.io.Serializable;
+import lombok.*;
+import org.greenbuttonalliance.espi.common.domain.common.DateTimeInterval;
+import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
+import org.hibernate.annotations.BatchSize;
+import org.hibernate.proxy.HibernateProxy;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Pure JPA/Hibernate entity for IntervalReading without JAXB concerns.
- * 
+ * <p>
  * Represents a specific value measured by a meter or other asset.
  * Each reading is associated with a specific ReadingType and contains
  * cost, value, consumption tier, time-of-use, and critical peak pricing information.
@@ -45,22 +41,10 @@ import java.util.List;
 @Table(name = "interval_readings")
 @Getter
 @Setter
-@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
-@ToString(exclude = {"readingQualities", "intervalBlock"})
-public class IntervalReadingEntity implements Serializable {
+public class IntervalReadingEntity extends IdentifiedObject {
 
     private static final long serialVersionUID = 1L;
-
-    /**
-     * Primary key for database persistence.
-     * Uses IDENTITY strategy for auto-increment support.
-     */
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    @EqualsAndHashCode.Include
-    private Long id;
 
     /**
      * Cost associated with this interval reading.
@@ -73,7 +57,7 @@ public class IntervalReadingEntity implements Serializable {
      * The actual measured value for this interval.
      * This is the primary measurement data.
      */
-    @Column(name = "value")
+    @Column(name = "reading_value") //value is a SQL key word
     private Long value;
 
     /**
@@ -119,6 +103,12 @@ public class IntervalReadingEntity implements Serializable {
     /**
      * Reading quality indicators for this interval reading.
      * One-to-many relationship with cascade and orphan removal.
+     * -- GETTER --
+     *  Gets the reading qualities collection.
+     *  Lombok @Data should generate this, but added manually for compilation.
+     *
+     * @return the list of reading qualities
+
      */
     @OneToMany(mappedBy = "intervalReading", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @BatchSize(size = 10)
@@ -135,26 +125,6 @@ public class IntervalReadingEntity implements Serializable {
         this.value = value;
         this.cost = cost;
         this.timePeriod = timePeriod;
-    }
-
-    /**
-     * Gets the primary key ID.
-     * Lombok @Data should generate this, but added manually for compilation.
-     * 
-     * @return the primary key ID
-     */
-    public Long getId() {
-        return this.id;
-    }
-
-    /**
-     * Gets the reading qualities collection.
-     * Lombok @Data should generate this, but added manually for compilation.
-     * 
-     * @return the list of reading qualities
-     */
-    public List<ReadingQualityEntity> getReadingQualities() {
-        return this.readingQualities;
     }
 
     /**
@@ -325,5 +295,37 @@ public class IntervalReadingEntity implements Serializable {
      */
     public Long getAbsoluteValue() {
         return value != null ? Math.abs(value) : null;
+    }
+
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null) return false;
+        Class<?> oEffectiveClass = o instanceof HibernateProxy ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
+        if (thisEffectiveClass != oEffectiveClass) return false;
+        IntervalReadingEntity that = (IntervalReadingEntity) o;
+        return getId() != null && Objects.equals(getId(), that.getId());
+    }
+
+    @Override
+    public final int hashCode() {
+        return this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(" +
+                "id = " + getId() + ", " +
+                "cost = " + getCost() + ", " +
+                "value = " + getValue() + ", " +
+                "consumptionTier = " + getConsumptionTier() + ", " +
+                "tou = " + getTou() + ", " +
+                "cpp = " + getCpp() + ", " +
+                "timePeriod = " + getTimePeriod() + ", " +
+                "description = " + getDescription() + ", " +
+                "created = " + getCreated() + ", " +
+                "updated = " + getUpdated() + ", " +
+                "published = " + getPublished() + ")";
     }
 }

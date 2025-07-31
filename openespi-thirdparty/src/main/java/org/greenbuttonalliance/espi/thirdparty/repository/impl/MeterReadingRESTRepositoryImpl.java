@@ -48,7 +48,7 @@ public class MeterReadingRESTRepositoryImpl implements
 	}
 
 	@Override
-	public MeterReadingEntity findByUUID(Long retailCustomerId, UUID uuid)
+	public MeterReadingEntity findByUUID(UUID retailCustomerId, UUID uuid)
 			throws JAXBException {
 		List<UsagePointEntity> usagePointList = usagePointRESTRepository
 				.findAllByRetailCustomerId(retailCustomerId);

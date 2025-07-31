@@ -19,61 +19,45 @@
 
 package org.greenbuttonalliance.espi.common.service.impl;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.greenbuttonalliance.espi.common.domain.usage.ApplicationInformationEntity;
-import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
-import org.greenbuttonalliance.espi.common.domain.usage.BatchListEntity;
-import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
-import org.greenbuttonalliance.espi.common.domain.usage.SubscriptionEntity;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.greenbuttonalliance.espi.common.domain.usage.*;
+import org.greenbuttonalliance.espi.common.repositories.usage.AuthorizationRepository;
 import org.greenbuttonalliance.espi.common.service.AuthorizationService;
 import org.greenbuttonalliance.espi.common.service.NotificationService;
 import org.greenbuttonalliance.espi.common.service.SubscriptionService;
-import org.greenbuttonalliance.espi.common.repositories.usage.AuthorizationRepository;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import javax.xml.datatype.XMLGregorianCalendar;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Optional;
-import java.util.UUID;
 
 /**
  * @author John Teeter
  *
  */
+@Slf4j
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class NotificationServiceImpl implements NotificationService {
-	private final Log logger = LogFactory.getLog(getClass());
 
-	@Autowired
-	private RestTemplate restTemplate;
-
-	@Autowired
-	private AuthorizationRepository authorizationRepository;
-
-	@Autowired
-	private AuthorizationService authorizationService;
-
-	@Autowired
-	private SubscriptionService subscriptionService;
+	private final RestTemplate restTemplate;
+	private final AuthorizationRepository authorizationRepository;
+	private final AuthorizationService authorizationService;
+	private final SubscriptionService subscriptionService;
 
 	@Override
 	public void notify(SubscriptionEntity subscription,
 					   XMLGregorianCalendar startDate, XMLGregorianCalendar endDate) {
 		
 		String thirdPartyNotificationURI = subscription
-				.getApplicationInformationEntity().getThirdPartyNotifyUri();
+				.getApplicationInformation().getThirdPartyNotifyUri();
 		String separator = "?";
-		String subscriptionURI = subscription.getApplicationInformationEntity()
+		String subscriptionURI = subscription.getApplicationInformation()
 				.getDataCustodianResourceEndpoint()
 				+ "/Batch/Subscription/"
 				+ subscription.getId();
@@ -131,15 +115,15 @@ public class NotificationServiceImpl implements NotificationService {
 	@Async
 	// we want to spawn this to a separate thread so we can get back
 	// and commit the actual data import transaction
-	private void notifyInternal(String thirdPartyNotificationURI,
+	protected void notifyInternal(String thirdPartyNotificationURI,
 			BatchListEntity batchList) {
 
 		if(thirdPartyNotificationURI != null){
 			try {
 				restTemplate.postForLocation(thirdPartyNotificationURI, batchList);
 			} catch (Exception e) {
-				if(logger.isErrorEnabled()) {
-					logger.info("NotificationServiceImpl: notifyInternal - POST for " + thirdPartyNotificationURI +
+				if(log.isErrorEnabled()) {
+					log.info("NotificationServiceImpl: notifyInternal - POST for " + thirdPartyNotificationURI +
 							" caused an " + e.getMessage() + " Exception&n");
 				}
 			}
@@ -160,8 +144,8 @@ public class NotificationServiceImpl implements NotificationService {
 
 			String tempResourceUri = authorization.getResourceURI();
 
-			if(logger.isInfoEnabled()) {
-				logger.info("NotificationServiceImpl: notifyAllNeed - resourceURI: " + tempResourceUri);
+			if(log.isInfoEnabled()) {
+				log.info("NotificationServiceImpl: notifyAllNeed - resourceURI: " + tempResourceUri);
 			}
 
 			// Ignore client_access_tokens which contain "/Batch/Bulk/
@@ -174,8 +158,8 @@ public class NotificationServiceImpl implements NotificationService {
 				
 				} catch (Exception ex) {
 				
-					if(logger.isErrorEnabled()) {
-						logger.error("NotificationServiceImpl: notifyAllNeed - Processing Authorization: " + id +
+					if(log.isErrorEnabled()) {
+						log.error("NotificationServiceImpl: notifyAllNeed - Processing Authorization: " + id +
 								", Resource: " + tempResourceUri + ", Exception Cause: " + ex.getCause() +
 								", Exception Message: " + ex.getMessage() + "&n");
 					}
@@ -239,7 +223,7 @@ public class NotificationServiceImpl implements NotificationService {
 		for (Entry<UUID, BatchListEntity> entry : notifyList.entrySet()) {
 			Optional<AuthorizationEntity> authOpt = authorizationRepository.findById(entry.getKey());
 			if (authOpt.isPresent()) {
-				String notifyUri = authOpt.get().getApplicationInformationEntity().getThirdPartyNotifyUri();
+				String notifyUri = authOpt.get().getApplicationInformation().getThirdPartyNotifyUri();
 				BatchListEntity batchList = entry.getValue();
 				if (!(batchList.getResources().isEmpty())) {
 					notifyInternal(notifyUri, batchList);
@@ -248,9 +232,6 @@ public class NotificationServiceImpl implements NotificationService {
 		}
 	}
 
-	public void setRestTemplate(RestTemplate restTemplate) {
-		this.restTemplate = restTemplate;
-	}
 
 	@Override
 	public void notify(ApplicationInformationEntity applicationInformation,
@@ -265,28 +246,4 @@ public class NotificationServiceImpl implements NotificationService {
 		notifyInternal(thirdPartyNotificationURI, batchList);
 
 	}
-
-	public RestTemplate getRestTemplate() {
-		return this.restTemplate;
-	}
-
-	// Legacy ResourceService methods removed - using modern repositories and services
-
-	public void setAuthorizationService(
-			AuthorizationService authorizationService) {
-		this.authorizationService = authorizationService;
-	}
-
-	public AuthorizationService getAuthorizationService() {
-		return this.authorizationService;
-	}
-
-	public void setSubscriptionService(SubscriptionService subscriptionService) {
-		this.subscriptionService = subscriptionService;
-	}
-
-	public SubscriptionService getSubscriptionService() {
-		return this.subscriptionService;
-	}
-
 }

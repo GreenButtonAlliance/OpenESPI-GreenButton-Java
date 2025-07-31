@@ -19,18 +19,18 @@
 
 package org.greenbuttonalliance.espi.thirdparty.service.impl;
 
-import org.greenbuttonalliance.espi.common.domain.MeterReading;
+import org.greenbuttonalliance.espi.common.domain.usage.MeterReadingEntity;
 import org.greenbuttonalliance.espi.thirdparty.repository.MeterReadingRESTRepository;
 import org.greenbuttonalliance.espi.thirdparty.utils.factories.Factory;
 import org.junit.Before;
 import org.junit.Test;
 
-import javax.xml.bind.JAXBException;
+import jakarta.xml.bind.JAXBException;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -48,11 +48,13 @@ public class MeterReadingServiceImplTests {
 
 	@Test
 	public void findByUUID_returnsMeterReading() throws JAXBException {
-		MeterReading meterReading = Factory.newMeterReading();
+		MeterReadingEntity meterReading = Factory.newMeterReading();
+		UUID retailCustomerId = UUID.randomUUID();
+		UUID meterReadingId = UUID.randomUUID();
 
-		when(repository.findByUUID(eq(1L), any(UUID.class))).thenReturn(
+		when(repository.findByUUID(eq(retailCustomerId), eq(meterReadingId))).thenReturn(
 				meterReading);
 
-		assertEquals(meterReading, service.findByUUID(1L, UUID.randomUUID()));
+		assertEquals(meterReading, service.findByUUID(retailCustomerId, meterReadingId));
 	}
 }

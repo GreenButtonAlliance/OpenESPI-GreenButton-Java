@@ -43,13 +43,7 @@ public interface UsagePointRepository extends JpaRepository<UsagePointEntity, UU
      * Find all usage points for a specific retail customer.
      */
     @Query("SELECT up FROM UsagePointEntity up WHERE up.retailCustomer.id = :retailCustomerId")
-    List<UsagePointEntity> findAllByRetailCustomerId(@Param("retailCustomerId") Long retailCustomerId);
-
-    /**
-     * Find usage point by UUID.
-     */
-    @Query("SELECT up FROM UsagePointEntity up WHERE UPPER(up.uuid) = UPPER(:uuid)")
-    Optional<UsagePointEntity> findByUuid(@Param("uuid") String uuid);
+    List<UsagePointEntity> findAllByRetailCustomerId(@Param("retailCustomerId") UUID retailCustomerId);
 
     /**
      * Find usage point by resource URI.
@@ -73,25 +67,25 @@ public interface UsagePointRepository extends JpaRepository<UsagePointEntity, UU
      * Find all usage point IDs for a specific retail customer.
      */
     @Query("SELECT up.id FROM UsagePointEntity up WHERE up.retailCustomer.id = :retailCustomerId")
-    List<Long> findAllIdsByRetailCustomerId(@Param("retailCustomerId") Long retailCustomerId);
+    List<UUID> findAllIdsByRetailCustomerId(@Param("retailCustomerId") UUID retailCustomerId);
 
     /**
      * Find all usage point IDs.
      */
     @Query("SELECT up.id FROM UsagePointEntity up")
-    List<Long> findAllIds();
+    List<UUID> findAllIds();
 
     /**
      * Check if usage point exists by UUID.
      */
-    @Query("SELECT COUNT(up) > 0 FROM UsagePointEntity up WHERE UPPER(up.uuid) = UPPER(:uuid)")
-    boolean existsByUuid(@Param("uuid") String uuid);
+    @Query("SELECT COUNT(up) > 0 FROM UsagePointEntity up WHERE up.id = :uuid")
+    boolean existsByUuid(@Param("uuid") UUID uuid);
 
     /**
      * Delete usage point by UUID.
      */
     @Modifying
     @Transactional
-    @Query("DELETE FROM UsagePointEntity up WHERE UPPER(up.uuid) = UPPER(:uuid)")
-    void deleteByUuid(@Param("uuid") String uuid);
+    @Query("DELETE FROM UsagePointEntity up WHERE up.id = :uuid")
+    void deleteByUuid(@Param("uuid") UUID uuid);
 }

@@ -28,21 +28,17 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Spring Data JPA repository for Customer entities.
- * 
+ * <p>
  * Provides Customer schema specific query methods for Customer PII data access.
  * Customer data is separated from Usage data for privacy and compliance reasons.
  */
 @Repository
-public interface CustomerRepository extends JpaRepository<CustomerEntity, Long> {
+public interface CustomerRepository extends JpaRepository<CustomerEntity, UUID> {
 
-    /**
-     * Find customer by UUID (case insensitive).
-     */
-    @Query("SELECT c FROM CustomerEntity c WHERE UPPER(c.uuid) = UPPER(:uuid)")
-    Optional<CustomerEntity> findByUuid(@Param("uuid") String uuid);
 
     /**
      * Find customer by customer name (case insensitive).
@@ -87,8 +83,8 @@ public interface CustomerRepository extends JpaRepository<CustomerEntity, Long> 
     List<CustomerEntity> findByPriorityRange(@Param("minPriority") Integer minPriority, @Param("maxPriority") Integer maxPriority);
 
     /**
-     * Find customers by organisation ID.
+     * Find customers by organisation name.
      */
-    @Query("SELECT c FROM CustomerEntity c WHERE c.organisation.id = :organisationId")
-    List<CustomerEntity> findByOrganisationId(@Param("organisationId") Long organisationId);
+    @Query("SELECT c FROM CustomerEntity c WHERE c.organisation.organisationName = :organisationName")
+    List<CustomerEntity> findByOrganisationName(@Param("organisationName") String organisationName);
 }

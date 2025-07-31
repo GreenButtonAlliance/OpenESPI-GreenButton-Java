@@ -60,6 +60,9 @@ public interface ReadingQualityMapper {
      * @return the reading quality entity
      */
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "created", ignore = true)
+    @Mapping(target = "updated", ignore = true)
+    @Mapping(target = "published", ignore = true)
     @Mapping(target = "quality", source = "quality")
     @Mapping(target = "intervalReading", ignore = true) // Relationships handled separately
     ReadingQualityEntity toEntity(ReadingQualityDto dto);
@@ -72,6 +75,9 @@ public interface ReadingQualityMapper {
      * @param entity the target entity to update
      */
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "created", ignore = true)
+    @Mapping(target = "updated", ignore = true)
+    @Mapping(target = "published", ignore = true)
     @Mapping(target = "intervalReading", ignore = true) // Relationships handled separately
     void updateEntity(ReadingQualityDto dto, @MappingTarget ReadingQualityEntity entity);
 }

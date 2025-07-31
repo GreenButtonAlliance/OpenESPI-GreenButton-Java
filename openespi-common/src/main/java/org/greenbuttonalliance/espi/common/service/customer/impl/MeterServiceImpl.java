@@ -19,10 +19,10 @@
 
 package org.greenbuttonalliance.espi.common.service.customer.impl;
 
+import lombok.RequiredArgsConstructor;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.MeterEntity;
 import org.greenbuttonalliance.espi.common.repositories.customer.MeterRepository;
 import org.greenbuttonalliance.espi.common.service.customer.MeterService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,10 +37,10 @@ import java.util.UUID;
  */
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class MeterServiceImpl implements MeterService {
 
-    @Autowired
-    private MeterRepository meterRepository;
+    private final MeterRepository meterRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -50,14 +50,14 @@ public class MeterServiceImpl implements MeterService {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<MeterEntity> findById(Long id) {
+    public Optional<MeterEntity> findById(UUID id) {
         return meterRepository.findById(id);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<MeterEntity> findByUuid(String uuid) {
-        return meterRepository.findByUuid(uuid);
+        return meterRepository.findById(UUID.fromString(uuid));
     }
 
     @Override
@@ -130,7 +130,7 @@ public class MeterServiceImpl implements MeterService {
     }
 
     @Override
-    public void deleteById(Long id) {
+    public void deleteById(UUID id) {
         meterRepository.deleteById(id);
     }
 

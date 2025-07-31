@@ -19,18 +19,18 @@
 
 package org.greenbuttonalliance.espi.common.domain.usage;
 
-import lombok.Getter;
-import lombok.Setter;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
-import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
-
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
+import org.hibernate.proxy.HibernateProxy;
+
 import java.time.ZoneOffset;
-import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Pure JPA/Hibernate entity for TimeConfiguration without JAXB concerns.
@@ -44,14 +44,10 @@ import java.util.List;
  * has the same fields and semantics as the Usage schema TimeConfiguration.
  */
 @Entity
-@Table(name = "time_configurations", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"uuid"})
-})
+@Table(name = "time_configurations")
 @Getter
 @Setter
-@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
-@ToString(callSuper = true, exclude = {"usagePoints"})
 public class TimeConfigurationEntity extends IdentifiedObject {
 
     private static final long serialVersionUID = 1L;
@@ -61,7 +57,6 @@ public class TimeConfigurationEntity extends IdentifiedObject {
      * Binary data representing the rule for when DST ends.
      * Follows NAESB DstRuleType specification.
      */
-    @Lob
     @Column(name = "dst_end_rule")
     private byte[] dstEndRule;
 
@@ -77,7 +72,6 @@ public class TimeConfigurationEntity extends IdentifiedObject {
      * Binary data representing the rule for when DST starts.
      * Follows NAESB DstRuleType specification.
      */
-    @Lob
     @Column(name = "dst_start_rule")
     private byte[] dstStartRule;
 
@@ -377,5 +371,35 @@ public class TimeConfigurationEntity extends IdentifiedObject {
         }
         
         return desc.length() > 0 ? desc.toString() : "No time configuration";
+    }
+
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null) return false;
+        Class<?> oEffectiveClass = o instanceof HibernateProxy ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
+        if (thisEffectiveClass != oEffectiveClass) return false;
+        TimeConfigurationEntity that = (TimeConfigurationEntity) o;
+        return getId() != null && Objects.equals(getId(), that.getId());
+    }
+
+    @Override
+    public final int hashCode() {
+        return this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(" +
+                "id = " + getId() + ", " +
+                "dstEndRule = " + getDstEndRule() + ", " +
+                "dstOffset = " + getDstOffset() + ", " +
+                "dstStartRule = " + getDstStartRule() + ", " +
+                "tzOffset = " + getTzOffset() + ", " +
+                "description = " + getDescription() + ", " +
+                "created = " + getCreated() + ", " +
+                "updated = " + getUpdated() + ", " +
+                "published = " + getPublished() + ")";
     }
 }

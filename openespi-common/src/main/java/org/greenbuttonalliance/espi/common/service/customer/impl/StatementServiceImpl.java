@@ -19,10 +19,10 @@
 
 package org.greenbuttonalliance.espi.common.service.customer.impl;
 
+import lombok.RequiredArgsConstructor;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.StatementEntity;
 import org.greenbuttonalliance.espi.common.repositories.customer.StatementRepository;
 import org.greenbuttonalliance.espi.common.service.customer.StatementService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,19 +33,16 @@ import java.util.UUID;
 
 /**
  * Service implementation for Statement management.
- * 
+ * <p>
  * Provides business logic for billing statement operations including bill amounts,
  * due dates, payment tracking, and statement status management.
  */
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class StatementServiceImpl implements StatementService {
 
     private final StatementRepository statementRepository;
-
-    public StatementServiceImpl(StatementRepository statementRepository) {
-        this.statementRepository = statementRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)
@@ -55,14 +52,8 @@ public class StatementServiceImpl implements StatementService {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<StatementEntity> findById(Long id) {
+    public Optional<StatementEntity> findById(UUID id) {
         return statementRepository.findById(id);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<StatementEntity> findByUuid(String uuid) {
-        return statementRepository.findByUuid(uuid);
     }
 
     @Override
@@ -117,12 +108,12 @@ public class StatementServiceImpl implements StatementService {
     }
 
     @Override
-    public void deleteById(Long id) {
+    public void deleteById(UUID id) {
         statementRepository.deleteById(id);
     }
 
     @Override
-    public StatementEntity updateDescription(Long id, String description) {
+    public StatementEntity updateDescription(UUID id, String description) {
         Optional<StatementEntity> optionalStatement = statementRepository.findById(id);
         if (optionalStatement.isPresent()) {
             StatementEntity statement = optionalStatement.get();

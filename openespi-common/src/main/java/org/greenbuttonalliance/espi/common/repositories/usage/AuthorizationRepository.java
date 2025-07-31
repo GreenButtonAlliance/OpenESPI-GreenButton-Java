@@ -49,7 +49,8 @@ public interface AuthorizationRepository extends JpaRepository<AuthorizationEnti
 	@Query("SELECT a.id FROM AuthorizationEntity a WHERE a.retailCustomer.id = :retailCustomerId")
 	List<UUID> findAllIds(@Param("retailCustomerId") UUID retailCustomerId);
 
-	Optional<AuthorizationEntity> findByUuid(UUID uuid);
+	// findById is already provided by JpaRepository<AuthorizationEntity, UUID>
+	// Optional<AuthorizationEntity> findById(UUID id) is inherited
 
 	@Query("SELECT a.id FROM AuthorizationEntity a")
 	List<UUID> findAllIds();
@@ -59,10 +60,8 @@ public interface AuthorizationRepository extends JpaRepository<AuthorizationEnti
 	@Query("DELETE FROM AuthorizationEntity a WHERE a.id = :id")
 	void deleteById(@Param("id") UUID id);
 
-	@Modifying
-	@Transactional
-	@Query("DELETE FROM AuthorizationEntity a WHERE a.uuid = :uuid")
-	void deleteByUuid(@Param("uuid") UUID uuid);
+	// deleteById is already provided by JpaRepository<AuthorizationEntity, UUID>
+	// void deleteById(UUID id) is inherited
 
 	Optional<AuthorizationEntity> findByAccessToken(String accessToken);
 

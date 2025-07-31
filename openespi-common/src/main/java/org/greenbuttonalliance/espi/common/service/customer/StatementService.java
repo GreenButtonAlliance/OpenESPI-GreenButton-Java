@@ -24,6 +24,7 @@ import org.greenbuttonalliance.espi.common.domain.customer.entity.StatementEntit
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Service interface for Statement management.
@@ -41,12 +42,8 @@ public interface StatementService {
     /**
      * Find statement by ID.
      */
-    Optional<StatementEntity> findById(Long id);
+    Optional<StatementEntity> findById(UUID id);
 
-    /**
-     * Find statement by UUID.
-     */
-    Optional<StatementEntity> findByUuid(String uuid);
 
     /**
      * Find statements issued after specified date.
@@ -91,12 +88,12 @@ public interface StatementService {
     /**
      * Delete statement by ID.
      */
-    void deleteById(Long id);
+    void deleteById(UUID id);
 
     /**
      * Update statement description.
      */
-    StatementEntity updateDescription(Long id, String description);
+    StatementEntity updateDescription(UUID id, String description);
 
     /**
      * Count total statements.

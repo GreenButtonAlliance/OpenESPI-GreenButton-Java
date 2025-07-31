@@ -19,13 +19,17 @@
 
 package org.greenbuttonalliance.espi.thirdparty.factory;
 
-import org.greenbuttonalliance.espi.common.domain.RetailCustomer;
-import org.greenbuttonalliance.espi.common.domain.UsagePoint;
-import org.greenbuttonalliance.espi.common.repositories.RetailCustomerRepository;
-import org.greenbuttonalliance.espi.common.repositories.UsagePointRepository;
-import org.greenbuttonalliance.espi.common.test.EspiFactory;
+//import org.greenbuttonalliance.espi.common.domain.RetailCustomer;
+//import org.greenbuttonalliance.espi.common.domain.UsagePoint;
+//import org.greenbuttonalliance.espi.common.repositories.RetailCustomerRepository;
+//import org.greenbuttonalliance.espi.common.repositories.UsagePointRepository;
+//import org.greenbuttonalliance.espi.common.test.EspiFactory;
+
+import org.greenbuttonalliance.espi.common.repositories.usage.RetailCustomerRepository;
+import org.greenbuttonalliance.espi.common.repositories.usage.UsagePointRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 
+//todo - JT - missing classes
 public class SeedDataGenerator {
 	@Autowired
 	UsagePointRepository usagePointRepository;
@@ -33,10 +37,10 @@ public class SeedDataGenerator {
 	RetailCustomerRepository retailCustomerRepository;
 
 	public void init() throws Exception {
-		RetailCustomer retailCustomer = EspiFactory.newRetailCustomer();
-		retailCustomerRepository.persist(retailCustomer);
-
-		UsagePoint usagePoint = EspiFactory.newUsagePoint(retailCustomer);
-		usagePointRepository.persist(usagePoint);
+//		RetailCustomer retailCustomer = EspiFactory.newRetailCustomer();
+//		retailCustomerRepository.persist(retailCustomer);
+//
+//		UsagePoint usagePoint = EspiFactory.newUsagePoint(retailCustomer);
+//		usagePointRepository.persist(usagePoint);
 	}
 }

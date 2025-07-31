@@ -19,21 +19,20 @@
 
 package org.greenbuttonalliance.espi.common.service.impl;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBException;
+import jakarta.xml.bind.Marshaller;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
-import org.greenbuttonalliance.espi.common.dto.atom.AtomFeedDto;
 import org.greenbuttonalliance.espi.common.dto.atom.AtomEntryDto;
-import org.greenbuttonalliance.espi.common.dto.atom.AtomContentDto;
+import org.greenbuttonalliance.espi.common.dto.atom.AtomFeedDto;
 import org.greenbuttonalliance.espi.common.dto.usage.UsagePointDto;
 import org.greenbuttonalliance.espi.common.mapper.usage.UsagePointMapper;
 import org.greenbuttonalliance.espi.common.repositories.usage.UsagePointRepository;
 import org.greenbuttonalliance.espi.common.service.DtoExportService;
 import org.springframework.stereotype.Service;
 
-import jakarta.xml.bind.JAXBContext;
-import jakarta.xml.bind.JAXBException;
-import jakarta.xml.bind.Marshaller;
 import java.io.OutputStream;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -44,19 +43,13 @@ import java.util.UUID;
 /**
  * Modern DTO-based export service implementation using JAXB marshalling.
  */
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class DtoExportServiceImpl implements DtoExportService {
-
-    private final Log logger = LogFactory.getLog(getClass());
 
     private final UsagePointRepository usagePointRepository;
     private final UsagePointMapper usagePointMapper;
-
-    public DtoExportServiceImpl(UsagePointRepository usagePointRepository,
-                               UsagePointMapper usagePointMapper) {
-        this.usagePointRepository = usagePointRepository;
-        this.usagePointMapper = usagePointMapper;
-    }
 
     @Override
     public void exportUsagePointEntry(UUID usagePointId, OutputStream stream) {
@@ -64,7 +57,7 @@ public class DtoExportServiceImpl implements DtoExportService {
         if (entity.isPresent()) {
             exportUsagePointEntry(entity.get(), stream);
         } else {
-            logger.warn("Usage point not found: " + usagePointId);
+            log.warn("Usage point not found: " + usagePointId);
         }
     }
 
@@ -90,7 +83,7 @@ public class DtoExportServiceImpl implements DtoExportService {
             exportDto(entry, stream);
             
         } catch (Exception e) {
-            logger.error("Failed to export usage point entry: " + e.getMessage(), e);
+            log.error("Failed to export usage point entry: " + e.getMessage(), e);
         }
     }
 
@@ -113,7 +106,7 @@ public class DtoExportServiceImpl implements DtoExportService {
             exportDto(feed, stream);
             
         } catch (Exception e) {
-            logger.error("Failed to export usage points feed: " + e.getMessage(), e);
+            log.error("Failed to export usage points feed: " + e.getMessage(), e);
         }
     }
 
@@ -134,10 +127,10 @@ public class DtoExportServiceImpl implements DtoExportService {
             // Marshal DTO to stream
             marshaller.marshal(dto, stream);
             
-            logger.info("Successfully exported DTO of type: " + dto.getClass().getSimpleName());
+            log.info("Successfully exported DTO of type: " + dto.getClass().getSimpleName());
             
         } catch (JAXBException e) {
-            logger.error("Failed to export DTO: " + e.getMessage(), e);
+            log.error("Failed to export DTO: " + e.getMessage(), e);
         }
     }
 

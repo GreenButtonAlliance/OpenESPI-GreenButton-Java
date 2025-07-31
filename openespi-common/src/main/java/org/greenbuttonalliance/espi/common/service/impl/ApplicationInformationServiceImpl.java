@@ -19,14 +19,13 @@
 
 package org.greenbuttonalliance.espi.common.service.impl;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.greenbuttonalliance.espi.common.domain.usage.ApplicationInformationEntity;
 import org.greenbuttonalliance.espi.common.dto.usage.ApplicationInformationDto;
 import org.greenbuttonalliance.espi.common.mapper.usage.ApplicationInformationMapper;
 import org.greenbuttonalliance.espi.common.repositories.usage.ApplicationInformationRepository;
 import org.greenbuttonalliance.espi.common.service.ApplicationInformationService;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
@@ -36,25 +35,22 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Service
 @Transactional(rollbackFor = { jakarta.xml.bind.JAXBException.class }, noRollbackFor = {
 		jakarta.persistence.NoResultException.class,
 		org.springframework.dao.EmptyResultDataAccessException.class })
+@RequiredArgsConstructor
 public class ApplicationInformationServiceImpl implements
 		ApplicationInformationService {
 
-	private final Log logger = LogFactory.getLog(getClass());
-
-	@Autowired
-	private ApplicationInformationRepository applicationInformationRepository;
-
-	@Autowired
-	private ApplicationInformationMapper applicationInformationMapper;
+	private final ApplicationInformationRepository applicationInformationRepository;
+	private final ApplicationInformationMapper applicationInformationMapper;
 
 	@Override
 	public List<ApplicationInformationEntity> findByKind(String kind) {
 		// Use repository to find by kind - this would need a custom query
-		logger.info("Finding ApplicationInformation entities by kind: " + kind);
+		log.info("Finding ApplicationInformation entities by kind: " + kind);
 		// TODO: Add repository method findByKind if needed
 		return new ArrayList<>();
 	}
@@ -67,10 +63,10 @@ public class ApplicationInformationServiceImpl implements
 		Optional<ApplicationInformationEntity> entityOpt = applicationInformationRepository.findByClientId(clientId);
 		
 		if (entityOpt.isPresent()) {
-			logger.info("Found ApplicationInformation entity for clientId: " + clientId);
+			log.info("Found ApplicationInformation entity for clientId: " + clientId);
 			return entityOpt.get();
 		} else {
-			logger.warn("ApplicationInformation not found for clientId: " + clientId);
+			log.warn("ApplicationInformation not found for clientId: " + clientId);
 			return null;
 		}
 	}
@@ -81,7 +77,7 @@ public class ApplicationInformationServiceImpl implements
 		Assert.notNull(dataCustodianClientId, "dataCustodianClientId is required");
 		
 		// TODO: Add repository method findByDataCustodianClientId if needed
-		logger.info("Finding ApplicationInformation by dataCustodianClientId: " + dataCustodianClientId);
+		log.info("Finding ApplicationInformation by dataCustodianClientId: " + dataCustodianClientId);
 		
 		return null;
 	}
@@ -101,7 +97,7 @@ public class ApplicationInformationServiceImpl implements
 			return applicationInformationRepository.save(entity);
 			
 		} catch (Exception e) {
-			logger.error("Failed to import ApplicationInformation resource", e);
+			log.error("Failed to import ApplicationInformation resource", e);
 			return null;
 		}
 	}

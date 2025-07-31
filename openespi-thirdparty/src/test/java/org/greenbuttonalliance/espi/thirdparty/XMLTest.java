@@ -19,13 +19,14 @@
 
 package org.greenbuttonalliance.espi.thirdparty;
 
-import org.custommonkey.xmlunit.XMLUnit;
+//import org.custommonkey.xmlunit.XMLUnit;
 import org.junit.BeforeClass;
 
+//todo - JT commenting out missing classes
 public class XMLTest {
 
 	@BeforeClass
 	public static void beforeClass() {
-		XMLUnit.getControlDocumentBuilderFactory().setNamespaceAware(false);
+		//XMLUnit.getControlDocumentBuilderFactory().setNamespaceAware(false);
 	}
 }

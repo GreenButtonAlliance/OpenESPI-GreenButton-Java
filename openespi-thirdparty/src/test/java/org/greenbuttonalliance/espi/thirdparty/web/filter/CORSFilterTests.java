@@ -19,12 +19,11 @@
 
 package org.greenbuttonalliance.espi.thirdparty.web.filter;
 
+import jakarta.servlet.FilterChain;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
-
-import javax.servlet.FilterChain;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;

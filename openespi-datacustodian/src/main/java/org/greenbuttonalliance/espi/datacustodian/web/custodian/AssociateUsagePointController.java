@@ -62,7 +62,7 @@ public class AssociateUsagePointController {
 	}
 
 	@RequestMapping(value = "/custodian/retailcustomers/{retailCustomerId}/usagepoints/form", method = RequestMethod.GET)
-	public String form(@PathVariable Long retailCustomerId, ModelMap model) {
+	public String form(@PathVariable UUID retailCustomerId, ModelMap model) {
 		model.put("usagePointForm", new UsagePointEntityForm());
 		model.put("retailCustomerId", retailCustomerId);
 
@@ -71,7 +71,7 @@ public class AssociateUsagePointController {
 
 	@RequestMapping(value = "/custodian/retailcustomers/{retailCustomerId}/usagepoints/create", method = RequestMethod.POST)
 	public String create(
-			@PathVariable Long retailCustomerId,
+			@PathVariable UUID retailCustomerId,
 			@ModelAttribute("usagePointForm") @Valid UsagePointEntityForm usagePointForm,
 			BindingResult result) {
 		if (result.hasErrors())

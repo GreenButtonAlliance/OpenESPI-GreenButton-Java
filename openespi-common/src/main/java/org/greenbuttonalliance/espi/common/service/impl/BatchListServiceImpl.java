@@ -19,6 +19,7 @@
 
 package org.greenbuttonalliance.espi.common.service.impl;
 
+import lombok.RequiredArgsConstructor;
 import org.greenbuttonalliance.espi.common.domain.usage.BatchListEntity;
 import org.greenbuttonalliance.espi.common.repositories.usage.BatchListRepository;
 import org.greenbuttonalliance.espi.common.service.BatchListService;
@@ -31,13 +32,10 @@ import java.util.List;
 @Transactional(rollbackFor = { jakarta.xml.bind.JAXBException.class }, noRollbackFor = {
 		jakarta.persistence.NoResultException.class,
 		org.springframework.dao.EmptyResultDataAccessException.class })
+@RequiredArgsConstructor
 public class BatchListServiceImpl implements BatchListService {
 
 	private final BatchListRepository repository;
-
-	public BatchListServiceImpl(BatchListRepository repository) {
-		this.repository = repository;
-	}
 
 	@Override
 	public BatchListEntity save(BatchListEntity batchList) {

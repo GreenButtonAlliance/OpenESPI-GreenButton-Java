@@ -19,6 +19,8 @@
 
 package org.greenbuttonalliance.espi.common.service.impl;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.SubscriptionEntity;
 import org.greenbuttonalliance.espi.common.dto.usage.AuthorizationDto;
@@ -27,65 +29,52 @@ import org.greenbuttonalliance.espi.common.repositories.usage.AuthorizationRepos
 import org.greenbuttonalliance.espi.common.repositories.usage.UsagePointRepository;
 import org.greenbuttonalliance.espi.common.service.AuthorizationService;
 import org.greenbuttonalliance.espi.common.service.DtoExportService;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @Transactional(rollbackFor = { jakarta.xml.bind.JAXBException.class }, noRollbackFor = {
 		jakarta.persistence.NoResultException.class,
 		org.springframework.dao.EmptyResultDataAccessException.class })
+@RequiredArgsConstructor
 public class AuthorizationServiceImpl implements AuthorizationService {
 
-	private final Log logger = LogFactory.getLog(getClass());
-	
 	private final AuthorizationRepository authorizationRepository;
 	private final UsagePointRepository usagePointRepository;
 	private final DtoExportService dtoExportService;
 	private final AuthorizationMapper authorizationMapper;
 
-	public AuthorizationServiceImpl(AuthorizationRepository authorizationRepository,
-									UsagePointRepository usagePointRepository,
-									DtoExportService dtoExportService,
-									AuthorizationMapper authorizationMapper) {
-		this.authorizationRepository = authorizationRepository;
-		this.usagePointRepository = usagePointRepository;
-		this.dtoExportService = dtoExportService;
-		this.authorizationMapper = authorizationMapper;
-	}
-
 	@Override
-	public List<AuthorizationEntity> findAllByRetailCustomerId(Long retailCustomerId) {
+	public List<AuthorizationEntity> findAllByRetailCustomerId(UUID retailCustomerId) {
 		return authorizationRepository
 				.findAllByRetailCustomerId(retailCustomerId);
 	}
 
 	@Override
-	public List<Long> findAllIdsByApplicationInformationId(
-			Long applicationInformationId) {
+	public List<UUID> findAllIdsByApplicationInformationId(
+			UUID applicationInformationId) {
 		return authorizationRepository
 				.findAllIdsByApplicationInformationId(applicationInformationId);
 	}
 
 	@Override
-	public AuthorizationEntity findByUUID(UUID uuid) {
-		return authorizationRepository.findByUuid(uuid).orElse(null);
-	}
+ public AuthorizationEntity findByUUID(UUID uuid) {
+        return authorizationRepository.findById(uuid).orElse(null);
+    }
 
 	@Override
 	public AuthorizationEntity createAuthorizationEntity(SubscriptionEntity subscription,
 			String accessToken) {
 		// TODO: Implement modern authorization creation
-		logger.info("Creating authorization entity for subscription: " + subscription.getId());
+		log.info("Creating authorization entity for subscription: " + subscription.getId());
 		AuthorizationEntity authorization = new AuthorizationEntity();
 		authorization.setAccessToken(accessToken);
-		authorization.setSubscriptionEntity(subscription);
+		authorization.setSubscription(subscription);
 		return authorizationRepository.save(authorization);
 	}
 
@@ -95,7 +84,7 @@ public class AuthorizationServiceImpl implements AuthorizationService {
 	}
 
 	@Override
-	public AuthorizationEntity findByScope(String scope, Long retailCustomerId) {
+	public AuthorizationEntity findByScope(String scope, UUID retailCustomerId) {
 		return authorizationRepository.findByScope(scope, retailCustomerId).orElse(null);
 	}
 
@@ -108,30 +97,30 @@ public class AuthorizationServiceImpl implements AuthorizationService {
 	public String entryFor(AuthorizationEntity authorization) {
 		try {
 			// TODO: Implement modern DTO export for authorization
-			logger.info("Generating entry for authorization: " + authorization.getId());
+			log.info("Generating entry for authorization: " + authorization.getId());
 			return null;
 			
 		} catch (Exception e) {
-			logger.error("Failed to generate entry for authorization: " + e.getMessage(), e);
+			log.error("Failed to generate entry for authorization: " + e.getMessage(), e);
 			return null;
 		}
 	}
 
 	@Override
 	public AuthorizationEntity findByURI(String uri) {
-		// TODO: Implement findByURI query in repository
-		return authorizationRepository.findByUri(uri).orElse(null);
+		List<AuthorizationEntity> results = authorizationRepository.findByResourceUri(uri);
+		return results.isEmpty() ? null : results.get(0);
 	}
 
 	@Override
 	public String feedFor(List<AuthorizationEntity> authorizations) {
 		try {
 			// TODO: Implement modern DTO feed export for authorizations
-			logger.info("Generating feed for " + authorizations.size() + " authorizations");
+			log.info("Generating feed for " + authorizations.size() + " authorizations");
 			return null;
 			
 		} catch (Exception e) {
-			logger.error("Failed to generate feed for authorizations: " + e.getMessage(), e);
+			log.error("Failed to generate feed for authorizations: " + e.getMessage(), e);
 			return null;
 		}
 	}
@@ -145,7 +134,7 @@ public class AuthorizationServiceImpl implements AuthorizationService {
 	// accessor services
 
 	@Override
-	public AuthorizationEntity findById(Long authorizationId) {
+	public AuthorizationEntity findById(UUID authorizationId) {
 		return this.authorizationRepository.findById(authorizationId).orElse(null);
 	}
 
@@ -153,13 +142,13 @@ public class AuthorizationServiceImpl implements AuthorizationService {
 	@Override
 	public void add(AuthorizationEntity authorization) {
 		authorizationRepository.save(authorization);
-		logger.info("Added authorization: " + authorization.getId());
+		log.info("Added authorization: " + authorization.getId());
 	}
 
 	@Override
 	public void delete(AuthorizationEntity authorization) {
 		authorizationRepository.deleteById(authorization.getId());
-		logger.info("Deleted authorization: " + authorization.getId());
+		log.info("Deleted authorization: " + authorization.getId());
 	}
 
 	// import-exportResource services
@@ -178,13 +167,13 @@ public class AuthorizationServiceImpl implements AuthorizationService {
 			return authorizationRepository.save(entity);
 			
 		} catch (Exception e) {
-			logger.error("Failed to import Authorization resource", e);
+			log.error("Failed to import Authorization resource", e);
 			return null;
 		}
 	}
 
 	@Override
-	public AuthorizationEntity findById(Long retailCustomerId, long authorizationId) {
+	public AuthorizationEntity findById(UUID retailCustomerId, UUID authorizationId) {
 		return this.authorizationRepository.findById(authorizationId).orElse(null);
 	}
 
@@ -199,7 +188,7 @@ public class AuthorizationServiceImpl implements AuthorizationService {
 	}
 
 	@Override
-	public List<Long> findAllIdsByBulkId(String thirdParty, Long bulkId) {
+	public List<UUID> findAllIdsByBulkId(String thirdParty, UUID bulkId) {
 		return authorizationRepository.findAllIdsByBulkId(thirdParty, bulkId.toString());
 	}
 

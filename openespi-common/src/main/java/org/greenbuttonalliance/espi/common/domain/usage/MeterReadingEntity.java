@@ -19,19 +19,15 @@
 
 package org.greenbuttonalliance.espi.common.domain.usage;
 
-import lombok.Getter;
-import lombok.Setter;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import jakarta.persistence.*;
+import lombok.*;
 import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
 import org.hibernate.annotations.BatchSize;
-import org.hibernate.annotations.LazyCollection;
-import org.hibernate.annotations.LazyCollectionOption;
+import org.hibernate.proxy.HibernateProxy;
 
-import jakarta.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Pure JPA/Hibernate entity for MeterReading without JAXB concerns.
@@ -40,14 +36,10 @@ import java.util.List;
  * with specific reading data and associated reading type information.
  */
 @Entity
-@Table(name = "meter_readings", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"uuid"})
-})
+@Table(name = "meter_readings")
 @Getter
 @Setter
-@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
-@ToString(callSuper = true, exclude = {"intervalBlocks", "usagePoint", "readingType"})
 public class MeterReadingEntity extends IdentifiedObject {
 
     private static final long serialVersionUID = 1L;
@@ -182,5 +174,31 @@ public class MeterReadingEntity extends IdentifiedObject {
         if (resource instanceof UsagePointEntity parentUsagePoint) {
             this.usagePoint = parentUsagePoint;
         }
+    }
+
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null) return false;
+        Class<?> oEffectiveClass = o instanceof HibernateProxy ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
+        if (thisEffectiveClass != oEffectiveClass) return false;
+        MeterReadingEntity that = (MeterReadingEntity) o;
+        return getId() != null && Objects.equals(getId(), that.getId());
+    }
+
+    @Override
+    public final int hashCode() {
+        return this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(" +
+                "id = " + getId() + ", " +
+                "description = " + getDescription() + ", " +
+                "created = " + getCreated() + ", " +
+                "updated = " + getUpdated() + ", " +
+                "published = " + getPublished() + ")";
     }
 }

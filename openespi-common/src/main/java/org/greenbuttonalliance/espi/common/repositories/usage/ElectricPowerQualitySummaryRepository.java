@@ -20,6 +20,7 @@
 package org.greenbuttonalliance.espi.common.repositories.usage;
 
 import org.greenbuttonalliance.espi.common.domain.usage.ElectricPowerQualitySummaryEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -36,7 +37,10 @@ public interface ElectricPowerQualitySummaryRepository extends JpaRepository<Ele
 
 	// JpaRepository provides: save(), findById(), findAll(), deleteById(), etc.
 
-	Optional<ElectricPowerQualitySummaryEntity> findByUuid(UUID uuid);
+	// findById is already provided by JpaRepository<ElectricPowerQualitySummaryEntity, UUID>
+	// Optional<ElectricPowerQualitySummaryEntity> findById(UUID id) is inherited
+
+	List<ElectricPowerQualitySummaryEntity> findByUsagePoint(UsagePointEntity usagePoint);
 
 	@Query("SELECT e.id FROM ElectricPowerQualitySummaryEntity e")
 	List<UUID> findAllIds();
@@ -46,10 +50,8 @@ public interface ElectricPowerQualitySummaryRepository extends JpaRepository<Ele
 	@Query("DELETE FROM ElectricPowerQualitySummaryEntity e WHERE e.id = :id")
 	void deleteById(@Param("id") UUID id);
 
-	@Modifying
-	@Transactional
-	@Query("DELETE FROM ElectricPowerQualitySummaryEntity e WHERE e.id = :uuid")
-	void deleteByUuid(@Param("uuid") UUID uuid);
+	// deleteById is already provided by JpaRepository<ElectricPowerQualitySummaryEntity, UUID>
+	// void deleteById(UUID id) is inherited
 
 	// Custom method for createOrReplaceByUUID - should be implemented in service layer
 

@@ -19,37 +19,33 @@
 
 package org.greenbuttonalliance.espi.common.domain.usage;
 
+import jakarta.persistence.*;
 import lombok.Getter;
-import lombok.Setter;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.Setter;
 import org.greenbuttonalliance.espi.common.domain.common.DateTimeInterval;
 import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
 import org.greenbuttonalliance.espi.common.domain.common.SummaryMeasurement;
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
+import org.hibernate.proxy.HibernateProxy;
 
-import jakarta.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Pure JPA/Hibernate entity for UsageSummary without JAXB concerns.
- * 
+ * <p>
  * Represents a general usage summary for any commodity (not specific to electric power).
  * Contains billing information, consumption measurements, peak demand data,
  * and additional cost details for general utility usage.
  */
 @Entity
-@Table(name = "usage_summaries", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"uuid"})
-})
+@Table(name = "usage_summaries")
 @Getter
 @Setter
-@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
-@ToString(callSuper = true, exclude = {"usagePoint", "costAdditionalDetailLastPeriod"})
 public class UsageSummaryEntity extends IdentifiedObject {
 
     private static final long serialVersionUID = 1L;
@@ -558,5 +554,49 @@ public class UsageSummaryEntity extends IdentifiedObject {
      */
     public List<LineItemEntity> getLineItems() {
         return costAdditionalDetailLastPeriod;
+    }
+
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null) return false;
+        Class<?> oEffectiveClass = o instanceof HibernateProxy ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
+        if (thisEffectiveClass != oEffectiveClass) return false;
+        UsageSummaryEntity that = (UsageSummaryEntity) o;
+        return getId() != null && Objects.equals(getId(), that.getId());
+    }
+
+    @Override
+    public final int hashCode() {
+        return this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(" +
+                "id = " + getId() + ", " +
+                "billLastPeriod = " + getBillLastPeriod() + ", " +
+                "billToDate = " + getBillToDate() + ", " +
+                "costAdditionalLastPeriod = " + getCostAdditionalLastPeriod() + ", " +
+                "currency = " + getCurrency() + ", " +
+                "qualityOfReading = " + getQualityOfReading() + ", " +
+                "statusTimeStamp = " + getStatusTimeStamp() + ", " +
+                "billingPeriod = " + getBillingPeriod() + ", " +
+                "ratchetDemandPeriod = " + getRatchetDemandPeriod() + ", " +
+                "overallConsumptionLastPeriod = " + getOverallConsumptionLastPeriod() + ", " +
+                "currentBillingPeriodOverAllConsumption = " + getCurrentBillingPeriodOverAllConsumption() + ", " +
+                "currentDayLastYearNetConsumption = " + getCurrentDayLastYearNetConsumption() + ", " +
+                "currentDayNetConsumption = " + getCurrentDayNetConsumption() + ", " +
+                "currentDayOverallConsumption = " + getCurrentDayOverallConsumption() + ", " +
+                "peakDemand = " + getPeakDemand() + ", " +
+                "previousDayLastYearOverallConsumption = " + getPreviousDayLastYearOverallConsumption() + ", " +
+                "previousDayNetConsumption = " + getPreviousDayNetConsumption() + ", " +
+                "previousDayOverallConsumption = " + getPreviousDayOverallConsumption() + ", " +
+                "ratchetDemand = " + getRatchetDemand() + ", " +
+                "description = " + getDescription() + ", " +
+                "created = " + getCreated() + ", " +
+                "updated = " + getUpdated() + ", " +
+                "published = " + getPublished() + ")";
     }
 }

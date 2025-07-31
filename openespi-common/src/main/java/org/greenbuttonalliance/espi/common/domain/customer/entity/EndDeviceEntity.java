@@ -19,13 +19,12 @@
 
 package org.greenbuttonalliance.espi.common.domain.customer.entity;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import jakarta.persistence.*;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.Setter;
 import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
 
-import jakarta.persistence.*;
 import java.math.BigDecimal;
 
 /**
@@ -44,14 +43,11 @@ import java.math.BigDecimal;
  * This is an actual ESPI resource entity that extends IdentifiedObject directly.
  */
 @Entity
-@Table(name = "end_devices", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"id"})
-})
+@Table(name = "end_devices")
 @Inheritance(strategy = InheritanceType.JOINED)
-@Data
-@EqualsAndHashCode(callSuper = true)
+@Getter
+@Setter
 @NoArgsConstructor
-@ToString(callSuper = true)
 public class EndDeviceEntity extends IdentifiedObject {
 
     // Asset fields (previously inherited from Asset superclass)

@@ -19,20 +19,18 @@
 
 package org.greenbuttonalliance.espi.common.service.impl;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.UsageSummaryEntity;
 import org.greenbuttonalliance.espi.common.dto.usage.UsageSummaryDto;
 import org.greenbuttonalliance.espi.common.mapper.usage.UsageSummaryMapper;
 import org.greenbuttonalliance.espi.common.repositories.usage.UsageSummaryRepository;
 import org.greenbuttonalliance.espi.common.service.UsageSummaryService;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -42,27 +40,24 @@ import java.util.UUID;
  * Modernized for Spring Boot 3.5 compatibility.
  */
 
+@Slf4j
 @Service
 @Transactional(rollbackFor = { jakarta.xml.bind.JAXBException.class }, noRollbackFor = {
 		jakarta.persistence.NoResultException.class,
 		org.springframework.dao.EmptyResultDataAccessException.class })
+@RequiredArgsConstructor
 public class UsageSummaryServiceImpl implements UsageSummaryService {
 
-    private final Log logger = LogFactory.getLog(getClass());
-
-    @Autowired
-    private UsageSummaryRepository usageSummaryRepository;
-
-    @Autowired
-    private UsageSummaryMapper usageSummaryMapper;
+    private final UsageSummaryRepository usageSummaryRepository;
+    private final UsageSummaryMapper usageSummaryMapper;
 
     @Override
     public UsageSummaryEntity findByUUID(UUID uuid) {
-        return usageSummaryRepository.findByUuid(uuid).orElse(null);
+        return usageSummaryRepository.findById(uuid).orElse(null);
     }
 
     @Override
-    public UsageSummaryEntity findById(Long usageSummaryId) {
+    public UsageSummaryEntity findById(UUID usageSummaryId) {
         return usageSummaryRepository.findById(usageSummaryId).orElse(null);
     }
 
@@ -74,42 +69,42 @@ public class UsageSummaryServiceImpl implements UsageSummaryService {
     @Override
     public String feedFor(List<UsageSummaryEntity> usageSummaries) {
         // TODO: Implement modern feed generation using DTOs
-        logger.info("Generating feed for " + usageSummaries.size() + " usage summaries");
+        log.info("Generating feed for " + usageSummaries.size() + " usage summaries");
         return null;
     }
 
     @Override
     public String entryFor(UsageSummaryEntity usageSummary) {
         // TODO: Implement modern entry generation using DTOs
-        logger.info("Generating entry for usage summary: " + usageSummary.getId());
+        log.info("Generating entry for usage summary: " + usageSummary.getId());
         return null;
     }
 
     @Override
     public void associateByUUID(UsagePointEntity usagePoint, UUID uuid) {
-        UsageSummaryEntity entity = usageSummaryRepository.findByUuid(uuid).orElse(null);
+        UsageSummaryEntity entity = usageSummaryRepository.findById(uuid).orElse(null);
         if (entity != null) {
-            entity.setUsagePointEntity(usagePoint);
+            entity.setUsagePoint(usagePoint);
             usageSummaryRepository.save(entity);
-            logger.info("Associated usage summary " + uuid + " with usage point " + usagePoint.getId());
+            log.info("Associated usage summary " + uuid + " with usage point " + usagePoint.getId());
         }
     }
 
     @Override
     public void delete(UsageSummaryEntity usageSummary) {
         usageSummaryRepository.deleteById(usageSummary.getId());
-        logger.info("Deleted usage summary: " + usageSummary.getId());
+        log.info("Deleted usage summary: " + usageSummary.getId());
     }
 
     @Override
     public List<UsageSummaryEntity> findAllByUsagePoint(UsagePointEntity usagePoint) {
-        return usageSummaryRepository.findByUsagePointEntity(usagePoint);
+        return usageSummaryRepository.findByUsagePoint(usagePoint);
     }
 
     @Override
     public void add(UsageSummaryEntity usageSummary) {
         usageSummaryRepository.save(usageSummary);
-        logger.info("Added usage summary: " + usageSummary.getId());
+        log.info("Added usage summary: " + usageSummary.getId());
     }
 
     @Override
@@ -127,7 +122,7 @@ public class UsageSummaryServiceImpl implements UsageSummaryService {
             return usageSummaryRepository.save(entity);
             
         } catch (Exception e) {
-            logger.error("Failed to import UsageSummary resource", e);
+            log.error("Failed to import UsageSummary resource", e);
             return null;
         }
     }

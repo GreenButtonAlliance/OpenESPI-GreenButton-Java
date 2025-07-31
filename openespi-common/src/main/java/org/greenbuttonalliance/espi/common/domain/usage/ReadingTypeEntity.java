@@ -19,18 +19,18 @@
 
 package org.greenbuttonalliance.espi.common.domain.usage;
 
-import lombok.Getter;
-import lombok.Setter;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
-import org.greenbuttonalliance.espi.common.domain.common.RationalNumber;
-import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
-import org.greenbuttonalliance.espi.common.domain.common.ReadingInterharmonic;
-
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
+import org.greenbuttonalliance.espi.common.domain.common.RationalNumber;
+import org.greenbuttonalliance.espi.common.domain.common.ReadingInterharmonic;
+import org.hibernate.proxy.HibernateProxy;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Pure JPA/Hibernate entity for ReadingType without JAXB concerns.
@@ -40,14 +40,10 @@ import java.util.List;
  * unit of measure, flow direction, accumulation behavior, and other reading attributes.
  */
 @Entity
-@Table(name = "reading_types", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"uuid"})
-})
+@Table(name = "reading_types")
 @Getter
 @Setter
-@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
-@ToString(callSuper = true, exclude = {"meterReadings"})
 public class ReadingTypeEntity extends IdentifiedObject {
 
     private static final long serialVersionUID = 1L;
@@ -407,5 +403,49 @@ public class ReadingTypeEntity extends IdentifiedObject {
         }
         
         return desc.toString();
+    }
+
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null) return false;
+        Class<?> oEffectiveClass = o instanceof HibernateProxy ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
+        if (thisEffectiveClass != oEffectiveClass) return false;
+        ReadingTypeEntity that = (ReadingTypeEntity) o;
+        return getId() != null && Objects.equals(getId(), that.getId());
+    }
+
+    @Override
+    public final int hashCode() {
+        return this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(" +
+                "id = " + getId() + ", " +
+                "accumulationBehaviour = " + getAccumulationBehaviour() + ", " +
+                "commodity = " + getCommodity() + ", " +
+                "consumptionTier = " + getConsumptionTier() + ", " +
+                "currency = " + getCurrency() + ", " +
+                "dataQualifier = " + getDataQualifier() + ", " +
+                "defaultQuality = " + getDefaultQuality() + ", " +
+                "flowDirection = " + getFlowDirection() + ", " +
+                "intervalLength = " + getIntervalLength() + ", " +
+                "kind = " + getKind() + ", " +
+                "phase = " + getPhase() + ", " +
+                "powerOfTenMultiplier = " + getPowerOfTenMultiplier() + ", " +
+                "timeAttribute = " + getTimeAttribute() + ", " +
+                "uom = " + getUom() + ", " +
+                "cpp = " + getCpp() + ", " +
+                "measuringPeriod = " + getMeasuringPeriod() + ", " +
+                "tou = " + getTou() + ", " +
+                "argument = " + getArgument() + ", " +
+                "interharmonic = " + getInterharmonic() + ", " +
+                "description = " + getDescription() + ", " +
+                "created = " + getCreated() + ", " +
+                "updated = " + getUpdated() + ", " +
+                "published = " + getPublished() + ")";
     }
 }

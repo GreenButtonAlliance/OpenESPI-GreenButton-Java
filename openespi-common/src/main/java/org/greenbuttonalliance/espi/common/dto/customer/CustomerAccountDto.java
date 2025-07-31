@@ -36,7 +36,7 @@ import java.util.List;
 @XmlType(name = "CustomerAccount", namespace = "http://naesb.org/espi/customer", propOrder = {
     "id", "uuid", "published", "updated", "selfLink", "upLink", "relatedLinks",
     "description", "accountId", "accountNumber", "budgetBill", "billingCycle", 
-    "lastBillAmount", "transactionDate", "customer", "customerAgreements"
+    "lastBillAmount", "transactionDate", "isPrePay", "customer", "customerAgreements"
 })
 public record CustomerAccountDto(
     
@@ -83,6 +83,9 @@ public record CustomerAccountDto(
     @XmlElement(name = "transactionDate")
     OffsetDateTime transactionDate,
     
+    @XmlElement(name = "isPrePay")
+    Boolean isPrePay,
+    
     @XmlElement(name = "Customer")
     CustomerDto customer,
     
@@ -96,7 +99,7 @@ public record CustomerAccountDto(
      */
     public CustomerAccountDto() {
         this(null, null, null, null, null, null, null, null,
-             null, null, null, null, null, null, null, null);
+             null, null, null, null, null, null, null, null, null);
     }
     
     /**
@@ -104,7 +107,7 @@ public record CustomerAccountDto(
      */
     public CustomerAccountDto(String uuid, String accountNumber) {
         this(null, uuid, null, null, null, null, null, null,
-             null, accountNumber, null, null, null, null, null, null);
+             null, accountNumber, null, null, null, null, null, null, null);
     }
     
     /**

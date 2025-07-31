@@ -19,35 +19,28 @@
 
 package org.greenbuttonalliance.espi.common.service.impl;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.TimeConfigurationEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 import org.greenbuttonalliance.espi.common.repositories.usage.TimeConfigurationRepository;
 import org.greenbuttonalliance.espi.common.service.TimeConfigurationService;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class TimeConfigurationServiceImpl implements TimeConfigurationService {
 
-	private final Log logger = LogFactory.getLog(getClass());
-
-	@Autowired
-	protected TimeConfigurationRepository timeConfigurationRepository;
-
-	public void setRepository(
-			TimeConfigurationRepository timeConfigurationRepository) {
-		this.timeConfigurationRepository = timeConfigurationRepository;
-	}
+	private final TimeConfigurationRepository timeConfigurationRepository;
 
 	public TimeConfigurationRepository getRepository() {
 		return timeConfigurationRepository;
@@ -55,7 +48,7 @@ public class TimeConfigurationServiceImpl implements TimeConfigurationService {
 
 	@Override
 	public TimeConfigurationEntity findByUUID(UUID uuid) {
-		return timeConfigurationRepository.findByUuid(uuid).orElse(null);
+        return timeConfigurationRepository.findById(uuid).orElse(null);
 	}
 
 	public TimeConfigurationEntity findById(UUID timeConfigurationId) {
@@ -121,10 +114,10 @@ public class TimeConfigurationServiceImpl implements TimeConfigurationService {
 			// 2. Unmarshal stream to DTO
 			// 3. Use mapper to convert DTO to entity
 			// 4. Save and return entity
-			logger.info("TimeConfiguration import using legacy method - needs modern DTO implementation");
+			log.info("TimeConfiguration import using legacy method - needs modern DTO implementation");
 			return null;
 		} catch (Exception e) {
-			logger.error("Failed to import TimeConfiguration resource: " + e.getMessage(), e);
+			log.error("Failed to import TimeConfiguration resource: " + e.getMessage(), e);
 			return null;
 		}
 	}

@@ -21,7 +21,6 @@ package org.greenbuttonalliance.espi.common.service;
 
 import org.greenbuttonalliance.espi.common.domain.usage.MeterReadingEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.ReadingTypeEntity;
-import org.greenbuttonalliance.espi.common.repositories.usage.ReadingTypeRepository;
 
 import java.io.InputStream;
 import java.util.UUID;
@@ -36,13 +35,11 @@ public interface ReadingTypeService {
 
 	void associateByUUID(MeterReadingEntity meterReading, UUID uuid);
 
-	void deleteById(long readingTypeId);
-
-	void setReadingTypeRepository(ReadingTypeRepository repository);
+	void deleteById(UUID readingTypeId);
 
 	ReadingTypeEntity save(ReadingTypeEntity readingType);
 
-	ReadingTypeEntity findById(Long readingTypeId);
+	ReadingTypeEntity findById(UUID readingTypeId);
 
 	void add(ReadingTypeEntity readingType);
 

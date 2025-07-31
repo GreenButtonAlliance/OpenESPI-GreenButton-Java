@@ -19,13 +19,10 @@
 
 package org.greenbuttonalliance.espi.common.domain.customer.entity;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
-import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
-
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
+import jakarta.persistence.Embedded;
+import lombok.*;
 
 /**
  * Embeddable class for Organisation information.
@@ -34,7 +31,8 @@ import jakarta.persistence.*;
  * This is an embeddable component, not a standalone entity.
  */
 @Embeddable
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @ToString
 public class Organisation {

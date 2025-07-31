@@ -24,7 +24,6 @@ import jakarta.xml.bind.JAXBException;
 import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.SubscriptionEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
-import org.greenbuttonalliance.espi.common.repositories.usage.UsagePointRepository;
 
 import java.io.InputStream;
 import java.util.List;
@@ -46,23 +45,19 @@ public interface UsagePointService {
 
 	void deleteByHashedId(String usagePointHashedId);
 
-	List<Long> findAllIdsForRetailCustomer(Long id);
+	List<UUID> findAllIdsForRetailCustomer(UUID id);
 
 	String feedFor(List<UsagePointEntity> usagePoints) throws JAXBException;
 
 	String entryFor(UsagePointEntity usagePoint);
 
-	List<UsagePointEntity> findAllByRetailCustomer(Long retailCustomerId);
- 
-	void setRepository(UsagePointRepository usagePointRepository);
-
-	// void setResourceService(ResourceService resourceService); // Removed for Spring Boot 3.5 migration
+	List<UsagePointEntity> findAllByRetailCustomer(UUID retailCustomerId);
 
 	UsagePointEntity save(UsagePointEntity usagePoint);
  
-	UsagePointEntity findById(Long usagePointId);
+	UsagePointEntity findById(UUID usagePointId);
 
-	UsagePointEntity findById(Long retailCustomerId, Long usagePointId);
+	UsagePointEntity findById(UUID retailCustomerId, UUID usagePointId);
 
 	// Legacy EntryType methods removed - incompatible with Spring Boot 3.5
 

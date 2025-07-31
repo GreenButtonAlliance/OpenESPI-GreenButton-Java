@@ -68,6 +68,7 @@ public interface ElectricPowerQualitySummaryMapper {
     @Mapping(target = "selfLink", ignore = true)
     @Mapping(target = "relatedLinks", ignore = true)
     @Mapping(target = "usagePoint", ignore = true) // Relationships handled separately
+    @Mapping(target = "upResource", ignore = true)
     ElectricPowerQualitySummaryEntity toEntity(ElectricPowerQualitySummaryDto dto);
 
     /**

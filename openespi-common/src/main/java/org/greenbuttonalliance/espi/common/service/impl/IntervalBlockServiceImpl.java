@@ -19,80 +19,71 @@
 
 package org.greenbuttonalliance.espi.common.service.impl;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.greenbuttonalliance.espi.common.domain.usage.IntervalBlockEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.MeterReadingEntity;
 import org.greenbuttonalliance.espi.common.dto.usage.IntervalBlockDto;
 import org.greenbuttonalliance.espi.common.mapper.usage.IntervalBlockMapper;
 import org.greenbuttonalliance.espi.common.repositories.usage.IntervalBlockRepository;
 import org.greenbuttonalliance.espi.common.service.IntervalBlockService;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @Transactional(rollbackFor = { jakarta.xml.bind.JAXBException.class }, noRollbackFor = {
 		jakarta.persistence.NoResultException.class,
 		org.springframework.dao.EmptyResultDataAccessException.class })
+@RequiredArgsConstructor
 public class IntervalBlockServiceImpl implements IntervalBlockService {
 
-	private final Log logger = LogFactory.getLog(getClass());
-
-	@Autowired
-	protected IntervalBlockRepository intervalBlockRepository;
-
-	@Autowired
-	private IntervalBlockMapper intervalBlockMapper;
+	private final IntervalBlockRepository intervalBlockRepository;
+	private final IntervalBlockMapper intervalBlockMapper;
 
 	@Override
-	public List<IntervalBlockEntity> findAllByMeterReadingId(Long meterReadingId) {
+	public List<IntervalBlockEntity> findAllByMeterReadingId(UUID meterReadingId) {
 		return intervalBlockRepository.findAllByMeterReadingId(meterReadingId);
-	}
-
-	public void setRepository(IntervalBlockRepository repository) {
-		this.intervalBlockRepository = repository;
 	}
 
 	@Override
 	public String feedFor(List<IntervalBlockEntity> intervalBlocks) {
 		// TODO: Implement modern feed generation using DTOs
-		logger.info("Generating feed for " + intervalBlocks.size() + " interval blocks");
+		log.info("Generating feed for " + intervalBlocks.size() + " interval blocks");
 		return null;
 	}
 
 	@Override
-	public IntervalBlockEntity findById(long retailCustomerId, long usagePointId,
-			long meterReadingId, long intervalBlockId) {
+	public IntervalBlockEntity findById(UUID retailCustomerId, UUID usagePointId,
+			UUID meterReadingId, UUID intervalBlockId) {
 		return intervalBlockRepository.findById(intervalBlockId).orElse(null);
 	}
 
 	@Override
 	public String entryFor(IntervalBlockEntity intervalBlock) {
 		// TODO: Implement modern entry generation using DTOs
-		logger.info("Generating entry for interval block: " + intervalBlock.getId());
+		log.info("Generating entry for interval block: " + intervalBlock.getId());
 		return null;
 	}
 
 	@Override
 	public void associateByUUID(MeterReadingEntity meterReading, UUID uuid) {
-		IntervalBlockEntity entity = intervalBlockRepository.findByUuid(uuid).orElse(null);
+		IntervalBlockEntity entity = intervalBlockRepository.findById(uuid).orElse(null);
 		if (entity != null) {
-			entity.setMeterReadingEntity(meterReading);
+			entity.setMeterReading(meterReading);
 			intervalBlockRepository.save(entity);
-			logger.info("Associated interval block " + uuid + " with meter reading " + meterReading.getId());
+			log.info("Associated interval block " + uuid + " with meter reading " + meterReading.getId());
 		}
 	}
 
 	@Override
 	public void delete(IntervalBlockEntity intervalBlock) {
 		intervalBlockRepository.deleteById(intervalBlock.getId());
-		logger.info("Deleted interval block: " + intervalBlock.getId());
+		log.info("Deleted interval block: " + intervalBlock.getId());
 	}
 
 	@Override
@@ -116,7 +107,7 @@ public class IntervalBlockServiceImpl implements IntervalBlockService {
 	@Override
 	public void add(IntervalBlockEntity intervalBlock) {
 		intervalBlockRepository.save(intervalBlock);
-		logger.info("Added interval block: " + intervalBlock.getId());
+		log.info("Added interval block: " + intervalBlock.getId());
 	}
 
 	@Override
@@ -134,15 +125,13 @@ public class IntervalBlockServiceImpl implements IntervalBlockService {
 			return intervalBlockRepository.save(entity);
 			
 		} catch (Exception e) {
-			logger.error("Failed to import IntervalBlock resource", e);
+			log.error("Failed to import IntervalBlock resource", e);
 			return null;
 		}
 	}
 
 	@Override
-	public IntervalBlockEntity findById(long intervalBlockId) {
+	public IntervalBlockEntity findById(UUID intervalBlockId) {
 		return intervalBlockRepository.findById(intervalBlockId).orElse(null);
 	}
-
-
 }

@@ -23,6 +23,7 @@ import org.greenbuttonalliance.espi.common.domain.customer.entity.ServiceLocatio
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Service interface for ServiceLocationEntity management.
@@ -40,7 +41,7 @@ public interface ServiceLocationService {
     /**
      * Find service location by ID.
      */
-    Optional<ServiceLocationEntity> findById(Long id);
+    Optional<ServiceLocationEntity> findById(UUID id);
 
     /**
      * Find service location by UUID.
@@ -95,17 +96,17 @@ public interface ServiceLocationService {
     /**
      * Delete service location by ID.
      */
-    void deleteById(Long id);
+    void deleteById(UUID id);
 
     /**
      * Mark location as needing inspection.
      */
-    ServiceLocationEntity markForInspection(Long id, boolean needsInspection);
+    ServiceLocationEntity markForInspection(UUID id, boolean needsInspection);
 
     /**
      * Update access problem description.
      */
-    ServiceLocationEntity updateAccessProblem(Long id, String accessProblem);
+    ServiceLocationEntity updateAccessProblem(UUID id, String accessProblem);
 
     /**
      * Count total service locations.

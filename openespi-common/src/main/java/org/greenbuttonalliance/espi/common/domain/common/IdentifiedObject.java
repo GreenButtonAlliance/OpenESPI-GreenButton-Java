@@ -19,18 +19,18 @@
 
 package org.greenbuttonalliance.espi.common.domain.common;
 
-import lombok.Getter;
-import lombok.Setter;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
-// LinkType is now in the same package
-import org.greenbuttonalliance.espi.common.service.EspiIdGeneratorService;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-
 import jakarta.persistence.*;
 import jakarta.validation.Valid;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import org.greenbuttonalliance.espi.common.service.EspiIdGeneratorService;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
+
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -62,7 +62,8 @@ public abstract class IdentifiedObject implements Serializable {
      * Uses UUID type for maximum database compatibility and ESPI compliance.
      */
     @Id
-    @Column(name = "id", columnDefinition = "uuid")
+    @JdbcTypeCode(SqlTypes.CHAR)
+    @Column(length = 36, columnDefinition = "char(36)", updatable = false, nullable = false)
     @EqualsAndHashCode.Include
     protected UUID id;
 

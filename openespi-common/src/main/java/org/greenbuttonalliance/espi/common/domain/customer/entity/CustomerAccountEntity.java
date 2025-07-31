@@ -19,15 +19,16 @@
 
 package org.greenbuttonalliance.espi.common.domain.customer.entity;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
-import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
-
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
+import org.hibernate.proxy.HibernateProxy;
+
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Pure JPA/Hibernate entity for CustomerAccount without JAXB concerns.
@@ -40,9 +41,7 @@ import java.util.List;
  * This is an actual ESPI resource entity that extends IdentifiedObject directly.
  */
 @Entity
-@Table(name = "customer_accounts", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"id"})
-})
+@Table(name = "customer_accounts")
 @AttributeOverrides({
     // Resolve any potential column conflicts by ensuring unique column names  
     @AttributeOverride(name = "upLink.rel", column = @Column(name = "customer_account_up_link_rel")),
@@ -52,10 +51,9 @@ import java.util.List;
     @AttributeOverride(name = "selfLink.href", column = @Column(name = "customer_account_self_link_href")),
     @AttributeOverride(name = "selfLink.type", column = @Column(name = "customer_account_self_link_type"))
 })
-@Data
-@EqualsAndHashCode(callSuper = true)
+@Getter
+@Setter
 @NoArgsConstructor
-@ToString(callSuper = true, exclude = {"notifications"})
 public class CustomerAccountEntity extends IdentifiedObject {
 
     // Document fields (previously inherited from Document superclass)
@@ -138,10 +136,56 @@ public class CustomerAccountEntity extends IdentifiedObject {
     private String accountId;
     
     /**
+     * [extension] Indicates whether this customer account is a prepaid account.
+     * Prepaid accounts require payment before service is provided.
+     */
+    @Column(name = "is_pre_pay")
+    private Boolean isPrePay;
+    
+    /**
      * Customer that owns this account.
      * Many customer accounts can belong to one customer.
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id")
     private CustomerEntity customer;
+
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null) return false;
+        Class<?> oEffectiveClass = o instanceof HibernateProxy ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
+        if (thisEffectiveClass != oEffectiveClass) return false;
+        CustomerAccountEntity that = (CustomerAccountEntity) o;
+        return getId() != null && Objects.equals(getId(), that.getId());
+    }
+
+    @Override
+    public final int hashCode() {
+        return this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(" +
+                "id = " + getId() + ", " +
+                "createdDateTime = " + getCreatedDateTime() + ", " +
+                "lastModifiedDateTime = " + getLastModifiedDateTime() + ", " +
+                "revisionNumber = " + getRevisionNumber() + ", " +
+                "subject = " + getSubject() + ", " +
+                "title = " + getTitle() + ", " +
+                "type = " + getType() + ", " +
+                "billingCycle = " + getBillingCycle() + ", " +
+                "budgetBill = " + getBudgetBill() + ", " +
+                "lastBillAmount = " + getLastBillAmount() + ", " +
+                "notifications = " + getNotifications() + ", " +
+                "contactInfo = " + getContactInfo() + ", " +
+                "accountId = " + getAccountId() + ", " +
+                "isPrePay = " + getIsPrePay() + ", " +
+                "description = " + getDescription() + ", " +
+                "created = " + getCreated() + ", " +
+                "updated = " + getUpdated() + ", " +
+                "published = " + getPublished() + ")";
+    }
 }

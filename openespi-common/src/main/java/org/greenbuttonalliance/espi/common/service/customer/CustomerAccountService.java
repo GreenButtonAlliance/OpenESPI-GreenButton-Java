@@ -23,6 +23,7 @@ import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerAccoun
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Service interface for CustomerAccount management.
@@ -40,7 +41,7 @@ public interface CustomerAccountService {
     /**
      * Find customer account by ID.
      */
-    Optional<CustomerAccountEntity> findById(Long id);
+    Optional<CustomerAccountEntity> findById(UUID id);
 
     /**
      * Find customer account by UUID.
@@ -90,7 +91,7 @@ public interface CustomerAccountService {
     /**
      * Delete customer account by ID.
      */
-    void deleteById(Long id);
+    void deleteById(UUID id);
 
     /**
      * Check if account exists by account ID.

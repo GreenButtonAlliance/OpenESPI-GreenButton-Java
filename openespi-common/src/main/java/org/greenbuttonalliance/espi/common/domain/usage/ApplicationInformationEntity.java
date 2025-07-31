@@ -19,22 +19,22 @@
 
 package org.greenbuttonalliance.espi.common.domain.usage;
 
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
-import lombok.Setter;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.Setter;
 import org.greenbuttonalliance.espi.common.domain.common.GrantType;
 import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
 import org.greenbuttonalliance.espi.common.domain.common.ResponseType;
 import org.greenbuttonalliance.espi.common.utils.encryption.FieldEncryptionConverter;
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
-import jakarta.validation.constraints.NotEmpty;
+import org.hibernate.proxy.HibernateProxy;
 
-import jakarta.persistence.*;
-import jakarta.validation.constraints.Size;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -48,9 +48,7 @@ import java.util.Set;
 @Table(name = "application_information")
 @Getter
 @Setter
-@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
-@ToString(callSuper = true)
 public class ApplicationInformationEntity extends IdentifiedObject {
 
     private static final long serialVersionUID = 1L;
@@ -412,5 +410,74 @@ public class ApplicationInformationEntity extends IdentifiedObject {
             this.thirdPartyPhone = other.thirdPartyPhone;
             this.kind = other.kind;
         }
+    }
+
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null) return false;
+        Class<?> oEffectiveClass = o instanceof HibernateProxy ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
+        if (thisEffectiveClass != oEffectiveClass) return false;
+        ApplicationInformationEntity that = (ApplicationInformationEntity) o;
+        return getId() != null && Objects.equals(getId(), that.getId());
+    }
+
+    @Override
+    public final int hashCode() {
+        return this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(" +
+                "id = " + getId() + ", " +
+                "kind = " + getKind() + ", " +
+                "dataCustodianApplicationStatus = " + getDataCustodianApplicationStatus() + ", " +
+                "dataCustodianDefaultBatchResource = " + getDataCustodianDefaultBatchResource() + ", " +
+                "dataCustodianDefaultSubscriptionResource = " + getDataCustodianDefaultSubscriptionResource() + ", " +
+                "thirdPartyApplicationDescription = " + getThirdPartyApplicationDescription() + ", " +
+                "thirdPartyApplicationStatus = " + getThirdPartyApplicationStatus() + ", " +
+                "thirdPartyApplicationType = " + getThirdPartyApplicationType() + ", " +
+                "thirdPartyApplicationUse = " + getThirdPartyApplicationUse() + ", " +
+                "thirdPartyPhone = " + getThirdPartyPhone() + ", " +
+                "authorizationServerUri = " + getAuthorizationServerUri() + ", " +
+                "thirdPartyNotifyUri = " + getThirdPartyNotifyUri() + ", " +
+                "authorizationServerAuthorizationEndpoint = " + getAuthorizationServerAuthorizationEndpoint() + ", " +
+                "authorizationServerRegistrationEndpoint = " + getAuthorizationServerRegistrationEndpoint() + ", " +
+                "authorizationServerTokenEndpoint = " + getAuthorizationServerTokenEndpoint() + ", " +
+                "dataCustodianBulkRequestURI = " + getDataCustodianBulkRequestURI() + ", " +
+                "dataCustodianThirdPartySelectionScreenURI = " + getDataCustodianThirdPartySelectionScreenURI() + ", " +
+                "dataCustodianResourceEndpoint = " + getDataCustodianResourceEndpoint() + ", " +
+                "thirdPartyDataCustodianSelectionScreenURI = " + getThirdPartyDataCustodianSelectionScreenURI() + ", " +
+                "thirdPartyLoginScreenURI = " + getThirdPartyLoginScreenURI() + ", " +
+                "thirdPartyScopeSelectionScreenURI = " + getThirdPartyScopeSelectionScreenURI() + ", " +
+                "thirdPartyUserPortalScreenURI = " + getThirdPartyUserPortalScreenURI() + ", " +
+                "clientSecret = " + getClientSecret() + ", " +
+                "logoUri = " + getLogoUri() + ", " +
+                "clientName = " + getClientName() + ", " +
+                "clientUri = " + getClientUri() + ", " +
+                "redirectUri = " + getRedirectUri() + ", " +
+                "clientId = " + getClientId() + ", " +
+                "tosUri = " + getTosUri() + ", " +
+                "policyUri = " + getPolicyUri() + ", " +
+                "softwareId = " + getSoftwareId() + ", " +
+                "softwareVersion = " + getSoftwareVersion() + ", " +
+                "clientIdIssuedAt = " + getClientIdIssuedAt() + ", " +
+                "clientSecretExpiresAt = " + getClientSecretExpiresAt() + ", " +
+                "contacts = " + getContacts() + ", " +
+                "tokenEndpointAuthMethod = " + getTokenEndpointAuthMethod() + ", " +
+                "dataCustodianScopeSelectionScreenURI = " + getDataCustodianScopeSelectionScreenURI() + ", " +
+                "dataCustodianId = " + getDataCustodianId() + ", " +
+                "thirdPartyApplicationName = " + getThirdPartyApplicationName() + ", " +
+                "scope = " + getScope() + ", " +
+                "grantTypes = " + getGrantTypes() + ", " +
+                "responseTypes = " + getResponseTypes() + ", " +
+                "registrationClientUri = " + getRegistrationClientUri() + ", " +
+                "registrationAccessToken = " + getRegistrationAccessToken() + ", " +
+                "description = " + getDescription() + ", " +
+                "created = " + getCreated() + ", " +
+                "updated = " + getUpdated() + ", " +
+                "published = " + getPublished() + ")";
     }
 }

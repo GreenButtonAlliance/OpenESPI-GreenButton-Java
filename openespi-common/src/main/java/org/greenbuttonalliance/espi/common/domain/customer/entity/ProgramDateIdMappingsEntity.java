@@ -19,10 +19,7 @@
 
 package org.greenbuttonalliance.espi.common.domain.customer.entity;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
 
 import jakarta.persistence.*;
@@ -33,13 +30,10 @@ import jakarta.persistence.*;
  * [extension] Collection of all customer Energy Efficiency programs
  */
 @Entity
-@Table(name = "program_date_id_mappings", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"uuid"})
-})
-@Data
-@EqualsAndHashCode(callSuper = true)
+@Table(name = "program_date_id_mappings")
+@Getter
+@Setter
 @NoArgsConstructor
-@ToString(callSuper = true)
 public class ProgramDateIdMappingsEntity extends IdentifiedObject {
 
     /**

@@ -36,7 +36,8 @@ public interface IntervalBlockRepository extends JpaRepository<IntervalBlockEnti
 
 	// JpaRepository provides: save(), findById(), findAll(), deleteById(), etc.
 
-	Optional<IntervalBlockEntity> findByUuid(UUID uuid);
+	// findById is already provided by JpaRepository<IntervalBlockEntity, UUID>
+	// Optional<IntervalBlockEntity> findById(UUID id) is inherited
 
 	@Query("SELECT i.id FROM IntervalBlockEntity i")
 	List<UUID> findAllIds();
@@ -64,4 +65,10 @@ public interface IntervalBlockRepository extends JpaRepository<IntervalBlockEnti
 
 	@Query("SELECT DISTINCT i.id FROM UsagePointEntity u, MeterReadingEntity m, IntervalBlockEntity i WHERE u.retailCustomer.id = :o1Id AND m.usagePoint.id = :o2Id AND i.meterReading.id = :o3Id AND i.id = :o4Id")
 	Optional<UUID> findIdByXpath(@Param("o1Id") UUID o1Id, @Param("o2Id") UUID o2Id, @Param("o3Id") UUID o3Id, @Param("o4Id") UUID o4Id);
+
+	@Query("SELECT i FROM IntervalBlockEntity i WHERE i.meterReading = :meterReading")
+	List<IntervalBlockEntity> findByMeterReadingEntity(@Param("meterReading") org.greenbuttonalliance.espi.common.domain.usage.MeterReadingEntity meterReading);
+
+	@Query("SELECT i FROM IntervalBlockEntity i WHERE i.selfLink.href = :uri")
+	Optional<IntervalBlockEntity> findByUri(@Param("uri") String uri);
 }

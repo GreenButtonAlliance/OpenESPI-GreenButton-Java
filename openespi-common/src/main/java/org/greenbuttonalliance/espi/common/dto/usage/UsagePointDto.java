@@ -40,24 +40,23 @@ import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
     "nominalServiceVoltage", "ratedCurrent", "ratedPower", "serviceDeliveryPoint",
     "pnodeRefs", "aggregatedNodeRefs"
 })
-public record UsagePointDto(
+public class UsagePointDto {
     
-    String uuid,
-    String description,
-    byte[] roleFlags,
-    ServiceCategory serviceCategory,
-    Short status,
-    SummaryMeasurementDto estimatedLoad,
-    SummaryMeasurementDto nominalServiceVoltage,
-    SummaryMeasurementDto ratedCurrent,
-    SummaryMeasurementDto ratedPower,
-    ServiceDeliveryPointDto serviceDeliveryPoint,
-    PnodeRefsDto pnodeRefs,
-    AggregatedNodeRefsDto aggregatedNodeRefs,
-    Object meterReadings,  // List<MeterReadingDto> - temporarily Object for compilation
-    Object usageSummaries, // List<UsageSummaryDto> - temporarily Object for compilation  
-    Object electricPowerQualitySummaries // List<ElectricPowerQualitySummaryDto> - temporarily Object for compilation
-) {
+    private String uuid;
+    private String description;
+    private byte[] roleFlags;
+    private ServiceCategory serviceCategory;
+    private Short status;
+    private SummaryMeasurementDto estimatedLoad;
+    private SummaryMeasurementDto nominalServiceVoltage;
+    private SummaryMeasurementDto ratedCurrent;
+    private SummaryMeasurementDto ratedPower;
+    private ServiceDeliveryPointDto serviceDeliveryPoint;
+    private PnodeRefsDto pnodeRefs;
+    private AggregatedNodeRefsDto aggregatedNodeRefs;
+    private Object meterReadings;  // List<MeterReadingDto> - temporarily Object for compilation
+    private Object usageSummaries; // List<UsageSummaryDto> - temporarily Object for compilation  
+    private Object electricPowerQualitySummaries; // List<ElectricPowerQualitySummaryDto> - temporarily Object for compilation
     
     @XmlTransient
     public String getUuid() {
@@ -153,18 +152,106 @@ public record UsagePointDto(
         return electricPowerQualitySummaries;
     }
     
+    // Setters for JAXB unmarshalling
+    public void setUuid(String uuid) {
+        this.uuid = uuid;
+    }
+    
+    public void setDescription(String description) {
+        this.description = description;
+    }
+    
+    public void setRoleFlags(byte[] roleFlags) {
+        this.roleFlags = roleFlags;
+    }
+    
+    public void setServiceCategory(ServiceCategory serviceCategory) {
+        this.serviceCategory = serviceCategory;
+    }
+    
+    public void setStatus(Short status) {
+        this.status = status;
+    }
+    
+    public void setEstimatedLoad(SummaryMeasurementDto estimatedLoad) {
+        this.estimatedLoad = estimatedLoad;
+    }
+    
+    public void setNominalServiceVoltage(SummaryMeasurementDto nominalServiceVoltage) {
+        this.nominalServiceVoltage = nominalServiceVoltage;
+    }
+    
+    public void setRatedCurrent(SummaryMeasurementDto ratedCurrent) {
+        this.ratedCurrent = ratedCurrent;
+    }
+    
+    public void setRatedPower(SummaryMeasurementDto ratedPower) {
+        this.ratedPower = ratedPower;
+    }
+    
+    public void setServiceDeliveryPoint(ServiceDeliveryPointDto serviceDeliveryPoint) {
+        this.serviceDeliveryPoint = serviceDeliveryPoint;
+    }
+    
+    public void setPnodeRefs(PnodeRefsDto pnodeRefs) {
+        this.pnodeRefs = pnodeRefs;
+    }
+    
+    public void setAggregatedNodeRefs(AggregatedNodeRefsDto aggregatedNodeRefs) {
+        this.aggregatedNodeRefs = aggregatedNodeRefs;
+    }
+    
+    public void setMeterReadings(Object meterReadings) {
+        this.meterReadings = meterReadings;
+    }
+    
+    public void setUsageSummaries(Object usageSummaries) {
+        this.usageSummaries = usageSummaries;
+    }
+    
+    public void setElectricPowerQualitySummaries(Object electricPowerQualitySummaries) {
+        this.electricPowerQualitySummaries = electricPowerQualitySummaries;
+    }
+    
     /**
      * Default constructor for JAXB.
      */
     public UsagePointDto() {
-        this(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+        // Default constructor - fields will be initialized to null/default values
+    }
+    
+    /**
+     * Full constructor.
+     */
+    public UsagePointDto(String uuid, String description, byte[] roleFlags, ServiceCategory serviceCategory, 
+                        Short status, SummaryMeasurementDto estimatedLoad, SummaryMeasurementDto nominalServiceVoltage, 
+                        SummaryMeasurementDto ratedCurrent, SummaryMeasurementDto ratedPower,
+                        ServiceDeliveryPointDto serviceDeliveryPoint, PnodeRefsDto pnodeRefs, 
+                        AggregatedNodeRefsDto aggregatedNodeRefs, Object meterReadings, 
+                        Object usageSummaries, Object electricPowerQualitySummaries) {
+        this.uuid = uuid;
+        this.description = description;
+        this.roleFlags = roleFlags;
+        this.serviceCategory = serviceCategory;
+        this.status = status;
+        this.estimatedLoad = estimatedLoad;
+        this.nominalServiceVoltage = nominalServiceVoltage;
+        this.ratedCurrent = ratedCurrent;
+        this.ratedPower = ratedPower;
+        this.serviceDeliveryPoint = serviceDeliveryPoint;
+        this.pnodeRefs = pnodeRefs;
+        this.aggregatedNodeRefs = aggregatedNodeRefs;
+        this.meterReadings = meterReadings;
+        this.usageSummaries = usageSummaries;
+        this.electricPowerQualitySummaries = electricPowerQualitySummaries;
     }
     
     /**
      * Minimal constructor for basic usage point data.
      */
     public UsagePointDto(String uuid, ServiceCategory serviceCategory) {
-        this(uuid, null, null, serviceCategory, null, null, null, null, null, null, null, null, null, null, null);
+        this.uuid = uuid;
+        this.serviceCategory = serviceCategory;
     }
     
     /**
@@ -174,8 +261,14 @@ public record UsagePointDto(
                         SummaryMeasurementDto estimatedLoad, SummaryMeasurementDto nominalServiceVoltage, 
                         SummaryMeasurementDto ratedCurrent, SummaryMeasurementDto ratedPower,
                         ServiceDeliveryPointDto serviceDeliveryPoint) {
-        this(uuid, description, null, serviceCategory, null, estimatedLoad, nominalServiceVoltage, 
-             ratedCurrent, ratedPower, serviceDeliveryPoint, null, null, null, null, null);
+        this.uuid = uuid;
+        this.description = description;
+        this.serviceCategory = serviceCategory;
+        this.estimatedLoad = estimatedLoad;
+        this.nominalServiceVoltage = nominalServiceVoltage;
+        this.ratedCurrent = ratedCurrent;
+        this.ratedPower = ratedPower;
+        this.serviceDeliveryPoint = serviceDeliveryPoint;
     }
     
     /**
