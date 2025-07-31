@@ -20,6 +20,8 @@
 package org.greenbuttonalliance.espi.common.service.impl;
 
 import jakarta.xml.bind.JAXBException;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.SubscriptionEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
@@ -27,13 +29,10 @@ import org.greenbuttonalliance.espi.common.dto.usage.UsagePointDto;
 import org.greenbuttonalliance.espi.common.mapper.usage.UsagePointMapper;
 import org.greenbuttonalliance.espi.common.repositories.usage.UsagePointRepository;
 import org.greenbuttonalliance.espi.common.service.UsagePointService;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -41,47 +40,32 @@ import java.util.UUID;
  * Modern UsagePoint service implementation using entity classes.
  * Legacy ATOM feed and entry processing removed for Spring Boot 3.5 compatibility.
  */
+@Slf4j
 @Service
 @Transactional(rollbackFor = { jakarta.xml.bind.JAXBException.class }, noRollbackFor = {
 		jakarta.persistence.NoResultException.class,
 		org.springframework.dao.EmptyResultDataAccessException.class })
+@RequiredArgsConstructor
 public class UsagePointServiceImpl implements UsagePointService {
-
-	private final Log logger = LogFactory.getLog(getClass());
 
 	private final UsagePointRepository usagePointRepository;
 	private final UsagePointMapper usagePointMapper;
 
-	public UsagePointServiceImpl(UsagePointRepository usagePointRepository,
-								UsagePointMapper usagePointMapper) {
-		this.usagePointRepository = usagePointRepository;
-		this.usagePointMapper = usagePointMapper;
-	}
-
-	@Override
-	public void setRepository(UsagePointRepository usagePointRepository) {
-		// Repository is injected via constructor
-	}
-
-	// @Override
-	// public void setResourceService(ResourceService resourceService) {
-	//	// ResourceService is no longer used - removed for Spring Boot 3.5 migration
-	// }
 
 	@Override
 	public List<UsagePointEntity> findAllByRetailCustomer(RetailCustomerEntity customer) {
-		return usagePointRepository.findAllByRetailCustomerEntity(customer);
+		return usagePointRepository.findAllByRetailCustomerId(customer.getId());
 	}
 
 	@Override
-	public UsagePointEntity findById(Long usagePointId) {
+	public UsagePointEntity findById(UUID usagePointId) {
 		return usagePointRepository.findById(usagePointId).orElse(null);
 	}
 
 	@Override
-	public UsagePointEntity findById(Long retailCustomerId, Long usagePointId) {
+	public UsagePointEntity findById(UUID retailCustomerId, UUID usagePointId) {
 		// TODO: Implement scoped query for retailCustomer.usagePoint
-		return usagePointRepository.findByIdAndRetailCustomerId(usagePointId, retailCustomerId).orElse(null);
+		return usagePointRepository.findById(usagePointId).orElse(null);
 	}
 
 	@Override
@@ -91,28 +75,28 @@ public class UsagePointServiceImpl implements UsagePointService {
 
 	@Override
 	public void createOrReplaceByUUID(UsagePointEntity usagePoint) {
-		UsagePointEntity existing = usagePointRepository.findByUuid(usagePoint.getUuid()).orElse(null);
+		UsagePointEntity existing = usagePointRepository.findById(usagePoint.getId()).orElse(null);
 		if (existing != null) {
 			// Update existing entity with new values
 			usagePoint.setId(existing.getId());
 		}
 		usagePointRepository.save(usagePoint);
-		logger.info("Created or replaced usage point with UUID: " + usagePoint.getUuid());
+		log.info("Created or replaced usage point with UUID: " + usagePoint.getId());
 	}
 
 	@Override
 	public void associateByUUID(RetailCustomerEntity retailCustomer, UUID uuid) {
-		UsagePointEntity usagePoint = usagePointRepository.findByUuid(uuid).orElse(null);
+  UsagePointEntity usagePoint = usagePointRepository.findById(uuid).orElse(null);
 		if (usagePoint != null) {
-			usagePoint.setRetailCustomerEntity(retailCustomer);
+			usagePoint.setRetailCustomer(retailCustomer);
 			usagePointRepository.save(usagePoint);
-			logger.info("Associated usage point " + uuid + " with retail customer " + retailCustomer.getId());
+			log.info("Associated usage point " + uuid + " with retail customer " + retailCustomer.getId());
 		}
 	}
 
 	@Override
 	public UsagePointEntity findByUUID(UUID uuid) {
-		return usagePointRepository.findByUuid(uuid).orElse(null);
+		return usagePointRepository.findById(uuid).orElse(null);
 	}
 
 	@Override
@@ -123,7 +107,7 @@ public class UsagePointServiceImpl implements UsagePointService {
 	@Override
 	public List<UsagePointEntity> findAllUpdatedFor(SubscriptionEntity subscription) {
 		// TODO: Implement query to find usage points updated after subscription timestamp
-		return usagePointRepository.findAllUpdatedAfter(subscription.getLastUpdateTime());
+		return usagePointRepository.findAllUpdatedAfter(subscription.getLastUpdate());
 	}
 
 	@Override
@@ -135,7 +119,7 @@ public class UsagePointServiceImpl implements UsagePointService {
 	}
 
 	@Override
-	public List<Long> findAllIdsForRetailCustomer(Long id) {
+	public List<UUID> findAllIdsForRetailCustomer(UUID id) {
 		return usagePointRepository
 				.findAllIdsByRetailCustomerId(id);
 	}
@@ -143,32 +127,32 @@ public class UsagePointServiceImpl implements UsagePointService {
 	@Override
 	public String feedFor(List<UsagePointEntity> usagePoints) throws JAXBException {
 		// TODO: Implement modern feed generation using DTOs
-		logger.info("Generating feed for " + usagePoints.size() + " usage points");
+		log.info("Generating feed for " + usagePoints.size() + " usage points");
 		return null;
 	}
 
 	@Override
 	public String entryFor(UsagePointEntity usagePoint) {
 		// TODO: Implement modern entry generation using DTOs
-		logger.info("Generating entry for usage point: " + usagePoint.getId());
+		log.info("Generating entry for usage point: " + usagePoint.getId());
 		return null;
 	}
 
 	@Override
-	public List<UsagePointEntity> findAllByRetailCustomer(Long retailCustomerId) {
+	public List<UsagePointEntity> findAllByRetailCustomer(UUID retailCustomerId) {
 		return usagePointRepository.findAllByRetailCustomerId(retailCustomerId);
 	}
 
 	@Override
 	public void add(UsagePointEntity usagePoint) {
 		usagePointRepository.save(usagePoint);
-		logger.info("Added usage point: " + usagePoint.getId());
+		log.info("Added usage point: " + usagePoint.getId());
 	}
 
 	@Override
 	public void delete(UsagePointEntity usagePoint) {
 		usagePointRepository.deleteById(usagePoint.getId());
-		logger.info("Deleted usage point: " + usagePoint.getId());
+		log.info("Deleted usage point: " + usagePoint.getId());
 	}
 
 	@Override
@@ -186,7 +170,7 @@ public class UsagePointServiceImpl implements UsagePointService {
 			return usagePointRepository.save(entity);
 			
 		} catch (Exception e) {
-			logger.error("Failed to import UsagePoint resource", e);
+			log.error("Failed to import UsagePoint resource", e);
 			return null;
 		}
 	}

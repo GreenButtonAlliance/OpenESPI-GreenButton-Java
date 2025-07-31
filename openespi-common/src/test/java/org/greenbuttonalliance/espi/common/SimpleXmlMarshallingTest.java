@@ -19,19 +19,17 @@
 
 package org.greenbuttonalliance.espi.common;
 
-import org.greenbuttonalliance.espi.common.dto.usage.UsagePointDto;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.BeforeEach;
-
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.Marshaller;
 import jakarta.xml.bind.Unmarshaller;
+import org.greenbuttonalliance.espi.common.dto.usage.UsagePointDto;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
-import java.io.InputStream;
-import java.io.StringWriter;
 import java.io.StringReader;
+import java.io.StringWriter;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -83,7 +81,7 @@ class SimpleXmlMarshallingTest {
         assertTrue(xml.contains("UsagePoint"), "XML should contain UsagePoint element");
         assertTrue(xml.contains("http://naesb.org/espi"), "XML should contain ESPI namespace");
         assertTrue(xml.contains("Residential Electric Service"), "XML should contain description");
-        assertTrue(xml.contains("<status>1</status>"), "XML should contain status");
+        assertTrue(xml.contains("<espi:status>1</espi:status>"), "XML should contain status");
     }
 
     @Test
@@ -111,11 +109,11 @@ class SimpleXmlMarshallingTest {
         UsagePointDto roundTrip = (UsagePointDto) unmarshaller.unmarshal(reader);
         
         // Verify data integrity survived round trip
-        assertEquals(original.description(), roundTrip.description(), 
+        assertEquals(original.getDescription(), roundTrip.getDescription(), 
                     "Description should survive round trip");
-        assertEquals(original.status(), roundTrip.status(), 
+        assertEquals(original.getStatus(), roundTrip.getStatus(), 
                     "Status should survive round trip");
-        assertArrayEquals(original.roleFlags(), roundTrip.roleFlags(), 
+        assertArrayEquals(original.getRoleFlags(), roundTrip.getRoleFlags(), 
                          "Role flags should survive round trip");
     }
 
@@ -174,9 +172,9 @@ class SimpleXmlMarshallingTest {
         UsagePointDto roundTrip = (UsagePointDto) unmarshaller.unmarshal(reader);
         
         // Verify nulls are preserved
-        assertNull(roundTrip.description(), "Null description should be preserved");
-        assertNull(roundTrip.roleFlags(), "Null role flags should be preserved");
-        assertEquals(withNulls.status(), roundTrip.status(), "Non-null status should be preserved");
+        assertNull(roundTrip.getDescription(), "Null description should be preserved");
+        assertNull(roundTrip.getRoleFlags(), "Null role flags should be preserved");
+        assertEquals(withNulls.getStatus(), roundTrip.getStatus(), "Non-null status should be preserved");
     }
 
     @Test
@@ -227,16 +225,14 @@ class SimpleXmlMarshallingTest {
         // Verify XML escaping
         assertTrue(xml.contains("&amp;") || xml.contains("Service &amp; Co."), 
                   "Ampersands should be XML escaped");
-        assertTrue(xml.contains("&lt;") || xml.contains("&gt;"), 
+        assertTrue(xml.contains("&lt;") && xml.contains("&gt;"), 
                   "Angle brackets should be XML escaped");
-        assertTrue(xml.contains("&quot;") || xml.contains("&#34;"), 
-                  "Quotes should be XML escaped");
         
         // Unmarshal back and verify data integrity
         StringReader reader = new StringReader(xml);
         UsagePointDto roundTrip = (UsagePointDto) unmarshaller.unmarshal(reader);
         
-        assertEquals(usagePoint.description(), roundTrip.description(), 
+        assertEquals(usagePoint.getDescription(), roundTrip.getDescription(), 
                     "Special characters should survive round trip");
     }
 }

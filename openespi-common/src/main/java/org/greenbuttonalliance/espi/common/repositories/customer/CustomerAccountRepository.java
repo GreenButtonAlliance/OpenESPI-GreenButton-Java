@@ -27,20 +27,15 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Spring Data JPA repository for CustomerAccount entities.
- * 
+ * <p>
  * Manages customer billing and payment account data with proper PII separation.
  */
 @Repository
-public interface CustomerAccountRepository extends JpaRepository<CustomerAccountEntity, Long> {
-
-    /**
-     * Find customer account by UUID (case insensitive).
-     */
-    @Query("SELECT ca FROM CustomerAccountEntity ca WHERE UPPER(ca.uuid) = UPPER(:uuid)")
-    Optional<CustomerAccountEntity> findByUuid(@Param("uuid") String uuid);
+public interface CustomerAccountRepository extends JpaRepository<CustomerAccountEntity, UUID> {
 
     /**
      * Find customer account by account ID.

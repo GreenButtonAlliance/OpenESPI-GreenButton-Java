@@ -20,47 +20,35 @@
 package org.greenbuttonalliance.espi.common.domain.usage;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
-import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
-import org.greenbuttonalliance.espi.common.utils.security.PasswordPolicy;
-// Password encoder removed - authentication moved to DataCustodian/ThirdParty
-// import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-// Spring Security imports removed - authentication concerns moved to DataCustodian/ThirdParty repositories
-// import org.springframework.security.core.GrantedAuthority;
-// import org.springframework.security.core.authority.SimpleGrantedAuthority;
-// import org.springframework.security.core.userdetails.UserDetails;
-
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
+import org.greenbuttonalliance.espi.common.utils.security.PasswordPolicy;
 import org.hibernate.annotations.BatchSize;
-// import java.security.Principal;
+import org.hibernate.proxy.HibernateProxy;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
  * Pure JPA/Hibernate entity for RetailCustomer without JAXB concerns.
- * 
+ * <p>
  * Represents a retail energy customer for Green Button data access.
  * Authentication concerns are handled in DataCustodian/ThirdParty repositories.
  */
 @Entity
-@Table(name = "retail_customers", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"uuid"})
-    // username uniqueness removed - authentication moved to DataCustodian/ThirdParty
-})
+@Table(name = "retail_customers")
 @Getter
 @Setter
-@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
-@ToString(callSuper = true, exclude = {"password", "usagePoints", "authorizations"})
 public class RetailCustomerEntity extends IdentifiedObject {
 
     private static final long serialVersionUID = 1L;
@@ -589,5 +577,43 @@ public class RetailCustomerEntity extends IdentifiedObject {
         if (accountCreated == null) {
             accountCreated = System.currentTimeMillis();
         }
+    }
+
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null) return false;
+        Class<?> oEffectiveClass = o instanceof HibernateProxy ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
+        if (thisEffectiveClass != oEffectiveClass) return false;
+        RetailCustomerEntity that = (RetailCustomerEntity) o;
+        return getId() != null && Objects.equals(getId(), that.getId());
+    }
+
+    @Override
+    public final int hashCode() {
+        return this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(" +
+                "id = " + getId() + ", " +
+                "username = " + getUsername() + ", " +
+                "firstName = " + getFirstName() + ", " +
+                "lastName = " + getLastName() + ", " +
+                "password = " + getPassword() + ", " +
+                "enabled = " + getEnabled() + ", " +
+                "role = " + getRole() + ", " +
+                "email = " + getEmail() + ", " +
+                "phone = " + getPhone() + ", " +
+                "accountCreated = " + getAccountCreated() + ", " +
+                "lastLogin = " + getLastLogin() + ", " +
+                "accountLocked = " + getAccountLocked() + ", " +
+                "failedLoginAttempts = " + getFailedLoginAttempts() + ", " +
+                "description = " + getDescription() + ", " +
+                "created = " + getCreated() + ", " +
+                "updated = " + getUpdated() + ", " +
+                "published = " + getPublished() + ")";
     }
 }

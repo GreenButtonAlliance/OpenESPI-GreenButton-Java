@@ -19,15 +19,15 @@
 
 package org.greenbuttonalliance.espi.common.domain.customer.entity;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
 
 import jakarta.persistence.*;
+import org.hibernate.proxy.HibernateProxy;
+
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Pure JPA/Hibernate entity for Statement without JAXB concerns.
@@ -35,13 +35,10 @@ import java.util.List;
  * [extension] Billing statement for provided services.
  */
 @Entity
-@Table(name = "statements", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"uuid"})
-})
-@Data
-@EqualsAndHashCode(callSuper = true)
+@Table(name = "statements")
+@Getter
+@Setter
 @NoArgsConstructor
-@ToString(callSuper = true, exclude = {"statementRefs"})
 public class StatementEntity extends IdentifiedObject {
 
     /**
@@ -64,5 +61,30 @@ public class StatementEntity extends IdentifiedObject {
     @JoinColumn(name = "customer_id")
     private CustomerEntity customer;
 
-    // Note: Lombok @Data should generate setter methods automatically
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null) return false;
+        Class<?> oEffectiveClass = o instanceof HibernateProxy ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
+        if (thisEffectiveClass != oEffectiveClass) return false;
+        StatementEntity that = (StatementEntity) o;
+        return getId() != null && Objects.equals(getId(), that.getId());
+    }
+
+    @Override
+    public final int hashCode() {
+        return this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(" +
+                "id = " + getId() + ", " +
+                "issueDateTime = " + getIssueDateTime() + ", " +
+                "description = " + getDescription() + ", " +
+                "created = " + getCreated() + ", " +
+                "updated = " + getUpdated() + ", " +
+                "published = " + getPublished() + ")";
+    }
 }

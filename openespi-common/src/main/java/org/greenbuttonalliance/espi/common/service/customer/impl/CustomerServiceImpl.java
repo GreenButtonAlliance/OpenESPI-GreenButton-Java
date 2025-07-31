@@ -19,11 +19,11 @@
 
 package org.greenbuttonalliance.espi.common.service.customer.impl;
 
+import lombok.RequiredArgsConstructor;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerEntity;
 import org.greenbuttonalliance.espi.common.domain.customer.enums.CustomerKind;
 import org.greenbuttonalliance.espi.common.repositories.customer.CustomerRepository;
 import org.greenbuttonalliance.espi.common.service.customer.CustomerService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,10 +38,10 @@ import java.util.UUID;
  */
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class CustomerServiceImpl implements CustomerService {
 
-    @Autowired
-    private CustomerRepository customerRepository;
+    private final CustomerRepository customerRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -51,14 +51,8 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<CustomerEntity> findById(Long id) {
+    public Optional<CustomerEntity> findById(UUID id) {
         return customerRepository.findById(id);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<CustomerEntity> findByUuid(String uuid) {
-        return customerRepository.findByUuid(uuid);
     }
 
     @Override
@@ -105,8 +99,8 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<CustomerEntity> findByOrganisationId(Long organisationId) {
-        return customerRepository.findByOrganisationId(organisationId);
+    public List<CustomerEntity> findByOrganisationName(String organisationName) {
+        return customerRepository.findByOrganisationName(organisationName);
     }
 
     @Override
@@ -119,14 +113,14 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     @Override
-    public void deleteById(Long id) {
+    public void deleteById(UUID id) {
         customerRepository.deleteById(id);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public boolean existsByUuid(String uuid) {
-        return customerRepository.findByUuid(uuid).isPresent();
+    public boolean existsById(UUID id) {
+        return customerRepository.existsById(id);
     }
 
     @Override

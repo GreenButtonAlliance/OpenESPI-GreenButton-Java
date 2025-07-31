@@ -41,7 +41,7 @@ import java.util.Map;
 @ComponentScan(basePackages = {
     "org.greenbuttonalliance.espi.common.service",
     "org.greenbuttonalliance.espi.common.utils",
-    "org.greenbuttonalliance.espi.common.repositories.jpa"
+    "org.greenbuttonalliance.espi.common.repositories"
 })
 public class SpringBootTestConfiguration {
 

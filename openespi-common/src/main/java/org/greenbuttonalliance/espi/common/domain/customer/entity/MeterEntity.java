@@ -19,12 +19,15 @@
 
 package org.greenbuttonalliance.espi.common.domain.customer.entity;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.Setter;
+import org.hibernate.proxy.HibernateProxy;
 
-import jakarta.persistence.*;
+import java.util.Objects;
 
 /**
  * Pure JPA/Hibernate entity for Meter without JAXB concerns.
@@ -33,10 +36,10 @@ import jakarta.persistence.*;
  * Used for measuring consumption and detection of events.
  */
 @Entity
-@Data
-@EqualsAndHashCode(callSuper = true)
+@Table(name = "meters")
+@Getter
+@Setter
 @NoArgsConstructor
-@ToString(callSuper = true)
 public class MeterEntity extends EndDeviceEntity {
 
     /**
@@ -59,4 +62,48 @@ public class MeterEntity extends EndDeviceEntity {
      */
     @Column(name = "interval_length")
     private Long intervalLength;
+
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null) return false;
+        Class<?> oEffectiveClass = o instanceof HibernateProxy ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
+        if (thisEffectiveClass != oEffectiveClass) return false;
+        MeterEntity that = (MeterEntity) o;
+        return getId() != null && Objects.equals(getId(), that.getId());
+    }
+
+    @Override
+    public final int hashCode() {
+        return this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(" +
+                "id = " + getId() + ", " +
+                "formNumber = " + getFormNumber() + ", " +
+                "intervalLength = " + getIntervalLength() + ", " +
+                "type = " + getType() + ", " +
+                "utcNumber = " + getUtcNumber() + ", " +
+                "serialNumber = " + getSerialNumber() + ", " +
+                "lotNumber = " + getLotNumber() + ", " +
+                "purchasePrice = " + getPurchasePrice() + ", " +
+                "critical = " + getCritical() + ", " +
+                "electronicAddress = " + getElectronicAddress() + ", " +
+                "lifecycle = " + getLifecycle() + ", " +
+                "acceptanceTest = " + getAcceptanceTest() + ", " +
+                "initialCondition = " + getInitialCondition() + ", " +
+                "initialLossOfLife = " + getInitialLossOfLife() + ", " +
+                "status = " + getStatus() + ", " +
+                "isVirtual = " + getIsVirtual() + ", " +
+                "isPan = " + getIsPan() + ", " +
+                "installCode = " + getInstallCode() + ", " +
+                "amrSystem = " + getAmrSystem() + ", " +
+                "description = " + getDescription() + ", " +
+                "created = " + getCreated() + ", " +
+                "updated = " + getUpdated() + ", " +
+                "published = " + getPublished() + ")";
+    }
 }

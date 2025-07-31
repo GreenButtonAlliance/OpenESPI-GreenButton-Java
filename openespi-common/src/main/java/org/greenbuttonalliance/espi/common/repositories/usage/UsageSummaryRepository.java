@@ -20,6 +20,7 @@
 package org.greenbuttonalliance.espi.common.repositories.usage;
 
 import org.greenbuttonalliance.espi.common.domain.usage.UsageSummaryEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -36,9 +37,8 @@ import java.util.UUID;
  */
 @Repository
 public interface UsageSummaryRepository extends JpaRepository<UsageSummaryEntity, UUID> {
-    // JpaRepository provides: save(), findById(), findAll(), deleteById(), etc.
 
-    Optional<UsageSummaryEntity> findByUuid(UUID uuid);
+    List<UsageSummaryEntity> findByUsagePoint(UsagePointEntity usagePoint);
 
     @Query("SELECT u.id FROM UsageSummaryEntity u")
     List<UUID> findAllIds();
@@ -50,7 +50,7 @@ public interface UsageSummaryRepository extends JpaRepository<UsageSummaryEntity
 
     @Modifying
     @Transactional
-    @Query("DELETE FROM UsageSummaryEntity u WHERE u.uuid = :uuid")
+    @Query("DELETE FROM UsageSummaryEntity u WHERE u.id = :uuid")
     void deleteByUuid(@Param("uuid") UUID uuid);
 
     // Custom method for createOrReplaceByUUID - should be implemented in service layer

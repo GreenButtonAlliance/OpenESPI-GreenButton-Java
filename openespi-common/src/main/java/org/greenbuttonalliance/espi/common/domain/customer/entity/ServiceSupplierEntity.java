@@ -19,17 +19,17 @@
 
 package org.greenbuttonalliance.espi.common.domain.customer.entity;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
 import org.greenbuttonalliance.espi.common.domain.customer.enums.SupplierKind;
 
 import jakarta.persistence.*;
 import org.hibernate.annotations.Where;
+import org.hibernate.proxy.HibernateProxy;
+
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Pure JPA/Hibernate entity for ServiceSupplier without JAXB concerns.
@@ -37,13 +37,10 @@ import java.util.List;
  * Organisation that provides services to customers.
  */
 @Entity
-@Table(name = "service_suppliers", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"uuid"})
-})
-@Data
-@EqualsAndHashCode(callSuper = true)
+@Table(name = "service_suppliers")
+@Getter
+@Setter
 @NoArgsConstructor
-@ToString(callSuper = true)
 public class ServiceSupplierEntity extends IdentifiedObject {
 
     /**
@@ -98,4 +95,34 @@ public class ServiceSupplierEntity extends IdentifiedObject {
     @JoinColumn(name = "parent_entity_uuid", referencedColumnName = "id")
     @Where(clause = "parent_entity_type = 'ServiceSupplierEntity'")
     private List<PhoneNumberEntity> phoneNumbers;
+
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null) return false;
+        Class<?> oEffectiveClass = o instanceof HibernateProxy ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
+        if (thisEffectiveClass != oEffectiveClass) return false;
+        ServiceSupplierEntity that = (ServiceSupplierEntity) o;
+        return getId() != null && Objects.equals(getId(), that.getId());
+    }
+
+    @Override
+    public final int hashCode() {
+        return this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(" +
+                "id = " + getId() + ", " +
+                "organisation = " + getOrganisation() + ", " +
+                "kind = " + getKind() + ", " +
+                "issuerIdentificationNumber = " + getIssuerIdentificationNumber() + ", " +
+                "effectiveDate = " + getEffectiveDate() + ", " +
+                "description = " + getDescription() + ", " +
+                "created = " + getCreated() + ", " +
+                "updated = " + getUpdated() + ", " +
+                "published = " + getPublished() + ")";
+    }
 }

@@ -34,14 +34,10 @@ import java.util.UUID;
 @Repository
 public interface TimeConfigurationRepository extends JpaRepository<TimeConfigurationEntity, UUID> {
 
-	// JpaRepository provides: save(), findById(), findAll(), deleteById(), etc.
-
 	@Modifying
 	@Transactional
 	@Query("DELETE FROM TimeConfigurationEntity t WHERE t.id = :id")
 	void deleteById(@Param("id") UUID id);
-
-	Optional<TimeConfigurationEntity> findByUuid(UUID uuid);
 
 	@Query("SELECT t.id FROM TimeConfigurationEntity t")
 	List<UUID> findAllIds();

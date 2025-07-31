@@ -20,14 +20,16 @@
 
 package org.greenbuttonalliance.espi.common.service.impl;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.SubscriptionEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 import org.greenbuttonalliance.espi.common.repositories.usage.SubscriptionRepository;
 import org.greenbuttonalliance.espi.common.repositories.usage.UsagePointRepository;
-import org.greenbuttonalliance.espi.common.service.*;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.greenbuttonalliance.espi.common.service.ApplicationInformationService;
+import org.greenbuttonalliance.espi.common.service.RetailCustomerService;
+import org.greenbuttonalliance.espi.common.service.SubscriptionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,24 +53,25 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 	@Autowired
 	private ApplicationInformationService applicationInformationService;
 
+	//@Lazy // Added to break the circular dependency
 	@Autowired
 	private RetailCustomerService retailCustomerService;
 
 	@Override
 	public SubscriptionEntity createSubscription(String username, Set<String> roles, String clientId) {
 		SubscriptionEntity subscription = new SubscriptionEntity();
-		subscription.setUuid(UUID.randomUUID());
+		subscription.setId(UUID.randomUUID());
 
 		if (roles.contains("ROLE_USER")) {
 			// For user-based subscriptions, find the retail customer by username
 			RetailCustomerEntity retailCustomer = retailCustomerService.findByUsername(username);
 			if (retailCustomer != null) {
-				subscription.setRetailCustomerEntity(retailCustomer);
-				subscription.setUsagePointEntities(new ArrayList<UsagePointEntity>());
+				subscription.setRetailCustomer(retailCustomer);
+				subscription.setUsagePoints(new ArrayList<UsagePointEntity>());
 				// TODO - scope this to only a selected (proper) subset of the
 				// usagePoints as passed through from the UX or a restful call.
-				List<UsagePointEntity> usagePoints = usagePointRepository.findAllByRetailCustomerEntity(retailCustomer);
-				subscription.setUsagePointEntities(usagePoints);
+				List<UsagePointEntity> usagePoints = usagePointRepository.findAllByRetailCustomerId(retailCustomer.getId());
+				subscription.setUsagePoints(usagePoints);
 			}
 		} else {
 			// For client-based subscriptions, process the client ID
@@ -83,11 +86,11 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 				if (ci.indexOf("_admin") != -1) {
 					ci = ci.substring(0, ci.indexOf("_admin"));
 				}
-				subscription.setApplicationInformationEntity(applicationInformationService.findByClientId(ci));
+				subscription.setApplicationInformation(applicationInformationService.findByClientId(ci));
 			}
-			subscription.setRetailCustomerEntity(retailCustomerService.findById((long) 0));
+			subscription.setRetailCustomer(null); // No specific retail customer for client-based subscriptions
 		}
-		subscription.setLastUpdateTime(new GregorianCalendar());
+		subscription.setLastUpdate(new GregorianCalendar());
 		subscriptionRepository.save(subscription);
 
 		logger.info("Created subscription for username: " + username);
@@ -110,16 +113,16 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 	}
 
 	@Override
-	public SubscriptionEntity findById(Long subscriptionId) {
+	public SubscriptionEntity findById(UUID subscriptionId) {
 		return subscriptionRepository.findById(subscriptionId).orElse(null);
 	}
 
 	@Override
-	public List<Long> findUsagePointIds(Long subscriptionId) {
-		List<Long> result = new ArrayList<Long>();
+	public List<UUID> findUsagePointIds(UUID subscriptionId) {
+		List<UUID> result = new ArrayList<UUID>();
 		SubscriptionEntity subscription = findById(subscriptionId);
-		if (subscription != null && subscription.getUsagePointEntities() != null) {
-			for (UsagePointEntity up : subscription.getUsagePointEntities()) {
+		if (subscription != null && subscription.getUsagePoints() != null) {
+			for (UsagePointEntity up : subscription.getUsagePoints()) {
 				result.add(up.getId());
 			}
 		}
@@ -127,34 +130,34 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 	}
 
 	@Override
-	public SubscriptionEntity findByAuthorizationId(Long id) {
+	public SubscriptionEntity findByAuthorizationId(UUID id) {
 		return subscriptionRepository.findByAuthorizationId(id).orElse(null);
 	}
 
 	@Override
 	public SubscriptionEntity addUsagePoint(SubscriptionEntity subscription,
 			UsagePointEntity usagePoint) {
-		if (subscription.getUsagePointEntities() == null) {
-			subscription.setUsagePointEntities(new ArrayList<UsagePointEntity>());
+		if (subscription.getUsagePoints() == null) {
+			subscription.setUsagePoints(new ArrayList<UsagePointEntity>());
 		}
-		subscription.getUsagePointEntities().add(usagePoint);
+		subscription.getUsagePoints().add(usagePoint);
 		logger.info("Added usage point " + usagePoint.getId() + " to subscription " + subscription.getId());
 		return subscription;
 	}
 
 	@Override
-	public Long findRetailCustomerId(Long subscriptionId, Long usagePointId) {
-		Long result = null;
+	public UUID findRetailCustomerId(UUID subscriptionId, UUID usagePointId) {
+		UUID result = null;
 		SubscriptionEntity subscription = findById(subscriptionId);
-		if (subscription != null && subscription.getRetailCustomerEntity() != null) {
-			result = subscription.getRetailCustomerEntity().getId();
-			if (result.equals(0L)) {
+		if (subscription != null && subscription.getRetailCustomer() != null) {
+			result = subscription.getRetailCustomer().getId();
+			if (result == null) {
 				// we have a subscription that is based upon client credentials
 				// now we must find the actual retail customer associated with
 				// this particular usagePoint
 				UsagePointEntity usagePoint = usagePointRepository.findById(usagePointId).orElse(null);
-				if (usagePoint != null && usagePoint.getRetailCustomerEntity() != null) {
-					result = usagePoint.getRetailCustomerEntity().getId();
+				if (usagePoint != null && usagePoint.getRetailCustomer() != null) {
+					result = usagePoint.getRetailCustomer().getId();
 				}
 			}
 		}

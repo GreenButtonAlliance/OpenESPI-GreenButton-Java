@@ -28,22 +28,22 @@ import java.util.UUID;
 
 public interface AuthorizationService {
 	// residue from random stories
-	List<AuthorizationEntity> findAllByRetailCustomerId(Long retailCustomerId);
+	List<AuthorizationEntity> findAllByRetailCustomerId(UUID retailCustomerId);
 
 	/**
-	 * @param authorization
-	 * @return List<Long> a list of all authorizationIds that are visible from
-	 *         the input authorization
+	 * @param applicationInformationId
+	 * @return List<UUID> a list of all authorizationIds that are visible from
+	 *         the input applicationInformationId
 	 */
-	List<Long> findAllIdsByApplicationInformationId(
-			Long applicationInformationId);
+	List<UUID> findAllIdsByApplicationInformationId(
+			UUID applicationInformationId);
 
 	AuthorizationEntity createAuthorizationEntity(SubscriptionEntity subscription,
 									  String accessToken);
 
 	AuthorizationEntity findByState(String state);
 
-	AuthorizationEntity findByScope(String scope, Long retailCustomerId);
+	AuthorizationEntity findByScope(String scope, UUID retailCustomerId);
 
 	AuthorizationEntity findByAccessToken(String accessToken);
 
@@ -59,7 +59,7 @@ public interface AuthorizationService {
 	AuthorizationEntity save(AuthorizationEntity authorization);
 
 	// accessor services
-	AuthorizationEntity findById(Long authorizationId);
+	AuthorizationEntity findById(UUID authorizationId);
 
 	void add(AuthorizationEntity authorization);
 
@@ -68,12 +68,12 @@ public interface AuthorizationService {
 	// import-exportResource services
 	AuthorizationEntity importResource(InputStream stream);
 
-	AuthorizationEntity findById(Long retailCustomerId, long authorizationId);
+	AuthorizationEntity findById(UUID retailCustomerId, UUID authorizationId);
 
 	AuthorizationEntity findByUUID(UUID uuid);
 
 	AuthorizationEntity findByRefreshToken(String refreshToken);
 
-	List<Long> findAllIdsByBulkId(String thirdParty, Long bulkId);
+	List<UUID> findAllIdsByBulkId(String thirdParty, UUID bulkId);
 
 }

@@ -19,7 +19,8 @@
 
 package org.greenbuttonalliance.espi.thirdparty.web;
 
-import org.greenbuttonalliance.espi.common.domain.BatchList;
+//import org.greenbuttonalliance.espi.common.domain.BatchList;
+
 import org.greenbuttonalliance.espi.common.service.BatchListService;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -28,14 +29,11 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.oxm.jaxb.Jaxb2Marshaller;
 
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.io.InputStream;
 
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
+//todo - JT, commenting out missing classes
 public class NotificationControllerTests {
 
 	@Mock
@@ -54,8 +52,8 @@ public class NotificationControllerTests {
 	@Test
 	@Ignore
 	public void notification() throws IOException {
-		controller.notification(mock(HttpServletResponse.class),
-				mock(InputStream.class));
-		verify(batchListService).persist(any(BatchList.class));
+//		controller.notification(mock(HttpServletResponse.class),
+//				mock(InputStream.class));
+//		verify(batchListService).persist(any(BatchList.class));
 	}
 }

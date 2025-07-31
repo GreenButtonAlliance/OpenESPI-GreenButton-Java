@@ -19,14 +19,12 @@
 
 package org.greenbuttonalliance.espi.datacustodian.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
-import org.springframework.beans.factory.annotation.Value;
 
 /**
  * OAuth2 Resource Server Configuration for OpenESPI Data Custodian
@@ -41,8 +39,10 @@ import org.springframework.beans.factory.annotation.Value;
  * @version 1.0.0
  * @since Spring Boot 3.5
  */
-@Configuration
-@EnableWebSecurity
+
+//todo - commenting this out, appears to be largely a duplicate of SecurityConfiguration
+//@Configuration
+//@EnableWebSecurity
 public class ResourceServerConfig {
 
     @Value("${espi.security.require-https:false}")
@@ -58,7 +58,7 @@ public class ResourceServerConfig {
      * - /swagger-ui/** (Swagger UI)
      */
     @Bean
-    @Order(1)
+    @Order(2)
     public SecurityFilterChain resourceServerSecurityFilterChain(HttpSecurity http) throws Exception {
         http
             .securityMatcher("/espi/1_1/resource/**")
@@ -108,7 +108,7 @@ public class ResourceServerConfig {
      * - Error pages
      */
     @Bean
-    @Order(2)
+    @Order(3)
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests(authorize -> authorize

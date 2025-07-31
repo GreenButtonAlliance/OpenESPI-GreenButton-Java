@@ -24,6 +24,7 @@ import org.greenbuttonalliance.espi.common.domain.customer.enums.CustomerKind;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Service interface for Customer PII data management.
@@ -42,12 +43,7 @@ public interface CustomerService {
     /**
      * Find customer by ID.
      */
-    Optional<CustomerEntity> findById(Long id);
-
-    /**
-     * Find customer by UUID.
-     */
-    Optional<CustomerEntity> findByUuid(String uuid);
+    Optional<CustomerEntity> findById(UUID id);
 
     /**
      * Find customer by customer name.
@@ -85,9 +81,9 @@ public interface CustomerService {
     List<CustomerEntity> findByPriorityRange(Integer minPriority, Integer maxPriority);
 
     /**
-     * Find customers by organisation ID.
+     * Find customers by organisation name.
      */
-    List<CustomerEntity> findByOrganisationId(Long organisationId);
+    List<CustomerEntity> findByOrganisationName(String organisationName);
 
     /**
      * Save customer.
@@ -97,12 +93,12 @@ public interface CustomerService {
     /**
      * Delete customer by ID.
      */
-    void deleteById(Long id);
+    void deleteById(UUID id);
 
     /**
-     * Check if customer exists by UUID.
+     * Check if customer exists by ID.
      */
-    boolean existsByUuid(String uuid);
+    boolean existsById(UUID id);
 
     /**
      * Count total customers.

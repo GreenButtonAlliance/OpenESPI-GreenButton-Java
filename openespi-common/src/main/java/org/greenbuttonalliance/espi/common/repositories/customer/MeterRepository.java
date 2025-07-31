@@ -27,20 +27,15 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Spring Data JPA repository for Meter entities.
- * 
+ * <p>
  * Manages physical metering device data including serial numbers, form numbers, and installation details.
  */
 @Repository
-public interface MeterRepository extends JpaRepository<MeterEntity, Long> {
-
-    /**
-     * Find meter by UUID (case insensitive).
-     */
-    @Query("SELECT m FROM MeterEntity m WHERE UPPER(m.uuid) = UPPER(:uuid)")
-    Optional<MeterEntity> findByUuid(@Param("uuid") String uuid);
+public interface MeterRepository extends JpaRepository<MeterEntity, UUID> {
 
     /**
      * Find meter by serial number.

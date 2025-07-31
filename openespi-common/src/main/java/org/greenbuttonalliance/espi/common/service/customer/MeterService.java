@@ -23,6 +23,7 @@ import org.greenbuttonalliance.espi.common.domain.customer.entity.MeterEntity;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Service interface for Meter management.
@@ -40,7 +41,7 @@ public interface MeterService {
     /**
      * Find meter by ID.
      */
-    Optional<MeterEntity> findById(Long id);
+    Optional<MeterEntity> findById(UUID id);
 
     /**
      * Find meter by UUID.
@@ -105,7 +106,7 @@ public interface MeterService {
     /**
      * Delete meter by ID.
      */
-    void deleteById(Long id);
+    void deleteById(UUID id);
 
     /**
      * Check if meter exists by serial number.

@@ -35,7 +35,7 @@ public interface LineItemRepository extends JpaRepository<LineItemEntity, UUID> 
 
 	// All 12 original NamedQueries from LineItemEntity:
 
-	@Query("SELECT li FROM LineItemEntity li WHERE li.electricPowerUsageSummary.id = :electricPowerUsageSummaryId ORDER BY li.dateTime")
+	@Query("SELECT li FROM LineItemEntity li WHERE li.usageSummary.id = :electricPowerUsageSummaryId ORDER BY li.dateTime")
 	List<LineItemEntity> findByElectricPowerUsageSummaryId(@Param("electricPowerUsageSummaryId") UUID electricPowerUsageSummaryId);
 
 	@Query("SELECT li FROM LineItemEntity li WHERE li.usageSummary.id = :usageSummaryId ORDER BY li.dateTime")
@@ -53,13 +53,13 @@ public interface LineItemRepository extends JpaRepository<LineItemEntity, UUID> 
 	@Query("SELECT li.id FROM LineItemEntity li")
 	List<UUID> findAllIds();
 
-	@Query("SELECT SUM(li.amount) FROM LineItemEntity li WHERE li.electricPowerUsageSummary.id = :electricPowerUsageSummaryId")
+	@Query("SELECT SUM(li.amount) FROM LineItemEntity li WHERE li.usageSummary.id = :electricPowerUsageSummaryId")
 	Long sumAmountsByElectricPowerUsageSummary(@Param("electricPowerUsageSummaryId") UUID electricPowerUsageSummaryId);
 
 	@Query("SELECT SUM(li.amount) FROM LineItemEntity li WHERE li.usageSummary.id = :usageSummaryId")
 	Long sumAmountsByUsageSummary(@Param("usageSummaryId") UUID usageSummaryId);
 
-	@Query("SELECT COUNT(li) FROM LineItemEntity li WHERE li.electricPowerUsageSummary.id = :electricPowerUsageSummaryId")
+	@Query("SELECT COUNT(li) FROM LineItemEntity li WHERE li.usageSummary.id = :electricPowerUsageSummaryId")
 	Long countByElectricPowerUsageSummary(@Param("electricPowerUsageSummaryId") UUID electricPowerUsageSummaryId);
 
 	@Query("SELECT COUNT(li) FROM LineItemEntity li WHERE li.usageSummary.id = :usageSummaryId")

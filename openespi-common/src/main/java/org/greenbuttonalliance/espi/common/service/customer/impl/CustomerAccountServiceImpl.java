@@ -19,10 +19,10 @@
 
 package org.greenbuttonalliance.espi.common.service.customer.impl;
 
+import lombok.RequiredArgsConstructor;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerAccountEntity;
 import org.greenbuttonalliance.espi.common.repositories.customer.CustomerAccountRepository;
 import org.greenbuttonalliance.espi.common.service.customer.CustomerAccountService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,10 +38,10 @@ import java.util.UUID;
  */
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class CustomerAccountServiceImpl implements CustomerAccountService {
 
-    @Autowired
-    private CustomerAccountRepository customerAccountRepository;
+    private final CustomerAccountRepository customerAccountRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -51,14 +51,14 @@ public class CustomerAccountServiceImpl implements CustomerAccountService {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<CustomerAccountEntity> findById(Long id) {
+    public Optional<CustomerAccountEntity> findById(UUID id) {
         return customerAccountRepository.findById(id);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<CustomerAccountEntity> findByUuid(String uuid) {
-        return customerAccountRepository.findByUuid(uuid);
+        return customerAccountRepository.findById(UUID.fromString(uuid));
     }
 
     @Override
@@ -113,7 +113,7 @@ public class CustomerAccountServiceImpl implements CustomerAccountService {
     }
 
     @Override
-    public void deleteById(Long id) {
+    public void deleteById(UUID id) {
         customerAccountRepository.deleteById(id);
     }
 

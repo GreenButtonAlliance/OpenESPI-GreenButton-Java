@@ -19,18 +19,20 @@
 
 package org.greenbuttonalliance.espi.common.domain.usage;
 
-import lombok.Getter;
-import lombok.Setter;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
-
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
+import org.hibernate.proxy.HibernateProxy;
+
+import java.util.Objects;
 
 /**
  * Pure JPA/Hibernate entity for ReadingQuality without JAXB concerns.
- * 
+ * <p>
  * Represents the quality of a specific reading value or interval reading value.
  * Note that more than one Quality may be applicable to a given Reading. 
  * Typically not used unless problems or unusual conditions occur (i.e., quality 
@@ -45,8 +47,7 @@ import jakarta.validation.constraints.Size;
 @Getter
 @Setter
 @NoArgsConstructor
-@ToString(exclude = {"intervalReading"})
-public class ReadingQualityEntity {
+public class ReadingQualityEntity extends IdentifiedObject {
 
     private static final long serialVersionUID = 1L;
 
@@ -62,13 +63,6 @@ public class ReadingQualityEntity {
     public static final String QUALITY_DERIVED = "DERIVED";
     public static final String QUALITY_SUBSTITUTED = "SUBSTITUTED";
 
-    /**
-     * Primary key for the reading quality.
-     */
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private Long id;
 
     /**
      * Quality indicator for the reading.
@@ -82,6 +76,12 @@ public class ReadingQualityEntity {
     /**
      * Interval reading associated with this quality indicator.
      * Many reading qualities can be associated with one interval reading.
+     * -- GETTER --
+     *  Gets the interval reading for this quality indicator.
+     *  Lombok @Data should generate this, but added manually for compilation.
+     *
+     * @return the associated interval reading
+
      */
     @ManyToOne(cascade = CascadeType.DETACH, fetch = FetchType.LAZY)
     @JoinColumn(name = "interval_reading_id")
@@ -105,16 +105,6 @@ public class ReadingQualityEntity {
     public ReadingQualityEntity(String quality, IntervalReadingEntity intervalReading) {
         this.quality = quality;
         this.intervalReading = intervalReading;
-    }
-
-    /**
-     * Gets the interval reading for this quality indicator.
-     * Lombok @Data should generate this, but added manually for compilation.
-     * 
-     * @return the associated interval reading
-     */
-    public IntervalReadingEntity getIntervalReading() {
-        return this.intervalReading;
     }
 
     /**
@@ -387,5 +377,28 @@ public class ReadingQualityEntity {
         if (quality != null) {
             quality = quality.trim().toUpperCase();
         }
+    }
+
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null) return false;
+        Class<?> oEffectiveClass = o instanceof HibernateProxy ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
+        if (thisEffectiveClass != oEffectiveClass) return false;
+        ReadingQualityEntity that = (ReadingQualityEntity) o;
+        return getId() != null && Objects.equals(getId(), that.getId());
+    }
+
+    @Override
+    public final int hashCode() {
+        return this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(" +
+                "id = " + id + ", " +
+                "quality = " + quality + ")";
     }
 }

@@ -73,6 +73,10 @@ public interface RetailCustomerMapper {
      * @param dto the retail customer DTO
      * @return the retail customer entity
      */
+    @Mapping(target = "passwordSecurelyNoValidation", ignore = true)
+    @Mapping(target = "passwordSecurely", ignore = true)
+    @Mapping(target = "description", ignore = true)
+    @Mapping(target = "created", ignore = true)
     @Mapping(target = "id", source = "uuid", qualifiedByName = "stringToUuid")
     @Mapping(target = "username", source = "username")
     @Mapping(target = "firstName", source = "firstName")
@@ -90,9 +94,6 @@ public interface RetailCustomerMapper {
     @Mapping(target = "authorizations", ignore = true) // Managed separately
     @Mapping(target = "published", ignore = true)
     @Mapping(target = "updated", ignore = true)
-    @Mapping(target = "selfHref", ignore = true)
-    @Mapping(target = "upHref", ignore = true)
-    @Mapping(target = "relatedLinkHrefs", ignore = true)
     RetailCustomerEntity toEntity(RetailCustomerDto dto);
 
     /**
@@ -102,7 +103,11 @@ public interface RetailCustomerMapper {
      * @param dto the source retail customer DTO
      * @param entity the target retail customer entity to update
      */
-    @Mapping(target = "id", ignore = true) // Never change ID  
+    @Mapping(target = "passwordSecurelyNoValidation", ignore = true)
+    @Mapping(target = "passwordSecurely", ignore = true)
+    @Mapping(target = "description", ignore = true)
+    @Mapping(target = "created", ignore = true)
+    @Mapping(target = "id", ignore = true) // Never change ID
     @Mapping(target = "username", source = "username")
     @Mapping(target = "firstName", source = "firstName")
     @Mapping(target = "lastName", source = "lastName")
@@ -119,8 +124,5 @@ public interface RetailCustomerMapper {
     @Mapping(target = "authorizations", ignore = true) // Preserve existing relationships
     @Mapping(target = "published", ignore = true)
     @Mapping(target = "updated", ignore = true)
-    @Mapping(target = "selfHref", ignore = true)
-    @Mapping(target = "upHref", ignore = true)
-    @Mapping(target = "relatedLinkHrefs", ignore = true)
     void updateEntityFromDto(RetailCustomerDto dto, @MappingTarget RetailCustomerEntity entity);
 }

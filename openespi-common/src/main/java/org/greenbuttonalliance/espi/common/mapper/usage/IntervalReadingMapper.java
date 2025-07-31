@@ -69,6 +69,13 @@ public interface IntervalReadingMapper {
      * @return the interval reading entity
      */
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "description", ignore = true) // Inherited from IdentifiedObject
+    @Mapping(target = "created", ignore = true) // Inherited from IdentifiedObject
+    @Mapping(target = "updated", ignore = true) // Inherited from IdentifiedObject
+    @Mapping(target = "published", ignore = true) // Inherited from IdentifiedObject
+    @Mapping(target = "upLink", ignore = true) // Inherited from IdentifiedObject
+    @Mapping(target = "selfLink", ignore = true) // Inherited from IdentifiedObject
+    @Mapping(target = "relatedLinks", ignore = true) // Inherited from IdentifiedObject
     @Mapping(target = "cost", source = "cost")
     @Mapping(target = "value", source = "value")
     @Mapping(target = "timePeriod", source = "timePeriod")
@@ -87,6 +94,13 @@ public interface IntervalReadingMapper {
      * @param entity the target entity to update
      */
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "description", ignore = true) // Inherited from IdentifiedObject
+    @Mapping(target = "created", ignore = true) // Inherited from IdentifiedObject
+    @Mapping(target = "updated", ignore = true) // Inherited from IdentifiedObject
+    @Mapping(target = "published", ignore = true) // Inherited from IdentifiedObject
+    @Mapping(target = "upLink", ignore = true) // Inherited from IdentifiedObject
+    @Mapping(target = "selfLink", ignore = true) // Inherited from IdentifiedObject
+    @Mapping(target = "relatedLinks", ignore = true) // Inherited from IdentifiedObject
     @Mapping(target = "intervalBlock", ignore = true) // Relationships handled separately
     void updateEntity(IntervalReadingDto dto, @MappingTarget IntervalReadingEntity entity);
 }

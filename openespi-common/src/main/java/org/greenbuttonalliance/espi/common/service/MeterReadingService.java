@@ -20,9 +20,9 @@
 package org.greenbuttonalliance.espi.common.service;
 
 import org.greenbuttonalliance.espi.common.domain.usage.MeterReadingEntity;
-import org.greenbuttonalliance.espi.common.repositories.usage.MeterReadingRepository;
 
 import java.io.InputStream;
+import java.util.UUID;
 
 /**
  * MeterReading Service
@@ -32,11 +32,8 @@ import java.io.InputStream;
  */
 public interface MeterReadingService {
 
-	void setMeterReadingRepository(
-			MeterReadingRepository meterReadingRepository);
-
-	MeterReadingEntity findById(Long retailCustomerId, Long usagePointId,
-						  Long meterReadingId);
+	MeterReadingEntity findById(UUID retailCustomerId, UUID usagePointId,
+						  UUID meterReadingId);
 
 	MeterReadingEntity importResource(InputStream stream);
 

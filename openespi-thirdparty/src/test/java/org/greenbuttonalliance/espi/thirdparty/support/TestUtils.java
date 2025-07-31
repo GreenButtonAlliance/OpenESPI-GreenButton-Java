@@ -19,7 +19,7 @@
 
 package org.greenbuttonalliance.espi.thirdparty.support;
 
-import javax.validation.constraints.Size;
+import jakarta.validation.constraints.Size;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 

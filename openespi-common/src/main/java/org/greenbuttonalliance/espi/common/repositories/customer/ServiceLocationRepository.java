@@ -26,21 +26,15 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Spring Data JPA repository for ServiceLocationEntity entities.
- * 
+ * <p>
  * Manages real estate location data including addresses, access methods, and service delivery points.
  */
 @Repository
-public interface ServiceLocationRepository extends JpaRepository<ServiceLocationEntity, Long> {
-
-    /**
-     * Find service location by UUID (case insensitive).
-     */
-    @Query("SELECT sl FROM ServiceLocationEntity sl WHERE UPPER(sl.uuid) = UPPER(:uuid)")
-    Optional<ServiceLocationEntity> findByUuid(@Param("uuid") String uuid);
+public interface ServiceLocationRepository extends JpaRepository<ServiceLocationEntity, UUID> {
 
     /**
      * Find service locations by outage block.
@@ -63,7 +57,7 @@ public interface ServiceLocationRepository extends JpaRepository<ServiceLocation
     /**
      * Find service locations by main street address.
      */
-    @Query("SELECT sl FROM ServiceLocationEntity sl WHERE UPPER(sl.mainAddress.street) LIKE UPPER(CONCAT('%', :street, '%'))")
+    @Query("SELECT sl FROM ServiceLocationEntity sl WHERE UPPER(sl.mainAddress.streetDetail) LIKE UPPER(CONCAT('%', :street, '%'))")
     List<ServiceLocationEntity> findByMainAddressStreetContaining(@Param("street") String street);
 
     /**

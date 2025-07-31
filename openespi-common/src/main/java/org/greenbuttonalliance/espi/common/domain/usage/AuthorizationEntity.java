@@ -19,21 +19,16 @@
 
 package org.greenbuttonalliance.espi.common.domain.usage;
 
-import lombok.Getter;
-import lombok.Setter;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
-import org.greenbuttonalliance.espi.common.domain.common.DateTimeInterval;
-import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
-import org.greenbuttonalliance.espi.common.domain.common.GrantType;
-import org.greenbuttonalliance.espi.common.domain.common.OAuthError;
-import org.greenbuttonalliance.espi.common.domain.common.ResponseType;
-import org.greenbuttonalliance.espi.common.domain.common.TokenType;
-import org.greenbuttonalliance.espi.common.utils.encryption.FieldEncryptionConverter;
-
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.greenbuttonalliance.espi.common.domain.common.*;
+import org.greenbuttonalliance.espi.common.utils.encryption.FieldEncryptionConverter;
+import org.hibernate.proxy.HibernateProxy;
+
 import java.time.Instant;
+import java.util.Objects;
 
 /**
  * Pure JPA/Hibernate entity for Authorization without JAXB concerns.
@@ -51,9 +46,7 @@ import java.time.Instant;
 })
 @Getter
 @Setter
-@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
-@ToString(callSuper = true, exclude = {"accessToken", "refreshToken", "retailCustomer", "subscription", "applicationInformation"})
 public class AuthorizationEntity extends IdentifiedObject {
 
     private static final long serialVersionUID = 1L;
@@ -484,5 +477,49 @@ public class AuthorizationEntity extends IdentifiedObject {
         if (status == null) {
             status = STATUS_PENDING;
         }
+    }
+
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null) return false;
+        Class<?> oEffectiveClass = o instanceof HibernateProxy ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
+        if (thisEffectiveClass != oEffectiveClass) return false;
+        AuthorizationEntity that = (AuthorizationEntity) o;
+        return getId() != null && Objects.equals(getId(), that.getId());
+    }
+
+    @Override
+    public final int hashCode() {
+        return this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(" +
+                "id = " + getId() + ", " +
+                "authorizedPeriod = " + getAuthorizedPeriod() + ", " +
+                "publishedPeriod = " + getPublishedPeriod() + ", " +
+                "accessToken = " + getAccessToken() + ", " +
+                "refreshToken = " + getRefreshToken() + ", " +
+                "status = " + getStatus() + ", " +
+                "expiresIn = " + getExpiresIn() + ", " +
+                "grantType = " + getGrantType() + ", " +
+                "scope = " + getScope() + ", " +
+                "state = " + getState() + ", " +
+                "responseType = " + getResponseType() + ", " +
+                "tokenType = " + getTokenType() + ", " +
+                "code = " + getCode() + ", " +
+                "error = " + getError() + ", " +
+                "errorDescription = " + getErrorDescription() + ", " +
+                "errorUri = " + getErrorUri() + ", " +
+                "resourceURI = " + getResourceURI() + ", " +
+                "authorizationURI = " + getAuthorizationURI() + ", " +
+                "thirdParty = " + getThirdParty() + ", " +
+                "description = " + getDescription() + ", " +
+                "created = " + getCreated() + ", " +
+                "updated = " + getUpdated() + ", " +
+                "published = " + getPublished() + ")";
     }
 }

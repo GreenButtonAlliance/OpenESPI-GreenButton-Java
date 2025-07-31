@@ -22,12 +22,16 @@ package org.greenbuttonalliance.espi.datacustodian.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector;
+import org.springframework.security.oauth2.server.resource.introspection.SpringOpaqueTokenIntrospector;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -70,6 +74,7 @@ public class SecurityConfiguration {
      * Main security filter chain for ESPI Resource Server endpoints.
      */
     @Bean
+    @Order(1)
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
             // Disable CSRF for API endpoints
@@ -191,15 +196,14 @@ public class SecurityConfiguration {
             
             // Security headers configuration
             .headers(headers -> headers
-                .frameOptions(frameOptions -> frameOptions.sameOrigin()) // Allow H2 console in development
-                .contentTypeOptions(contentTypeOptions -> contentTypeOptions.and())
-                .httpStrictTransportSecurity(hstsConfig -> hstsConfig
-                    .maxAgeInSeconds(31536000)
-                    .includeSubDomains(true)
-                    .preload(true))
+                    .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin) // Allow H2 console in development
+                    .contentTypeOptions(contentTypeOptions -> {})
+                    .httpStrictTransportSecurity(hstsConfig -> hstsConfig
+                            .maxAgeInSeconds(31536000)
+                            .includeSubDomains(true)
+                            .preload(true))
             )
-            
-            .build();
+                .build();
     }
 
     /**
@@ -214,6 +218,18 @@ public class SecurityConfiguration {
      * 
      * Future enhancement: Add JWT support for dynamic client registration scenarios
      */
+
+    /**
+     * Configures the Opaque Token Introspector to validate tokens against the AuthorizationEntity Server.
+     */
+    @Bean
+    public OpaqueTokenIntrospector introspector() {
+        return  SpringOpaqueTokenIntrospector.withIntrospectionUri(introspectionUri)
+                .clientId(clientId)
+                .clientSecret(clientSecret)
+                .build();
+    }
+
 
     /**
      * CORS configuration for web clients.

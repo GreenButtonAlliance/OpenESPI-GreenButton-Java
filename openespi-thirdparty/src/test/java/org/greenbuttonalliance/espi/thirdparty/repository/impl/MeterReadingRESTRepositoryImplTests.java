@@ -19,17 +19,16 @@
 
 package org.greenbuttonalliance.espi.thirdparty.repository.impl;
 
-import org.greenbuttonalliance.espi.common.domain.MeterReading;
-import org.greenbuttonalliance.espi.common.domain.UsagePoint;
-import org.greenbuttonalliance.espi.common.test.EspiFactory;
+import org.greenbuttonalliance.espi.common.domain.usage.MeterReadingEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 import org.greenbuttonalliance.espi.thirdparty.repository.UsagePointRESTRepository;
 import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -42,15 +41,28 @@ public class MeterReadingRESTRepositoryImplTests {
         UsagePointRESTRepository usagePointRESTRepository = mock(UsagePointRESTRepository.class);
         repository.setUsagePointRESTRepository(usagePointRESTRepository);
 
-        List<UsagePoint> usagePoints = new ArrayList<>();
-        UsagePoint usagePoint = EspiFactory.newUsagePoint();
+        // Create test data with UUID
+        UUID retailCustomerId = UUID.randomUUID();
+        UUID meterReadingId = UUID.randomUUID();
+        
+        // Create MeterReadingEntity
+        MeterReadingEntity expectedMeterReading = new MeterReadingEntity();
+        expectedMeterReading.setId(meterReadingId);
+        
+        // Create UsagePointEntity with MeterReading
+        UsagePointEntity usagePoint = new UsagePointEntity();
+        List<MeterReadingEntity> meterReadings = new ArrayList<>();
+        meterReadings.add(expectedMeterReading);
+        usagePoint.setMeterReadings(meterReadings);
+        
+        List<UsagePointEntity> usagePoints = new ArrayList<>();
         usagePoints.add(usagePoint);
-        when(usagePointRESTRepository.findAllByRetailCustomerId(99L)).thenReturn(usagePoints);
+        
+        when(usagePointRESTRepository.findAllByRetailCustomerId(retailCustomerId)).thenReturn(usagePoints);
 
-        MeterReading expectedMeterReading = usagePoint.getMeterReadings().get(0);
-        MeterReading meterReading = repository.findByUUID(99L, expectedMeterReading.getUUID());
+        MeterReadingEntity meterReading = repository.findByUUID(retailCustomerId, meterReadingId);
 
-        assertThat(meterReading, is(expectedMeterReading));
+        assertThat(meterReading).isEqualTo(expectedMeterReading);
 
     }
 }

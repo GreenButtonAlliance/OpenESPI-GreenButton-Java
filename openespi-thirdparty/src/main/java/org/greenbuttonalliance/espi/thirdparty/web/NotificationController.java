@@ -74,8 +74,7 @@ public class NotificationController extends BaseController {
 	@Autowired
 	private AuthorizationService authorizationService;
 
-	@Autowired
-	@Qualifier(value = "atomMarshaller")
+	@Autowired(required = false)
 	public Jaxb2Marshaller marshaller;
 
 	@PostMapping("/espi/1_1/Notification") // TODO: Use Routes.THIRD_PARTY_NOTIFICATION when available
@@ -85,7 +84,7 @@ public class NotificationController extends BaseController {
 			ByteArrayInputStream inputStream = new ByteArrayInputStream(xmlPayload.getBytes());
 			BatchListEntity batchList = (BatchListEntity) marshaller.unmarshal(new StreamSource(inputStream));
 
-			batchListService.persist(batchList);
+			batchListService.save(batchList);
 
 			for (String resourceUri : batchList.getResources()) {
 				doImportAsynchronously(resourceUri);
@@ -100,7 +99,7 @@ public class NotificationController extends BaseController {
 	}
 
 	@Async
-	private void doImportAsynchronously(String subscriptionUri) {
+	protected void doImportAsynchronously(String subscriptionUri) {
 
 		// The import related to a subscription is performed here (in a separate
 		// thread)

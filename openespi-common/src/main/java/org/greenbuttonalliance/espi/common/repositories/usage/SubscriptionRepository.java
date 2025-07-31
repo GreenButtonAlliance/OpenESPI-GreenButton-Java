@@ -43,7 +43,8 @@ public interface SubscriptionRepository extends JpaRepository<SubscriptionEntity
 	@Query("DELETE FROM SubscriptionEntity s WHERE s.id = :id")
 	void deleteById(@Param("id") UUID id);
 
-	Optional<SubscriptionEntity> findByUuid(UUID uuid);
+	// findById is already provided by JpaRepository<SubscriptionEntity, UUID>
+	// Optional<SubscriptionEntity> findById(UUID id) is inherited
 
 	@Query("SELECT s FROM SubscriptionEntity s WHERE s.authorization.id = :authorizationId")
 	Optional<SubscriptionEntity> findByAuthorizationId(@Param("authorizationId") UUID id);

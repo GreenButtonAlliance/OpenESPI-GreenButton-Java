@@ -29,7 +29,7 @@ import java.util.UUID;
 public interface ElectricPowerQualitySummaryService {
 
 	ElectricPowerQualitySummaryEntity findById(
-			Long electricPowerQualitySummaryId);
+			UUID electricPowerQualitySummaryId);
 
 	ElectricPowerQualitySummaryEntity findByUUID(UUID uuid);
 

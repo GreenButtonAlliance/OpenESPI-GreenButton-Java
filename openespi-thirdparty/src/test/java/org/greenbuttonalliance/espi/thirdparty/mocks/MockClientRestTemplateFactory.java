@@ -19,13 +19,11 @@
 
 package org.greenbuttonalliance.espi.thirdparty.mocks;
 
-import org.greenbuttonalliance.espi.thirdparty.web.ClientRestTemplate;
-import org.greenbuttonalliance.espi.thirdparty.web.ClientRestTemplateFactory;
+//todo - JT, commenting out missing classes
+public class MockClientRestTemplateFactory { //} extends ClientRestTemplateFactory {
 
-public class MockClientRestTemplateFactory extends ClientRestTemplateFactory {
-
-	public ClientRestTemplate newClientRestTemplate(String username,
-			String password) {
-		return new MockClientRestTemplate();
-	}
+//	public ClientRestTemplate newClientRestTemplate(String username,
+//			String password) {
+//		return new MockClientRestTemplate();
+//	}
 }

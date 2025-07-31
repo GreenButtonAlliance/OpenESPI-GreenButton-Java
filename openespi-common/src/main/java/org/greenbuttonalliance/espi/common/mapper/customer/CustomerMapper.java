@@ -90,6 +90,7 @@ public interface CustomerMapper extends BaseMapperUtils {
     @Mapping(target = "relatedLinks", ignore = true)
     @Mapping(target = "selfLink", ignore = true)
     @Mapping(target = "upLink", ignore = true)
+    @Mapping(target = "description", ignore = true)
     CustomerEntity toEntity(CustomerDto dto);
 
     /**
@@ -119,6 +120,7 @@ public interface CustomerMapper extends BaseMapperUtils {
     @Mapping(target = "relatedLinks", ignore = true)
     @Mapping(target = "selfLink", ignore = true)
     @Mapping(target = "upLink", ignore = true)
+    @Mapping(target = "description", ignore = true)
     void updateEntity(CustomerDto dto, @MappingTarget CustomerEntity entity);
 
     /**

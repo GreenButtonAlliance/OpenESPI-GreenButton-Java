@@ -44,12 +44,11 @@ public interface ReadingTypeRepository extends JpaRepository<ReadingTypeEntity, 
 	@Query("SELECT r.id FROM ReadingTypeEntity r")
 	List<UUID> findAllIds();
 
-	Optional<ReadingTypeEntity> findByUuid(UUID uuid);
+	// findById is already provided by JpaRepository<ReadingTypeEntity, UUID>
+	// Optional<ReadingTypeEntity> findById(UUID id) is inherited
 
-	@Modifying
-	@Transactional
-	@Query("DELETE FROM ReadingTypeEntity r WHERE r.id = :uuid")
-	void deleteByUuid(@Param("uuid") UUID uuid);
+	// deleteById is already provided by JpaRepository<ReadingTypeEntity, UUID>
+	// void deleteById(UUID id) is inherited
 
 	// Custom method for createOrReplaceByUUID - should be implemented in service layer
 

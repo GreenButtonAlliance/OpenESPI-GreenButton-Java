@@ -29,11 +29,11 @@ public interface RetailCustomerService {
 
 	List<RetailCustomerEntity> findAll();
 
-	RetailCustomerEntity findByHashedId(Long retailCustomerId);
+	RetailCustomerEntity findByHashedId(UUID retailCustomerId);
 
 	RetailCustomerEntity save(RetailCustomerEntity customer);
 
-	RetailCustomerEntity findById(Long retailCustomerId);
+	RetailCustomerEntity findById(UUID retailCustomerId);
 
 	RetailCustomerEntity findById(String retailCustomerId);
 
@@ -43,7 +43,7 @@ public interface RetailCustomerService {
 
 	RetailCustomerEntity importResource(InputStream stream);
 
-	SubscriptionEntity associateByUUID(Long retailCustomerId, UUID uuId);
+	SubscriptionEntity associateByUUID(UUID retailCustomerId, UUID uuId);
 
 	RetailCustomerEntity findByUsername(String username);
 

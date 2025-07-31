@@ -27,7 +27,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Spring Data JPA repository for Statement entities.
@@ -35,13 +35,7 @@ import java.util.Optional;
  * Manages billing statement data with document references and issue dates.
  */
 @Repository
-public interface StatementRepository extends JpaRepository<StatementEntity, Long> {
-
-    /**
-     * Find statement by UUID (case insensitive).
-     */
-    @Query("SELECT s FROM StatementEntity s WHERE UPPER(s.uuid) = UPPER(:uuid)")
-    Optional<StatementEntity> findByUuid(@Param("uuid") String uuid);
+public interface StatementRepository extends JpaRepository<StatementEntity, UUID> {
 
     /**
      * Find statements issued after specified date.

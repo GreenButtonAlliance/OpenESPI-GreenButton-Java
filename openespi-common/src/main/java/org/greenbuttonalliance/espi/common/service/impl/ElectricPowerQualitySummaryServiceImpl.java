@@ -18,15 +18,14 @@
  */
 package org.greenbuttonalliance.espi.common.service.impl;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.greenbuttonalliance.espi.common.domain.usage.ElectricPowerQualitySummaryEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 import org.greenbuttonalliance.espi.common.dto.usage.ElectricPowerQualitySummaryDto;
 import org.greenbuttonalliance.espi.common.mapper.usage.ElectricPowerQualitySummaryMapper;
 import org.greenbuttonalliance.espi.common.repositories.usage.ElectricPowerQualitySummaryRepository;
 import org.greenbuttonalliance.espi.common.service.ElectricPowerQualitySummaryService;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,29 +33,26 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @Transactional(rollbackFor = { jakarta.xml.bind.JAXBException.class }, noRollbackFor = {
 		jakarta.persistence.NoResultException.class,
 		org.springframework.dao.EmptyResultDataAccessException.class })
+@RequiredArgsConstructor
 public class ElectricPowerQualitySummaryServiceImpl implements
 		ElectricPowerQualitySummaryService {
 
-	private final Log logger = LogFactory.getLog(getClass());
-
-	@Autowired
-	private ElectricPowerQualitySummaryRepository electricPowerQualitySummaryRepository;
-
-	@Autowired
-	private ElectricPowerQualitySummaryMapper electricPowerQualitySummaryMapper;
+	private final ElectricPowerQualitySummaryRepository electricPowerQualitySummaryRepository;
+	private final ElectricPowerQualitySummaryMapper electricPowerQualitySummaryMapper;
 
 	@Override
 	public ElectricPowerQualitySummaryEntity findByUUID(UUID uuid) {
-		return electricPowerQualitySummaryRepository.findByUuid(uuid).orElse(null);
+        return electricPowerQualitySummaryRepository.findById(uuid).orElse(null);
 	}
 
 	@Override
 	public ElectricPowerQualitySummaryEntity findById(
-			Long electricPowerQualitySummaryId) {
+			UUID electricPowerQualitySummaryId) {
 		return electricPowerQualitySummaryRepository
 				.findById(electricPowerQualitySummaryId).orElse(null);
 	}
@@ -70,15 +66,14 @@ public class ElectricPowerQualitySummaryServiceImpl implements
 	@Override
 	public List<ElectricPowerQualitySummaryEntity> findAllByUsagePointEntity(
 			UsagePointEntity usagePoint) {
-		// TODO: Implement findAllByUsagePoint query in repository
-		return electricPowerQualitySummaryRepository.findByUsagePointEntity(usagePoint);
+		return electricPowerQualitySummaryRepository.findByUsagePoint(usagePoint);
 	}
 
 	@Override
 	public String feedFor(
 			List<ElectricPowerQualitySummaryEntity> electricPowerQualitySummaries) {
 		// TODO: Implement modern feed generation using DTOs
-		logger.info("Generating feed for " + electricPowerQualitySummaries.size() + " electric power quality summaries");
+		log.info("Generating feed for " + electricPowerQualitySummaries.size() + " electric power quality summaries");
 		return null;
 	}
 
@@ -86,17 +81,17 @@ public class ElectricPowerQualitySummaryServiceImpl implements
 	public String entryFor(
 			ElectricPowerQualitySummaryEntity electricPowerQualitySummary) {
 		// TODO: Implement modern entry generation using DTOs
-		logger.info("Generating entry for electric power quality summary: " + electricPowerQualitySummary.getId());
+		log.info("Generating entry for electric power quality summary: " + electricPowerQualitySummary.getId());
 		return null;
 	}
 
 	@Override
 	public void associateByUUID(UsagePointEntity usagePoint, UUID uuid) {
-		ElectricPowerQualitySummaryEntity entity = electricPowerQualitySummaryRepository.findByUuid(uuid).orElse(null);
+		ElectricPowerQualitySummaryEntity entity = electricPowerQualitySummaryRepository.findById(uuid).orElse(null);
 		if (entity != null) {
-			entity.setUsagePointEntity(usagePoint);
+			entity.setUsagePoint(usagePoint);
 			electricPowerQualitySummaryRepository.save(entity);
-			logger.info("Associated electric power quality summary " + uuid + " with usage point " + usagePoint.getId());
+			log.info("Associated electric power quality summary " + uuid + " with usage point " + usagePoint.getId());
 		}
 	}
 
@@ -110,7 +105,7 @@ public class ElectricPowerQualitySummaryServiceImpl implements
 	@Override
 	public void add(ElectricPowerQualitySummaryEntity electricPowerQualitySummary) {
 		electricPowerQualitySummaryRepository.save(electricPowerQualitySummary);
-		logger.info("Added electric power quality summary: " + electricPowerQualitySummary.getId());
+		log.info("Added electric power quality summary: " + electricPowerQualitySummary.getId());
 	}
 
 	@Override
@@ -128,10 +123,8 @@ public class ElectricPowerQualitySummaryServiceImpl implements
 			return electricPowerQualitySummaryRepository.save(entity);
 			
 		} catch (Exception e) {
-			logger.error("Failed to import ElectricPowerQualitySummary resource", e);
+			log.error("Failed to import ElectricPowerQualitySummary resource", e);
 			return null;
 		}
 	}
-
-
 }

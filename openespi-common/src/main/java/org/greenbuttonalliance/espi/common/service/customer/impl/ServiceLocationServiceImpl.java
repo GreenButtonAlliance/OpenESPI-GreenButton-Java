@@ -19,10 +19,10 @@
 
 package org.greenbuttonalliance.espi.common.service.customer.impl;
 
+import lombok.RequiredArgsConstructor;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.ServiceLocationEntity;
 import org.greenbuttonalliance.espi.common.repositories.customer.ServiceLocationRepository;
 import org.greenbuttonalliance.espi.common.service.customer.ServiceLocationService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,13 +37,10 @@ import java.util.UUID;
  */
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class ServiceLocationServiceImpl implements ServiceLocationService {
 
     private final ServiceLocationRepository serviceLocationRepository;
-
-    public ServiceLocationServiceImpl(ServiceLocationRepository serviceLocationRepository) {
-        this.serviceLocationRepository = serviceLocationRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)
@@ -53,14 +50,14 @@ public class ServiceLocationServiceImpl implements ServiceLocationService {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<ServiceLocationEntity> findById(Long id) {
+    public Optional<ServiceLocationEntity> findById(UUID id) {
         return serviceLocationRepository.findById(id);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<ServiceLocationEntity> findByUuid(String uuid) {
-        return serviceLocationRepository.findByUuid(uuid);
+        return serviceLocationRepository.findById(UUID.fromString(uuid));
     }
 
     @Override
@@ -121,12 +118,12 @@ public class ServiceLocationServiceImpl implements ServiceLocationService {
     }
 
     @Override
-    public void deleteById(Long id) {
+    public void deleteById(UUID id) {
         serviceLocationRepository.deleteById(id);
     }
 
     @Override
-    public ServiceLocationEntity markForInspection(Long id, boolean needsInspection) {
+    public ServiceLocationEntity markForInspection(UUID id, boolean needsInspection) {
         Optional<ServiceLocationEntity> optionalLocation = serviceLocationRepository.findById(id);
         if (optionalLocation.isPresent()) {
             ServiceLocationEntity location = optionalLocation.get();
@@ -137,7 +134,7 @@ public class ServiceLocationServiceImpl implements ServiceLocationService {
     }
 
     @Override
-    public ServiceLocationEntity updateAccessProblem(Long id, String accessProblem) {
+    public ServiceLocationEntity updateAccessProblem(UUID id, String accessProblem) {
         Optional<ServiceLocationEntity> optionalLocation = serviceLocationRepository.findById(id);
         if (optionalLocation.isPresent()) {
             ServiceLocationEntity location = optionalLocation.get();

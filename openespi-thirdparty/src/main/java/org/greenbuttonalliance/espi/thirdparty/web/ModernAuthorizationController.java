@@ -48,6 +48,7 @@ import jakarta.xml.bind.JAXBException;
 import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Modern authorization controller using WebClient and Spring Boot 3.5 patterns.
@@ -127,7 +128,7 @@ public class ModernAuthorizationController {
     @GetMapping("/authorizations")
     public String authorizationList(ModelMap model, Principal principal) {
         try {
-            Long customerId = getCurrentCustomerId(principal);
+            UUID customerId = getCurrentCustomerId(principal);
             var authorizations = authorizationService.findAllByRetailCustomerId(customerId);
             model.put("authorizationList", authorizations);
             return "/RetailCustomer/AuthorizationList/index";
@@ -150,7 +151,7 @@ public class ModernAuthorizationController {
             authorization.setCode(code);
             authorization.setGrantType(GrantType.AUTHORIZATION_CODE);
             authorization.setUpdated(LocalDateTime.now());
-            authorizationService.merge(authorization);
+            authorizationService.save(authorization);
 
             // Create authenticated WebClient for token exchange
             WebClient authenticatedClient = webClientService.createAuthenticatedClient(
@@ -206,7 +207,7 @@ public class ModernAuthorizationController {
         authorization.setStatus("1"); // Active
         authorization.setState(null); // Clear state for security
 
-        authorizationService.merge(authorization);
+        authorizationService.save(authorization);
         logger.info("Successfully updated authorization with access token");
     }
 
@@ -224,7 +225,7 @@ public class ModernAuthorizationController {
         authorization.setStatus("2"); // Denied
         authorization.setState(null); // Clear state for security
 
-        authorizationService.merge(authorization);
+        authorizationService.save(authorization);
     }
 
     /**
@@ -237,7 +238,7 @@ public class ModernAuthorizationController {
         authorization.setStatus("2"); // Failed
         authorization.setState(null);
 
-        authorizationService.merge(authorization);
+        authorizationService.save(authorization);
     }
 
     /**
@@ -245,7 +246,7 @@ public class ModernAuthorizationController {
      */
     private void importInitialData(Principal principal) {
         try {
-            Long customerId = getCurrentCustomerId(principal);
+            UUID customerId = getCurrentCustomerId(principal);
             usagePointRESTRepository.findAllByRetailCustomerId(customerId);
             logger.debug("Successfully imported initial usage point data");
         } catch (JAXBException e) {
@@ -258,11 +259,11 @@ public class ModernAuthorizationController {
     /**
      * Gets the current customer ID from the authenticated principal.
      */
-    private Long getCurrentCustomerId(Principal principal) {
+    private UUID getCurrentCustomerId(Principal principal) {
         if (principal instanceof Authentication auth) {
             var customer = retailCustomerService.findByUsername(auth.getName());
             if (customer != null) {
-                return (long) customer.getId().hashCode();
+                return customer.getId();
             }
         }
         throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Customer not found");

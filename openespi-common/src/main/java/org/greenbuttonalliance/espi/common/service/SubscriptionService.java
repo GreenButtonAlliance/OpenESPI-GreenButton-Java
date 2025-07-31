@@ -24,6 +24,7 @@ import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 import org.greenbuttonalliance.espi.common.repositories.usage.SubscriptionRepository;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 public interface SubscriptionService {
 
@@ -35,15 +36,15 @@ public interface SubscriptionService {
 
 	SubscriptionEntity save(SubscriptionEntity subscription);
 
-	SubscriptionEntity findById(Long subscriptionId);
+	SubscriptionEntity findById(UUID subscriptionId);
 
-	List<Long> findUsagePointIds(Long subscriptionId);
+	List<UUID> findUsagePointIds(UUID subscriptionId);
 
-	SubscriptionEntity findByAuthorizationId(Long id);
+	SubscriptionEntity findByAuthorizationId(UUID id);
 
 	SubscriptionEntity addUsagePoint(SubscriptionEntity subscription,
 							   UsagePointEntity usagePoint);
 
-	Long findRetailCustomerId(Long subscriptionId, Long usagePointId);
+	UUID findRetailCustomerId(UUID subscriptionId, UUID usagePointId);
 
 }

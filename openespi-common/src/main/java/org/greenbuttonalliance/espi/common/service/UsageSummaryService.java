@@ -43,7 +43,7 @@ public interface UsageSummaryService {
 
     UsageSummaryEntity save(UsageSummaryEntity usageSummary);
 
-    UsageSummaryEntity findById(Long usageSummaryId);
+    UsageSummaryEntity findById(UUID usageSummaryId);
 
     void add(UsageSummaryEntity usageSummary);
 

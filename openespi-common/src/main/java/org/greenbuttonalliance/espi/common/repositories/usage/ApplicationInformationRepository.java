@@ -37,12 +37,6 @@ import java.util.UUID;
 public interface ApplicationInformationRepository extends JpaRepository<ApplicationInformationEntity, UUID> {
 
     /**
-     * Find application information by UUID.
-     */
-    @Query("SELECT ai FROM ApplicationInformationEntity ai WHERE UPPER(ai.uuid) = UPPER(:uuid)")
-    Optional<ApplicationInformationEntity> findByUuid(@Param("uuid") String uuid);
-
-    /**
      * Find application information by client ID.
      */
     @Query("SELECT ai FROM ApplicationInformationEntity ai WHERE ai.clientId = :clientId")

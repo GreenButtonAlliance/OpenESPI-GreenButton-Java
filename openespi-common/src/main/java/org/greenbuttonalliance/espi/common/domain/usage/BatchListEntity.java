@@ -26,10 +26,14 @@ import lombok.NoArgsConstructor;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
+import org.hibernate.proxy.HibernateProxy;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -43,23 +47,15 @@ import java.util.stream.Collectors;
  */
 @Entity
 @Table(name = "batch_lists", indexes = {
-    @Index(name = "idx_batch_list_created_at", columnList = "created_at"),
+    @Index(name = "idx_batch_list_created", columnList = "created"),
     @Index(name = "idx_batch_list_resource_count", columnList = "resource_count")
 })
 @Getter
 @Setter
 @NoArgsConstructor
-public class BatchListEntity {
+public class BatchListEntity extends IdentifiedObject {
 
     private static final long serialVersionUID = 1L;
-
-    /**
-     * Primary key for the batch list.
-     */
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private Long id;
 
     /**
      * List of resource URIs for batch processing.
@@ -86,27 +82,6 @@ public class BatchListEntity {
     @Column(name = "resource_count")
     private Integer resourceCount = 0;
 
-    /**
-     * Timestamp when this batch list was created.
-     * Automatically set when the entity is first persisted.
-     */
-    @Column(name = "created_at")
-    private Long createdAt;
-
-    /**
-     * Timestamp when this batch list was last modified.
-     * Updated automatically when resources are changed.
-     */
-    @Column(name = "updated_at")
-    private Long updatedAt;
-
-    /**
-     * Optional description for this batch list.
-     * Helpful for identifying the purpose or context of the batch.
-     */
-    @Column(name = "description", length = 256)
-    @Size(max = 256, message = "Description cannot exceed 256 characters")
-    private String description;
 
     /**
      * Constructor with description.
@@ -114,11 +89,9 @@ public class BatchListEntity {
      * @param description the description of this batch list
      */
     public BatchListEntity(String description) {
-        this.description = description;
-        this.createdAt = System.currentTimeMillis();
-        this.updatedAt = this.createdAt;
+        super();
+        setDescription(description);
     }
-
 
     /**
      * Constructor with initial resources.
@@ -126,8 +99,7 @@ public class BatchListEntity {
      * @param resources the initial list of resource URIs
      */
     public BatchListEntity(List<String> resources) {
-        this.createdAt = System.currentTimeMillis();
-        this.updatedAt = this.createdAt;
+        super();
         if (resources != null) {
             this.resources = new ArrayList<>(resources);
             updateResourceCount();
@@ -141,7 +113,8 @@ public class BatchListEntity {
      * @param description the description of this batch list
      */
     public BatchListEntity(List<String> resources, String description) {
-        this(description);
+        super();
+        setDescription(description);
         if (resources != null) {
             this.resources = new ArrayList<>(resources);
             updateResourceCount();
@@ -168,7 +141,6 @@ public class BatchListEntity {
     public void setResources(List<String> resources) {
         this.resources = resources != null ? new ArrayList<>(resources) : new ArrayList<>();
         updateResourceCount();
-        updateTimestamp();
     }
 
     /**
@@ -187,7 +159,6 @@ public class BatchListEntity {
             boolean added = getResources().add(trimmedUri);
             if (added) {
                 updateResourceCount();
-                updateTimestamp();
             }
             return added;
         }
@@ -228,7 +199,6 @@ public class BatchListEntity {
         boolean removed = resources.remove(resourceUri.trim());
         if (removed) {
             updateResourceCount();
-            updateTimestamp();
         }
         return removed;
     }
@@ -260,7 +230,6 @@ public class BatchListEntity {
         if (resources != null) {
             resources.clear();
             updateResourceCount();
-            updateTimestamp();
         }
     }
 
@@ -309,12 +278,6 @@ public class BatchListEntity {
         this.resourceCount = size();
     }
 
-    /**
-     * Updates the last modified timestamp.
-     */
-    private void updateTimestamp() {
-        this.updatedAt = System.currentTimeMillis();
-    }
 
     /**
      * Gets unique resource URIs (removes duplicates).
@@ -344,7 +307,6 @@ public class BatchListEntity {
         
         this.resources = uniqueResources;
         updateResourceCount();
-        updateTimestamp();
         
         return originalSize - uniqueResources.size();
     }
@@ -427,15 +389,15 @@ public class BatchListEntity {
      */
     public String getSummary() {
         StringBuilder summary = new StringBuilder();
-        summary.append("Batch List ID: ").append(id);
+        summary.append("Batch List ID: ").append(getId());
         summary.append(" (").append(getResourceCount()).append(" resources)");
         
-        if (description != null && !description.trim().isEmpty()) {
-            summary.append(" - ").append(description);
+        if (getDescription() != null && !getDescription().trim().isEmpty()) {
+            summary.append(" - ").append(getDescription());
         }
         
-        if (createdAt != null) {
-            summary.append(" created at ").append(new java.util.Date(createdAt));
+        if (getCreated() != null) {
+            summary.append(" created at ").append(getCreated());
         }
         
         return summary.toString();
@@ -454,12 +416,12 @@ public class BatchListEntity {
         List<String> invalidUris = validateResourceUris();
         stats.append(", Invalid URIs: ").append(invalidUris.size());
         
-        if (createdAt != null && updatedAt != null) {
+        if (getCreated() != null && getUpdated() != null) {
             stats.append(", Last modified: ");
-            if (createdAt.equals(updatedAt)) {
+            if (getCreated().equals(getUpdated())) {
                 stats.append("never (created only)");
             } else {
-                stats.append(new java.util.Date(updatedAt));
+                stats.append(getUpdated());
             }
         }
         
@@ -496,26 +458,45 @@ public class BatchListEntity {
     }
 
     /**
-     * Pre-persist callback to set timestamps and update count.
+     * Pre-persist callback to update count.
      */
     @PrePersist
     protected void onCreate() {
-        long now = System.currentTimeMillis();
-        if (createdAt == null) {
-            createdAt = now;
-        }
-        if (updatedAt == null) {
-            updatedAt = now;
-        }
         updateResourceCount();
     }
 
     /**
-     * Pre-update callback to update timestamp and count.
+     * Pre-update callback to update count.
      */
     @PreUpdate
     protected void onUpdate() {
-        updatedAt = System.currentTimeMillis();
         updateResourceCount();
+    }
+
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null) return false;
+        Class<?> oEffectiveClass = o instanceof HibernateProxy ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
+        if (thisEffectiveClass != oEffectiveClass) return false;
+        BatchListEntity that = (BatchListEntity) o;
+        return getId() != null && Objects.equals(getId(), that.getId());
+    }
+
+    @Override
+    public final int hashCode() {
+        return this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(" +
+                "id = " + getId() + ", " +
+                "resources = " + resources + ", " +
+                "resourceCount = " + resourceCount + ", " +
+                "created = " + getCreated() + ", " +
+                "updated = " + getUpdated() + ", " +
+                "description = " + getDescription() + ")";
     }
 }

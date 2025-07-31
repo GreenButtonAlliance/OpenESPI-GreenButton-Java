@@ -21,7 +21,6 @@ package org.greenbuttonalliance.espi.common.mapper.customer;
 
 import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerAccountEntity;
 import org.greenbuttonalliance.espi.common.dto.customer.CustomerAccountDto;
-import org.greenbuttonalliance.espi.common.mapper.BaseIdentifiedObjectMapper;
 import org.greenbuttonalliance.espi.common.mapper.BaseMapperUtils;
 import org.greenbuttonalliance.espi.common.mapper.DateTimeMapper;
 import org.mapstruct.Mapper;
@@ -61,6 +60,7 @@ public interface CustomerAccountMapper {
     @Mapping(target = "billingCycle", source = "billingCycle")
     @Mapping(target = "lastBillAmount", source = "lastBillAmount")
     @Mapping(target = "transactionDate", ignore = true) // Not in entity
+    @Mapping(target = "isPrePay", source = "isPrePay")
     @Mapping(target = "customer", ignore = true) // Relationship handled separately
     @Mapping(target = "customerAgreements", ignore = true) // Relationship handled separately
     CustomerAccountDto toDto(CustomerAccountEntity entity);
@@ -80,6 +80,7 @@ public interface CustomerAccountMapper {
     @Mapping(target = "budgetBill", source = "budgetBill")
     @Mapping(target = "billingCycle", source = "billingCycle")
     @Mapping(target = "lastBillAmount", source = "lastBillAmount")
+    @Mapping(target = "isPrePay", source = "isPrePay")
     @Mapping(target = "notifications", ignore = true) // Relationship handled separately
     @Mapping(target = "contactInfo", ignore = true) // Relationship handled separately
     @Mapping(target = "relatedLinks", ignore = true)
@@ -94,9 +95,17 @@ public interface CustomerAccountMapper {
      * @param dto the source DTO
      * @param entity the target entity to update
      */
+    @Mapping(target = "type", ignore = true)
+    @Mapping(target = "title", ignore = true)
+    @Mapping(target = "subject", ignore = true)
+    @Mapping(target = "revisionNumber", ignore = true)
+    @Mapping(target = "lastModifiedDateTime", ignore = true)
+    @Mapping(target = "createdDateTime", ignore = true)
+    @Mapping(target = "created", ignore = true)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "published", source = "published", qualifiedByName = "offsetToLocal")
     @Mapping(target = "updated", source = "updated", qualifiedByName = "offsetToLocal")
+    @Mapping(target = "isPrePay", source = "isPrePay")
     @Mapping(target = "notifications", ignore = true) // Relationship handled separately
     @Mapping(target = "contactInfo", ignore = true) // Relationship handled separately
     @Mapping(target = "relatedLinks", ignore = true)

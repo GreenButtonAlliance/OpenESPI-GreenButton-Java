@@ -19,15 +19,15 @@
 
 package org.greenbuttonalliance.espi.common.domain.usage;
 
+import jakarta.persistence.*;
 import lombok.Getter;
-import lombok.Setter;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.Setter;
 import org.greenbuttonalliance.espi.common.domain.common.DateTimeInterval;
 import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
+import org.hibernate.proxy.HibernateProxy;
 
-import jakarta.persistence.*;
+import java.util.Objects;
 
 /**
  * Pure JPA/Hibernate entity for ElectricPowerQualitySummary without JAXB concerns.
@@ -38,14 +38,10 @@ import jakarta.persistence.*;
  * energy management systems.
  */
 @Entity
-@Table(name = "electric_power_quality_summaries", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"uuid"})
-})
+@Table(name = "electric_power_quality_summaries")
 @Getter
 @Setter
-@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
-@ToString(callSuper = true, exclude = {"usagePoint"})
 public class ElectricPowerQualitySummaryEntity extends IdentifiedObject {
 
     private static final long serialVersionUID = 1L;
@@ -425,5 +421,45 @@ public class ElectricPowerQualitySummaryEntity extends IdentifiedObject {
         }
         
         return summary.length() > 0 ? summary.toString() : "No power quality data";
+    }
+
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null) return false;
+        Class<?> oEffectiveClass = o instanceof HibernateProxy ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
+        if (thisEffectiveClass != oEffectiveClass) return false;
+        ElectricPowerQualitySummaryEntity that = (ElectricPowerQualitySummaryEntity) o;
+        return getId() != null && Objects.equals(getId(), that.getId());
+    }
+
+    @Override
+    public final int hashCode() {
+        return this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(" +
+                "id = " + getId() + ", " +
+                "flickerPlt = " + getFlickerPlt() + ", " +
+                "flickerPst = " + getFlickerPst() + ", " +
+                "harmonicVoltage = " + getHarmonicVoltage() + ", " +
+                "longInterruptions = " + getLongInterruptions() + ", " +
+                "mainsVoltage = " + getMainsVoltage() + ", " +
+                "measurementProtocol = " + getMeasurementProtocol() + ", " +
+                "powerFrequency = " + getPowerFrequency() + ", " +
+                "rapidVoltageChanges = " + getRapidVoltageChanges() + ", " +
+                "shortInterruptions = " + getShortInterruptions() + ", " +
+                "supplyVoltageDips = " + getSupplyVoltageDips() + ", " +
+                "supplyVoltageImbalance = " + getSupplyVoltageImbalance() + ", " +
+                "supplyVoltageVariations = " + getSupplyVoltageVariations() + ", " +
+                "tempOvervoltage = " + getTempOvervoltage() + ", " +
+                "summaryInterval = " + getSummaryInterval() + ", " +
+                "description = " + getDescription() + ", " +
+                "created = " + getCreated() + ", " +
+                "updated = " + getUpdated() + ", " +
+                "published = " + getPublished() + ")";
     }
 }

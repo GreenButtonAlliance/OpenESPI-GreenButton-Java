@@ -19,13 +19,13 @@
 
 package org.greenbuttonalliance.espi.common.domain.customer.entity;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
 
 import jakarta.persistence.*;
+import org.hibernate.proxy.HibernateProxy;
+
+import java.util.Objects;
 
 /**
  * JPA entity for PhoneNumber to resolve embedded mapping conflicts.
@@ -34,13 +34,10 @@ import jakarta.persistence.*;
  * issues when multiple entities embed Organisation with PhoneNumber fields.
  */
 @Entity
-@Table(name = "phone_numbers", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"uuid"})
-})
-@Data
-@EqualsAndHashCode(callSuper = true)
+@Table(name = "phone_numbers")
+@Getter
+@Setter
 @NoArgsConstructor
-@ToString(callSuper = true)
 public class PhoneNumberEntity extends IdentifiedObject {
 
     /**
@@ -95,5 +92,38 @@ public class PhoneNumberEntity extends IdentifiedObject {
         SECONDARY,
         LOCATION_PRIMARY,
         LOCATION_SECONDARY
+    }
+
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null) return false;
+        Class<?> oEffectiveClass = o instanceof HibernateProxy ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
+        if (thisEffectiveClass != oEffectiveClass) return false;
+        PhoneNumberEntity that = (PhoneNumberEntity) o;
+        return getId() != null && Objects.equals(getId(), that.getId());
+    }
+
+    @Override
+    public final int hashCode() {
+        return this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(" +
+                "id = " + getId() + ", " +
+                "areaCode = " + getAreaCode() + ", " +
+                "cityCode = " + getCityCode() + ", " +
+                "localNumber = " + getLocalNumber() + ", " +
+                "extension = " + getExtension() + ", " +
+                "phoneType = " + getPhoneType() + ", " +
+                "parentEntityUuid = " + getParentEntityUuid() + ", " +
+                "parentEntityType = " + getParentEntityType() + ", " +
+                "description = " + getDescription() + ", " +
+                "created = " + getCreated() + ", " +
+                "updated = " + getUpdated() + ", " +
+                "published = " + getPublished() + ")";
     }
 }

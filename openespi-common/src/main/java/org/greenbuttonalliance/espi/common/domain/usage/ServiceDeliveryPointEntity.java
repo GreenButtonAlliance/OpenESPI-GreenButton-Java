@@ -19,31 +19,33 @@
 
 package org.greenbuttonalliance.espi.common.domain.usage;
 
-import lombok.Getter;
-import lombok.Setter;
-import lombok.NoArgsConstructor;
-
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.Size;
-import java.io.Serializable;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
+import org.hibernate.proxy.HibernateProxy;
+
+import java.util.Objects;
 
 /**
- * Embeddable component for ServiceDeliveryPoint within UsagePoint.
- * 
+ * JPA entity for ServiceDeliveryPoint.
+ * <p>
  * Represents a physical location where energy services are delivered to a customer.
  * This is typically associated with a physical address and represents the endpoint
  * of the utility's distribution system where energy is consumed.
- * 
- * ServiceDeliveryPoint is an embedded element, not a standalone ESPI resource,
- * so it does not extend IdentifiedObject and has no separate identity.
+ * <p>
+ * ServiceDeliveryPoint is now a standalone ESPI resource that extends IdentifiedObject.
  */
-@Embeddable
+@Entity
+@Table(name = "service_delivery_points")
 @Getter
 @Setter
 @NoArgsConstructor
-public class ServiceDeliveryPointEntity implements Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class ServiceDeliveryPointEntity extends IdentifiedObject {
     
     /**
      * ServiceDeliveryPoint mRID - identifier for the service delivery point.
@@ -53,13 +55,6 @@ public class ServiceDeliveryPointEntity implements Serializable {
     @Size(max = 64, message = "ServiceDeliveryPoint mRID cannot exceed 64 characters")
     private String mrid;
     
-    /**
-     * Human-readable description of the service delivery point.
-     * Typically describes the location or purpose of the delivery point.
-     */
-    @Column(name = "sdp_description", length = 512)
-    @Size(max = 512, message = "ServiceDeliveryPoint description cannot exceed 512 characters")
-    private String description;
 
     /**
      * Human-readable name for this service delivery point.
@@ -108,7 +103,7 @@ public class ServiceDeliveryPointEntity implements Serializable {
     public ServiceDeliveryPointEntity(String mrid, String description, String name, 
                                     String tariffProfile, String customerAgreement) {
         this.mrid = mrid;
-        this.description = description;
+        setDescription(description);
         this.name = name;
         this.tariffProfile = tariffProfile;
         this.customerAgreement = customerAgreement;
@@ -154,5 +149,35 @@ public class ServiceDeliveryPointEntity implements Serializable {
         // A service delivery point is considered valid if it has at least a name or mRID
         return (name != null && !name.trim().isEmpty()) || 
                (mrid != null && !mrid.trim().isEmpty());
+    }
+
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null) return false;
+        Class<?> oEffectiveClass = o instanceof HibernateProxy ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
+        if (thisEffectiveClass != oEffectiveClass) return false;
+        ServiceDeliveryPointEntity that = (ServiceDeliveryPointEntity) o;
+        return getId() != null && Objects.equals(getId(), that.getId());
+    }
+
+    @Override
+    public final int hashCode() {
+        return this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(" +
+                "id = " + getId() + ", " +
+                "mrid = " + getMrid() + ", " +
+                "name = " + getName() + ", " +
+                "tariffProfile = " + getTariffProfile() + ", " +
+                "customerAgreement = " + getCustomerAgreement() + ", " +
+                "description = " + getDescription() + ", " +
+                "created = " + getCreated() + ", " +
+                "updated = " + getUpdated() + ", " +
+                "published = " + getPublished() + ")";
     }
 }

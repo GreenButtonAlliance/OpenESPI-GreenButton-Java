@@ -21,7 +21,6 @@ package org.greenbuttonalliance.espi.common.service;
 
 import org.greenbuttonalliance.espi.common.domain.usage.IntervalBlockEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.MeterReadingEntity;
-import org.greenbuttonalliance.espi.common.repositories.usage.IntervalBlockRepository;
 
 import java.io.InputStream;
 import java.util.List;
@@ -29,7 +28,7 @@ import java.util.UUID;
 
 public interface IntervalBlockService {
 
-	List<IntervalBlockEntity> findAllByMeterReadingId(Long meterReadingId);
+	List<IntervalBlockEntity> findAllByMeterReadingId(UUID meterReadingId);
 
 	String feedFor(List<IntervalBlockEntity> intervalBlocks);
 
@@ -41,12 +40,10 @@ public interface IntervalBlockService {
 
 	List<IntervalBlockEntity> findAllByMeterReading(MeterReadingEntity meterReading);
 
-	void setRepository(IntervalBlockRepository repository);
-
 	IntervalBlockEntity save(IntervalBlockEntity intervalBlock);
 
-	IntervalBlockEntity findById(long retailCustomerId, long usagePointId,
-						   long meterReadingId, long intervalBlockId);
+	IntervalBlockEntity findById(UUID retailCustomerId, UUID usagePointId,
+						   UUID meterReadingId, UUID intervalBlockId);
 
 	void delete(IntervalBlockEntity intervalBlock);
 
@@ -54,6 +51,6 @@ public interface IntervalBlockService {
 
 	IntervalBlockEntity importResource(InputStream stream);
 
-	IntervalBlockEntity findById(long intervalBlockId);
+	IntervalBlockEntity findById(UUID intervalBlockId);
 
 }
