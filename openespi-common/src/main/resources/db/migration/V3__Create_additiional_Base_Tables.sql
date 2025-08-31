@@ -1102,7 +1102,7 @@ CREATE TABLE statement_refs
     -- Statement ref specific fields
     file_name      VARCHAR(512),
     media_type     VARCHAR(256),
-    statement_url  VARCHAR(2048) NOT NULL,
+    statement_url  VARCHAR(2048),
     statement_id   CHAR(36),
     FOREIGN KEY (statement_id) REFERENCES statements(id)
 );

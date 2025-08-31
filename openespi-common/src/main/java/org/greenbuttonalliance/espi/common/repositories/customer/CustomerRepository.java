@@ -67,7 +67,7 @@ public interface CustomerRepository extends JpaRepository<CustomerEntity, UUID> 
     /**
      * Find customers with special needs.
      */
-    @Query("SELECT c FROM CustomerEntity c WHERE c.specialNeed IS NOT NULL AND c.specialNeed != ''")
+    @Query("SELECT c FROM CustomerEntity c WHERE c.specialNeed IS NOT NULL AND c.specialNeed != '' AND c.specialNeed != 'NONE'")
     List<CustomerEntity> findCustomersWithSpecialNeeds();
 
     /**

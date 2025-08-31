@@ -107,7 +107,7 @@ public class UsagePointServiceImpl implements UsagePointService {
 	@Override
 	public List<UsagePointEntity> findAllUpdatedFor(SubscriptionEntity subscription) {
 		// TODO: Implement query to find usage points updated after subscription timestamp
-		return usagePointRepository.findAllUpdatedAfter(subscription.getLastUpdate());
+		return usagePointRepository.findAllUpdatedAfter(subscription.getLastUpdateAsLocalDateTime());
 	}
 
 	@Override

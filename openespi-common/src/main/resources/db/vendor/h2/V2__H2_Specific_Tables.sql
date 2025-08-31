@@ -52,21 +52,24 @@ CREATE TABLE time_configurations
     dst_end_rule    BINARY,
     dst_offset      BIGINT,
     dst_start_rule  BINARY,
-    tz_offset       BIGINT,
-
-    INDEX           idx_time_config_uuid (uuid),
-    INDEX           idx_time_config_created (created),
-    INDEX           idx_time_config_updated (updated)
+    tz_offset       BIGINT
 );
+
+-- Create indexes for time_configurations table
+CREATE INDEX idx_time_config_uuid ON time_configurations (uuid);
+CREATE INDEX idx_time_config_created ON time_configurations (created);
+CREATE INDEX idx_time_config_updated ON time_configurations (updated);
 
 -- Related Links Table for Time Configurations
 CREATE TABLE time_configuration_related_links
 (
     time_configuration_id UUID NOT NULL,
     related_links         VARCHAR(1024),
-    FOREIGN KEY (time_configuration_id) REFERENCES time_configurations (id) ON DELETE CASCADE,
-    INDEX                 idx_time_config_related_links (time_configuration_id)
+    FOREIGN KEY (time_configuration_id) REFERENCES time_configurations (id) ON DELETE CASCADE
 );
+
+-- Create index for time_configuration_related_links table
+CREATE INDEX idx_time_config_related_links ON time_configuration_related_links (time_configuration_id);
 
 -- Usage Point Table (H2 with BINARY column)
 CREATE TABLE usage_points
@@ -101,23 +104,26 @@ CREATE TABLE usage_points
 
     FOREIGN KEY (retail_customer_id) REFERENCES retail_customers (id) ON DELETE CASCADE,
     FOREIGN KEY (service_delivery_point_id) REFERENCES service_delivery_points (id) ON DELETE SET NULL,
-    FOREIGN KEY (local_time_parameters_id) REFERENCES time_configurations (id) ON DELETE SET NULL,
-
-    INDEX                     idx_usage_point_uuid (uuid),
-    INDEX                     idx_usage_point_kind (kind),
-    INDEX                     idx_usage_point_status (status),
-    INDEX                     idx_usage_point_customer_id (retail_customer_id),
-    INDEX                     idx_usage_point_sdp_id (service_delivery_point_id),
-    INDEX                     idx_usage_point_time_config_id (local_time_parameters_id),
-    INDEX                     idx_usage_point_created (created),
-    INDEX                     idx_usage_point_updated (updated)
+    FOREIGN KEY (local_time_parameters_id) REFERENCES time_configurations (id) ON DELETE SET NULL
 );
+
+-- Create indexes for usage_points table
+CREATE INDEX idx_usage_point_uuid ON usage_points (uuid);
+CREATE INDEX idx_usage_point_kind ON usage_points (kind);
+CREATE INDEX idx_usage_point_status ON usage_points (status);
+CREATE INDEX idx_usage_point_customer_id ON usage_points (retail_customer_id);
+CREATE INDEX idx_usage_point_sdp_id ON usage_points (service_delivery_point_id);
+CREATE INDEX idx_usage_point_time_config_id ON usage_points (local_time_parameters_id);
+CREATE INDEX idx_usage_point_created ON usage_points (created);
+CREATE INDEX idx_usage_point_updated ON usage_points (updated);
 
 -- Related Links Table for Usage Points
 CREATE TABLE usage_point_related_links
 (
     usage_point_id UUID NOT NULL,
     related_links  VARCHAR(1024),
-    FOREIGN KEY (usage_point_id) REFERENCES usage_points (id) ON DELETE CASCADE,
-    INDEX          idx_usage_point_related_links (usage_point_id)
+    FOREIGN KEY (usage_point_id) REFERENCES usage_points (id) ON DELETE CASCADE
 );
+
+-- Create index for usage_point_related_links table
+CREATE INDEX idx_usage_point_related_links ON usage_point_related_links (usage_point_id);

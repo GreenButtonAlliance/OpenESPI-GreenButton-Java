@@ -29,6 +29,7 @@ import org.hibernate.annotations.Where;
 import org.hibernate.proxy.HibernateProxy;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -152,18 +153,20 @@ public class CustomerEntity extends IdentifiedObject {
     /**
      * Billing statements for this customer.
      * One customer can have multiple statements.
+     * Initialized to empty ArrayList to avoid null pointer exceptions.
      */
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<StatementEntity> statements;
+    private List<StatementEntity> statements = new ArrayList<>();
 
     /**
      * Phone numbers for this customer's organisation.
      * Managed via separate PhoneNumberEntity to avoid column conflicts.
+     * Initialized to empty ArrayList to avoid null pointer exceptions.
      */
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_entity_uuid", referencedColumnName = "id")
     @Where(clause = "parent_entity_type = 'CustomerEntity'")
-    private List<PhoneNumberEntity> phoneNumbers;
+    private List<PhoneNumberEntity> phoneNumbers = new ArrayList<>();
 
     /**
      * Embeddable class for Status
