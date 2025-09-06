@@ -40,22 +40,6 @@ openespi-authserver ──┘
 
 **Always run tests** to verify correctness of proposed solutions:
 
-### Running Tests
-```bash
-# Test all modules
-mvn clean test
-
-# Test specific module with dependencies
-mvn test -pl openespi-datacustodian -am
-
-# Test only Spring Boot 3.5 modules
-mvn test -Pspring-boot-only
-
-# Module-specific testing
-cd openespi-common && mvn test
-cd openespi-datacustodian && mvn test -am
-cd openespi-authserver && mvn test -am
-```
 
 ### Test Categories
 - **Unit tests** - Fast, isolated component testing
@@ -64,38 +48,7 @@ cd openespi-authserver && mvn test -am
 - **Green Button compliance tests** - ESPI specification adherence
 
 ## Build Instructions
-
 **Build the project** before submitting results to ensure compilation success:
-
-### Standard Build
-```bash
-# Build all modules (recommended)
-mvn clean install
-
-# Build only production-ready Spring Boot 3.5 modules
-mvn clean install -Pspring-boot-only
-```
-
-### Development Build
-```bash
-# Quick compile without tests
-mvn clean compile
-
-# Package without running tests (use sparingly)
-mvn clean package -DskipTests
-```
-
-### Running Applications
-```bash
-# Data Custodian (port 8080)
-cd openespi-datacustodian && mvn spring-boot:run
-
-# Authorization Server (port 8081)
-cd openespi-authserver && mvn spring-boot:run
-
-# Third Party (port 8082)
-cd openespi-thirdparty && mvn spring-boot:run
-```
 
 ## Code Style Guidelines
 
@@ -185,3 +138,4 @@ When working on the project, be aware of the migration status:
 - When creating or updating tests, use the Junit `@DisplayName` annotation to provide a human readable name for the test. This will improve the quality of the test report.
 - When creating or updating tests, use the Junit `@Nested` annotation to group related tests. This will improve the readability of the test report.
 - When investigating test failures of transaction tests, verify the service implementation uses saveAndFlush() to save the entity. This will ensure the entity is saved to the database before the transaction is committed.
+- When testing persistence operations with JPA, do not set the id property. The Id property is set by Hibernate when the entity is saved to the database, and should not be set ahead of time.

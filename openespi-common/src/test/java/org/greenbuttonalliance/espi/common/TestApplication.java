@@ -21,7 +21,6 @@ package org.greenbuttonalliance.espi.common;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
-import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -49,8 +48,8 @@ public class TestApplication {
     public static class TestConfig {
 
         @Bean
-        public RestTemplate restTemplate(RestTemplateBuilder builder) {
-            return builder.build();
+        public RestTemplate restTemplate() {
+            return new RestTemplate();
         }
     }
 }

@@ -62,11 +62,11 @@ spring:
 logging:
   level:
     org.greenbuttonalliance.espi: INFO
-    org.springframework: WARN
-    org.hibernate: WARN
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql: TRACE
-    org.springframework.transaction: DEBUG
+#    org.springframework: WARN
+#    org.hibernate: WARN
+#    org.hibernate.SQL: DEBUG
+#    org.hibernate.type.descriptor.sql: TRACE
+#    org.springframework.transaction: DEBUG
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 

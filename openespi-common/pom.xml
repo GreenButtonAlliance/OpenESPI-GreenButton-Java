@@ -352,6 +352,14 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- DataFaker for realistic test data generation -->
+        <dependency>
+            <groupId>net.datafaker</groupId>
+            <artifactId>datafaker</artifactId>
+            <version>2.4.4</version>
+            <scope>test</scope>
+        </dependency>
+
 
         <!-- Core utilities needed for domain logic -->
         <dependency>
@@ -609,6 +617,10 @@
                         <include>**/*Tests.java</include>
                     </includes>
                     <useSystemClassLoader>false</useSystemClassLoader>
+                    <argLine>
+                        -javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar
+                        -Xshare:off
+                    </argLine>
                 </configuration>
             </plugin>
             <plugin>

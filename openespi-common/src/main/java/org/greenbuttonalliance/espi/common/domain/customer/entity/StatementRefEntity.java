@@ -56,7 +56,7 @@ public class StatementRefEntity extends IdentifiedObject {
      * [extension] URL used to access a representation of a statement, for example a bill image. 
      * Use CDATA or URL encoding to escape characters not allowed in XML.
      */
-    @Column(name = "statement_url", nullable = false, length = 2048)
+    @Column(name = "statement_url", length = 2048)
     private String statementURL;
 
     /**

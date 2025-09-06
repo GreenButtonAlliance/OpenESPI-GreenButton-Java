@@ -27,7 +27,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Calendar;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -61,7 +61,7 @@ public interface UsagePointRepository extends JpaRepository<UsagePointEntity, UU
      * Find all usage points updated after a given timestamp.
      */
     @Query("SELECT up FROM UsagePointEntity up WHERE up.updated > :lastUpdate")
-    List<UsagePointEntity> findAllUpdatedAfter(@Param("lastUpdate") Calendar lastUpdate);
+    List<UsagePointEntity> findAllUpdatedAfter(@Param("lastUpdate") LocalDateTime lastUpdate);
 
     /**
      * Find all usage point IDs for a specific retail customer.

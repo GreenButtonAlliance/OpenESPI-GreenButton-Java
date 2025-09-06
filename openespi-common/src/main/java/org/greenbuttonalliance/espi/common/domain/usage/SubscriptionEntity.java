@@ -92,7 +92,7 @@ public class SubscriptionEntity extends IdentifiedObject {
      * Application information for the subscribed application.
      * Identifies which third-party application has access.
      */
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(cascade = CascadeType.DETACH, fetch = FetchType.LAZY)
     @JoinColumn(name = "application_information_id")
     @NotNull
     private ApplicationInformationEntity applicationInformation;
