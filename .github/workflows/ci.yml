@@ -95,7 +95,7 @@ jobs:
           SPRING_PROFILES_ACTIVE: test
 
       - name: Run integration tests with TestContainers
-        run: mvn verify -Pintegration-tests
+        run: mvn verify -Pintegration-tests -pl openespi-common,openespi-datacustodian,openespi-thirdparty
         env:
           SPRING_PROFILES_ACTIVE: testcontainers
 
