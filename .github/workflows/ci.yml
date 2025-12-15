@@ -157,6 +157,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           mvn clean verify sonar:sonar \
+            -pl openespi-common,openespi-datacustodian,openespi-thirdparty \
             -Dsonar.projectKey=GreenButtonAlliance_OpenESPI-GreenButton-Java \
             -Dsonar.organization=greenbuttonalliance \
             -Dsonar.host.url=https://sonarcloud.io \
