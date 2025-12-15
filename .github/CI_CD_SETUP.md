@@ -20,10 +20,12 @@ The project uses **GitHub Actions** for CI/CD with **SonarCloud** integration fo
 - Runs on Ubuntu with Java 21
 - Sets up MySQL 8.0 and PostgreSQL 15 services
 - Builds all modules
-- Runs unit tests for each module separately
+- Runs unit tests for each module separately (authserver temporarily excluded)
 - Runs integration tests with TestContainers
 - Generates JaCoCo coverage reports
 - Uploads test results and coverage reports as artifacts
+
+**Note:** The `openespi-authserver` module is temporarily excluded from CI/CD until implementation is complete.
 
 ####sonarcloud
 - Depends on successful `build-and-test` job

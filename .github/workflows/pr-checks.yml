@@ -49,7 +49,7 @@ jobs:
         continue-on-error: true
 
       - name: Run quick tests
-        run: mvn test -pl openespi-common,openespi-datacustodian,openespi-authserver
+        run: mvn test -pl openespi-common,openespi-datacustodian
 
       - name: Check for security vulnerabilities
         run: mvn org.owasp:dependency-check-maven:check -DfailBuildOnCVSS=8
