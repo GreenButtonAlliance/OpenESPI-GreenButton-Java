@@ -80,13 +80,15 @@ jobs:
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
 
+      - name: Build modules for SonarCloud
+        run: mvn clean verify -pl openespi-common,openespi-datacustodian,openespi-thirdparty -am
+
       - name: Analyze with SonarCloud
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          mvn clean verify sonar:sonar \
-            -pl openespi-common,openespi-datacustodian,openespi-thirdparty \
+          mvn sonar:sonar \
             -Dsonar.projectKey=GreenButtonAlliance_OpenESPI-GreenButton-Java \
             -Dsonar.organization=greenbuttonalliance \
             -Dsonar.host.url=https://sonarcloud.io \
