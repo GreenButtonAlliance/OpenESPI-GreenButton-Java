@@ -99,8 +99,7 @@ jobs:
         env:
           SPRING_PROFILES_ACTIVE: testcontainers
 
-      - name: Generate test coverage reports
-        run: mvn jacoco:report -pl openespi-common,openespi-datacustodian,openespi-thirdparty
+      # JaCoCo reports are automatically generated during test phase (configured in root pom.xml)
 
       - name: Upload test results
         if: always()
