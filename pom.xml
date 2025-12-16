@@ -26,6 +26,17 @@
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <spring.boot.version>3.5.0</spring.boot.version>
+
+        <!-- SonarCloud Configuration -->
+        <sonar.projectKey>GreenButtonAlliance_OpenESPI-GreenButton-Java</sonar.projectKey>
+        <sonar.organization>greenbuttonalliance</sonar.organization>
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+        <sonar.java.source>21</sonar.java.source>
+        <sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
+
+        <!-- Plugin Versions -->
+        <jacoco.version>0.8.12</jacoco.version>
+        <sonar-maven-plugin.version>4.0.0.4121</sonar-maven-plugin.version>
     </properties>
     
     <profiles>
@@ -37,6 +48,14 @@
                 <module>openespi-datacustodian</module>
                 <module>openespi-authserver</module>
             </modules>
+        </profile>
+
+        <!-- Integration Tests Profile -->
+        <profile>
+            <id>integration-tests</id>
+            <properties>
+                <skip.integration.tests>false</skip.integration.tests>
+            </properties>
         </profile>
     </profiles>
     
@@ -69,7 +88,60 @@
                         <target>21</target>
                     </configuration>
                 </plugin>
+                <plugin>
+                    <groupId>org.jacoco</groupId>
+                    <artifactId>jacoco-maven-plugin</artifactId>
+                    <version>${jacoco.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.sonarsource.scanner.maven</groupId>
+                    <artifactId>sonar-maven-plugin</artifactId>
+                    <version>${sonar-maven-plugin.version}</version>
+                </plugin>
             </plugins>
         </pluginManagement>
+
+        <plugins>
+            <!-- JaCoCo Code Coverage Plugin -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>jacoco-check</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <rule>
+                                    <element>PACKAGE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.50</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
     </build>
 </project>
