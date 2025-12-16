@@ -252,6 +252,8 @@ The CircleCI configuration should be removed after verifying GitHub Actions work
 
 ## Support
 
+For help with CI/CD setup and configuration:
+
 - **GitHub Actions**: https://docs.github.com/en/actions
 - **SonarCloud**: https://docs.sonarcloud.io
 - **JaCoCo**: https://www.jacoco.org/jacoco/trunk/doc/
