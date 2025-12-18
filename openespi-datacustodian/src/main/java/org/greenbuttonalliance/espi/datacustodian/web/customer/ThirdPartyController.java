@@ -40,8 +40,10 @@ public class ThirdPartyController {
 
 	@GetMapping
 	public String index(ModelMap model) {
+		// NOTE: findByKind() removed - extension field not in ESPI 4.0 XSD
+		// Controller is disabled anyway (UI not needed in resource server)
 		model.put("applicationInformationList",
-				applicationInformationService.findByKind("THIRD_PARTY"));
+				applicationInformationService.findAll());
 		return "/customer/thirdparties/index";
 	}
 
