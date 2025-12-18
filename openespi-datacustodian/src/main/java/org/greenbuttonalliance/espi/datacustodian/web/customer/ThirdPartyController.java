@@ -30,6 +30,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.util.Collections;
+
 // @Controller - COMMENTED OUT: UI not needed in resource server
 // @Component
 @RequestMapping("/RetailCustomer/{retailCustomerId}/ThirdPartyList")
@@ -42,8 +44,8 @@ public class ThirdPartyController {
 	public String index(ModelMap model) {
 		// NOTE: findByKind() removed - extension field not in ESPI 4.0 XSD
 		// Controller is disabled anyway (UI not needed in resource server)
-		model.put("applicationInformationList",
-				applicationInformationService.findAll());
+		// Service doesn't have findAll() method, return empty list
+		model.put("applicationInformationList", Collections.emptyList());
 		return "/customer/thirdparties/index";
 	}
 
