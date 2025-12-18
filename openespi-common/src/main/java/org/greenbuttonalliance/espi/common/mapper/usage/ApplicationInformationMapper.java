@@ -105,6 +105,7 @@ public interface ApplicationInformationMapper {
     @Mapping(target = "upLink", ignore = true)
     @Mapping(target = "scope", ignore = true) // Complex type conversion needed: String -> Set<String>
     @Mapping(target = "grantTypes", ignore = true) // Complex type conversion needed: String -> Set<GrantType>
+    @Mapping(target = "relatedLinkHrefs", ignore = true) // Extension field not in ESPI 4.0 XSD
     ApplicationInformationEntity toEntity(ApplicationInformationDto dto);
 
     /**
@@ -124,5 +125,6 @@ public interface ApplicationInformationMapper {
     @Mapping(target = "upLink", ignore = true)
     @Mapping(target = "scope", ignore = true) // Complex type conversion needed: String -> Set<String>
     @Mapping(target = "grantTypes", ignore = true) // Complex type conversion needed: String -> Set<GrantType>
+    @Mapping(target = "relatedLinkHrefs", ignore = true) // Extension field not in ESPI 4.0 XSD
     void updateEntity(ApplicationInformationDto dto, @MappingTarget ApplicationInformationEntity entity);
 }
