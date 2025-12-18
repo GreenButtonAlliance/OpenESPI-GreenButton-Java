@@ -97,7 +97,6 @@ class AuthorizationRepositoryTest extends BaseRepositoryTest {
         app.setDescription("Test Application Information");
         app.setClientId("test-client-" + faker.number().digits(8));
         app.setClientSecret(faker.internet().password());
-        app.setThirdPartyApplicationName("Test Application");
         app.setDataCustodianId("test-datacustodian-" + faker.number().digits(8));
         
         Set<GrantType> grantTypes = new HashSet<>();

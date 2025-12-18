@@ -53,32 +53,29 @@ public class ApplicationInformationEntity extends IdentifiedObject {
 
     private static final long serialVersionUID = 1L;
 
+    // ========================================
+    // ESPI 4.0 XSD Fields in Sequence Order
+    // Lines follow espi.xsd lines 62-246
+    // ========================================
+
     /**
-     * Kind/type classification for this application information.
+     * Data custodian ID.
+     * ESPI 4.0 XSD field #1
      */
-    @Column(name = "kind")
-    private String kind;
+    @Size(min = 2, max = 64)
+    @Column(name = "data_custodian_id")
+    private String dataCustodianId;
 
     /**
      * Data custodian application status.
+     * ESPI 4.0 XSD field #2
      */
     @Column(name = "data_custodian_application_status")
     private String dataCustodianApplicationStatus;
 
     /**
-     * Data custodian default batch resource URI.
-     */
-    @Column(name = "data_custodian_default_batch_resource")
-    private String dataCustodianDefaultBatchResource;
-
-    /**
-     * Data custodian default subscription resource URI.
-     */
-    @Column(name = "data_custodian_default_subscription_resource")
-    private String dataCustodianDefaultSubscriptionResource;
-
-    /**
      * Third party application description.
+     * ESPI 4.0 XSD field #3
      */
     @Column(name = "third_party_application_description")
     private String thirdPartyApplicationDescription;
@@ -139,42 +136,28 @@ public class ApplicationInformationEntity extends IdentifiedObject {
 
     /**
      * Data custodian bulk request URI.
+     * ESPI 4.0 XSD field #14
      */
     @Column(name = "data_custodian_bulk_request_uri")
     private String dataCustodianBulkRequestURI;
 
     /**
-     * Data custodian third party selection screen URI.
-     */
-    @Column(name = "data_custodian_third_party_selection_screen_uri")
-    private String dataCustodianThirdPartySelectionScreenURI;
-
-    /**
      * Data custodian resource endpoint.
+     * ESPI 4.0 XSD field #15
      */
     @Column(name = "data_custodian_resource_endpoint")
     private String dataCustodianResourceEndpoint;
 
     /**
-     * Third party data custodian selection screen URI.
-     */
-    @Column(name = "third_party_data_custodian_selection_screen_uri")
-    private String thirdPartyDataCustodianSelectionScreenURI;
-
-    /**
-     * Third party login screen URI.
-     */
-    @Column(name = "third_party_login_screen_uri")
-    private String thirdPartyLoginScreenURI;
-
-    /**
      * Third party scope selection screen URI.
+     * ESPI 4.0 XSD field #16
      */
     @Column(name = "third_party_scope_selection_screen_uri")
     private String thirdPartyScopeSelectionScreenURI;
 
     /**
      * Third party user portal screen URI.
+     * ESPI 4.0 XSD field #17
      */
     @Column(name = "third_party_user_portal_screen_uri")
     private String thirdPartyUserPortalScreenURI;
@@ -269,31 +252,8 @@ public class ApplicationInformationEntity extends IdentifiedObject {
     private String tokenEndpointAuthMethod;
 
     /**
-     * Data custodian scope selection screen URI.
-     */
-    @Column(name = "data_custodian_scope_selection_screen_uri")
-    private String dataCustodianScopeSelectionScreenURI;
-
-    /**
-     * Data custodian ID.
-     * Required field with size constraints.
-     */
-    @Size(min = 2, max = 64)
-    @Column(name = "data_custodian_id")
-    private String dataCustodianId;
-
-    /**
-     * Third party application name.
-     * Required field with size constraints and default value.
-     */
-    @NotEmpty
-    @Size(min = 2, max = 64)
-    @Column(name = "third_party_application_name", nullable = false)
-    private String thirdPartyApplicationName = "Default Third Party Application Name";
-
-    /**
      * OAuth2 scopes for this application.
-     * Stored as element collection in separate table.
+     * ESPI 4.0 XSD field #33
      */
     @ElementCollection
     @LazyCollection(LazyCollectionOption.FALSE)
@@ -306,11 +266,12 @@ public class ApplicationInformationEntity extends IdentifiedObject {
 
     /**
      * OAuth2 grant types supported by this application.
-     * Stored as element collection with enum mapping.
+     * ESPI 4.0 XSD field #34
+     * FIXED: Changed from @JoinTable to @CollectionTable for @ElementCollection
      */
     @ElementCollection(targetClass = GrantType.class)
     @LazyCollection(LazyCollectionOption.FALSE)
-    @JoinTable(
+    @CollectionTable(
         name = "application_information_grant_types",
         joinColumns = @JoinColumn(name = "application_information_id")
     )
@@ -320,6 +281,7 @@ public class ApplicationInformationEntity extends IdentifiedObject {
 
     /**
      * OAuth2 response types supported by this application.
+     * ESPI 4.0 XSD field #35
      */
     @Enumerated(EnumType.STRING)
     @Column(name = "response_types")
@@ -327,21 +289,30 @@ public class ApplicationInformationEntity extends IdentifiedObject {
 
     /**
      * Registration client URI.
+     * ESPI 4.0 XSD field #36
      */
     @Column(name = "registration_client_uri")
     private String registrationClientUri;
 
     /**
      * Registration access token.
+     * ESPI 4.0 XSD field #37
      * Encrypted at rest using AES-256-GCM.
      */
-    @Column(name = "registration_access_token") 
+    @Column(name = "registration_access_token")
     @Convert(converter = FieldEncryptionConverter.class)
     private String registrationAccessToken;
 
     /**
+     * Data custodian scope selection screen URI.
+     * ESPI 4.0 XSD field #38 (last field in XSD sequence)
+     */
+    @Column(name = "data_custodian_scope_selection_screen_uri")
+    private String dataCustodianScopeSelectionScreenURI;
+
+    /**
      * Gets the scope array for backward compatibility.
-     * 
+     *
      * @return array of scope strings
      */
     public String[] getScopeArray() {
@@ -349,67 +320,6 @@ public class ApplicationInformationEntity extends IdentifiedObject {
             return new String[]{};
         }
         return scope.toArray(new String[0]);
-    }
-
-    /**
-     * Merges data from another ApplicationInformationEntity.
-     * 
-     * @param other the other application information entity to merge from
-     */
-    public void merge(ApplicationInformationEntity other) {
-        if (other != null) {
-            super.merge(other);
-            
-            // OAuth2 and client information
-            this.clientId = other.clientId;
-            this.clientSecret = other.clientSecret;
-            this.scope = new HashSet<>(other.scope);
-            this.grantTypes = new HashSet<>(other.grantTypes);
-            this.redirectUri = other.redirectUri;
-            this.responseTypes = other.responseTypes;
-            
-            // Application status and configuration
-            this.dataCustodianApplicationStatus = other.dataCustodianApplicationStatus;
-            this.thirdPartyApplicationStatus = other.thirdPartyApplicationStatus;
-            this.thirdPartyApplicationType = other.thirdPartyApplicationType;
-            this.thirdPartyApplicationUse = other.thirdPartyApplicationUse;
-            this.thirdPartyApplicationDescription = other.thirdPartyApplicationDescription;
-            this.thirdPartyApplicationName = other.thirdPartyApplicationName;
-            
-            // URIs and endpoints
-            this.authorizationServerUri = other.authorizationServerUri;
-            this.thirdPartyNotifyUri = other.thirdPartyNotifyUri;
-            this.authorizationServerAuthorizationEndpoint = other.authorizationServerAuthorizationEndpoint;
-            this.authorizationServerRegistrationEndpoint = other.authorizationServerRegistrationEndpoint;
-            this.authorizationServerTokenEndpoint = other.authorizationServerTokenEndpoint;
-            this.dataCustodianBulkRequestURI = other.dataCustodianBulkRequestURI;
-            this.dataCustodianResourceEndpoint = other.dataCustodianResourceEndpoint;
-            this.dataCustodianScopeSelectionScreenURI = other.dataCustodianScopeSelectionScreenURI;
-            
-            // Additional application metadata
-            this.logoUri = other.logoUri;
-            this.clientName = other.clientName;
-            this.clientUri = other.clientUri;
-            this.tosUri = other.tosUri;
-            this.policyUri = other.policyUri;
-            this.softwareId = other.softwareId;
-            this.softwareVersion = other.softwareVersion;
-            this.clientIdIssuedAt = other.clientIdIssuedAt;
-            this.clientSecretExpiresAt = other.clientSecretExpiresAt;
-            this.contacts = other.contacts;
-            this.tokenEndpointAuthMethod = other.tokenEndpointAuthMethod;
-            this.registrationClientUri = other.registrationClientUri;
-            this.registrationAccessToken = other.registrationAccessToken;
-            
-            // Data custodian information
-            this.dataCustodianId = other.dataCustodianId;
-            this.dataCustodianDefaultBatchResource = other.dataCustodianDefaultBatchResource;
-            this.dataCustodianDefaultSubscriptionResource = other.dataCustodianDefaultSubscriptionResource;
-            
-            // Contact and additional information
-            this.thirdPartyPhone = other.thirdPartyPhone;
-            this.kind = other.kind;
-        }
     }
 
     @Override
@@ -432,49 +342,42 @@ public class ApplicationInformationEntity extends IdentifiedObject {
     public String toString() {
         return getClass().getSimpleName() + "(" +
                 "id = " + getId() + ", " +
-                "kind = " + getKind() + ", " +
-                "dataCustodianApplicationStatus = " + getDataCustodianApplicationStatus() + ", " +
-                "dataCustodianDefaultBatchResource = " + getDataCustodianDefaultBatchResource() + ", " +
-                "dataCustodianDefaultSubscriptionResource = " + getDataCustodianDefaultSubscriptionResource() + ", " +
-                "thirdPartyApplicationDescription = " + getThirdPartyApplicationDescription() + ", " +
-                "thirdPartyApplicationStatus = " + getThirdPartyApplicationStatus() + ", " +
-                "thirdPartyApplicationType = " + getThirdPartyApplicationType() + ", " +
-                "thirdPartyApplicationUse = " + getThirdPartyApplicationUse() + ", " +
-                "thirdPartyPhone = " + getThirdPartyPhone() + ", " +
-                "authorizationServerUri = " + getAuthorizationServerUri() + ", " +
-                "thirdPartyNotifyUri = " + getThirdPartyNotifyUri() + ", " +
-                "authorizationServerAuthorizationEndpoint = " + getAuthorizationServerAuthorizationEndpoint() + ", " +
-                "authorizationServerRegistrationEndpoint = " + getAuthorizationServerRegistrationEndpoint() + ", " +
-                "authorizationServerTokenEndpoint = " + getAuthorizationServerTokenEndpoint() + ", " +
-                "dataCustodianBulkRequestURI = " + getDataCustodianBulkRequestURI() + ", " +
-                "dataCustodianThirdPartySelectionScreenURI = " + getDataCustodianThirdPartySelectionScreenURI() + ", " +
-                "dataCustodianResourceEndpoint = " + getDataCustodianResourceEndpoint() + ", " +
-                "thirdPartyDataCustodianSelectionScreenURI = " + getThirdPartyDataCustodianSelectionScreenURI() + ", " +
-                "thirdPartyLoginScreenURI = " + getThirdPartyLoginScreenURI() + ", " +
-                "thirdPartyScopeSelectionScreenURI = " + getThirdPartyScopeSelectionScreenURI() + ", " +
-                "thirdPartyUserPortalScreenURI = " + getThirdPartyUserPortalScreenURI() + ", " +
-                "clientSecret = " + getClientSecret() + ", " +
-                "logoUri = " + getLogoUri() + ", " +
-                "clientName = " + getClientName() + ", " +
-                "clientUri = " + getClientUri() + ", " +
-                "redirectUri = " + getRedirectUri() + ", " +
-                "clientId = " + getClientId() + ", " +
-                "tosUri = " + getTosUri() + ", " +
-                "policyUri = " + getPolicyUri() + ", " +
-                "softwareId = " + getSoftwareId() + ", " +
-                "softwareVersion = " + getSoftwareVersion() + ", " +
-                "clientIdIssuedAt = " + getClientIdIssuedAt() + ", " +
-                "clientSecretExpiresAt = " + getClientSecretExpiresAt() + ", " +
-                "contacts = " + getContacts() + ", " +
-                "tokenEndpointAuthMethod = " + getTokenEndpointAuthMethod() + ", " +
-                "dataCustodianScopeSelectionScreenURI = " + getDataCustodianScopeSelectionScreenURI() + ", " +
-                "dataCustodianId = " + getDataCustodianId() + ", " +
-                "thirdPartyApplicationName = " + getThirdPartyApplicationName() + ", " +
-                "scope = " + getScope() + ", " +
-                "grantTypes = " + getGrantTypes() + ", " +
-                "responseTypes = " + getResponseTypes() + ", " +
-                "registrationClientUri = " + getRegistrationClientUri() + ", " +
-                "registrationAccessToken = " + getRegistrationAccessToken() + ", " +
+                "dataCustodianId = " + dataCustodianId + ", " +
+                "dataCustodianApplicationStatus = " + dataCustodianApplicationStatus + ", " +
+                "thirdPartyApplicationDescription = " + thirdPartyApplicationDescription + ", " +
+                "thirdPartyApplicationStatus = " + thirdPartyApplicationStatus + ", " +
+                "thirdPartyApplicationType = " + thirdPartyApplicationType + ", " +
+                "thirdPartyApplicationUse = " + thirdPartyApplicationUse + ", " +
+                "thirdPartyPhone = " + thirdPartyPhone + ", " +
+                "authorizationServerUri = " + authorizationServerUri + ", " +
+                "thirdPartyNotifyUri = " + thirdPartyNotifyUri + ", " +
+                "authorizationServerAuthorizationEndpoint = " + authorizationServerAuthorizationEndpoint + ", " +
+                "authorizationServerRegistrationEndpoint = " + authorizationServerRegistrationEndpoint + ", " +
+                "authorizationServerTokenEndpoint = " + authorizationServerTokenEndpoint + ", " +
+                "dataCustodianBulkRequestURI = " + dataCustodianBulkRequestURI + ", " +
+                "dataCustodianResourceEndpoint = " + dataCustodianResourceEndpoint + ", " +
+                "thirdPartyScopeSelectionScreenURI = " + thirdPartyScopeSelectionScreenURI + ", " +
+                "thirdPartyUserPortalScreenURI = " + thirdPartyUserPortalScreenURI + ", " +
+                "clientSecret = [PROTECTED], " +
+                "logoUri = " + logoUri + ", " +
+                "clientName = " + clientName + ", " +
+                "clientUri = " + clientUri + ", " +
+                "redirectUri = " + redirectUri + ", " +
+                "clientId = " + clientId + ", " +
+                "tosUri = " + tosUri + ", " +
+                "policyUri = " + policyUri + ", " +
+                "softwareId = " + softwareId + ", " +
+                "softwareVersion = " + softwareVersion + ", " +
+                "clientIdIssuedAt = " + clientIdIssuedAt + ", " +
+                "clientSecretExpiresAt = " + clientSecretExpiresAt + ", " +
+                "contacts = " + contacts + ", " +
+                "tokenEndpointAuthMethod = " + tokenEndpointAuthMethod + ", " +
+                "scope = " + scope + ", " +
+                "grantTypes = " + grantTypes + ", " +
+                "responseTypes = " + responseTypes + ", " +
+                "registrationClientUri = " + registrationClientUri + ", " +
+                "registrationAccessToken = [PROTECTED], " +
+                "dataCustodianScopeSelectionScreenURI = " + dataCustodianScopeSelectionScreenURI + ", " +
                 "description = " + getDescription() + ", " +
                 "created = " + getCreated() + ", " +
                 "updated = " + getUpdated() + ", " +

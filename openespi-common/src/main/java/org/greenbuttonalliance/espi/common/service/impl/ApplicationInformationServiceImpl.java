@@ -31,8 +31,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 
 @Slf4j
@@ -46,14 +44,6 @@ public class ApplicationInformationServiceImpl implements
 
 	private final ApplicationInformationRepository applicationInformationRepository;
 	private final ApplicationInformationMapper applicationInformationMapper;
-
-	@Override
-	public List<ApplicationInformationEntity> findByKind(String kind) {
-		// Use repository to find by kind - this would need a custom query
-		log.info("Finding ApplicationInformation entities by kind: " + kind);
-		// TODO: Add repository method findByKind if needed
-		return new ArrayList<>();
-	}
 
 	@Override
 	public ApplicationInformationEntity findByClientId(String clientId) {

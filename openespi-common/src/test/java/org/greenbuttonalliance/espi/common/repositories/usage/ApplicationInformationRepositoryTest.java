@@ -56,9 +56,7 @@ class ApplicationInformationRepositoryTest extends BaseRepositoryTest {
         app.setDescription("Test Application Information");
         app.setClientId(faker.internet().uuid().substring(0, 32)); // Valid length
         app.setClientSecret(faker.internet().password());
-        app.setThirdPartyApplicationName("Test Application");
         app.setDataCustodianId("test-datacustodian-" + faker.number().digits(8));
-        app.setKind("WEB_APPLICATION");
         app.setThirdPartyApplicationStatus("ACTIVE");
         app.setDataCustodianApplicationStatus("APPROVED");
         app.setAuthorizationServerUri("https://auth.example.com");
@@ -106,7 +104,6 @@ class ApplicationInformationRepositoryTest extends BaseRepositoryTest {
             assertThat(retrieved).isPresent();
             assertThat(retrieved.get().getDescription()).isEqualTo("Test Application for CRUD");
             assertThat(retrieved.get().getClientId()).isEqualTo(app.getClientId());
-            assertThat(retrieved.get().getThirdPartyApplicationName()).isEqualTo("Test Application");
         }
 
         @Test
@@ -254,36 +251,6 @@ class ApplicationInformationRepositoryTest extends BaseRepositoryTest {
         }
 
         @Test
-        @DisplayName("Should find all application information by kind")
-        void shouldFindAllApplicationInformationByKind() {
-            // Arrange
-            String kind = "MOBILE_APPLICATION";
-            ApplicationInformationEntity app1 = createValidApplicationInformation();
-            app1.setKind(kind);
-            app1.setDescription("Mobile App 1");
-            
-            ApplicationInformationEntity app2 = createValidApplicationInformation();
-            app2.setKind(kind);
-            app2.setDescription("Mobile App 2");
-            
-            ApplicationInformationEntity app3 = createValidApplicationInformation();
-            app3.setKind("WEB_APPLICATION");
-            app3.setDescription("Web App");
-            
-            applicationInformationRepository.saveAll(List.of(app1, app2, app3));
-            flushAndClear();
-
-            // Act
-            List<ApplicationInformationEntity> results = applicationInformationRepository.findByKind(kind);
-
-            // Assert
-            assertThat(results).hasSize(2);
-            assertThat(results).extracting(ApplicationInformationEntity::getKind).containsOnly(kind);
-            assertThat(results).extracting(ApplicationInformationEntity::getDescription)
-                    .contains("Mobile App 1", "Mobile App 2");
-        }
-
-        @Test
         @DisplayName("Should find all application information IDs")
         void shouldFindAllApplicationInformationIds() {
             // Arrange
@@ -389,7 +356,6 @@ class ApplicationInformationRepositoryTest extends BaseRepositoryTest {
             // Act & Assert
             assertThat(applicationInformationRepository.findByClientId("nonexistent-client")).isEmpty();
             assertThat(applicationInformationRepository.findByDataCustodianId("nonexistent-datacustodian")).isEmpty();
-            assertThat(applicationInformationRepository.findByKind("NONEXISTENT_KIND")).isEmpty();
             assertThat(applicationInformationRepository.findByThirdPartyApplicationStatus("NONEXISTENT_STATUS")).isEmpty();
             assertThat(applicationInformationRepository.findByDataCustodianApplicationStatus("NONEXISTENT_STATUS")).isEmpty();
             assertThat(applicationInformationRepository.existsByClientId("nonexistent-client")).isFalse();
@@ -468,22 +434,6 @@ class ApplicationInformationRepositoryTest extends BaseRepositoryTest {
                     .contains("clientId");
         }
 
-        @Test
-        @DisplayName("Should validate third party application name constraints")
-        void shouldValidateThirdPartyApplicationNameConstraints() {
-            // Arrange
-            ApplicationInformationEntity app = createValidApplicationInformation();
-            app.setThirdPartyApplicationName(""); // Empty
-
-            // Act
-            Set<ConstraintViolation<ApplicationInformationEntity>> violations = validator.validate(app);
-
-            // Assert
-            assertThat(violations).isNotEmpty();
-            assertThat(violations).extracting(ConstraintViolation::getPropertyPath)
-                    .extracting(Object::toString)
-                    .contains("thirdPartyApplicationName");
-        }
     }
 
     @Nested
@@ -579,7 +529,6 @@ class ApplicationInformationRepositoryTest extends BaseRepositoryTest {
             // Arrange
             ApplicationInformationEntity app = new ApplicationInformationEntity();
             // Leave required fields null/empty
-            // Note: thirdPartyApplicationName has a default value, so only clientId will fail validation
 
             // Act
             Set<ConstraintViolation<ApplicationInformationEntity>> violations = validator.validate(app);
