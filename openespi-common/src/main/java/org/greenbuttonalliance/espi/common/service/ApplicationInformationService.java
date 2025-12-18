@@ -27,14 +27,6 @@ import java.util.List;
 public interface ApplicationInformationService {
 
 	/**
-	 * @param kind
-	 *            String indicating [ DATA_CUSTODIAN_ADMIN | THIRD_PARTY |
-	 *            UPLOAD_ADMIN ]
-	 * @return List of ApplicationInformationEntity Resources
-	 */
-	public List<ApplicationInformationEntity> findByKind(String kind);
-
-	/**
 	 * Find an ApplicationInformationEntity resource by using it's clientId.
 	 * 
 	 * @param clientId

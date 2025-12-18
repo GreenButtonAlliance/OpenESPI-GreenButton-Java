@@ -49,12 +49,6 @@ public interface ApplicationInformationRepository extends JpaRepository<Applicat
     Optional<ApplicationInformationEntity> findByDataCustodianId(@Param("dataCustodianId") String dataCustodianId);
 
     /**
-     * Find all application information by kind.
-     */
-    @Query("SELECT ai FROM ApplicationInformationEntity ai WHERE ai.kind = :kind")
-    List<ApplicationInformationEntity> findByKind(@Param("kind") String kind);
-
-    /**
      * Find all application information IDs.
      */
     @Query("SELECT ai.id FROM ApplicationInformationEntity ai")

@@ -83,14 +83,7 @@ class SubscriptionRepositoryTest extends BaseRepositoryTest {
         app.setClientId(clientId);
         
         app.setClientSecret(faker.internet().password());
-        
-        // Ensure thirdPartyApplicationName meets validation constraints (@NotEmpty, 2-64 chars)
-        String appName = "Test Application " + faker.number().digits(4);
-        if (appName.length() > 64) {
-            appName = appName.substring(0, 64);
-        }
-        app.setThirdPartyApplicationName(appName);
-        
+
         // Ensure dataCustodianId meets validation constraints (2-64 chars if present)
         String dataCustodianId = "test-datacustodian-" + faker.number().digits(6);
         if (dataCustodianId.length() > 64) {

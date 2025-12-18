@@ -29,9 +29,11 @@ import org.mapstruct.MappingTarget;
 
 /**
  * MapStruct mapper for converting between ApplicationInformationEntity and ApplicationInformationDto.
- * 
- * Handles the conversion between the JPA entity used for persistence and the DTO 
+ *
+ * Handles the conversion between the JPA entity used for persistence and the DTO
  * used for JAXB XML marshalling in the Green Button API.
+ *
+ * Field mappings match ESPI 4.0 XSD schema sequence (espi.xsd lines 62-246).
  */
 @Mapper(componentModel = "spring", uses = {
     DateTimeMapper.class,
@@ -42,51 +44,54 @@ public interface ApplicationInformationMapper {
     /**
      * Converts an ApplicationInformationEntity to an ApplicationInformationDto.
      * Maps all OAuth 2.0 application registration fields for XML marshalling.
-     * 
+     *
      * @param entity the application information entity
      * @return the application information DTO
      */
     @Mapping(target = "uuid", source = "id", qualifiedByName = "uuidToString")
-    @Mapping(target = "dataCustodianBulkRequestURI", source = "dataCustodianBulkRequestURI")
-    @Mapping(target = "dataCustodianResourceEndpoint", source = "dataCustodianResourceEndpoint")
+    // XSD fields in order
+    @Mapping(target = "dataCustodianId", source = "dataCustodianId")
     @Mapping(target = "dataCustodianApplicationStatus", source = "dataCustodianApplicationStatus")
     @Mapping(target = "thirdPartyApplicationDescription", source = "thirdPartyApplicationDescription")
     @Mapping(target = "thirdPartyApplicationStatus", source = "thirdPartyApplicationStatus")
     @Mapping(target = "thirdPartyApplicationType", source = "thirdPartyApplicationType")
     @Mapping(target = "thirdPartyApplicationUse", source = "thirdPartyApplicationUse")
     @Mapping(target = "thirdPartyPhone", source = "thirdPartyPhone")
+    @Mapping(target = "authorizationServerUri", source = "authorizationServerUri")
+    @Mapping(target = "thirdPartyNotifyURI", source = "thirdPartyNotifyUri")
     @Mapping(target = "authorizationServerAuthorizationEndpoint", source = "authorizationServerAuthorizationEndpoint")
     @Mapping(target = "authorizationServerRegistrationEndpoint", source = "authorizationServerRegistrationEndpoint")
     @Mapping(target = "authorizationServerTokenEndpoint", source = "authorizationServerTokenEndpoint")
-    @Mapping(target = "dataCustodianScopeSelectionScreenURI", source = "dataCustodianScopeSelectionScreenURI")
-    @Mapping(target = "thirdPartyLoginScreenURI", source = "thirdPartyLoginScreenURI")
-    @Mapping(target = "thirdPartyNotifyURI", source = "thirdPartyNotifyUri")
-    @Mapping(target = "authorizationServerUri", source = "authorizationServerUri")
-    @Mapping(target = "thirdPartyApplicationName", source = "thirdPartyApplicationName")
-    @Mapping(target = "clientName", source = "clientName")
-    @Mapping(target = "clientId", source = "clientId")
+    @Mapping(target = "dataCustodianBulkRequestURI", source = "dataCustodianBulkRequestURI")
+    @Mapping(target = "dataCustodianResourceEndpoint", source = "dataCustodianResourceEndpoint")
+    @Mapping(target = "thirdPartyScopeSelectionScreenURI", source = "thirdPartyScopeSelectionScreenURI")
+    @Mapping(target = "thirdPartyUserPortalScreenURI", source = "thirdPartyUserPortalScreenURI")
     @Mapping(target = "clientSecret", source = "clientSecret")
+    @Mapping(target = "logoUri", source = "logoUri")
+    @Mapping(target = "clientName", source = "clientName")
+    @Mapping(target = "clientUri", source = "clientUri")
+    @Mapping(target = "redirectUri", source = "redirectUri")
+    @Mapping(target = "clientId", source = "clientId")
+    @Mapping(target = "tosUri", source = "tosUri")
+    @Mapping(target = "policyUri", source = "policyUri")
+    @Mapping(target = "softwareId", source = "softwareId")
+    @Mapping(target = "softwareVersion", source = "softwareVersion")
     @Mapping(target = "clientIdIssuedAt", source = "clientIdIssuedAt")
     @Mapping(target = "clientSecretExpiresAt", source = "clientSecretExpiresAt")
     @Mapping(target = "contacts", source = "contacts")
-    @Mapping(target = "clientUri", source = "clientUri")
-    @Mapping(target = "logoUri", source = "logoUri")
-    @Mapping(target = "policyUri", source = "policyUri")
-    @Mapping(target = "redirectUri", source = "redirectUri")
-    @Mapping(target = "softwareId", source = "softwareId")
-    @Mapping(target = "softwareVersion", source = "softwareVersion")
     @Mapping(target = "tokenEndpointAuthMethod", source = "tokenEndpointAuthMethod")
-    @Mapping(target = "responseType", source = "responseTypes")
-    @Mapping(target = "registrationAccessToken", source = "registrationAccessToken")
+    @Mapping(target = "scopes", ignore = true) // Complex type conversion needed: Set<String> -> String
+    @Mapping(target = "grantTypes", ignore = true) // Complex type conversion needed: Set<GrantType> -> String
+    @Mapping(target = "responseTypes", source = "responseTypes")
     @Mapping(target = "registrationClientUri", source = "registrationClientUri")
-    @Mapping(target = "grantTypes", ignore = true) // Complex type conversion needed
-    @Mapping(target = "scopes", ignore = true) // Complex type conversion needed
+    @Mapping(target = "registrationAccessToken", source = "registrationAccessToken")
+    @Mapping(target = "dataCustodianScopeSelectionScreenURI", source = "dataCustodianScopeSelectionScreenURI")
     ApplicationInformationDto toDto(ApplicationInformationEntity entity);
 
     /**
      * Converts an ApplicationInformationDto to an ApplicationInformationEntity.
      * Maps all OAuth 2.0 application registration fields for persistence.
-     * 
+     *
      * @param dto the application information DTO
      * @return the application information entity
      */
@@ -95,17 +100,17 @@ public interface ApplicationInformationMapper {
     @Mapping(target = "published", ignore = true)
     @Mapping(target = "updated", ignore = true)
     @Mapping(target = "description", ignore = true)
-    @Mapping(target = "grantTypes", ignore = true) // Complex type conversion needed
-    @Mapping(target = "scope", ignore = true) // Complex type conversion needed
     @Mapping(target = "relatedLinks", ignore = true)
     @Mapping(target = "selfLink", ignore = true)
     @Mapping(target = "upLink", ignore = true)
+    @Mapping(target = "scope", ignore = true) // Complex type conversion needed: String -> Set<String>
+    @Mapping(target = "grantTypes", ignore = true) // Complex type conversion needed: String -> Set<GrantType>
     ApplicationInformationEntity toEntity(ApplicationInformationDto dto);
 
     /**
      * Updates an existing ApplicationInformationEntity with data from an ApplicationInformationDto.
      * Useful for merge operations where the entity ID should be preserved.
-     * 
+     *
      * @param dto the source DTO
      * @param entity the target entity to update
      */
@@ -114,10 +119,10 @@ public interface ApplicationInformationMapper {
     @Mapping(target = "updated", ignore = true)
     @Mapping(target = "created", ignore = true)
     @Mapping(target = "description", ignore = true)
-    @Mapping(target = "grantTypes", ignore = true) // Complex type conversion needed
-    @Mapping(target = "scope", ignore = true) // Complex type conversion needed
     @Mapping(target = "relatedLinks", ignore = true)
     @Mapping(target = "selfLink", ignore = true)
     @Mapping(target = "upLink", ignore = true)
+    @Mapping(target = "scope", ignore = true) // Complex type conversion needed: String -> Set<String>
+    @Mapping(target = "grantTypes", ignore = true) // Complex type conversion needed: String -> Set<GrantType>
     void updateEntity(ApplicationInformationDto dto, @MappingTarget ApplicationInformationEntity entity);
 }
