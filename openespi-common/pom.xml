@@ -508,6 +508,13 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- Swagger/OpenAPI Annotations for API documentation -->
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-annotations-jakarta</artifactId>
+            <version>2.2.22</version>
+        </dependency>
+
         <!-- Flyway and database-specific dependencies moved to application pom.xml files -->
 
         <!-- TestContainers for integration testing -->
