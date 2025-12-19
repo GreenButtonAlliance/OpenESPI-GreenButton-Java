@@ -48,8 +48,10 @@ spring:
   # Jackson Configuration for JSON
   jackson:
     default-property-inclusion: non_null
+    datatype:
+      datetime:
+        write-dates-as-timestamps: false
     serialization:
-      write_dates_as_timestamps: false
       write_empty_json_arrays: true
     deserialization:
       fail_on_unknown_properties: false
