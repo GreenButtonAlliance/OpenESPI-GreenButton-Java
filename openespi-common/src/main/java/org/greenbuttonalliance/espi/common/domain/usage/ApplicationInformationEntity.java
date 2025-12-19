@@ -29,8 +29,6 @@ import org.greenbuttonalliance.espi.common.domain.common.GrantType;
 import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
 import org.greenbuttonalliance.espi.common.domain.common.ResponseType;
 import org.greenbuttonalliance.espi.common.utils.encryption.FieldEncryptionConverter;
-import org.hibernate.annotations.LazyCollection;
-import org.hibernate.annotations.LazyCollectionOption;
 import org.hibernate.proxy.HibernateProxy;
 
 import java.util.HashSet;
@@ -255,8 +253,7 @@ public class ApplicationInformationEntity extends IdentifiedObject {
      * OAuth2 scopes for this application.
      * ESPI 4.0 XSD field #33
      */
-    @ElementCollection
-    @LazyCollection(LazyCollectionOption.FALSE)
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(
         name = "application_information_scopes",
         joinColumns = @JoinColumn(name = "application_information_id")
@@ -269,8 +266,7 @@ public class ApplicationInformationEntity extends IdentifiedObject {
      * ESPI 4.0 XSD field #34
      * FIXED: Changed from @JoinTable to @CollectionTable for @ElementCollection
      */
-    @ElementCollection(targetClass = GrantType.class)
-    @LazyCollection(LazyCollectionOption.FALSE)
+    @ElementCollection(targetClass = GrantType.class, fetch = FetchType.EAGER)
     @CollectionTable(
         name = "application_information_grant_types",
         joinColumns = @JoinColumn(name = "application_information_id")

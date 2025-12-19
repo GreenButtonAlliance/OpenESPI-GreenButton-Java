@@ -19,11 +19,13 @@
 
 package org.greenbuttonalliance.espi.common.domain.customer.entity;
 
-import lombok.*;
-import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
-
 import jakarta.persistence.*;
-import org.hibernate.annotations.Where;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
+import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.proxy.HibernateProxy;
 
 import java.util.List;
@@ -84,7 +86,7 @@ public class ServiceLocationEntity extends IdentifiedObject {
      */
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @JoinColumn(name = "parent_entity_uuid", referencedColumnName = "id")
-    @Where(clause = "parent_entity_type = 'ServiceLocationEntity'")
+    @SQLRestriction("parent_entity_type = 'ServiceLocationEntity'")
     @ToString.Exclude
     private List<PhoneNumberEntity> phoneNumbers;
 

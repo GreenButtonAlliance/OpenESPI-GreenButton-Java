@@ -26,8 +26,6 @@ import lombok.Setter;
 import org.greenbuttonalliance.espi.common.domain.common.DateTimeInterval;
 import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
 import org.greenbuttonalliance.espi.common.domain.common.SummaryMeasurement;
-import org.hibernate.annotations.LazyCollection;
-import org.hibernate.annotations.LazyCollectionOption;
 import org.hibernate.proxy.HibernateProxy;
 
 import java.util.ArrayList;
@@ -257,8 +255,7 @@ public class UsageSummaryEntity extends IdentifiedObject {
      * Additional cost details for the last billing period.
      * Line items breaking down additional charges.
      */
-    @OneToMany(mappedBy = "usageSummary", cascade = CascadeType.ALL, orphanRemoval = true)
-    @LazyCollection(LazyCollectionOption.FALSE)
+    @OneToMany(mappedBy = "usageSummary", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<LineItemEntity> costAdditionalDetailLastPeriod = new ArrayList<>();
 
     /**
