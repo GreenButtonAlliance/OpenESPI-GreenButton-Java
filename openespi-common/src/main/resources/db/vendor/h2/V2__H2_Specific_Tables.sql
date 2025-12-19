@@ -34,9 +34,6 @@
 CREATE TABLE time_configurations
 (
     id              UUID PRIMARY KEY ,
-    uuid            VARCHAR(36) NOT NULL UNIQUE,
-    uuid_msb        BIGINT,
-    uuid_lsb        BIGINT,
     description     VARCHAR(255),
     created         DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     updated         DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
@@ -56,7 +53,6 @@ CREATE TABLE time_configurations
 );
 
 -- Create indexes for time_configurations table
-CREATE INDEX idx_time_config_uuid ON time_configurations (uuid);
 CREATE INDEX idx_time_config_created ON time_configurations (created);
 CREATE INDEX idx_time_config_updated ON time_configurations (updated);
 
@@ -75,9 +71,6 @@ CREATE INDEX idx_time_config_related_links ON time_configuration_related_links (
 CREATE TABLE usage_points
 (
     id                        UUID PRIMARY KEY ,
-    uuid                      VARCHAR(36) NOT NULL UNIQUE,
-    uuid_msb                  BIGINT,
-    uuid_lsb                  BIGINT,
     description               VARCHAR(255),
     created                   DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     updated                   DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
@@ -108,7 +101,6 @@ CREATE TABLE usage_points
 );
 
 -- Create indexes for usage_points table
-CREATE INDEX idx_usage_point_uuid ON usage_points (uuid);
 CREATE INDEX idx_usage_point_kind ON usage_points (kind);
 CREATE INDEX idx_usage_point_status ON usage_points (status);
 CREATE INDEX idx_usage_point_customer_id ON usage_points (retail_customer_id);

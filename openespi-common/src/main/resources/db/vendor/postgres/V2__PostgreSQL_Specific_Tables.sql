@@ -34,9 +34,6 @@
 CREATE TABLE time_configurations
 (
     id              CHAR(36) PRIMARY KEY ,
-    uuid            VARCHAR(36) NOT NULL UNIQUE,
-    uuid_msb        BIGINT,
-    uuid_lsb        BIGINT,
     description     VARCHAR(255),
     created         TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated         TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -55,7 +52,6 @@ CREATE TABLE time_configurations
     tz_offset       BIGINT
 );
 
-CREATE INDEX idx_time_config_uuid ON time_configurations (uuid);
 CREATE INDEX idx_time_config_created ON time_configurations (created);
 CREATE INDEX idx_time_config_updated ON time_configurations (updated);
 
@@ -73,9 +69,6 @@ CREATE INDEX idx_time_config_related_links ON time_configuration_related_links (
 CREATE TABLE usage_points
 (
     id                        CHAR(36) PRIMARY KEY ,
-    uuid                      VARCHAR(36) NOT NULL UNIQUE,
-    uuid_msb                  BIGINT,
-    uuid_lsb                  BIGINT,
     description               VARCHAR(255),
     created                   TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated                   TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -134,7 +127,6 @@ CREATE TABLE usage_points
     FOREIGN KEY (local_time_parameters_id) REFERENCES time_configurations (id) ON DELETE SET NULL
 );
 
-CREATE INDEX idx_usage_point_uuid ON usage_points (uuid);
 CREATE INDEX idx_usage_point_kind ON usage_points (kind);
 CREATE INDEX idx_usage_point_status ON usage_points (status);
 CREATE INDEX idx_usage_point_customer_id ON usage_points (retail_customer_id);
