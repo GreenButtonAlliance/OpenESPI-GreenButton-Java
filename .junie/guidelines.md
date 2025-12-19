@@ -5,8 +5,8 @@
 This is a complete monorepo implementation of the NAESB Energy Services Provider Interface (ESPI) 4.0 specification for Green Button energy data standards. The project provides OAuth2-based energy data exchange capabilities between utilities, third-party applications, and consumers.
 
 **Key Technologies:**
-- Java 21 (LTS)
-- Spring Boot 3.5.0 (Jakarta EE 9+)
+- Java 25 (LTS)
+- Spring Boot 4.0.0 
 - Maven 3.9+ multi-module build
 - OAuth2 authorization framework
 - Green Button energy data standards
@@ -139,3 +139,64 @@ When working on the project, be aware of the migration status:
 - When creating or updating tests, use the Junit `@Nested` annotation to group related tests. This will improve the readability of the test report.
 - When investigating test failures of transaction tests, verify the service implementation uses saveAndFlush() to save the entity. This will ensure the entity is saved to the database before the transaction is committed.
 - When testing persistence operations with JPA, do not set the id property. The Id property is set by Hibernate when the entity is saved to the database, and should not be set ahead of time.
+
+### Spring Boot 4.0 Updates and Deprecations
+- The `@MockBean` annotation is deprecated. Use `@MockitoBean` instead.
+- The `@SpyBean` annotation is deprecated. Use `@MockitoSpyBean` instead.
+- For `@WebMvcTest` the package to import has changed from `org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest` to `org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest`.
+- For `@DataJpaTest` the package to import has changed from `org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest` to `org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest`.
+- Using the `@SpringBootTest` annotation will no longer provide any MockMVC support. If you want to use MockMVC in your tests you should now add an `@AutoConfigureMockMvc` annotation to the test class.
+- Using the `@SpringBootTest` annotation will no longer provide any WebClient or TestRestTemplate beans. If you want to use a WebTestClient you should now add an `@AutoConfigureWebTestClient` annotation to the test class. If you want to use a TestRestTemplate you should add an `@AutoConfigureTestRestTemplate` annotation to the test class.
+- The `@PropertyMapping` annotation has been relocated from the `org.springframework.boot.test.autoconfigure.properties` package to `org.springframework.boot.test.context`.
+- The following Maven Dependency has been removed:
+      ```xml
+       <dependency>
+           <groupId>org.springframework.boot</groupId>
+           <artifactId>spring-boot-starter-test</artifactId>
+           <scope>test</scope>
+       </dependency>   
+      ```
+- For testing Spring MVC, the following Maven Dependencies is required:
+     ```xml
+     <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webmvc-test</artifactId>
+            <scope>test</scope>
+     </dependency>
+    ```
+- For testing Spring Data JPA, the following Maven Dependencies is required:
+     ```xml
+     <dependency>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-data-jpa-test</artifactId>
+          <scope>test</scope>
+     </dependency>
+    ```
+- For testing Bean Validation, the following Maven Dependencies is required:
+     ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-validation-test</artifactId>
+        <scope>test</scope>
+    </dependency>
+    ```
+- The Maven Dependency for TestContainers has changed from:
+    ```xml
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    ```
+   to:
+    ```xml
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    ```
+
+
+
+
