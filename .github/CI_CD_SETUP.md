@@ -17,7 +17,7 @@ The project uses **GitHub Actions** for CI/CD with **SonarCloud** integration fo
 **Jobs:**
 
 #### build-and-test
-- Runs on Ubuntu with Java 21
+- Runs on Ubuntu with Java 25
 - Sets up MySQL 8.0 and PostgreSQL 15 services
 - Builds all modules
 - Runs unit tests for each module separately (authserver temporarily excluded)
