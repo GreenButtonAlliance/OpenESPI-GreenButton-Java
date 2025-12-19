@@ -41,32 +41,41 @@ public interface AuthorizationMapper {
 
     /**
      * Converts an AuthorizationEntity to an AuthorizationDto.
-     * Maps all OAuth 2.0 fields for XML marshalling.
-     * 
+     * Maps all OAuth 2.0 and ESPI 4.0 XSD fields for XML marshalling.
+     *
      * @param entity the authorization entity
      * @return the authorization DTO
      */
     @Mapping(target = "uuid", source = "id", qualifiedByName = "uuidToString")
-    @Mapping(target = "accessToken", source = "accessToken")
-    @Mapping(target = "authorizationUri", source = "authorizationURI")
-    @Mapping(target = "applicationInformationId", ignore = true) // Handle separately
-    @Mapping(target = "retailCustomerId", ignore = true) // Handle separately
-    @Mapping(target = "resourceURI", source = "resourceURI")
-    @Mapping(target = "scope", source = "scope")
+    // XSD-compliant fields
+    @Mapping(target = "authorizedPeriod", source = "authorizedPeriod")
+    @Mapping(target = "publishedPeriod", source = "publishedPeriod")
     @Mapping(target = "status", source = "status")
     @Mapping(target = "expiresIn", source = "expiresIn")
     @Mapping(target = "grantType", source = "grantType")
-    @Mapping(target = "refreshToken", source = "refreshToken")
+    @Mapping(target = "scope", source = "scope")
     @Mapping(target = "tokenType", source = "tokenType")
-    @Mapping(target = "thirdParty", source = "thirdParty")
-    @Mapping(target = "ppid", ignore = true) // Field not found in entity
+    @Mapping(target = "error", source = "error")
+    @Mapping(target = "errorDescription", source = "errorDescription")
+    @Mapping(target = "errorUri", source = "errorUri")
+    @Mapping(target = "resourceURI", source = "resourceURI")
+    @Mapping(target = "authorizationUri", source = "authorizationURI")
+    @Mapping(target = "customerResourceURI", source = "customerResourceURI")
+    // OAuth2 implementation fields (not in XSD)
+    @Mapping(target = "accessToken", source = "accessToken")
+    @Mapping(target = "refreshToken", source = "refreshToken")
     @Mapping(target = "authorizationCode", source = "code")
+    @Mapping(target = "state", source = "state")
+    @Mapping(target = "responseType", source = "responseType")
+    @Mapping(target = "thirdParty", source = "thirdParty")
+    @Mapping(target = "applicationInformationId", ignore = true) // Handle separately
+    @Mapping(target = "retailCustomerId", ignore = true) // Handle separately
     AuthorizationDto toDto(AuthorizationEntity entity);
 
     /**
      * Converts an AuthorizationDto to an AuthorizationEntity.
-     * Maps all OAuth 2.0 fields for persistence.
-     * 
+     * Maps all OAuth 2.0 and ESPI 4.0 XSD fields for persistence.
+     *
      * @param dto the authorization DTO
      * @return the authorization entity
      */
@@ -75,19 +84,29 @@ public interface AuthorizationMapper {
     @Mapping(target = "published", ignore = true)
     @Mapping(target = "updated", ignore = true)
     @Mapping(target = "description", ignore = true)
-    @Mapping(target = "accessToken", source = "accessToken")
-    @Mapping(target = "authorizationURI", source = "authorizationUri")
-    @Mapping(target = "applicationInformation", ignore = true) // Complex mapping, handle separately
-    @Mapping(target = "retailCustomer", ignore = true) // Complex mapping, handle separately
-    @Mapping(target = "resourceURI", source = "resourceURI")
-    @Mapping(target = "scope", source = "scope")
+    // XSD-compliant fields
+    @Mapping(target = "authorizedPeriod", source = "authorizedPeriod")
+    @Mapping(target = "publishedPeriod", source = "publishedPeriod")
     @Mapping(target = "status", source = "status")
     @Mapping(target = "expiresIn", source = "expiresIn")
     @Mapping(target = "grantType", source = "grantType")
-    @Mapping(target = "refreshToken", source = "refreshToken")
+    @Mapping(target = "scope", source = "scope")
     @Mapping(target = "tokenType", source = "tokenType")
-    @Mapping(target = "thirdParty", source = "thirdParty")
+    @Mapping(target = "error", source = "error")
+    @Mapping(target = "errorDescription", source = "errorDescription")
+    @Mapping(target = "errorUri", source = "errorUri")
+    @Mapping(target = "resourceURI", source = "resourceURI")
+    @Mapping(target = "authorizationURI", source = "authorizationUri")
+    @Mapping(target = "customerResourceURI", source = "customerResourceURI")
+    // OAuth2 implementation fields (not in XSD)
+    @Mapping(target = "accessToken", source = "accessToken")
+    @Mapping(target = "refreshToken", source = "refreshToken")
     @Mapping(target = "code", source = "authorizationCode")
+    @Mapping(target = "state", source = "state")
+    @Mapping(target = "responseType", source = "responseType")
+    @Mapping(target = "thirdParty", source = "thirdParty")
+    @Mapping(target = "applicationInformation", ignore = true) // Complex mapping, handle separately
+    @Mapping(target = "retailCustomer", ignore = true) // Complex mapping, handle separately
     @Mapping(target = "relatedLinks", ignore = true)
     @Mapping(target = "selfLink", ignore = true)
     @Mapping(target = "upLink", ignore = true)
@@ -96,8 +115,8 @@ public interface AuthorizationMapper {
 
     /**
      * Updates an existing AuthorizationEntity with data from an AuthorizationDto.
-     * Useful for merge operations where the entity ID should be preserved.
-     * 
+     * Useful for update operations where the entity ID should be preserved.
+     *
      * @param dto the source DTO
      * @param entity the target entity to update
      */
@@ -106,6 +125,28 @@ public interface AuthorizationMapper {
     @Mapping(target = "updated", ignore = true)
     @Mapping(target = "created", ignore = true)
     @Mapping(target = "description", ignore = true)
+    // XSD-compliant fields - will be mapped
+    @Mapping(target = "authorizedPeriod", source = "authorizedPeriod")
+    @Mapping(target = "publishedPeriod", source = "publishedPeriod")
+    @Mapping(target = "status", source = "status")
+    @Mapping(target = "expiresIn", source = "expiresIn")
+    @Mapping(target = "grantType", source = "grantType")
+    @Mapping(target = "scope", source = "scope")
+    @Mapping(target = "tokenType", source = "tokenType")
+    @Mapping(target = "error", source = "error")
+    @Mapping(target = "errorDescription", source = "errorDescription")
+    @Mapping(target = "errorUri", source = "errorUri")
+    @Mapping(target = "resourceURI", source = "resourceURI")
+    @Mapping(target = "authorizationURI", source = "authorizationUri")
+    @Mapping(target = "customerResourceURI", source = "customerResourceURI")
+    // OAuth2 implementation fields - will be mapped
+    @Mapping(target = "accessToken", source = "accessToken")
+    @Mapping(target = "refreshToken", source = "refreshToken")
+    @Mapping(target = "code", source = "authorizationCode")
+    @Mapping(target = "state", source = "state")
+    @Mapping(target = "responseType", source = "responseType")
+    @Mapping(target = "thirdParty", source = "thirdParty")
+    // Relationships - preserve existing
     @Mapping(target = "relatedLinks", ignore = true)
     @Mapping(target = "selfLink", ignore = true)
     @Mapping(target = "upLink", ignore = true)

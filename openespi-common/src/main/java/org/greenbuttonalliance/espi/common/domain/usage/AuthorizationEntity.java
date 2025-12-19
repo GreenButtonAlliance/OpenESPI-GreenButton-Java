@@ -195,6 +195,16 @@ public class AuthorizationEntity extends IdentifiedObject {
     private String authorizationURI;
 
     /**
+     * URI for accessing PII data the Third Party is authorized to access.
+     * Used in GET of the PII resource subscription.
+     * Note: This URI will have a different namespace than resourceURI.
+     *
+     * @see <a href="https://www.naesb.org/ESPI_Standards.asp">NAESB ESPI 4.0</a>
+     */
+    @Column(name = "customer_resource_uri", length = 512)
+    private String customerResourceURI;
+
+    /**
      * Third party identifier.
      * Identifies the third-party application or organization.
      */
@@ -278,51 +288,6 @@ public class AuthorizationEntity extends IdentifiedObject {
     @Override
     protected String generateDefaultUpHref() {
         return getUpHref();
-    }
-
-    /**
-     * Merges data from another AuthorizationEntity.
-     * Updates authorization parameters while preserving relationships.
-     * 
-     * @param other the other authorization entity to merge from
-     */
-    public void merge(AuthorizationEntity other) {
-        if (other != null) {
-            super.merge(other);
-            
-            // Update authorization parameters
-            this.authorizedPeriod = other.authorizedPeriod;
-            this.publishedPeriod = other.publishedPeriod;
-            this.status = other.status;
-            this.expiresIn = other.expiresIn;
-            this.grantType = other.grantType;
-            this.scope = other.scope;
-            this.responseType = other.responseType;
-            this.tokenType = other.tokenType;
-            this.error = other.error;
-            this.errorDescription = other.errorDescription;
-            this.errorUri = other.errorUri;
-            this.resourceURI = other.resourceURI;
-            this.authorizationURI = other.authorizationURI;
-            this.thirdParty = other.thirdParty;
-            
-            // Note: Sensitive fields like tokens are not merged
-            // Note: Relationships are not merged to preserve existing associations
-        }
-    }
-
-    /**
-     * Clears all relationships when unlinking the entity.
-     * Simplified - applications handle relationship cleanup.
-     */
-    public void unlink() {
-        clearRelatedLinks();
-        
-        // Simple field clearing - applications handle bidirectional cleanup
-        this.retailCustomer = null;
-        this.subscription = null;
-        
-        // Note: applicationInformation is not cleared as it might be referenced elsewhere
     }
 
     /**
@@ -516,6 +481,7 @@ public class AuthorizationEntity extends IdentifiedObject {
                 "errorUri = " + getErrorUri() + ", " +
                 "resourceURI = " + getResourceURI() + ", " +
                 "authorizationURI = " + getAuthorizationURI() + ", " +
+                "customerResourceURI = " + getCustomerResourceURI() + ", " +
                 "thirdParty = " + getThirdParty() + ", " +
                 "description = " + getDescription() + ", " +
                 "created = " + getCreated() + ", " +
