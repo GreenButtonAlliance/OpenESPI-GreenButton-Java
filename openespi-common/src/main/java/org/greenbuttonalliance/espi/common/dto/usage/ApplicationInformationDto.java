@@ -202,6 +202,8 @@ public record ApplicationInformationDto(
 
     /**
      * Default constructor for JAXB.
+     * Creates an ApplicationInformationDto with all fields set to null.
+     * The canonical constructor with all fields is automatically provided by the record declaration.
      */
     public ApplicationInformationDto() {
         this(null, null, null, null, null, null, null, null, null,
@@ -209,17 +211,6 @@ public record ApplicationInformationDto(
              null, null, null, null, null, null, null, null, null,
              null, null, null, null, null, null, null, null, null,
              null);
-    }
-
-    /**
-     * Constructor for basic application information (minimum required fields).
-     */
-    public ApplicationInformationDto(String dataCustodianId, String clientId, String clientSecret, String clientName) {
-        this(null, dataCustodianId, null, null, null, null, null, null, null,
-             null, null, null, null, null, null, null, null, null,
-             clientSecret, null, clientName, null, null, clientId, null, null,
-             null, null, null, null, null, null, null, null, null,
-             null, null);
     }
 
     // JAXB property accessors - must match propOrder sequence
