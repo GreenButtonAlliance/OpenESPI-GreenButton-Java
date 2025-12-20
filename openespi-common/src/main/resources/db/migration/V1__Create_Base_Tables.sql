@@ -33,8 +33,6 @@ CREATE INDEX idx_identified_object_related_links ON identified_object_related_li
 CREATE TABLE application_information
 (
     id                              CHAR(36) PRIMARY KEY,
-    uuid_msb                        BIGINT,
-    uuid_lsb                        BIGINT,
     description                     VARCHAR(255),
     created                         TIMESTAMP NOT NULL,
     updated                         TIMESTAMP NOT NULL,
@@ -47,10 +45,7 @@ CREATE TABLE application_information
     self_link_type                  VARCHAR(255),
 
     -- Application specific fields
-    kind                            VARCHAR(255),
     data_custodian_application_status VARCHAR(255),
-    data_custodian_default_batch_resource TEXT,
-    data_custodian_default_subscription_resource TEXT,
     client_name                     VARCHAR(255),
     client_id                       VARCHAR(255) NOT NULL UNIQUE,
     client_secret                   VARCHAR(255),
@@ -74,10 +69,7 @@ CREATE TABLE application_information
     authorization_server_registration_endpoint TEXT,
     authorization_server_token_endpoint TEXT,
     data_custodian_bulk_request_uri TEXT,
-    data_custodian_third_party_selection_screen_uri TEXT,
     data_custodian_resource_endpoint TEXT,
-    third_party_data_custodian_selection_screen_uri TEXT,
-    third_party_login_screen_uri TEXT,
     third_party_scope_selection_screen_uri TEXT,
     third_party_user_portal_screen_uri TEXT,
     logo_uri TEXT,
@@ -89,7 +81,6 @@ CREATE TABLE application_information
     token_endpoint_auth_method VARCHAR(50),
     data_custodian_scope_selection_screen_uri TEXT,
     data_custodian_id VARCHAR(64),
-    third_party_application_name VARCHAR(64) NOT NULL DEFAULT 'Default Third Party Application Name',
     response_types                  VARCHAR(255),
     grant_types                     VARCHAR(255),
     application_type                VARCHAR(50),
@@ -150,9 +141,6 @@ CREATE INDEX idx_app_info_scopes ON application_information_scopes (application_
 CREATE TABLE retail_customers
 (
     id             CHAR(36) PRIMARY KEY,
-    uuid           VARCHAR(36) NOT NULL UNIQUE,
-    uuid_msb       BIGINT,
-    uuid_lsb       BIGINT,
     description    VARCHAR(255),
     created        TIMESTAMP NOT NULL,
     updated        TIMESTAMP NOT NULL,
@@ -179,7 +167,6 @@ CREATE TABLE retail_customers
     failed_login_attempts INTEGER       DEFAULT 0
 );
 
-CREATE INDEX idx_retail_customer_uuid ON retail_customers (uuid);
 CREATE INDEX idx_retail_customer_username ON retail_customers (username);
 CREATE INDEX idx_retail_customer_created ON retail_customers (created);
 CREATE INDEX idx_retail_customer_updated ON retail_customers (updated);
@@ -198,9 +185,6 @@ CREATE INDEX idx_retail_customer_related_links ON retail_customer_related_links 
 CREATE TABLE service_delivery_points
 (
     id                 CHAR(36) PRIMARY KEY ,
-    uuid               VARCHAR(36) NOT NULL UNIQUE,
-    uuid_msb           BIGINT,
-    uuid_lsb           BIGINT,
     description        VARCHAR(255),
     created            TIMESTAMP NOT NULL,
     updated            TIMESTAMP NOT NULL,
@@ -219,7 +203,6 @@ CREATE TABLE service_delivery_points
     sdp_customer_agreement VARCHAR(256)
 );
 
-CREATE INDEX idx_sdp_uuid ON service_delivery_points (uuid);
 CREATE INDEX idx_sdp_name ON service_delivery_points (sdp_name);
 CREATE INDEX idx_sdp_tariff_profile ON service_delivery_points (sdp_tariff_profile);
 CREATE INDEX idx_sdp_customer_agreement ON service_delivery_points (sdp_customer_agreement);
@@ -240,8 +223,6 @@ CREATE INDEX idx_sdp_related_links ON service_delivery_point_related_links (serv
 CREATE TABLE authorizations
 (
     id                         CHAR(36) PRIMARY KEY ,
-    uuid_msb                   BIGINT,
-    uuid_lsb                   BIGINT,
     description                VARCHAR(255),
     created                    TIMESTAMP NOT NULL,
     updated                    TIMESTAMP NOT NULL,
@@ -308,9 +289,6 @@ CREATE INDEX idx_authorization_related_links ON authorization_related_links (aut
 CREATE TABLE reading_types
 (
     id                      CHAR(36) PRIMARY KEY ,
-    uuid                    VARCHAR(36) NOT NULL UNIQUE,
-    uuid_msb                BIGINT,
-    uuid_lsb                BIGINT,
     description             VARCHAR(255),
     created                 TIMESTAMP NOT NULL,
     updated                 TIMESTAMP NOT NULL,
@@ -345,7 +323,6 @@ CREATE TABLE reading_types
     interharmonic_denominator BIGINT
 );
 
-CREATE INDEX idx_reading_type_uuid ON reading_types (uuid);
 CREATE INDEX idx_reading_type_kind ON reading_types (kind);
 CREATE INDEX idx_reading_type_commodity ON reading_types (commodity);
 CREATE INDEX idx_reading_type_uom ON reading_types (uom);
@@ -366,9 +343,6 @@ CREATE INDEX idx_reading_type_related_links ON reading_type_related_links (readi
 CREATE TABLE subscriptions
 (
     id                             CHAR(36) PRIMARY KEY ,
-    uuid                           VARCHAR(36) NOT NULL UNIQUE,
-    uuid_msb                       BIGINT,
-    uuid_lsb                       BIGINT,
     description                    VARCHAR(255),
     created                        TIMESTAMP NOT NULL,
     updated                        TIMESTAMP NOT NULL,
@@ -394,7 +368,6 @@ CREATE TABLE subscriptions
     FOREIGN KEY (retail_customer_id) REFERENCES retail_customers (id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_subscription_uuid ON subscriptions (uuid);
 CREATE INDEX idx_subscription_app_id ON subscriptions (application_information_id);
 CREATE INDEX idx_subscription_customer_id ON subscriptions (retail_customer_id);
 CREATE INDEX idx_subscription_last_update ON subscriptions (last_update);
@@ -415,9 +388,6 @@ CREATE INDEX idx_subscription_related_links ON subscription_related_links (subsc
 CREATE TABLE batch_lists
 (
     id             CHAR(36) PRIMARY KEY ,
-    uuid           VARCHAR(36) NOT NULL UNIQUE,
-    uuid_msb       BIGINT,
-    uuid_lsb       BIGINT,
     description    VARCHAR(255),
     created        TIMESTAMP NOT NULL,
     updated        TIMESTAMP NOT NULL,
@@ -433,7 +403,6 @@ CREATE TABLE batch_lists
     resource_count INT                  DEFAULT 0
 );
 
-CREATE INDEX idx_batch_list_uuid ON batch_lists (uuid);
 CREATE INDEX idx_batch_list_created ON batch_lists (created);
 CREATE INDEX idx_batch_list_resource_count ON batch_lists (resource_count);
 CREATE INDEX idx_batch_list_updated ON batch_lists (updated);
