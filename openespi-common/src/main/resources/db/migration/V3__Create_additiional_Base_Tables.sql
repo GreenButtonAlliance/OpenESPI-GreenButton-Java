@@ -641,7 +641,7 @@ CREATE TABLE electric_power_quality_summaries
 );
 
 CREATE INDEX idx_epqs_usage_point_id ON electric_power_quality_summaries (usage_point_id);
-CREATE INDEX idx_epqs_summary_interval_start ON electric_power_quality_summaries (id);
+CREATE INDEX idx_epqs_summary_interval_start ON electric_power_quality_summaries (summary_interval_start);
 CREATE INDEX idx_epqs_created ON electric_power_quality_summaries (created);
 CREATE INDEX idx_epqs_updated ON electric_power_quality_summaries (updated);
 
