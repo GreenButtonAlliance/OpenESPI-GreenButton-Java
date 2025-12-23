@@ -19,27 +19,26 @@
 
 package org.greenbuttonalliance.espi.datacustodian.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.Marshaller;
 import jakarta.xml.bind.Unmarshaller;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.http.converter.HttpMessageConverters;
+import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
 import org.springframework.http.converter.xml.MarshallingHttpMessageConverter;
 import org.springframework.oxm.jaxb.Jaxb2Marshaller;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.servlet.config.annotation.*;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.cfg.DateTimeFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.Arrays;
-import java.util.List;
 
 /**
  * Web configuration for the OpenESPI Data Custodian Resource Server.
@@ -68,12 +67,14 @@ public class WebConfiguration implements WebMvcConfigurer {
      * Configure HTTP message converters for XML and JSON.
      */
     @Override
-    public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
+    public void configureMessageConverters(HttpMessageConverters.ServerBuilder builder) {
         // Add JAXB XML converter for ESPI Atom feeds
-        converters.add(createXmlConverter());
-        
+        builder.withXmlConverter(createXmlConverter());
+
         // Add JSON converter with proper date handling
-        converters.add(createJsonConverter());
+        builder.withJsonConverter(createJsonConverter3());
+
+        WebMvcConfigurer.super.configureMessageConverters(builder);
     }
 
     /**
@@ -83,7 +84,7 @@ public class WebConfiguration implements WebMvcConfigurer {
     public void configureContentNegotiation(ContentNegotiationConfigurer configurer) {
         configurer
             .favorParameter(false)
-            .favorPathExtension(false)
+            //.favorPathExtension(false) // removed, was default
             .ignoreAcceptHeader(false)
             .useRegisteredExtensionsOnly(false)
             .defaultContentType(MediaType.APPLICATION_JSON)
@@ -135,21 +136,13 @@ public class WebConfiguration implements WebMvcConfigurer {
     /**
      * Create JSON message converter with proper date handling.
      */
-    private HttpMessageConverter<?> createJsonConverter() {
-        MappingJackson2HttpMessageConverter jsonConverter = new MappingJackson2HttpMessageConverter();
-        
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule());
-        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
-        
-        jsonConverter.setObjectMapper(objectMapper);
-        jsonConverter.setSupportedMediaTypes(Arrays.asList(
-            MediaType.APPLICATION_JSON,
-            MediaType.APPLICATION_JSON_UTF8
-        ));
-        
-        return jsonConverter;
+    private HttpMessageConverter<?> createJsonConverter3() {
+
+        return new JacksonJsonHttpMessageConverter(JsonMapper.builder()
+                        .enable(SerializationFeature.INDENT_OUTPUT)
+                        .enable(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS)
+                        .build());
+                // Java 8 time should be included by default
     }
 
     /**
@@ -234,9 +227,9 @@ public class WebConfiguration implements WebMvcConfigurer {
      * @param builder the RestTemplateBuilder provided by Spring Boot.
      * @return a new instance of RestTemplate.
      */
-    @Bean
-    public RestTemplate restTemplate(RestTemplateBuilder builder) {
-        return builder.build();
-    }
+//    @Bean
+//    public RestTemplate restTemplate(RestTemplateBuilder builder) {
+//        return builder.build();
+//    }
 
 }
