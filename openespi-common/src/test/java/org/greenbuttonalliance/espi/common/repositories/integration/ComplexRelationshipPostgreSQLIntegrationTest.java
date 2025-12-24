@@ -20,10 +20,16 @@ package org.greenbuttonalliance.espi.common.repositories.integration;
 
 import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerEntity;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.StatementEntity;
-import org.greenbuttonalliance.espi.common.domain.usage.*;
+import org.greenbuttonalliance.espi.common.domain.usage.IntervalBlockEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.MeterReadingEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 import org.greenbuttonalliance.espi.common.repositories.customer.CustomerRepository;
 import org.greenbuttonalliance.espi.common.repositories.customer.StatementRepository;
-import org.greenbuttonalliance.espi.common.repositories.usage.*;
+import org.greenbuttonalliance.espi.common.repositories.usage.IntervalBlockRepository;
+import org.greenbuttonalliance.espi.common.repositories.usage.MeterReadingRepository;
+import org.greenbuttonalliance.espi.common.repositories.usage.RetailCustomerRepository;
+import org.greenbuttonalliance.espi.common.repositories.usage.UsagePointRepository;
 import org.greenbuttonalliance.espi.common.test.BaseTestContainersTest;
 import org.greenbuttonalliance.espi.common.test.TestDataBuilders;
 import org.junit.jupiter.api.DisplayName;
@@ -39,7 +45,7 @@ import org.testcontainers.junit.jupiter.Container;
 import java.util.List;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Complex relationship integration tests for JPA entities using PostgreSQL TestContainer.
@@ -238,8 +244,9 @@ class ComplexRelationshipPostgreSQLIntegrationTest extends BaseTestContainersTes
             flushAndClear();
 
             // Assert
-            assertThat(savedReadings).hasSize(5);
-            assertThat(savedReadings).allMatch(reading -> reading.getId() != null);
+            assertThat(savedReadings)
+                .hasSize(5)
+                .allMatch(reading -> reading.getId() != null);
 
             // Verify all readings were saved
             long count = meterReadingRepository.count();
@@ -271,6 +278,89 @@ class ComplexRelationshipPostgreSQLIntegrationTest extends BaseTestContainersTes
             // Assert
             long finalCount = meterReadingRepository.count();
             assertThat(finalCount).isEqualTo(initialCount - 3);
+        }
+    }
+
+    @Nested
+    @DisplayName("Flyway Migration Verification")
+    class MigrationVerificationTest {
+
+        @Test
+        @DisplayName("Should create all required base migration tables")
+        void shouldCreateBaseMigrationTables() throws Exception {
+            // Verify base migration tables exist (from V1__Create_Base_Tables.sql)
+            try (var connection = postgres.createConnection("")) {
+                assertThat(tableExists(connection, "application_information"))
+                    .as("application_information table should exist from base migration")
+                    .isTrue();
+                assertThat(tableExists(connection, "retail_customers"))
+                    .as("retail_customers table should exist from base migration")
+                    .isTrue();
+                assertThat(tableExists(connection, "reading_types"))
+                    .as("reading_types table should exist from base migration")
+                    .isTrue();
+                assertThat(tableExists(connection, "subscriptions"))
+                    .as("subscriptions table should exist from base migration")
+                    .isTrue();
+                assertThat(tableExists(connection, "batch_lists"))
+                    .as("batch_lists table should exist from base migration")
+                    .isTrue();
+            }
+        }
+
+        @Test
+        @DisplayName("Should create PostgreSQL vendor-specific tables")
+        void shouldCreatePostgreSQLSpecificTables() throws Exception {
+            // Verify PostgreSQL-specific migration tables exist (from V2__PostgreSQL_Specific_Tables.sql or V3__Create_additiional_Base_Tables.sql)
+            try (var connection = postgres.createConnection("")) {
+                assertThat(tableExists(connection, "time_configurations"))
+                    .as("time_configurations table should exist from vendor-specific migration")
+                    .isTrue();
+                assertThat(tableExists(connection, "usage_points"))
+                    .as("usage_points table should exist from vendor-specific migration")
+                    .isTrue();
+                assertThat(tableExists(connection, "meter_readings"))
+                    .as("meter_readings table should exist from vendor-specific migration")
+                    .isTrue();
+                assertThat(tableExists(connection, "interval_blocks"))
+                    .as("interval_blocks table should exist from vendor-specific migration")
+                    .isTrue();
+            }
+        }
+
+        @Test
+        @DisplayName("Should create BYTEA columns for PostgreSQL vendor-specific types")
+        void shouldCreateBYTEAColumns() throws Exception {
+            // Verify that BYTEA columns exist in PostgreSQL-specific tables
+            try (var connection = postgres.createConnection("")) {
+                assertThat(columnExists(connection, "time_configurations", "dst_end_rule"))
+                    .as("dst_end_rule BYTEA column should exist in time_configurations")
+                    .isTrue();
+                assertThat(columnExists(connection, "time_configurations", "dst_start_rule"))
+                    .as("dst_start_rule BYTEA column should exist in time_configurations")
+                    .isTrue();
+                assertThat(columnExists(connection, "usage_points", "role_flags"))
+                    .as("role_flags BYTEA column should exist in usage_points")
+                    .isTrue();
+            }
+        }
+
+        /**
+         * Helper method to check if a table exists in the database.
+         */
+        private boolean tableExists(java.sql.Connection connection, String tableName) throws java.sql.SQLException {
+            try (var rs = connection.getMetaData().getTables(null, null, tableName.toLowerCase(), null)) {
+                return rs.next();
+            }
+        }
+
+        /**
+         * Helper method to check if a column exists in a table.
+         */
+        private boolean columnExists(java.sql.Connection connection, String tableName, String columnName) throws java.sql.SQLException {
+            try (var rs = connection.getMetaData().getColumns(null, null, tableName.toLowerCase(), columnName.toLowerCase())) {
+                return rs.next();
+            }
         }
     }
 }
