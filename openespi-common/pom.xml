@@ -82,7 +82,6 @@
         <!-- Modern Dependencies for Spring Boot 3.5.0 -->
         <lombok.version>1.18.34</lombok.version>
         <mapstruct.version>1.6.0</mapstruct.version>
-        <testcontainers.version>1.20.1</testcontainers.version>
 
         <!-- Legacy support for compatibility -->
         <commons-lang.version>2.6</commons-lang.version>
@@ -295,20 +294,6 @@
             </releases>
         </repository>
     </repositories>
-
-    <!-- Dependency Management for version consistency -->
-    <dependencyManagement>
-        <dependencies>
-            <!-- Testcontainers BOM for version management -->
-            <dependency>
-                <groupId>org.testcontainers</groupId>
-                <artifactId>testcontainers-bom</artifactId>
-                <version>${testcontainers.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
 
     <dependencies>
         <!-- Spring Boot Starters for Common Library -->
