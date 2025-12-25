@@ -32,15 +32,23 @@ cd openespi-authserver && mvn spring-boot:run
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Third Party   │───▶│ Authorization   │───▶│ Data Custodian  │
 │ (Java 21+Jakarta)│    │ Server (SB 3.5) │    │ Server (SB 3.5) │
+│                 │    │  (Independent)  │    │                 │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         └───────────────────────┼───────────────────────┘
+         │                                              │
+         │                                              │
+         └──────────────────────────────────────────────┘
                                  ▼
                     ┌─────────────────┐
                     │ OpenESPI Common │
                     │ (Spring Boot 3.5)│
                     └─────────────────┘
 ```
+
+**Module Dependencies:**
+- **openespi-common**: Foundation library (no dependencies on other modules)
+- **openespi-datacustodian**: Depends on openespi-common
+- **openespi-authserver**: **Independent** (no dependency on openespi-common)
+- **openespi-thirdparty**: Depends on openespi-common
 
 ## ✨ Migration Achievements
 
@@ -118,22 +126,117 @@ mvn test
 mvn test -pl openespi-common
 ```
 
-### Integration Tests
+### Integration Tests with TestContainers
+
+**Prerequisites:**
+- Docker Desktop installed and running
+- Minimum 4GB RAM allocated to Docker
+- Ports 3306 (MySQL) and 5432 (PostgreSQL) available
+
+**Quick Start:**
 ```bash
-# TestContainers integration tests
+# Verify Docker is running
+docker --version && docker ps
+
+# Run all integration tests (H2, MySQL, PostgreSQL)
 mvn verify -pl openespi-common -Pintegration-tests
+
+# Run specific database tests
+mvn test -Dtest=ComplexRelationshipMySQLIntegrationTest -pl openespi-common
+mvn test -Dtest=ComplexRelationshipPostgreSQLIntegrationTest -pl openespi-common
 
 # Cross-module integration
 mvn verify -Pfull-integration
 ```
 
+**What Gets Tested:**
+- ✅ **H2**: In-memory database with vendor-neutral migrations
+- ✅ **MySQL 8.0**: TestContainers with BLOB column types
+- ✅ **PostgreSQL 15**: TestContainers with BYTEA column types
+- ✅ **Flyway Migrations**: Vendor-specific migration paths
+- ✅ **JPA Relationships**: Complex entity hierarchies
+- ✅ **Transaction Boundaries**: Data consistency across transactions
+- ✅ **Bulk Operations**: saveAll, deleteAll operations
+
+**TestContainers Configuration:**
+- MySQL container: `mysql:8.0`
+- PostgreSQL container: `postgres:15-alpine`
+- Container reuse enabled for faster test execution
+- Automatic cleanup after tests complete
+
+**Troubleshooting:**
+```bash
+# If containers fail to start
+docker system prune  # Clean up Docker cache
+docker pull mysql:8.0
+docker pull postgres:15-alpine
+
+# View running containers during tests
+docker ps
+
+# Check container logs
+docker logs <container_id>
+```
+
+## 🗄️ Database Migrations
+
+### Vendor-Specific Migration Structure
+
+The project uses Flyway with a vendor-specific migration strategy to support H2, MySQL, and PostgreSQL:
+
+```
+openespi-common/src/main/resources/db/
+├── migration/
+│   ├── V1__Create_Base_Tables.sql           # Vendor-neutral base tables
+│   └── V3__Create_additiional_Base_Tables.sql  # Additional shared tables
+└── vendor/
+    ├── h2/                                  # (Future: H2-specific migrations)
+    ├── mysql/                               # (Future: MySQL-specific migrations)
+    └── postgres/                            # (Future: PostgreSQL-specific migrations)
+```
+
+**Current Implementation:**
+- All migrations are currently in the base `db/migration` directory
+- Tables use vendor-neutral SQL syntax compatible with all three databases
+- Future enhancements will move vendor-specific tables to `/vendor/{database}/` paths
+
+**Migration Locations by Profile:**
+- `test` (H2): `classpath:db/migration`
+- `test-mysql`: `classpath:db/migration,classpath:db/vendor/mysql`
+- `test-postgresql`: `classpath:db/migration,classpath:db/vendor/postgres`
+- `dev-mysql`: `classpath:db/migration,classpath:db/vendor/mysql`
+- `dev-postgresql`: `classpath:db/migration,classpath:db/vendor/postgres`
+
+**Vendor-Specific Column Types:**
+| Type | H2 | MySQL | PostgreSQL |
+|------|------|-------|------------|
+| Binary Data | `BINARY` | `BLOB` | `BYTEA` |
+| UUID | `UUID` | `CHAR(36)` | `UUID` |
+| Timestamps | `TIMESTAMP` | `DATETIME` | `TIMESTAMP` |
+
+**Running Migrations:**
+```bash
+# Migrations run automatically on application startup
+mvn spring-boot:run
+
+# Test migrations with specific database
+mvn test -Dtest=ComplexRelationshipMySQLIntegrationTest
+mvn test -Dtest=ComplexRelationshipPostgreSQLIntegrationTest
+
+# Validate migration status
+mvn flyway:info -pl openespi-common
+```
+
 ## 🚀 Deployment
 
 Each module has independent deployment capabilities:
-- **Common**: Maven Central library
-- **DataCustodian**: Kubernetes/Docker deployment
-- **AuthServer**: Kubernetes/Docker deployment  
-- **ThirdParty**: WAR deployment or future containerization
+- **Common**: Maven Central library (shared dependency)
+- **DataCustodian**: Kubernetes/Docker deployment (Spring Boot 3.5 JAR)
+- **AuthServer**: Kubernetes/Docker deployment (Spring Boot 3.5 JAR)
+- **ThirdParty**: WAR deployment to Tomcat/Jetty ⚠️ **Temporary** - awaiting Spring Boot 3.5 migration for containerization
+
+**Note on ThirdParty Deployment:**
+ThirdParty currently uses legacy WAR packaging because it runs on Spring Framework (not Spring Boot) with JSP/JSTL views. Once the Spring Boot 3.5 migration completes, it will switch to executable JAR packaging with embedded server and Docker/Kubernetes deployment like the other modules.
 
 ### Docker Build
 ```bash
