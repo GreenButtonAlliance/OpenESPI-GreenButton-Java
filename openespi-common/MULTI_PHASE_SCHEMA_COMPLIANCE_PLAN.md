@@ -4,9 +4,19 @@
 
 This plan reviews domain entities in `/domain/usage`, `/domain/customer`, and `/domain/common` to ensure compliance with NAESB ESPI 4.0 schema (espi.xsd and customer.xsd) element sequences.
 
-**Excluded Entities** (already completed):
-- ApplicationInformationEntity
-- AuthorizationEntity
+**OAuth2 Domain Entities** (already compliant with DTO_PATTERN_GUIDE.md):
+- **ApplicationInformationEntity** - ApplicationInformationDto already follows DTO_PATTERN_GUIDE.md pattern:
+  - Uses `@XmlAccessorType(XmlAccessType.PROPERTY)`
+  - Has explicit JavaBean-style getters with @XmlElement annotations
+  - Uses correct namespace: `http://naesb.org/espi`
+  - propOrder matches XSD sequence (espi.xsd lines 62-246)
+  - No review required
+- **AuthorizationEntity** - AuthorizationDto already follows DTO_PATTERN_GUIDE.md pattern:
+  - Uses `@XmlAccessorType(XmlAccessType.PROPERTY)`
+  - Has explicit JavaBean-style getters with @XmlElement annotations
+  - Uses correct namespace: `http://naesb.org/espi`
+  - propOrder matches XSD sequence
+  - No review required
 
 **Processing Order**:
 1. Usage domain entities (Phases 1-16)
@@ -22,6 +32,14 @@ This plan reviews domain entities in `/domain/usage`, `/domain/customer`, and `/
 - Dependency order (parents before children)
 - Progress from simple to complex entities
 - Field order in entities must match XSD element sequence exactly
+
+**Reference Documents**:
+- **DTO_PATTERN_GUIDE.md** - Standard pattern for creating ESPI DTOs with JAXB
+  - Atom wrapper separation pattern
+  - Required @XmlAccessorType(PROPERTY) usage
+  - Explicit getter method requirements for Records
+  - Namespace guidelines (espi.xsd vs customer.xsd)
+  - Verification checklist
 
 ---
 
@@ -41,9 +59,15 @@ This plan reviews domain entities in `/domain/usage`, `/domain/customer`, and `/
    - Update field JavaDoc to reference XSD documentation
 
 2. **DTO Updates** (TimeConfigurationDto.java):
-   - Match DTO field order to espi.xsd TimeConfiguration element sequence
-   - Verify JAXB annotations for XML marshalling
-   - Add XSD constraint validation annotations
+   - **Follow DTO_PATTERN_GUIDE.md** - Standard pattern for ESPI DTOs
+   - Use `@XmlAccessorType(XmlAccessType.PROPERTY)` - REQUIRED
+   - Create explicit JavaBean-style getters (Records need `getFieldName()` for JAXB)
+   - Match DTO field order to XSD element sequence in propOrder
+   - Use correct namespace: `http://naesb.org/espi` for usage domain
+   - Exclude Atom metadata fields (published, updated, selfLink, upLink)
+   - Include only XSD-defined resource fields
+   - Add uuid mapped to mRID attribute via getter
+   - **Verify against DTO_PATTERN_GUIDE.md checklist before proceeding**
 
 3. **MapStruct Mapper Updates** (TimeConfigurationMapper.java):
    - Update Entity-to-DTO conversion mapping
@@ -94,9 +118,16 @@ This plan reviews domain entities in `/domain/usage`, `/domain/customer`, and `/
    - Ensure JAXB annotations align with XML element names and order
 
 2. **DTO Updates** (ReadingTypeDto.java):
-   - Match DTO field order to espi.xsd ReadingType element sequence
-   - Verify embedded RationalNumber and ReadingInterharmonic DTOs
-   - Add XSD constraint validation annotations
+   - **Follow DTO_PATTERN_GUIDE.md** - Standard pattern for ESPI DTOs
+   - Use `@XmlAccessorType(XmlAccessType.PROPERTY)` - REQUIRED
+   - Create explicit JavaBean-style getters (Records need `getFieldName()` for JAXB)
+   - Match DTO field order to XSD element sequence in propOrder
+   - Use correct namespace: `http://naesb.org/espi` for usage domain
+   - Exclude Atom metadata fields (published, updated, selfLink, upLink)
+   - Include only XSD-defined resource fields
+   - Verify embedded RationalNumber and ReadingInterharmonic DTOs follow same pattern
+   - Add uuid mapped to mRID attribute via getter
+   - **Verify against DTO_PATTERN_GUIDE.md checklist before proceeding**
 
 3. **MapStruct Mapper Updates** (ReadingTypeMapper.java):
    - Update Entity-to-DTO conversion mapping
@@ -138,8 +169,16 @@ This plan reviews domain entities in `/domain/usage`, `/domain/customer`, and `/
    - Verify JPA annotations match schema constraints
 
 2. **DTO Updates** (IntervalReadingDto.java):
-   - Match DTO field order to espi.xsd IntervalReading element sequence
-   - Verify embedded DateTimeInterval DTO
+   - **Follow DTO_PATTERN_GUIDE.md** - Standard pattern for ESPI DTOs
+   - Use `@XmlAccessorType(XmlAccessType.PROPERTY)` - REQUIRED
+   - Create explicit JavaBean-style getters (Records need `getFieldName()` for JAXB)
+   - Match DTO field order to XSD element sequence in propOrder
+   - Use correct namespace: `http://naesb.org/espi` for usage domain
+   - Exclude Atom metadata fields (published, updated, selfLink, upLink)
+   - Include only XSD-defined resource fields
+   - Verify embedded DateTimeInterval DTO follows same pattern
+   - **Note**: IntervalReading may not extend IdentifiedObject per Issue #28
+   - **Verify against DTO_PATTERN_GUIDE.md checklist before proceeding**
 
 3. **MapStruct Mapper Updates** (IntervalReadingMapper.java):
    - Update Entity-to-DTO conversion mapping
@@ -178,7 +217,15 @@ This plan reviews domain entities in `/domain/usage`, `/domain/customer`, and `/
    - Verify relationship to IntervalReading
 
 2. **DTO Updates** (ReadingQualityDto.java):
-   - Match DTO field order to espi.xsd ReadingQuality element sequence
+   - **Follow DTO_PATTERN_GUIDE.md** - Standard pattern for ESPI DTOs
+   - Use `@XmlAccessorType(XmlAccessType.PROPERTY)` - REQUIRED
+   - Create explicit JavaBean-style getters (Records need `getFieldName()` for JAXB)
+   - Match DTO field order to XSD element sequence in propOrder
+   - Use correct namespace: `http://naesb.org/espi` for usage domain
+   - Exclude Atom metadata fields (published, updated, selfLink, upLink)
+   - Include only XSD-defined resource fields
+   - **Note**: ReadingQuality may not extend IdentifiedObject per Issue #28
+   - **Verify against DTO_PATTERN_GUIDE.md checklist before proceeding**
 
 3. **MapStruct Mapper Updates** (ReadingQualityMapper.java):
    - Update Entity-to-DTO conversion mapping
@@ -218,8 +265,17 @@ This plan reviews domain entities in `/domain/usage`, `/domain/customer`, and `/
    - Verify @OneToMany cascade and orphanRemoval settings
 
 2. **DTO Updates** (IntervalBlockDto.java):
-   - Match DTO field order to espi.xsd IntervalBlock element sequence
-   - Verify IntervalReading collection DTO
+   - **Follow DTO_PATTERN_GUIDE.md** - Standard pattern for ESPI DTOs
+   - Use `@XmlAccessorType(XmlAccessType.PROPERTY)` - REQUIRED
+   - Create explicit JavaBean-style getters (Records need `getFieldName()` for JAXB)
+   - Match DTO field order to XSD element sequence in propOrder
+   - Use correct namespace: `http://naesb.org/espi` for usage domain
+   - Exclude Atom metadata fields (published, updated, selfLink, upLink)
+   - Include only XSD-defined resource fields
+   - Add uuid mapped to mRID attribute via getter
+   - Verify embedded DateTimeInterval DTO follows same pattern
+   - Verify IntervalReading collection DTO follows same pattern
+   - **Verify against DTO_PATTERN_GUIDE.md checklist before proceeding**
 
 3. **MapStruct Mapper Updates** (IntervalBlockMapper.java):
    - Update Entity-to-DTO conversion mapping
@@ -263,9 +319,18 @@ This plan reviews domain entities in `/domain/usage`, `/domain/customer`, and `/
    - Ensure NO embedded child elements exist
 
 2. **DTO Updates** (MeterReadingDto.java):
-   - Match DTO field order to espi.xsd MeterReading element sequence
-   - Verify ReadingType reference (Atom link, not embedded)
-   - Verify IntervalBlock references (Atom links, not embedded collection)
+   - **Follow DTO_PATTERN_GUIDE.md** - Standard pattern for ESPI DTOs
+   - Use `@XmlAccessorType(XmlAccessType.PROPERTY)` - REQUIRED
+   - Create explicit JavaBean-style getters (Records need `getFieldName()` for JAXB)
+   - Match DTO field order to XSD element sequence in propOrder
+   - Use correct namespace: `http://naesb.org/espi` for usage domain
+   - Exclude Atom metadata fields (published, updated, selfLink, upLink)
+   - Include only XSD-defined resource fields
+   - Add uuid mapped to mRID attribute via getter
+   - **CRITICAL**: NO child elements, ONLY Atom links to ReadingType and IntervalBlock
+   - Verify ReadingType reference (Atom link via AtomEntryDto, NOT embedded)
+   - Verify IntervalBlock references (Atom links via AtomEntryDto, NOT embedded collection)
+   - **Verify against DTO_PATTERN_GUIDE.md checklist before proceeding**
 
 3. **MapStruct Mapper Updates** (MeterReadingMapper.java):
    - Update Entity-to-DTO conversion mapping
@@ -305,7 +370,15 @@ This plan reviews domain entities in `/domain/usage`, `/domain/customer`, and `/
    - Verify JPA annotations match schema constraints
 
 2. **DTO Updates** (ServiceDeliveryPointDto.java):
-   - Match DTO field order to espi.xsd ServiceDeliveryPoint element sequence
+   - **Follow DTO_PATTERN_GUIDE.md** - Standard pattern for ESPI DTOs
+   - Use `@XmlAccessorType(XmlAccessType.PROPERTY)` - REQUIRED
+   - Create explicit JavaBean-style getters (Records need `getFieldName()` for JAXB)
+   - Match DTO field order to XSD element sequence in propOrder
+   - Use correct namespace: `http://naesb.org/espi` for usage domain
+   - Exclude Atom metadata fields (published, updated, selfLink, upLink)
+   - Include only XSD-defined resource fields
+   - **Note**: ServiceDeliveryPoint may not extend IdentifiedObject per Issue #28
+   - **Verify against DTO_PATTERN_GUIDE.md checklist before proceeding**
 
 3. **MapStruct Mapper Updates** (ServiceDeliveryPointMapper.java):
    - Update Entity-to-DTO conversion mapping
@@ -342,7 +415,15 @@ This plan reviews domain entities in `/domain/usage`, `/domain/customer`, and `/
    - Review field order against espi.xsd PnodeRef element sequence
 
 2. **DTO Updates** (PnodeRefDto.java):
-   - Match DTO field order to espi.xsd PnodeRef element sequence
+   - **Follow DTO_PATTERN_GUIDE.md** - Standard pattern for ESPI DTOs
+   - Use `@XmlAccessorType(XmlAccessType.PROPERTY)` - REQUIRED
+   - Create explicit JavaBean-style getters (Records need `getFieldName()` for JAXB)
+   - Match DTO field order to XSD element sequence in propOrder
+   - Use correct namespace: `http://naesb.org/espi` for usage domain
+   - Exclude Atom metadata fields (published, updated, selfLink, upLink)
+   - Include only XSD-defined resource fields
+   - **Note**: PnodeRef may not extend IdentifiedObject per Issue #28 (embedded in UsagePoint)
+   - **Verify against DTO_PATTERN_GUIDE.md checklist before proceeding**
 
 3. **MapStruct Mapper Updates** (PnodeRefMapper.java):
    - Update Entity-to-DTO conversion mapping
@@ -379,7 +460,15 @@ This plan reviews domain entities in `/domain/usage`, `/domain/customer`, and `/
    - Review field order against espi.xsd AggregatedNodeRef element sequence
 
 2. **DTO Updates** (AggregatedNodeRefDto.java):
-   - Match DTO field order to espi.xsd AggregatedNodeRef element sequence
+   - **Follow DTO_PATTERN_GUIDE.md** - Standard pattern for ESPI DTOs
+   - Use `@XmlAccessorType(XmlAccessType.PROPERTY)` - REQUIRED
+   - Create explicit JavaBean-style getters (Records need `getFieldName()` for JAXB)
+   - Match DTO field order to XSD element sequence in propOrder
+   - Use correct namespace: `http://naesb.org/espi` for usage domain
+   - Exclude Atom metadata fields (published, updated, selfLink, upLink)
+   - Include only XSD-defined resource fields
+   - **Note**: AggregatedNodeRef may not extend IdentifiedObject per Issue #28 (embedded in UsagePoint)
+   - **Verify against DTO_PATTERN_GUIDE.md checklist before proceeding**
 
 3. **MapStruct Mapper Updates** (AggregatedNodeRefMapper.java):
    - Update Entity-to-DTO conversion mapping
@@ -417,7 +506,15 @@ This plan reviews domain entities in `/domain/usage`, `/domain/customer`, and `/
    - Verify embedded relationship to UsageSummary
 
 2. **DTO Updates** (LineItemDto.java):
-   - Match DTO field order to espi.xsd LineItem element sequence
+   - **Follow DTO_PATTERN_GUIDE.md** - Standard pattern for ESPI DTOs
+   - Use `@XmlAccessorType(XmlAccessType.PROPERTY)` - REQUIRED
+   - Create explicit JavaBean-style getters (Records need `getFieldName()` for JAXB)
+   - Match DTO field order to XSD element sequence in propOrder
+   - Use correct namespace: `http://naesb.org/espi` for usage domain
+   - Exclude Atom metadata fields (published, updated, selfLink, upLink)
+   - Include only XSD-defined resource fields
+   - **Note**: LineItem may not extend IdentifiedObject per Issue #28 (embedded child of UsageSummary)
+   - **Verify against DTO_PATTERN_GUIDE.md checklist before proceeding**
 
 3. **MapStruct Mapper Updates** (LineItemMapper.java):
    - Update Entity-to-DTO conversion mapping
@@ -457,8 +554,17 @@ This plan reviews domain entities in `/domain/usage`, `/domain/customer`, and `/
    - Verify LineItem collection (costAdditionalDetailLastPeriod)
 
 2. **DTO Updates** (UsageSummaryDto.java):
-   - Match DTO field order to espi.xsd UsageSummary element sequence
-   - Verify LineItem collection DTO
+   - **Follow DTO_PATTERN_GUIDE.md** - Standard pattern for ESPI DTOs
+   - Use `@XmlAccessorType(XmlAccessType.PROPERTY)` - REQUIRED
+   - Create explicit JavaBean-style getters (Records need `getFieldName()` for JAXB)
+   - Match DTO field order to XSD element sequence in propOrder
+   - Use correct namespace: `http://naesb.org/espi` for usage domain
+   - Exclude Atom metadata fields (published, updated, selfLink, upLink)
+   - Include only XSD-defined resource fields
+   - Add uuid mapped to mRID attribute via getter
+   - Verify embedded DateTimeInterval and SummaryMeasurement DTOs follow same pattern
+   - Verify LineItem collection DTO follows same pattern
+   - **Verify against DTO_PATTERN_GUIDE.md checklist before proceeding**
 
 3. **MapStruct Mapper Updates** (UsageSummaryMapper.java):
    - Update Entity-to-DTO conversion mapping
@@ -498,7 +604,16 @@ This plan reviews domain entities in `/domain/usage`, `/domain/customer`, and `/
    - Verify embedded SummaryMeasurement fields
 
 2. **DTO Updates** (ElectricPowerQualitySummaryDto.java):
-   - Match DTO field order to espi.xsd ElectricPowerQualitySummary element sequence
+   - **Follow DTO_PATTERN_GUIDE.md** - Standard pattern for ESPI DTOs
+   - Use `@XmlAccessorType(XmlAccessType.PROPERTY)` - REQUIRED
+   - Create explicit JavaBean-style getters (Records need `getFieldName()` for JAXB)
+   - Match DTO field order to XSD element sequence in propOrder
+   - Use correct namespace: `http://naesb.org/espi` for usage domain
+   - Exclude Atom metadata fields (published, updated, selfLink, upLink)
+   - Include only XSD-defined resource fields
+   - Add uuid mapped to mRID attribute via getter
+   - Verify embedded DateTimeInterval and SummaryMeasurement DTOs follow same pattern
+   - **Verify against DTO_PATTERN_GUIDE.md checklist before proceeding**
 
 3. **MapStruct Mapper Updates** (ElectricPowerQualitySummaryMapper.java):
    - Update Entity-to-DTO conversion mapping
@@ -537,7 +652,15 @@ This plan reviews domain entities in `/domain/usage`, `/domain/customer`, and `/
    - Verify relationships to Subscription collection
 
 2. **DTO Updates** (RetailCustomerDto.java):
-   - Match DTO field order to espi.xsd RetailCustomer element sequence
+   - **Follow DTO_PATTERN_GUIDE.md** - Standard pattern for ESPI DTOs
+   - Use `@XmlAccessorType(XmlAccessType.PROPERTY)` - REQUIRED
+   - Create explicit JavaBean-style getters (Records need `getFieldName()` for JAXB)
+   - Match DTO field order to XSD element sequence in propOrder
+   - Use correct namespace: `http://naesb.org/espi` for usage domain
+   - Exclude Atom metadata fields (published, updated, selfLink, upLink)
+   - Include only XSD-defined resource fields
+   - Add uuid mapped to mRID attribute via getter
+   - **Verify against DTO_PATTERN_GUIDE.md checklist before proceeding**
 
 3. **MapStruct Mapper Updates** (RetailCustomerMapper.java):
    - Update Entity-to-DTO conversion mapping
@@ -577,7 +700,15 @@ This plan reviews domain entities in `/domain/usage`, `/domain/customer`, and `/
    - Verify @OneToOne relationship to single UsagePoint
 
 2. **DTO Updates** (SubscriptionDto.java):
-   - Match DTO field order to espi.xsd Subscription element sequence
+   - **Follow DTO_PATTERN_GUIDE.md** - Standard pattern for ESPI DTOs
+   - Use `@XmlAccessorType(XmlAccessType.PROPERTY)` - REQUIRED
+   - Create explicit JavaBean-style getters (Records need `getFieldName()` for JAXB)
+   - Match DTO field order to XSD element sequence in propOrder
+   - Use correct namespace: `http://naesb.org/espi` for usage domain
+   - Exclude Atom metadata fields (published, updated, selfLink, upLink)
+   - Include only XSD-defined resource fields
+   - Add uuid mapped to mRID attribute via getter
+   - **Verify against DTO_PATTERN_GUIDE.md checklist before proceeding**
 
 3. **MapStruct Mapper Updates** (SubscriptionMapper.java):
    - Update Entity-to-DTO conversion mapping
@@ -614,7 +745,14 @@ This plan reviews domain entities in `/domain/usage`, `/domain/customer`, and `/
    - Review field order against espi.xsd BatchList element sequence
 
 2. **DTO Updates** (BatchListDto.java):
-   - Match DTO field order to espi.xsd BatchList element sequence
+   - **Follow DTO_PATTERN_GUIDE.md** - Standard pattern for ESPI DTOs
+   - Use `@XmlAccessorType(XmlAccessType.PROPERTY)` - REQUIRED
+   - Create explicit JavaBean-style getters (Records need `getFieldName()` for JAXB)
+   - Match DTO field order to XSD element sequence in propOrder
+   - Use correct namespace: `http://naesb.org/espi` for usage domain
+   - **Note**: BatchList may not extend IdentifiedObject per Issue #28 (standalone message type)
+   - Include only XSD-defined resource fields
+   - **Verify against DTO_PATTERN_GUIDE.md checklist before proceeding**
 
 3. **MapStruct Mapper Updates** (BatchListMapper.java):
    - Update Entity-to-DTO conversion mapping
@@ -658,7 +796,18 @@ This plan reviews domain entities in `/domain/usage`, `/domain/customer`, and `/
    - Verify @OneToOne relationship to single Subscription
 
 2. **DTO Updates** (UsagePointDto.java):
-   - Match DTO field order to espi.xsd UsagePoint element sequence
+   - **Follow DTO_PATTERN_GUIDE.md** - Standard pattern for ESPI DTOs
+   - Use `@XmlAccessorType(XmlAccessType.PROPERTY)` - REQUIRED
+   - Create explicit JavaBean-style getters (Records need `getFieldName()` for JAXB)
+   - Match DTO field order to XSD element sequence in propOrder
+   - Use correct namespace: `http://naesb.org/espi` for usage domain
+   - Exclude Atom metadata fields (published, updated, selfLink, upLink)
+   - Include only XSD-defined resource fields
+   - Add uuid mapped to mRID attribute via getter
+   - Verify embedded SummaryMeasurement DTOs follow same pattern
+   - Verify PnodeRef and AggregatedNodeRef collection DTOs follow same pattern
+   - **CRITICAL**: Most complex entity - verify all embedded and relationship patterns carefully
+   - **Verify against DTO_PATTERN_GUIDE.md checklist before proceeding**
 
 3. **MapStruct Mapper Updates** (UsagePointMapper.java):
    - Update Entity-to-DTO conversion mapping
@@ -700,8 +849,15 @@ This plan reviews domain entities in `/domain/usage`, `/domain/customer`, and `/
    - Verify JAXB annotations align with XML element names and order
 
 2. **DTO Updates** (ProgramDateIdMappingsDto.java):
-   - Match DTO field order to customer.xsd ProgramDateIdMappings element sequence
-   - Verify JAXB annotations for XML marshalling
+   - **Follow DTO_PATTERN_GUIDE.md** - Standard pattern for ESPI DTOs
+   - Use `@XmlAccessorType(XmlAccessType.PROPERTY)` - REQUIRED
+   - Create explicit JavaBean-style getters (Records need `getFieldName()` for JAXB)
+   - Match DTO field order to XSD element sequence in propOrder
+   - **Use correct namespace: `http://naesb.org/espi/customer` for customer domain**
+   - Exclude Atom metadata fields (published, updated, selfLink, upLink)
+   - Include only XSD-defined resource fields
+   - Add uuid mapped to mRID attribute via getter
+   - **Verify against DTO_PATTERN_GUIDE.md checklist before proceeding**
 
 3. **MapStruct Mapper Updates** (ProgramDateIdMappingsMapper.java):
    - Update Entity-to-DTO conversion mapping
@@ -739,7 +895,16 @@ This plan reviews domain entities in `/domain/usage`, `/domain/customer`, and `/
    - Verify embedded AccountNotification field order
 
 2. **DTO Updates** (CustomerAccountDto.java):
-   - Match DTO field order to customer.xsd CustomerAccount element sequence
+   - **Follow DTO_PATTERN_GUIDE.md** - Standard pattern for ESPI DTOs
+   - Use `@XmlAccessorType(XmlAccessType.PROPERTY)` - REQUIRED
+   - Create explicit JavaBean-style getters (Records need `getFieldName()` for JAXB)
+   - Match DTO field order to XSD element sequence in propOrder
+   - **Use correct namespace: `http://naesb.org/espi/customer` for customer domain**
+   - Exclude Atom metadata fields (published, updated, selfLink, upLink)
+   - Include only XSD-defined resource fields
+   - Add uuid mapped to mRID attribute via getter
+   - Verify embedded AccountNotification DTO follows same pattern
+   - **Verify against DTO_PATTERN_GUIDE.md checklist before proceeding**
 
 3. **MapStruct Mapper Updates** (CustomerAccountMapper.java):
    - Update Entity-to-DTO conversion mapping
@@ -778,7 +943,16 @@ This plan reviews domain entities in `/domain/usage`, `/domain/customer`, and `/
    - Verify embedded SummaryMeasurement fields
 
 2. **DTO Updates** (StatementDto.java):
-   - Match DTO field order to customer.xsd Statement element sequence
+   - **Follow DTO_PATTERN_GUIDE.md** - Standard pattern for ESPI DTOs
+   - Use `@XmlAccessorType(XmlAccessType.PROPERTY)` - REQUIRED
+   - Create explicit JavaBean-style getters (Records need `getFieldName()` for JAXB)
+   - Match DTO field order to XSD element sequence in propOrder
+   - **Use correct namespace: `http://naesb.org/espi/customer` for customer domain**
+   - Exclude Atom metadata fields (published, updated, selfLink, upLink)
+   - Include only XSD-defined resource fields
+   - Add uuid mapped to mRID attribute via getter
+   - Verify embedded DateTimeInterval and SummaryMeasurement DTOs follow same pattern
+   - **Verify against DTO_PATTERN_GUIDE.md checklist before proceeding**
 
 3. **MapStruct Mapper Updates** (StatementMapper.java):
    - Update Entity-to-DTO conversion mapping
@@ -818,7 +992,16 @@ This plan reviews domain entities in `/domain/usage`, `/domain/customer`, and `/
    - Verify relationships to TimeConfiguration, Statement, CustomerAccount
 
 2. **DTO Updates** (CustomerDto.java):
-   - Match DTO field order to customer.xsd Customer element sequence
+   - **Follow DTO_PATTERN_GUIDE.md** - Standard pattern for ESPI DTOs
+   - Use `@XmlAccessorType(XmlAccessType.PROPERTY)` - REQUIRED
+   - Create explicit JavaBean-style getters (Records need `getFieldName()` for JAXB)
+   - Match DTO field order to XSD element sequence in propOrder
+   - **Use correct namespace: `http://naesb.org/espi/customer` for customer domain**
+   - Exclude Atom metadata fields (published, updated, selfLink, upLink)
+   - Include only XSD-defined resource fields
+   - Add uuid mapped to mRID attribute via getter
+   - Verify embedded Organisation, Status, Priority DTOs follow same pattern
+   - **Verify against DTO_PATTERN_GUIDE.md checklist before proceeding**
 
 3. **MapStruct Mapper Updates** (CustomerMapper.java):
    - Update Entity-to-DTO conversion mapping
@@ -856,7 +1039,16 @@ This plan reviews domain entities in `/domain/usage`, `/domain/customer`, and `/
    - Verify embedded Organisation fields
 
 2. **DTO Updates** (ServiceSupplierDto.java):
-   - Match DTO field order to customer.xsd ServiceSupplier element sequence
+   - **Follow DTO_PATTERN_GUIDE.md** - Standard pattern for ESPI DTOs
+   - Use `@XmlAccessorType(XmlAccessType.PROPERTY)` - REQUIRED
+   - Create explicit JavaBean-style getters (Records need `getFieldName()` for JAXB)
+   - Match DTO field order to XSD element sequence in propOrder
+   - **Use correct namespace: `http://naesb.org/espi/customer` for customer domain**
+   - Exclude Atom metadata fields (published, updated, selfLink, upLink)
+   - Include only XSD-defined resource fields
+   - Add uuid mapped to mRID attribute via getter
+   - Verify embedded Organisation DTOs follow same pattern
+   - **Verify against DTO_PATTERN_GUIDE.md checklist before proceeding**
 
 3. **MapStruct Mapper Updates** (ServiceSupplierMapper.java):
    - Update Entity-to-DTO conversion mapping
@@ -895,7 +1087,16 @@ This plan reviews domain entities in `/domain/usage`, `/domain/customer`, and `/
    - Verify JPA @Inheritance and @DiscriminatorColumn annotations
 
 2. **DTO Updates** (AssetDto.java):
-   - Match DTO field order to customer.xsd Asset element sequence
+   - **Follow DTO_PATTERN_GUIDE.md** - Standard pattern for ESPI DTOs
+   - Use `@XmlAccessorType(XmlAccessType.PROPERTY)` - REQUIRED
+   - Create explicit JavaBean-style getters (Records need `getFieldName()` for JAXB)
+   - Match DTO field order to XSD element sequence in propOrder
+   - **Use correct namespace: `http://naesb.org/espi/customer` for customer domain**
+   - Exclude Atom metadata fields (published, updated, selfLink, upLink)
+   - Include only XSD-defined resource fields
+   - Add uuid mapped to mRID attribute via getter
+   - Verify embedded Status DTO follows same pattern
+   - **Verify against DTO_PATTERN_GUIDE.md checklist before proceeding**
 
 3. **MapStruct Mapper Updates** (AssetMapper.java):
    - Update Entity-to-DTO conversion mapping
@@ -940,8 +1141,17 @@ This plan reviews domain entities in `/domain/usage`, `/domain/customer`, and `/
    - Verify relationship to EndDevice (via Atom links)
 
 2. **DTO Updates** (ServiceLocationDto.java):
-   - Match DTO field order to customer.xsd ServiceLocation element sequence
-   - Verify UsagePoint href URL field
+   - **Follow DTO_PATTERN_GUIDE.md** - Standard pattern for ESPI DTOs
+   - Use `@XmlAccessorType(XmlAccessType.PROPERTY)` - REQUIRED
+   - Create explicit JavaBean-style getters (Records need `getFieldName()` for JAXB)
+   - Match DTO field order to XSD element sequence in propOrder
+   - **Use correct namespace: `http://naesb.org/espi/customer` for customer domain**
+   - Exclude Atom metadata fields (published, updated, selfLink, upLink)
+   - Include only XSD-defined resource fields
+   - Add uuid mapped to mRID attribute via getter
+   - Verify embedded StreetAddress, ElectronicAddress, Status DTOs follow same pattern
+   - **CRITICAL**: UsagePoint reference is href URL string (XSD field), NOT Atom link
+   - **Verify against DTO_PATTERN_GUIDE.md checklist before proceeding**
 
 3. **MapStruct Mapper Updates** (ServiceLocationMapper.java):
    - Update Entity-to-DTO conversion mapping
@@ -981,7 +1191,16 @@ This plan reviews domain entities in `/domain/usage`, `/domain/customer`, and `/
    - Verify relationships to CustomerAccount, ServiceLocation, ServiceSupplier, ProgramDateIdMappings
 
 2. **DTO Updates** (CustomerAgreementDto.java):
-   - Match DTO field order to customer.xsd CustomerAgreement element sequence
+   - **Follow DTO_PATTERN_GUIDE.md** - Standard pattern for ESPI DTOs
+   - Use `@XmlAccessorType(XmlAccessType.PROPERTY)` - REQUIRED
+   - Create explicit JavaBean-style getters (Records need `getFieldName()` for JAXB)
+   - Match DTO field order to XSD element sequence in propOrder
+   - **Use correct namespace: `http://naesb.org/espi/customer` for customer domain**
+   - Exclude Atom metadata fields (published, updated, selfLink, upLink)
+   - Include only XSD-defined resource fields
+   - Add uuid mapped to mRID attribute via getter
+   - Verify embedded DateTimeInterval DTO follows same pattern
+   - **Verify against DTO_PATTERN_GUIDE.md checklist before proceeding**
 
 3. **MapStruct Mapper Updates** (CustomerAgreementMapper.java):
    - Update Entity-to-DTO conversion mapping
@@ -1023,7 +1242,17 @@ This plan reviews domain entities in `/domain/usage`, `/domain/customer`, and `/
    - Verify relationship to ServiceLocation (via Atom links)
 
 2. **DTO Updates** (EndDeviceDto.java):
-   - Match DTO field order to customer.xsd EndDevice element sequence
+   - **Follow DTO_PATTERN_GUIDE.md** - Standard pattern for ESPI DTOs
+   - Use `@XmlAccessorType(XmlAccessType.PROPERTY)` - REQUIRED
+   - Create explicit JavaBean-style getters (Records need `getFieldName()` for JAXB)
+   - Match DTO field order to XSD element sequence in propOrder
+   - **Use correct namespace: `http://naesb.org/espi/customer` for customer domain**
+   - Exclude Atom metadata fields (published, updated, selfLink, upLink)
+   - Include only XSD-defined resource fields
+   - Add uuid mapped to mRID attribute via getter
+   - Verify embedded Status and Organisation.ElectronicAddress DTOs follow same pattern
+   - Verify inheritance from AssetDto
+   - **Verify against DTO_PATTERN_GUIDE.md checklist before proceeding**
 
 3. **MapStruct Mapper Updates** (EndDeviceMapper.java):
    - Update Entity-to-DTO conversion mapping
@@ -1063,7 +1292,16 @@ This plan reviews domain entities in `/domain/usage`, `/domain/customer`, and `/
    - Verify Meter-specific fields (formNumber, intervalLength)
 
 2. **DTO Updates** (MeterDto.java):
-   - Match DTO field order to customer.xsd Meter element sequence
+   - **Follow DTO_PATTERN_GUIDE.md** - Standard pattern for ESPI DTOs
+   - Use `@XmlAccessorType(XmlAccessType.PROPERTY)` - REQUIRED
+   - Create explicit JavaBean-style getters (Records need `getFieldName()` for JAXB)
+   - Match DTO field order to XSD element sequence in propOrder
+   - **Use correct namespace: `http://naesb.org/espi/customer` for customer domain**
+   - Exclude Atom metadata fields (published, updated, selfLink, upLink)
+   - Include only XSD-defined resource fields
+   - Add uuid mapped to mRID attribute via getter
+   - Verify inheritance from EndDeviceDto
+   - **Verify against DTO_PATTERN_GUIDE.md checklist before proceeding**
 
 3. **MapStruct Mapper Updates** (MeterMapper.java):
    - Update Entity-to-DTO conversion mapping
