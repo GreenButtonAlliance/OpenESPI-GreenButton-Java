@@ -19,15 +19,13 @@
 
 package org.greenbuttonalliance.espi.thirdparty.web;
 
-//import org.greenbuttonalliance.espi.common.domain.RetailCustomer;
-
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.springframework.security.core.Authentication;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 @Disabled //todo - JT commenting out missing classes
 public class BaseControllerTests {
@@ -36,7 +34,7 @@ public class BaseControllerTests {
 	private Authentication principal;
 	private BaseController controller;
 
-	@Before
+	@BeforeEach
 	public void setUp() throws Exception {
 //		retailCustomer = new RetailCustomer();
 //		principal = mock(Authentication.class);

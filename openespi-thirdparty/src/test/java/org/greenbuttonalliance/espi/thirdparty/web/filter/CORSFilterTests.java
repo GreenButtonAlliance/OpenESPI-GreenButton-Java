@@ -20,8 +20,9 @@
 package org.greenbuttonalliance.espi.thirdparty.web.filter;
 
 import jakarta.servlet.FilterChain;
-import org.junit.Ignore;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
@@ -30,7 +31,7 @@ import static org.mockito.Mockito.verify;
 
 public class CORSFilterTests {
 	@Test
-	@Ignore
+	@Disabled
 	public void testDoFilterInternal() throws Exception {
 		CORSFilter corsFilter = new CORSFilter();
 		FilterChain filterChain = mock(FilterChain.class);

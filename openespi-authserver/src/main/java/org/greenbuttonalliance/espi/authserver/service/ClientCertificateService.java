@@ -27,14 +27,11 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.greenbuttonalliance.espi.authserver.config.ClientCertificateAuthenticationConfig;
+import tools.jackson.databind.ObjectMapper;
 
-import java.io.ByteArrayInputStream;
 import java.security.cert.*;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.*;
-import java.util.regex.Pattern;
 
 /**
  * Service for managing client certificate authentication
@@ -418,7 +415,7 @@ public class ClientCertificateService {
                 VALUES (?, ?, ?, ?, ?)
                 """;
             
-            String additionalDataJson = new com.fasterxml.jackson.databind.ObjectMapper()
+            String additionalDataJson = new ObjectMapper()
                 .writeValueAsString(additionalData);
             
             jdbcTemplate.update(sql, eventType, clientId, principalName, true, additionalDataJson);

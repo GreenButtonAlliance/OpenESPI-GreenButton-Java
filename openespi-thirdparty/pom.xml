@@ -23,57 +23,24 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
+        <groupId>org.greenbuttonalliance.espi</groupId>
+        <artifactId>openespi-parent</artifactId>
         <version>3.5.0</version>
-        <relativePath/>
     </parent>
 
-    <groupId>org.GreenButtonAlliance</groupId>
     <artifactId>open-espi-third-party</artifactId>
     <version>1.3.0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>open-espi-third-party</name>
+
     <description>
         North American Energy Standards Board (NAESB) REQ.21 Energy Service Provider Interface (ESPI) 1.0
         Third Party (Client) Web Server implementation.
     </description>
 
-    <url>https://github.com/GreenButtonAlliance/OpenESPI-ThirdParty-java</url>
-
-    <organization>
-       <name>Green Button Alliance, Inc.</name>
-       <url>http://www.greenbuttonalliance.org</url>
-    </organization>
-
-    <developers>
-        <developer>
-            <id>dcoffin</id>
-            <name>Donald F. Coffin</name>
-            <email>dcoffin@greenbuttonalliance.org</email>
-        </developer>
-    </developers>
-
-    <inceptionYear>2025</inceptionYear>
-
-    <licenses>
-    	<license>
-    		<name>The Apache Software License, Version 2.0</name>
-    		<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-    	</license>
-    </licenses>
-
     <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <java.version>21</java.version>
-        <maven.compiler.source>${java.version}</maven.compiler.source>
-        <maven.compiler.target>${java.version}</maven.compiler.target>
-
-        <!-- Spring Boot 3.5 provides all Spring and security versions -->
         <openespi-common.version>3.5.0-RC2</openespi-common.version>
-
         <maven.build.timestamp.format>yyyy/MM/dd hh:mm:ss a,z</maven.build.timestamp.format>
     </properties>
 
@@ -167,9 +134,9 @@
     <dependencies>
         <!-- OpenESPI Common -->
         <dependency>
-            <groupId>org.greenbuttonalliance</groupId>
+            <groupId>org.greenbuttonalliance.espi</groupId>
             <artifactId>OpenESPI-Common</artifactId>
-            <version>${openespi-common.version}</version>
+            <version>3.5.0-RC2</version>
         </dependency>
 
         <!-- Spring Boot starters -->
@@ -215,19 +182,16 @@
         <dependency>
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
-            <version>9.1.0</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>42.7.7</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <version>2.3.232</version>
             <scope>runtime</scope>
         </dependency>
 
@@ -236,12 +200,10 @@
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
         </dependency>
-
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-mysql</artifactId>
         </dependency>
-
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-database-postgresql</artifactId>
@@ -252,7 +214,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
-
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-cache</artifactId>
@@ -266,11 +227,6 @@
         </dependency>
 
         <!-- JSON Processing -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jsr310</artifactId>
-        </dependency>
-
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-xml</artifactId>
@@ -293,7 +249,7 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- Testing -->
+         <!-- Testing Dependencies -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -304,26 +260,70 @@
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
-        
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-cache-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-flyway-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security-oauth2-resource-server-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-thymeleaf-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webmvc-test</artifactId>
+            <scope>test</scope>
+        </dependency>
         <!-- Testcontainers for Integration Testing -->
         <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>junit-jupiter</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-testcontainers</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>mysql</artifactId>
+            <artifactId>testcontainers-junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>postgresql</artifactId>
+            <artifactId>testcontainers-mysql</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>testcontainers</artifactId>
+            <artifactId>testcontainers-postgresql</artifactId>
             <scope>test</scope>
         </dependency>
 
@@ -331,32 +331,12 @@
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>2.17.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
         </dependency>
     </dependencies>
-
-    <!-- Prerequisites tag deprecated in Maven 3.x - enforcer plugin used instead -->
-
-    <scm>
-        <connection>scm:git:https://github.com/GreenButtonAlliance/OpenESPI-ThirdParty-java.git/</connection>
-        <developerConnection>scm:git:git@github.com:GreenButtonAlliance/OpenESPI-ThirdParty-java.git</developerConnection>
-        <url>https://github.com/GreenButtonAlliance/OpenESPI-ThirdParty-java.git</url>
-        <tag>HEAD</tag>
-    </scm>
-
-    <issueManagement>
-        <system>GitHub</system>
-        <url>https://github.com/GreenButtonAlliance/OpenESPI-ThirdParty-java/issues</url>
-    </issueManagement>
-
-    <ciManagement>
-        <system>CircleCi</system>
-        <url>https://circleci.com/gh/GreenButtonAlliance/OpenESPI-ThirdParty-java</url>
-    </ciManagement>
 
     <build>
         <finalName>ThirdParty</finalName>
@@ -365,39 +345,15 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <executable>true</executable>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.springframework.boot</groupId>
+                            <artifactId>spring-boot-configuration-processor</artifactId>
+                        </exclude>
+                    </excludes>
                 </configuration>
             </plugin>
         </plugins>
     </build>
-
-    <repositories>
-        <!-- GitHub Packages Repository for OpenESPI-Common -->
-        <repository>
-            <id>github</id>
-            <name>GitHub Green Button Alliance Apache Maven Packages</name>
-            <url>https://maven.pkg.github.com/GreenButtonAlliance/OpenESPI-GreenButton-Java</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-        
-        <!-- Alternative: Sonatype repositories (commented out) -->
-        <!--
-        <repository>
-            <id>greenbuttonalliance-snapshot</id>
-            <name>Green Button Alliance Snapshot Repository</name>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-        </repository>
-        <repository>
-            <id>greenbuttonalliance-release</id>
-            <name>Green Button Alliance Release Repository</name>
-            <url>https://oss.sonatype.org/content/repositories/releases</url>
-        </repository>
-        -->
-    </repositories>
 </project>
 

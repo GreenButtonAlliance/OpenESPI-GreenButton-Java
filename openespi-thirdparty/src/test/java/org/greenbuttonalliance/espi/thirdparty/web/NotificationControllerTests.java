@@ -21,10 +21,12 @@ package org.greenbuttonalliance.espi.thirdparty.web;
 
 //import org.greenbuttonalliance.espi.common.domain.BatchList;
 
+import org.aspectj.lang.annotation.Before;
 import org.greenbuttonalliance.espi.common.service.BatchListService;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.oxm.jaxb.Jaxb2Marshaller;
@@ -41,7 +43,7 @@ public class NotificationControllerTests {
 
 	public NotificationController controller;
 
-	@Before
+	@BeforeEach
 	public void setup() {
 		MockitoAnnotations.initMocks(this);
 		controller = new NotificationController();
@@ -50,7 +52,7 @@ public class NotificationControllerTests {
 	}
 
 	@Test
-	@Ignore
+	@Disabled
 	public void notification() throws IOException {
 //		controller.notification(mock(HttpServletResponse.class),
 //				mock(InputStream.class));

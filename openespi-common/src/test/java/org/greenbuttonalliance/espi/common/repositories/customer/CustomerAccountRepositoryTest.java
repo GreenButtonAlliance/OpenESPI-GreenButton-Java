@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -394,8 +395,10 @@ class CustomerAccountRepositoryTest extends BaseRepositoryTest {
         void shouldPersistAllDocumentFieldsCorrectly() {
             // Arrange
             CustomerAccountEntity account = createCompleteTestSetup();
-            OffsetDateTime createdTime = OffsetDateTime.now().minusDays(1);
-            OffsetDateTime modifiedTime = OffsetDateTime.now();
+
+            //truncate nanos because of diff between macOS and Windoz
+            OffsetDateTime createdTime = OffsetDateTime.now().minusDays(1).truncatedTo(ChronoUnit.MICROS);
+            OffsetDateTime modifiedTime = OffsetDateTime.now().truncatedTo(ChronoUnit.MICROS);
             
             account.setCreatedDateTime(createdTime);
             account.setLastModifiedDateTime(modifiedTime);

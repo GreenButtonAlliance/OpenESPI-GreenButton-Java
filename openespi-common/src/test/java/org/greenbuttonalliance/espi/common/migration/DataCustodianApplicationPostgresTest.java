@@ -20,14 +20,13 @@
 package org.greenbuttonalliance.espi.common.migration;
 
 import org.greenbuttonalliance.espi.common.TestApplication;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.mysql.MySQLContainer;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -35,24 +34,24 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Integration test for the OpenESPI Data Custodian Spring Boot application with MySQL Test Container.
+ * Integration test for the OpenESPI Data Custodian Spring Boot application with PostgreSQL Test Container.
  * 
- * This test verifies that the application context loads successfully with a real MySQL database
+ * This test verifies that the application context loads successfully with a real PostgreSQL database
  * running in a Docker container, and that Flyway migrations execute correctly with the new
  * vendor-specific migration structure.
  */
-@Disabled //JT - temp until flyway migration is fixed
 @SpringBootTest(classes = { TestApplication.class })
-@ActiveProfiles("test-mysql")
+@ActiveProfiles("test-postgres")
 @Testcontainers
-@DisplayName("MySQL Test Container Integration Tests")
-class DataCustodianApplicationMysqlTest {
+@DisplayName("PostgreSQL Test Container Integration Tests")
+class DataCustodianApplicationPostgresTest {
 
     @Container
-    static MySQLContainer mysqlContainer = new MySQLContainer("mysql:9.5.0")
+    static PostgreSQLContainer postgresContainer = new PostgreSQLContainer("postgres:18")
             .withDatabaseName("openespi_test")
             .withUsername("testuser")
             .withPassword("testpass")
@@ -60,42 +59,42 @@ class DataCustodianApplicationMysqlTest {
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", mysqlContainer::getJdbcUrl);
-        registry.add("spring.datasource.username", mysqlContainer::getUsername);
-        registry.add("spring.datasource.password", mysqlContainer::getPassword);
-        registry.add("spring.datasource.driver-class-name", () -> "com.mysql.cj.jdbc.Driver");
+        registry.add("spring.datasource.url", postgresContainer::getJdbcUrl);
+        registry.add("spring.datasource.username", postgresContainer::getUsername);
+        registry.add("spring.datasource.password", postgresContainer::getPassword);
+        registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
         
-        // Configure Flyway locations for MySQL vendor-specific migrations
-        registry.add("spring.flyway.locations", () -> "classpath:db/migration,classpath:db/vendor/mysql");
+        // Configure Flyway locations for PostgreSQL vendor-specific migrations
+        registry.add("spring.flyway.locations", () -> "classpath:db/migration,classpath:db/vendor/postgres");
         registry.add("spring.flyway.baseline-on-migrate", () -> "true");
         registry.add("spring.flyway.validate-on-migrate", () -> "true");
         
-        // JPA/Hibernate configuration for MySQL
-        registry.add("spring.jpa.database-platform", () -> "org.hibernate.dialect.MySQLDialect");
+        // JPA/Hibernate configuration for PostgreSQL
+        registry.add("spring.jpa.database-platform", () -> "org.hibernate.dialect.PostgreSQLDialect");
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "validate");
         registry.add("spring.jpa.show-sql", () -> "true");
     }
 
     /**
-     * Test that the Spring Boot application context loads successfully with MySQL Test Container.
+     * Test that the Spring Boot application context loads successfully with PostgreSQL Test Container.
      * This verifies that all configuration classes, beans, and dependencies
-     * are properly configured and can be instantiated with a real MySQL database.
+     * are properly configured and can be instantiated with a real PostgreSQL database.
      */
     @Test
-    @DisplayName("Application context loads with MySQL container")
+    @DisplayName("Application context loads with PostgreSQL container")
     void contextLoads() {
-        // Verify that the MySQL container is running
-        assertTrue(mysqlContainer.isRunning(), "MySQL container should be running");
+        // Verify that the PostgreSQL container is running
+        assertTrue(postgresContainer.isRunning(), "PostgreSQL container should be running");
         
         // Verify that the container has the expected configuration
-        assertEquals("openespi_test", mysqlContainer.getDatabaseName());
-        assertEquals("testuser", mysqlContainer.getUsername());
-        assertEquals("testpass", mysqlContainer.getPassword());
+        assertEquals("openespi_test", postgresContainer.getDatabaseName());
+        assertEquals("testuser", postgresContainer.getUsername());
+        assertEquals("testpass", postgresContainer.getPassword());
         
         // This test passes if the application context loads without errors
         // It validates the entire Spring Boot configuration including:
-        // - MySQL Test Container configuration
-        // - JPA configuration with MySQL dialect
+        // - PostgreSQL Test Container configuration
+        // - JPA configuration with PostgreSQL dialect
         // - Flyway migration configuration
         // - Service layer beans
         // - Repository layer beans
@@ -103,16 +102,16 @@ class DataCustodianApplicationMysqlTest {
 
     /**
      * Test that database migrations execute successfully with the new vendor-specific structure.
-     * This verifies that both base migrations and MySQL-specific migrations created the expected tables.
+     * This verifies that both base migrations and PostgreSQL-specific migrations created the expected tables.
      */
     @Test
     @DisplayName("Database migrations execute successfully")
     void databaseMigrationsExecute() throws SQLException {
-        // Verify that the MySQL container is running
-        assertTrue(mysqlContainer.isRunning(), "MySQL container should be running");
+        // Verify that the PostgreSQL container is running
+        assertTrue(postgresContainer.isRunning(), "PostgreSQL container should be running");
         
         // Connect to the database and verify that expected tables exist
-        try (Connection connection = mysqlContainer.createConnection("")) {
+        try (Connection connection = postgresContainer.createConnection("")) {
             
             // Verify base migration tables exist (from V1__Create_Base_Tables.sql)
             assertTrue(tableExists(connection, "application_information"), 
@@ -126,23 +125,23 @@ class DataCustodianApplicationMysqlTest {
             assertTrue(tableExists(connection, "batch_lists"), 
                 "batch_lists table should exist from base migration");
             
-            // Verify MySQL-specific migration tables exist (from V2__MySQL_Specific_Tables.sql)
+            // Verify PostgreSQL-specific migration tables exist (from V2__PostgreSQL_Specific_Tables.sql)
             assertTrue(tableExists(connection, "time_configurations"), 
-                "time_configurations table should exist from MySQL-specific migration");
+                "time_configurations table should exist from PostgreSQL-specific migration");
             assertTrue(tableExists(connection, "usage_points"), 
-                "usage_points table should exist from MySQL-specific migration");
+                "usage_points table should exist from PostgreSQL-specific migration");
             assertTrue(tableExists(connection, "meter_readings"), 
-                "meter_readings table should exist from MySQL-specific migration");
+                "meter_readings table should exist from PostgreSQL-specific migration");
             assertTrue(tableExists(connection, "interval_blocks"), 
-                "interval_blocks table should exist from MySQL-specific migration");
+                "interval_blocks table should exist from PostgreSQL-specific migration");
             
-            // Verify that BLOB columns exist in MySQL-specific tables
+            // Verify that BYTEA columns exist in PostgreSQL-specific tables
             assertTrue(columnExists(connection, "time_configurations", "dst_end_rule"), 
-                "dst_end_rule BLOB column should exist in time_configurations");
+                "dst_end_rule BYTEA column should exist in time_configurations");
             assertTrue(columnExists(connection, "time_configurations", "dst_start_rule"), 
-                "dst_start_rule BLOB column should exist in time_configurations");
+                "dst_start_rule BYTEA column should exist in time_configurations");
             assertTrue(columnExists(connection, "usage_points", "role_flags"), 
-                "role_flags BLOB column should exist in usage_points");
+                "role_flags BYTEA column should exist in usage_points");
         }
     }
     
@@ -150,7 +149,7 @@ class DataCustodianApplicationMysqlTest {
      * Helper method to check if a table exists in the database.
      */
     private boolean tableExists(Connection connection, String tableName) throws SQLException {
-        try (ResultSet rs = connection.getMetaData().getTables(null, null, tableName, null)) {
+        try (ResultSet rs = connection.getMetaData().getTables(null, null, tableName.toLowerCase(), null)) {
             return rs.next();
         }
     }
@@ -159,7 +158,7 @@ class DataCustodianApplicationMysqlTest {
      * Helper method to check if a column exists in a table.
      */
     private boolean columnExists(Connection connection, String tableName, String columnName) throws SQLException {
-        try (ResultSet rs = connection.getMetaData().getColumns(null, null, tableName, columnName.toUpperCase())) {
+        try (ResultSet rs = connection.getMetaData().getColumns(null, null, tableName.toLowerCase(), columnName.toLowerCase())) {
             return rs.next();
         }
     }

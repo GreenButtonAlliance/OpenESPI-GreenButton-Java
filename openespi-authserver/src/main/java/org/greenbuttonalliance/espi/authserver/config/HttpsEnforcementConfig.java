@@ -23,16 +23,17 @@ package org.greenbuttonalliance.espi.authserver.config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.web.servlet.server.ConfigurableServletWebServerFactory;
-import org.springframework.boot.web.servlet.server.ServletWebServerFactory;
+import org.springframework.boot.tomcat.servlet.TomcatServletWebServerFactory;
+import org.springframework.boot.web.server.servlet.ServletWebServerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
-import org.springframework.boot.web.servlet.server.ServletWebServerFactory;
+
 
 import jakarta.annotation.PostConstruct;
 
@@ -105,19 +106,22 @@ public class HttpsEnforcementConfig {
         
         http
             .securityMatcher("/**")
-            .requiresChannel(channel -> 
-                channel.anyRequest().requiresSecure()
-            )
+                //should be able to use property server.ssl.enabled=true
+                //todo - test this
+//            .requiresChannel(channel ->
+//                channel.anyRequest().requiresSecure()
+//            )
             .headers(headers -> headers
                 .httpStrictTransportSecurity(hstsConfig -> hstsConfig
                     .maxAgeInSeconds(31536000) // 1 year
                     .includeSubDomains(true)
                     .preload(true)
                 )
-                .frameOptions().deny()
-                .contentTypeOptions().and()
+                .frameOptions(HeadersConfigurer.FrameOptionsConfig::deny)
+                .contentTypeOptions(Customizer.withDefaults())
                 .addHeaderWriter((request, response) -> {
                     // NAESB ESPI 4.0 Enhanced Security Headers
+
                     response.setHeader("Strict-Transport-Security", 
                         "max-age=31536000; includeSubDomains; preload");
                     response.setHeader("X-Content-Type-Options", "nosniff");
@@ -156,8 +160,8 @@ public class HttpsEnforcementConfig {
         http
             .securityMatcher("/**")
             .headers(headers -> headers
-                .frameOptions().sameOrigin() // Less restrictive for development
-                .contentTypeOptions().and()
+                .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin) // Less restrictive for development
+                .contentTypeOptions(Customizer.withDefaults())
                 .addHeaderWriter((request, response) -> {
                     // Development-friendly headers
                     response.setHeader("X-Content-Type-Options", "nosniff");
@@ -173,7 +177,7 @@ public class HttpsEnforcementConfig {
 
     /**
      * HTTPS Redirect Configuration for Mixed Environments
-     * 
+     * <p>
      * Provides HTTP to HTTPS redirect when HTTPS is available but not enforced
      */
     @Bean
@@ -183,7 +187,7 @@ public class HttpsEnforcementConfig {
             @Override
             public void setPort(int port) {
                 super.setPort(port);
-                
+
                 if (requireHttps && port != 443 && port != 8443) {
                     logger.warn("HTTPS required but non-standard HTTPS port {} configured", port);
                     logger.warn("Ensure SSL is properly configured for this port");

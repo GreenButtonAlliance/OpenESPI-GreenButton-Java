@@ -66,7 +66,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class PostgreSqlTestcontainersIntegrationTest {
 
     @Container
-    static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:15-alpine")
+    static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:18")
             .withDatabaseName("oauth2_authserver")
             .withUsername("test_user")
             .withPassword("test_password")

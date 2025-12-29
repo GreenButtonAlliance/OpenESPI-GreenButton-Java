@@ -24,7 +24,7 @@ import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
 import org.greenbuttonalliance.espi.common.domain.customer.enums.SupplierKind;
 
 import jakarta.persistence.*;
-import org.hibernate.annotations.Where;
+import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.proxy.HibernateProxy;
 
 import java.time.OffsetDateTime;
@@ -93,7 +93,7 @@ public class ServiceSupplierEntity extends IdentifiedObject {
      */
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_entity_uuid", referencedColumnName = "id")
-    @Where(clause = "parent_entity_type = 'ServiceSupplierEntity'")
+    @SQLRestriction("parent_entity_type = 'ServiceSupplierEntity'")
     private List<PhoneNumberEntity> phoneNumbers;
 
     @Override

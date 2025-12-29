@@ -46,7 +46,7 @@ class ApplicationStartupIntegrationTest {
         // This test verifies that the Spring Boot application context loads successfully
         // It validates the entire Spring Boot configuration including:
         // - Security configuration (OAuth2 Resource Server)
-        // - JPA configuration with Hibernate 6
+        // - JPA configuration with Hibernate 7
         // - Web configuration 
         // - Service layer beans
         // - Repository layer beans
@@ -57,15 +57,19 @@ class ApplicationStartupIntegrationTest {
     @Test
     void shouldHaveEssentialBeansConfigured() {
         // Verify critical beans are properly configured
-        assertThat(applicationContext.getBeansOfType(org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter.class))
-                .isNotEmpty();
+        //JT Commented out. Project configured to use Opaque token, not JWT
+//        assertThat(applicationContext.getBeansOfType(org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter.class))
+//                .isNotEmpty();
         
         // Verify JPA repositories are available
         assertThat(applicationContext.getBeansOfType(org.springframework.data.jpa.repository.JpaRepository.class))
                 .isNotEmpty();
                 
         // Verify controllers are available
-        assertThat(applicationContext.getBeansOfType(org.springframework.stereotype.Controller.class))
-                .isNotEmpty();
+        assertThat(applicationContext.getBean("meterReadingController")).isNotNull();
+
+        //JT commented out and refactored to above assert, noted UI Controllers commented out
+//        assertThat(applicationContext.getBeansOfType(org.springframework.stereotype.Controller.class))
+//                .isNotEmpty();
     }
 }

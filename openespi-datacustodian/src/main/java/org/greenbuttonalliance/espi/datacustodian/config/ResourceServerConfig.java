@@ -20,11 +20,6 @@
 package org.greenbuttonalliance.espi.datacustodian.config;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.core.annotation.Order;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 
 /**
  * OAuth2 Resource Server Configuration for OpenESPI Data Custodian
@@ -57,46 +52,47 @@ public class ResourceServerConfig {
      * - /api-docs/** (OpenAPI documentation)
      * - /swagger-ui/** (Swagger UI)
      */
-    @Bean
-    @Order(2)
-    public SecurityFilterChain resourceServerSecurityFilterChain(HttpSecurity http) throws Exception {
-        http
-            .securityMatcher("/espi/1_1/resource/**")
-            .authorizeHttpRequests(authorize -> authorize
-                // ESPI Resource API endpoints require OAuth2 authentication
-                .requestMatchers("/espi/1_1/resource/**").authenticated()
-            )
-            // Configure OAuth2 Resource Server with opaque token introspection
-            .oauth2ResourceServer(oauth2 -> oauth2
-                .opaqueToken(opaque -> {
-                    // Token introspection is configured via application.yml
-                    // spring.security.oauth2.resourceserver.opaquetoken.introspection-uri
-                    // spring.security.oauth2.resourceserver.opaquetoken.client-id
-                    // spring.security.oauth2.resourceserver.opaquetoken.client-secret
-                })
-            )
-            // HTTPS Channel Security for Production
-            .requiresChannel(channel -> {
-                if (requireHttps) {
-                    channel.anyRequest().requiresSecure();
-                }
-            })
-            // Enhanced Security Headers for ESPI Compliance
-            .headers(headers -> headers
-                .frameOptions().deny()
-                .contentTypeOptions().and()
-                .httpStrictTransportSecurity(hstsConfig -> hstsConfig
-                    .maxAgeInSeconds(31536000)
-                    .includeSubDomains(true)
-                    .preload(true)
-                )
-                .referrerPolicy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)
-            )
-            // CSRF not needed for API endpoints with OAuth2
-            .csrf(csrf -> csrf.disable());
-
-        return http.build();
-    }
+    //JT - Commented out from upgrade, revisit if this is needed
+//    @Bean
+//    @Order(2)
+//    public SecurityFilterChain resourceServerSecurityFilterChain(HttpSecurity http) throws Exception {
+//        http
+//            .securityMatcher("/espi/1_1/resource/**")
+//            .authorizeHttpRequests(authorize -> authorize
+//                // ESPI Resource API endpoints require OAuth2 authentication
+//                .requestMatchers("/espi/1_1/resource/**").authenticated()
+//            )
+//            // Configure OAuth2 Resource Server with opaque token introspection
+//            .oauth2ResourceServer(oauth2 -> oauth2
+//                .opaqueToken(opaque -> {
+//                    // Token introspection is configured via application.yml
+//                    // spring.security.oauth2.resourceserver.opaquetoken.introspection-uri
+//                    // spring.security.oauth2.resourceserver.opaquetoken.client-id
+//                    // spring.security.oauth2.resourceserver.opaquetoken.client-secret
+//                })
+//            )
+//            // HTTPS Channel Security for Production
+//            .requiresChannel(channel -> {
+//                if (requireHttps) {
+//                    channel.anyRequest().requiresSecure();
+//                }
+//            })
+//            // Enhanced Security Headers for ESPI Compliance
+//            .headers(headers -> headers
+//                .frameOptions().deny()
+//                .contentTypeOptions().and()
+//                .httpStrictTransportSecurity(hstsConfig -> hstsConfig
+//                    .maxAgeInSeconds(31536000)
+//                    .includeSubDomains(true)
+//                    .preload(true)
+//                )
+//                .referrerPolicy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)
+//            )
+//            // CSRF not needed for API endpoints with OAuth2
+//            .csrf(csrf -> csrf.disable());
+//
+//        return http.build();
+//    }
 
     /**
      * Default Security Filter Chain for non-API endpoints
@@ -107,48 +103,48 @@ public class ResourceServerConfig {
      * - API documentation
      * - Error pages
      */
-    @Bean
-    @Order(3)
-    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
-        http
-            .authorizeHttpRequests(authorize -> authorize
-                // Public endpoints
-                .requestMatchers(
-                    "/css/**", "/js/**", "/images/**", "/favicon.ico",
-                    "/error", "/actuator/health", "/actuator/info",
-                    "/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"
-                ).permitAll()
-                // Management endpoints require authentication
-                .requestMatchers("/actuator/**").authenticated()
-                // All other requests require authentication
-                .anyRequest().authenticated()
-            )
-            // Basic authentication for management endpoints
-            .httpBasic(httpBasic -> {
-                // HTTP Basic auth configuration if needed
-            })
-            // HTTPS Channel Security for Production
-            .requiresChannel(channel -> {
-                if (requireHttps) {
-                    channel.anyRequest().requiresSecure();
-                }
-            })
-            // Enhanced Security Headers
-            .headers(headers -> headers
-                .frameOptions().deny()
-                .contentTypeOptions().and()
-                .httpStrictTransportSecurity(hstsConfig -> hstsConfig
-                    .maxAgeInSeconds(31536000)
-                    .includeSubDomains(true)
-                    .preload(true)
-                )
-                .referrerPolicy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)
-            )
-            // CSRF protection for web endpoints
-            .csrf(csrf -> csrf
-                .ignoringRequestMatchers("/actuator/**", "/api-docs/**")
-            );
-
-        return http.build();
-    }
+//    @Bean
+//    @Order(3)
+//    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
+//        http
+//            .authorizeHttpRequests(authorize -> authorize
+//                // Public endpoints
+//                .requestMatchers(
+//                    "/css/**", "/js/**", "/images/**", "/favicon.ico",
+//                    "/error", "/actuator/health", "/actuator/info",
+//                    "/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"
+//                ).permitAll()
+//                // Management endpoints require authentication
+//                .requestMatchers("/actuator/**").authenticated()
+//                // All other requests require authentication
+//                .anyRequest().authenticated()
+//            )
+//            // Basic authentication for management endpoints
+//            .httpBasic(httpBasic -> {
+//                // HTTP Basic auth configuration if needed
+//            })
+//            // HTTPS Channel Security for Production
+//            .requiresChannel(channel -> {
+//                if (requireHttps) {
+//                    channel.anyRequest().requiresSecure();
+//                }
+//            })
+//            // Enhanced Security Headers
+//            .headers(headers -> headers
+//                .frameOptions().deny()
+//                .contentTypeOptions().and()
+//                .httpStrictTransportSecurity(hstsConfig -> hstsConfig
+//                    .maxAgeInSeconds(31536000)
+//                    .includeSubDomains(true)
+//                    .preload(true)
+//                )
+//                .referrerPolicy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)
+//            )
+//            // CSRF protection for web endpoints
+//            .csrf(csrf -> csrf
+//                .ignoringRequestMatchers("/actuator/**", "/api-docs/**")
+//            );
+//
+//        return http.build();
+//    }
 }

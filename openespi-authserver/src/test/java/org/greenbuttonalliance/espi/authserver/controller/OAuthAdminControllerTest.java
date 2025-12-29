@@ -20,7 +20,6 @@
 
 package org.greenbuttonalliance.espi.authserver.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.greenbuttonalliance.espi.authserver.repository.JdbcRegisteredClientRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -40,10 +39,9 @@ import org.springframework.security.oauth2.server.authorization.client.Registere
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import tools.jackson.databind.ObjectMapper;
 
-import java.time.Instant;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.*;

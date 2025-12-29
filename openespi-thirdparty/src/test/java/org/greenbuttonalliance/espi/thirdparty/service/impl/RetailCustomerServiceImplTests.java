@@ -22,17 +22,19 @@ package org.greenbuttonalliance.espi.thirdparty.service.impl;
 //import org.greenbuttonalliance.espi.common.domain.RetailCustomer;
 //import org.greenbuttonalliance.espi.common.repositories.RetailCustomerRepository;
 
+import org.aspectj.lang.annotation.Before;
 import org.greenbuttonalliance.espi.common.repositories.usage.RetailCustomerRepository;
 import org.greenbuttonalliance.espi.common.service.impl.RetailCustomerServiceImpl;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 
 //todo - JT, commenting out missing classes
 public class RetailCustomerServiceImplTests {
 	private RetailCustomerRepository repository;
 	private RetailCustomerServiceImpl service;
 
-	@Before
+	@BeforeEach
 	public void setup() {
 //		repository = mock(RetailCustomerRepository.class);
 //		service = new RetailCustomerServiceImpl();

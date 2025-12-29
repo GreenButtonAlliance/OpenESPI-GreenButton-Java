@@ -5,6 +5,8 @@ server:
   port: 9999
   servlet:
     context-path: /
+  ssl:
+    enabled: false
 
 spring:
   application:
@@ -48,9 +50,19 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: true
-    locations: classpath:db/migration
-    schemas: oauth2_authserver
+    locations: classpath:db/migration,classpath:db/vendor/h2
+    #schemas: oauth2_authserver
+  jackson:
+    default-property-inclusion: non_null
 
+    datatype:
+      datetime:
+        write-dates-as-timestamps: false
+
+    serialization:
+      write_empty_json_arrays: true
+    deserialization:
+      fail_on_unknown_properties: false
 # Logging Configuration
 logging:
   level:

@@ -66,7 +66,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class MySqlTestcontainersIntegrationTest {
 
     @Container
-    static MySQLContainer<?> mysqlContainer = new MySQLContainer<>("mysql:8.0")
+    static MySQLContainer<?> mysqlContainer = new MySQLContainer<>("mysql:9.5.0")
             .withDatabaseName("oauth2_authserver")
             .withUsername("test_user")
             .withPassword("test_password")

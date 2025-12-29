@@ -19,12 +19,12 @@
 
 package org.greenbuttonalliance.espi.thirdparty.repository.impl;
 
-//import org.greenbuttonalliance.espi.common.domain.Authorization;
-//import org.greenbuttonalliance.espi.common.domain.Routes;
+
 
 import jakarta.xml.bind.JAXBException;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -44,7 +44,7 @@ public class ResourceRESTRepositoryImplTests {
 	public String uri;
 
 	@SuppressWarnings("unchecked")
-	@Before
+	@BeforeEach
 	public void before() {
 		repository = new ResourceRESTRepositoryImpl();
 		marshaller = mock(Jaxb2Marshaller.class);

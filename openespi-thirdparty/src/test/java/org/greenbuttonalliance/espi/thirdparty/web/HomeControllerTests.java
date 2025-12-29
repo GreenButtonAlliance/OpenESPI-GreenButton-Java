@@ -21,12 +21,15 @@ package org.greenbuttonalliance.espi.thirdparty.web;
 
 //import org.greenbuttonalliance.espi.common.domain.RetailCustomer;
 
-import org.junit.Before;
-import org.junit.Test;
+
+import org.aspectj.lang.annotation.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.event.annotation.BeforeTestClass;
 
 @Disabled //todo - JT, commenting out missing classes
 //@RunWith(SpringJUnit4ClassRunner.class)
@@ -39,7 +42,7 @@ public class HomeControllerTests {
 //	private RetailCustomer customer;
 	private Authentication principal;
 
-	@Before
+	@BeforeEach
 	public void setup() {
 //		customer = new RetailCustomer();
 //		customer.setId(99L);

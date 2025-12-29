@@ -18,8 +18,9 @@
 
 package org.greenbuttonalliance.espi.common.repositories.usage;
 
-import org.greenbuttonalliance.espi.common.domain.usage.*;
+import jakarta.validation.ConstraintViolation;
 import org.greenbuttonalliance.espi.common.domain.common.GrantType;
+import org.greenbuttonalliance.espi.common.domain.usage.*;
 import org.greenbuttonalliance.espi.common.test.BaseRepositoryTest;
 import org.greenbuttonalliance.espi.common.test.TestDataBuilders;
 import org.junit.jupiter.api.DisplayName;
@@ -27,10 +28,11 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import jakarta.validation.ConstraintViolation;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Comprehensive test suite for SubscriptionRepository.
@@ -63,7 +65,7 @@ class SubscriptionRepositoryTest extends BaseRepositoryTest {
         SubscriptionEntity subscription = new SubscriptionEntity();
         subscription.setDescription("Test Subscription");
         subscription.setHashedId("hashed-" + faker.internet().uuid());
-        subscription.setLastUpdate(Calendar.getInstance());
+        subscription.setLastUpdate(LocalDateTime.now());
         return subscription;
     }
 
@@ -147,9 +149,8 @@ class SubscriptionRepositoryTest extends BaseRepositoryTest {
             subscription.setApplicationInformation(savedApp);
             subscription.setDescription("Subscription with Lifecycle Fields");
             
-            Calendar lastUpdate = Calendar.getInstance();
-            lastUpdate.add(Calendar.HOUR, -1); // 1 hour ago
-            subscription.setLastUpdate(lastUpdate);
+            // 1 hour ago
+            subscription.setLastUpdate(LocalDateTime.now().minus(1, ChronoUnit.HOURS));
 
             // Act
             SubscriptionEntity saved = subscriptionRepository.save(subscription);
@@ -161,7 +162,7 @@ class SubscriptionRepositoryTest extends BaseRepositoryTest {
             SubscriptionEntity entity = retrieved.get();
             assertThat(entity.getHashedId()).isNotNull();
             assertThat(entity.getLastUpdate()).isNotNull();
-            assertThat(entity.getLastUpdate().getTimeInMillis()).isLessThan(System.currentTimeMillis());
+            assertThat(entity.getLastUpdate().getHour()).isLessThan(LocalDateTime.now().getHour());
         }
 
         @Test

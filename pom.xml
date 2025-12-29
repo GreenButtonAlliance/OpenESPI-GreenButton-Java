@@ -4,7 +4,15 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
          http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    
+
+    <!-- Spring Boot Parent POM for dependency management -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>4.0.1</version>
+        <relativePath/>
+    </parent>
+
     <groupId>org.greenbuttonalliance.espi</groupId>
     <artifactId>openespi-parent</artifactId>
     <version>3.5.0</version>
@@ -12,35 +20,80 @@
     
     <name>OpenESPI GreenButton Java</name>
     <description>Complete OpenESPI implementation for Green Button energy data standards</description>
-    
+
+    <url>https://github.com/GreenButtonAlliance/OpenESPI-GreenButton-Java</url>
+
+    <organization>
+        <name>Green Button Alliance, Inc.</name>
+        <url>http://www.greenbuttonalliance.org</url>
+    </organization>
+
+    <developers>
+        <developer>
+            <id>dcoffin</id>
+            <name>Donald F. Coffin</name>
+            <email>dcoffin@greenbuttonalliance.org</email>
+        </developer>
+    </developers>
+
+    <inceptionYear>2025</inceptionYear>
+
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+
     <!-- All modules included - ThirdParty partially migrated but buildable -->
     <modules>
         <module>openespi-common</module>
         <module>openespi-datacustodian</module>
-        <module>openespi-authserver</module>
         <module>openespi-thirdparty</module>
+        <module>openespi-authserver</module>
     </modules>
     
     <properties>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
+        <java.version>25</java.version>
+        <spring.boot.version>4.0.1</spring.boot.version>
+        <project.scm.id>github</project.scm.id>
+        <maven.compiler.source>25</maven.compiler.source>
+        <maven.compiler.target>25</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <spring.boot.version>3.5.0</spring.boot.version>
 
         <!-- SonarCloud Configuration -->
         <sonar.projectKey>GreenButtonAlliance_OpenESPI-GreenButton-Java</sonar.projectKey>
         <sonar.organization>greenbuttonalliance</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
-        <sonar.java.source>21</sonar.java.source>
+        <sonar.java.source>25</sonar.java.source>
         <sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
 
         <!-- Plugin Versions -->
-        <jacoco.version>0.8.12</jacoco.version>
-        <sonar-maven-plugin.version>4.0.0.4121</sonar-maven-plugin.version>
+        <jacoco.version>0.8.14</jacoco.version>
+        <sonar-maven-plugin.version>5.5.0.6356</sonar-maven-plugin.version>
+        <maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
+        <maven-release-plugin.version>3.3.1</maven-release-plugin.version>
+        <maven-site-plugin.version>3.3</maven-site-plugin.version>
+        <versions-maven-plugin.version>2.18.0</versions-maven-plugin.version>
+        <spotbugs-plugin.version>4.8.6.4</spotbugs-plugin.version>
+
+        <!-- Dependency Versions -->
+        <lombok.version>1.18.42</lombok.version>
+        <mapstruct.version>1.6.3</mapstruct.version>
+        <commons-lang.version>3.20.0</commons-lang.version>
+        <commons-codec.version>1.18.0</commons-codec.version>
+        <xmlunit.version>1.4</xmlunit.version>
+        <jakarta.servlet.version>6.1.0</jakarta.servlet.version>
+        <mysql.connector.version>9.5.0</mysql.connector.version>
+        <postgres.version>42.7.7</postgres.version>
+        <commons-io.version>2.17.0</commons-io.version>
+        <swagger-annotations.version>2.2.41</swagger-annotations.version>
+        <datafaker.version>2.5.3</datafaker.version>
+        <jetbrains-annotations.version>26.0.2-1</jetbrains-annotations.version>
     </properties>
     
     <profiles>
-        <!-- Build only fully-migrated Spring Boot 3.5 modules -->
+        <!-- Build only fully-migrated Spring Boot 4 modules -->
         <profile>
             <id>spring-boot-only</id>
             <modules>
@@ -62,16 +115,69 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-dependencies</artifactId>
-                <version>${spring.boot.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
+                <groupId>commons-io</groupId>
+                <artifactId>commons-io</artifactId>
+                <version>${commons-io.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>jakarta.servlet</groupId>
+                <artifactId>jakarta.servlet-api</artifactId>
+                <version>${jakarta.servlet.version}</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.mysql</groupId>
+                <artifactId>mysql-connector-j</artifactId>
+                <version>${mysql.connector.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.swagger.core.v3</groupId>
+                <artifactId>swagger-annotations-jakarta</artifactId>
+                <version>${swagger-annotations.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.datafaker</groupId>
+                <artifactId>datafaker</artifactId>
+                <version>${datafaker.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
     
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>**/*.yml</include>
+                    <include>**/*.yaml</include>
+                    <include>**/*.properties</include>
+                    <include>**/*.xml</include>
+                    <include>**/*.sql</include>
+                    <include>**/*.html</include>
+                    <include>**/*.js</include>
+                    <include>**/*.css</include>
+                </includes>
+                <excludes>
+                    <exclude>/10.xml</exclude>
+                </excludes>
+            </resource>
+        </resources>
+
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>**/*.yml</include>
+                    <include>**/*.yaml</include>
+                    <include>**/*.properties</include>
+                    <include>**/*.xml</include>
+                    <include>**/*.sql</include>
+                </includes>
+            </testResource>
+        </testResources>
+
         <pluginManagement>
             <plugins>
                 <plugin>
@@ -82,11 +188,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.13.0</version>
-                    <configuration>
-                        <source>21</source>
-                        <target>21</target>
-                    </configuration>
+                    <version>${maven-compiler-plugin.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.jacoco</groupId>
@@ -98,10 +200,81 @@
                     <artifactId>sonar-maven-plugin</artifactId>
                     <version>${sonar-maven-plugin.version}</version>
                 </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-site-plugin</artifactId>
+                    <version>${maven-site-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-release-plugin</artifactId>
+                    <version>${maven-release-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>versions-maven-plugin</artifactId>
+                    <version>${versions-maven-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>com.github.spotbugs</groupId>
+                    <artifactId>spotbugs-maven-plugin</artifactId>
+                    <version>${spotbugs-plugin.version}</version>
+                </plugin>
             </plugins>
         </pluginManagement>
 
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                    <excludes>
+                        <!-- Exclude testing support classes (should be in src/test) -->
+                        <exclude>**/support/**</exclude>
+                        <!-- Exclude classes with missing Xerces dependencies -->
+                        <exclude>**/utils/DurationImpl.java</exclude>
+                        <exclude>**/utils/XMLGregorianCalendarImpl.java</exclude>
+                        <!-- Exclude legacy deprecated classes with Spring Security dependencies -->
+                        <exclude>**/legacy_deprecated/**</exclude>
+                        <!-- Exclude repository interface with Spring Security UserDetails -->
+                        <exclude>**/repositories/usage/RetailCustomerRepository.java</exclude>
+                    </excludes>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                        <path>
+                            <groupId>org.mapstruct</groupId>
+                            <artifactId>mapstruct-processor</artifactId>
+                            <version>${mapstruct.version}</version>
+                        </path>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok-mapstruct-binding</artifactId>
+                            <version>0.2.0</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <includes>
+                        <include>**/*Tests.java</include>
+                        <include>**/*Test.java</include>
+                    </includes>
+                    <useSystemClassLoader>false</useSystemClassLoader>
+                    <argLine>
+                        -javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar
+                        -Xshare:off
+                    </argLine>
+                </configuration>
+            </plugin>
             <!-- JaCoCo Code Coverage Plugin -->
             <plugin>
                 <groupId>org.jacoco</groupId>
@@ -142,6 +315,60 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-site-plugin</artifactId>
+                <!--                <version>3.3</version>-->
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.maven.wagon</groupId>
+                        <artifactId>wagon-webdav-jackrabbit</artifactId>
+                        <version>2.9</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <locales>en</locales>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+            </plugin>
+            <!-- Git Build Information -->
+            <plugin>
+                <groupId>io.github.git-commit-id</groupId>
+                <artifactId>git-commit-id-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>get-the-git-infos</id>
+                        <goals>
+                            <goal>revision</goal>
+                        </goals>
+                        <phase>initialize</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <generateGitPropertiesFile>true</generateGitPropertiesFile>
+                    <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties</generateGitPropertiesFilename>
+                    <includeOnlyProperties>
+                        <includeOnlyProperty>^git.build.(time|version)$</includeOnlyProperty>
+                        <includeOnlyProperty>^git.commit.id.(abbrev|full)$</includeOnlyProperty>
+                    </includeOnlyProperties>
+                    <commitIdGenerationMode>full</commitIdGenerationMode>
+                </configuration>
+            </plugin>
 
             <!-- SonarCloud Maven Plugin -->
             <plugin>
@@ -150,4 +377,49 @@
             </plugin>
         </plugins>
     </build>
+    <repositories>
+        <!-- GitHub Packages Repository for OpenESPI -->
+        <repository>
+            <id>github</id>
+            <name>GitHub Green Button Alliance Apache Maven Packages</name>
+            <url>https://maven.pkg.github.com/GreenButtonAlliance/OpenESPI-GreenButton-Java</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
+    <scm>
+        <connection>scm:git:https://github.com/GreenButtonAlliance/OpenESPI-GreenButton-Java</connection>
+        <developerConnection>scm:git:git@github.com:greenbuttonalliance/OpenESPI-GreenButton-Java.git</developerConnection>
+        <url>https://github.com/greenbuttonalliance/OpenESPI-GreenButton-Java</url>
+        <tag>HEAD</tag>
+    </scm>
+
+    <issueManagement>
+        <system>GitHub</system>
+        <url>https://github.com/greenbuttonalliance/OpenESPI-GreenButton-Java/issues</url>
+    </issueManagement>
+
+    <ciManagement>
+        <system>GitHub Actions</system>
+        <url>https://github.com/greenbuttonalliance/OpenESPI-GreenButton-Java-Workspace/actions</url>
+    </ciManagement>
+
+    <distributionManagement>
+        <!-- GitHub Packages Maven Repository configuration -->
+        <repository>
+            <id>github</id>
+            <name>GitHub Green Button Alliance Apache Maven Packages</name>
+            <url>https://maven.pkg.github.com/GreenButtonAlliance/OpenESPI-GreenButton-Java</url>
+        </repository>
+        <snapshotRepository>
+            <id>github</id>
+            <name>GitHub Green Button Alliance Apache Maven Packages</name>
+            <url>https://maven.pkg.github.com/GreenButtonAlliance/OpenESPI-GreenButton-Java</url>
+        </snapshotRepository>
+    </distributionManagement>
 </project>

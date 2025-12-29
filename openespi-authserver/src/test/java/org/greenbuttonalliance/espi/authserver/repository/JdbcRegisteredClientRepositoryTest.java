@@ -31,6 +31,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
@@ -67,11 +68,14 @@ class JdbcRegisteredClientRepositoryTest {
     @Mock
     private JdbcTemplate jdbcTemplate;
 
+    @Mock
+    PasswordEncoder passwordEncoder;
+
     private JdbcRegisteredClientRepository repository;
 
     @BeforeEach
     void setUp() {
-        repository = new JdbcRegisteredClientRepository(jdbcTemplate);
+        repository = new JdbcRegisteredClientRepository(jdbcTemplate, passwordEncoder);
     }
 
     @Nested

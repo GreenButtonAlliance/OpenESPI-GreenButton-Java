@@ -34,6 +34,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -90,7 +91,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 			}
 			subscription.setRetailCustomer(null); // No specific retail customer for client-based subscriptions
 		}
-		subscription.setLastUpdate(new GregorianCalendar());
+		subscription.setLastUpdate(LocalDateTime.now());
 		subscriptionRepository.save(subscription);
 
 		logger.info("Created subscription for username: " + username);

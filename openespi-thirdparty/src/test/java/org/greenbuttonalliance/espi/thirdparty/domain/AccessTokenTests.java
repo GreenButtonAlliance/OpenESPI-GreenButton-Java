@@ -19,7 +19,8 @@
 
 package org.greenbuttonalliance.espi.thirdparty.domain;
 
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpInputMessage;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 

@@ -19,17 +19,18 @@
 package org.greenbuttonalliance.espi.common.test;
 
 import net.datafaker.Faker;
-import org.greenbuttonalliance.espi.common.domain.customer.entity.*;
-import org.greenbuttonalliance.espi.common.domain.customer.enums.CustomerKind;
-import org.greenbuttonalliance.espi.common.domain.usage.*;
 import org.greenbuttonalliance.espi.common.domain.common.DateTimeInterval;
 import org.greenbuttonalliance.espi.common.domain.common.ServiceCategory;
+import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerEntity;
+import org.greenbuttonalliance.espi.common.domain.customer.entity.StatementEntity;
+import org.greenbuttonalliance.espi.common.domain.customer.enums.CustomerKind;
+import org.greenbuttonalliance.espi.common.domain.usage.*;
 
-import java.time.OffsetDateTime;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Minimal utility class for creating test data entities.
@@ -61,8 +62,8 @@ public class TestDataBuilders {
     public static StatementEntity createValidStatement() {
         StatementEntity statement = new StatementEntity();
         statement.setDescription(faker.lorem().sentence(3, 8));
-        statement.setIssueDateTime(faker.date().past(30, java.util.concurrent.TimeUnit.DAYS)
-                .toInstant().atOffset(java.time.ZoneOffset.UTC));
+        statement.setIssueDateTime(OffsetDateTime.from(faker.timeAndDate().
+                past(30, java.util.concurrent.TimeUnit.DAYS).atOffset(ZoneOffset.UTC)));
         return statement;
     }
 
@@ -118,7 +119,7 @@ public class TestDataBuilders {
         // Add basic DateTimeInterval
         DateTimeInterval interval = new DateTimeInterval();
         interval.setDuration(3600L); // 1 hour
-        interval.setStart(faker.date().past(7, java.util.concurrent.TimeUnit.DAYS).getTime() / 1000);
+        interval.setStart(faker.timeAndDate().past(7, java.util.concurrent.TimeUnit.DAYS).getEpochSecond());
         intervalBlock.setInterval(interval);
         
         return intervalBlock;
@@ -144,7 +145,7 @@ public class TestDataBuilders {
         // Add basic DateTimeInterval for time period
         DateTimeInterval timePeriod = new DateTimeInterval();
         timePeriod.setDuration(900L); // 15 minutes
-        timePeriod.setStart(faker.date().past(1, java.util.concurrent.TimeUnit.DAYS).getTime() / 1000);
+        timePeriod.setStart(faker.timeAndDate().past(1, java.util.concurrent.TimeUnit.DAYS).getEpochSecond());
         intervalReading.setTimePeriod(timePeriod);
         
         return intervalReading;
@@ -249,7 +250,7 @@ public class TestDataBuilders {
         SubscriptionEntity subscription = new SubscriptionEntity();
         subscription.setDescription(faker.lorem().sentence(3, 6));
         subscription.setHashedId("hashed-" + faker.internet().uuid());
-        subscription.setLastUpdate(java.util.Calendar.getInstance());
+        subscription.setLastUpdate(LocalDateTime.now());
         return subscription;
     }
 
@@ -309,7 +310,7 @@ public class TestDataBuilders {
      * Creates a random OffsetDateTime for testing.
      */
     public static OffsetDateTime randomOffsetDateTime() {
-        return faker.date().past(365, java.util.concurrent.TimeUnit.DAYS).toInstant()
+        return faker.timeAndDate().past(365, java.util.concurrent.TimeUnit.DAYS)
                 .atOffset(java.time.ZoneOffset.UTC);
     }
 
@@ -317,7 +318,7 @@ public class TestDataBuilders {
      * Creates a random LocalDateTime for testing.
      */
     public static LocalDateTime randomLocalDateTime() {
-        return faker.date().past(365, java.util.concurrent.TimeUnit.DAYS).toInstant()
+        return faker.timeAndDate().past(365, java.util.concurrent.TimeUnit.DAYS)
                 .atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
     }
 }

@@ -140,7 +140,7 @@ public class SecurityConfiguration {
                     )
                 
                 // ESPI Meter Reading endpoints
-                .requestMatchers(HttpMethod.GET, "/espi/1_1/resource/**/MeterReading/**")
+                .requestMatchers(HttpMethod.GET, "/espi/1_1/resource/MeterReading/**")
                     .hasAnyAuthority(
                         "SCOPE_FB_15_READ_3rd_party", 
                         "SCOPE_FB_16_READ_3rd_party", 
@@ -148,7 +148,7 @@ public class SecurityConfiguration {
                         "SCOPE_DataCustodian_Admin_Access"
                     )
                 
-                .requestMatchers(HttpMethod.POST, "/espi/1_1/resource/**/MeterReading/**")
+                .requestMatchers(HttpMethod.POST, "/espi/1_1/resource/MeterReading/**")
                     .hasAnyAuthority(
                         "SCOPE_FB_15_WRITE_3rd_party", 
                         "SCOPE_FB_16_WRITE_3rd_party", 
@@ -157,7 +157,7 @@ public class SecurityConfiguration {
                     )
                 
                 // ESPI Interval Reading endpoints
-                .requestMatchers(HttpMethod.GET, "/espi/1_1/resource/**/IntervalReading/**")
+                .requestMatchers(HttpMethod.GET, "/espi/1_1/resource/IntervalReading/**")
                     .hasAnyAuthority(
                         "SCOPE_FB_15_READ_3rd_party", 
                         "SCOPE_FB_16_READ_3rd_party", 

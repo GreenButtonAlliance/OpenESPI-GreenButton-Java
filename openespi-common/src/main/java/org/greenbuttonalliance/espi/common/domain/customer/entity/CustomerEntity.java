@@ -19,13 +19,15 @@
 
 package org.greenbuttonalliance.espi.common.domain.customer.entity;
 
-import lombok.*;
-import org.greenbuttonalliance.espi.common.domain.customer.enums.CustomerKind;
-import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
-import org.greenbuttonalliance.espi.common.domain.usage.TimeConfigurationEntity;
-
 import jakarta.persistence.*;
-import org.hibernate.annotations.Where;
+import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
+import org.greenbuttonalliance.espi.common.domain.customer.enums.CustomerKind;
+import org.greenbuttonalliance.espi.common.domain.usage.TimeConfigurationEntity;
+import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.proxy.HibernateProxy;
 
 import java.time.OffsetDateTime;
@@ -165,7 +167,7 @@ public class CustomerEntity extends IdentifiedObject {
      */
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_entity_uuid", referencedColumnName = "id")
-    @Where(clause = "parent_entity_type = 'CustomerEntity'")
+    @SQLRestriction("parent_entity_type = 'CustomerEntity'")
     private List<PhoneNumberEntity> phoneNumbers = new ArrayList<>();
 
     /**

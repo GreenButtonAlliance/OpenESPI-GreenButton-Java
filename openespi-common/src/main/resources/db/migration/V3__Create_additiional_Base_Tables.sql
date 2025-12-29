@@ -790,6 +790,7 @@ CREATE TABLE phone_numbers
     phone_type           VARCHAR(20),
 
     -- Polymorphic relationship fields
+    parent_entity_uuid   VARCHAR(36),
     parent_entity_type   VARCHAR(255)
 );
 

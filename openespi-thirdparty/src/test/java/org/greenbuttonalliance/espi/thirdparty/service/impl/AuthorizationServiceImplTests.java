@@ -19,18 +19,12 @@
 
 package org.greenbuttonalliance.espi.thirdparty.service.impl;
 
-//import org.greenbuttonalliance.espi.common.domain.Authorization;
-//import org.greenbuttonalliance.espi.common.domain.RetailCustomer;
-//import org.greenbuttonalliance.espi.common.domain.Subscription;
-//import org.greenbuttonalliance.espi.common.domain.UsagePoint;
-//import org.greenbuttonalliance.espi.common.repositories.UsagePointRepository;
-//import org.greenbuttonalliance.espi.common.repositories.jpa.AuthorizationRepositoryImpl;
 
+import org.aspectj.lang.annotation.Before;
 import org.greenbuttonalliance.espi.common.repositories.usage.UsagePointRepository;
 import org.greenbuttonalliance.espi.common.service.impl.AuthorizationServiceImpl;
-import org.junit.Before;
-import org.junit.Test;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import static org.mockito.Mockito.mock;
 
@@ -40,12 +34,12 @@ public class AuthorizationServiceImplTests {
 	private AuthorizationServiceImpl service;
 	//private AuthorizationRepositoryImpl repository;
 
-	@Before
-	public void before() {
+	//@Before
+	//public void before() {
 		// service = new AuthorizationServiceImpl();
 //		repository = mock(AuthorizationRepositoryImpl.class);
 //		service.setAuthorizationRepository(repository);
-	}
+	//}
 
 	@Test
 	public void findAllByRetailCustomer() {

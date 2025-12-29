@@ -19,15 +19,13 @@
 
 package org.greenbuttonalliance.espi.thirdparty.service.impl;
 
-//import org.greenbuttonalliance.espi.common.domain.RetailCustomer;
-//import org.greenbuttonalliance.espi.common.domain.UsagePoint;
-//import org.greenbuttonalliance.espi.common.repositories.UsagePointRepository;
-
 import jakarta.xml.bind.JAXBException;
+import org.aspectj.lang.annotation.Before;
 import org.greenbuttonalliance.espi.common.repositories.usage.UsagePointRepository;
 import org.greenbuttonalliance.espi.common.service.impl.UsagePointServiceImpl;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 
 import static org.mockito.Mockito.mock;
 
@@ -37,7 +35,7 @@ public class UsagePointServiceImplTests {
 	private UsagePointRepository repository;
 	private UsagePointServiceImpl service;
 
-	@Before
+	@BeforeEach
 	public void before() {
 
 		repository = mock(UsagePointRepository.class);
