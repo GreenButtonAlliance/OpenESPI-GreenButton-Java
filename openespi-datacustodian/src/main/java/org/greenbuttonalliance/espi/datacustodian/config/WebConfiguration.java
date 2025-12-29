@@ -20,10 +20,12 @@
 package org.greenbuttonalliance.espi.datacustodian.config;
 
 
+import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.Marshaller;
 import jakarta.xml.bind.Unmarshaller;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.restclient.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
@@ -32,10 +34,9 @@ import org.springframework.http.converter.HttpMessageConverters;
 import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
 import org.springframework.http.converter.xml.MarshallingHttpMessageConverter;
 import org.springframework.oxm.jaxb.Jaxb2Marshaller;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.config.annotation.*;
 import tools.jackson.databind.SerializationFeature;
-import tools.jackson.databind.cfg.DateTimeFeature;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.util.Arrays;
@@ -140,7 +141,8 @@ public class WebConfiguration implements WebMvcConfigurer {
 
         return new JacksonJsonHttpMessageConverter(JsonMapper.builder()
                         .enable(SerializationFeature.INDENT_OUTPUT)
-                        .enable(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS)
+                //.configure(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS, true)
+                     //   .enable(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS)
                         .build());
                 // Java 8 time should be included by default
     }
@@ -148,15 +150,15 @@ public class WebConfiguration implements WebMvcConfigurer {
     /**
      * WebClient for external HTTP communication.
      */
-    @Bean
-    public WebClient webClient() {
-        return WebClient.builder()
-            .codecs(configurer -> configurer
-                .defaultCodecs()
-                .maxInMemorySize(1024 * 1024) // 1MB buffer
-            )
-            .build();
-    }
+//    @Bean
+//    public WebClient webClient() {
+//        return WebClient.builder()
+//            .codecs(configurer -> configurer
+//                .defaultCodecs()
+//                .maxInMemorySize(1024 * 1024) // 1MB buffer
+//            )
+//            .build();
+//    }
 
     /**
      * Configure static resource handling.
@@ -227,9 +229,9 @@ public class WebConfiguration implements WebMvcConfigurer {
      * @param builder the RestTemplateBuilder provided by Spring Boot.
      * @return a new instance of RestTemplate.
      */
-//    @Bean
-//    public RestTemplate restTemplate(RestTemplateBuilder builder) {
-//        return builder.build();
-//    }
+    @Bean
+    public RestTemplate restTemplate(RestTemplateBuilder builder) {
+        return builder.build();
+    }
 
 }

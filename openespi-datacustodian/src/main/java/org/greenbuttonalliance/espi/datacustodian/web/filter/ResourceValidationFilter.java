@@ -89,7 +89,7 @@ public class ResourceValidationFilter implements Filter {
 			System.out
 					.printf("ResourceValidationFilter: doFilter - Access Not Authorized\n");
 			throw new AccessDeniedException(
-					String.format("Access Not Authorized"));
+					"Access Not Authorized".formatted());
 
 		}
 
@@ -133,7 +133,7 @@ public class ResourceValidationFilter implements Filter {
 								.printf("ResourceValidationFilter: doFilter - No AuthorizationEntity Found - %s\n",
 										e.toString());
 						throw new AccessDeniedException(
-								String.format("No AuthorizationEntity Found"));
+								"No AuthorizationEntity Found".formatted());
 					}
 				}
 			}
@@ -171,7 +171,7 @@ public class ResourceValidationFilter implements Filter {
 							.printf("ResourceValidationFilter: doFilter - not valid for this token %s\n",
 									uri);
 					throw new AccessDeniedException(
-							String.format("Access Not Authorized"));
+							"Access Not Authorized".formatted());
 				}
 			} else {
 				// lets check the uri
@@ -237,7 +237,7 @@ public class ResourceValidationFilter implements Filter {
 							.printf("ResourceValidationFilter: doFilter - ROLE_USER attempted a RESTful %s Request -- Only GET Request are allowed\n",
 									service);
 					throw new AccessDeniedException(
-							String.format("Access Not Authorized"));
+							"Access Not Authorized".formatted());
 				}
 
 				// look for the root forms of LocalTimeParameters and
@@ -257,7 +257,7 @@ public class ResourceValidationFilter implements Filter {
 						System.out
 								.printf("ResourceValidationFilter: doFilter - Access Not Authorized\n");
 						throw new AccessDeniedException(
-								String.format("Access Not Authorized"));
+								"Access Not Authorized".formatted());
 					}
 				}
 
@@ -271,7 +271,7 @@ public class ResourceValidationFilter implements Filter {
 						System.out
 								.printf("ResourceValidationFilter: doFilter - Access Not Authorized\n");
 						throw new AccessDeniedException(
-								String.format("Access Not Authorized"));
+								"Access Not Authorized".formatted());
 					}
 				}
 
@@ -341,7 +341,7 @@ public class ResourceValidationFilter implements Filter {
 									System.out
 											.printf("ResourceValidationFilter: doFilter - Access Not Authorized\n");
 									throw new AccessDeniedException(
-											String.format("Access Not Authorized"));
+											"Access Not Authorized".formatted());
 								}
 							} else {
 								// this is collection request and controller
@@ -353,7 +353,7 @@ public class ResourceValidationFilter implements Filter {
 									System.out
 											.printf("ResourceValidationFilter: doFilter - Access Not Authorized\n");
 									throw new AccessDeniedException(
-											String.format("Access Not Authorized"));
+											"Access Not Authorized".formatted());
 								}
 							}
 						}
@@ -368,7 +368,7 @@ public class ResourceValidationFilter implements Filter {
 						System.out
 								.printf("ResourceValidationFilter: doFilter - Access Not Authorized\n");
 						throw new AccessDeniedException(
-								String.format("Access Not Authorized"));
+								"Access Not Authorized".formatted());
 					}
 				}
 
@@ -397,7 +397,7 @@ public class ResourceValidationFilter implements Filter {
 						System.out
 								.printf("ResourceValidationFilter: doFilter - Access Not Authorized\n");
 						throw new AccessDeniedException(
-								String.format("Access Not Authorized"));
+								"Access Not Authorized".formatted());
 					}
 				}
 
@@ -413,7 +413,7 @@ public class ResourceValidationFilter implements Filter {
 						System.out
 								.printf("ResourceValidationFilter: doFilter - Access Not Authorized\n");
 						throw new AccessDeniedException(
-								String.format("Access Not Authorized"));
+								"Access Not Authorized".formatted());
 					}
 				}
 			} else if (invalid && roles.contains("ROLE_TP_REGISTRATION")) {
@@ -449,7 +449,7 @@ public class ResourceValidationFilter implements Filter {
 							System.out
 									.printf("ResourceValidationFilter: doFilter - Access Not Authorized\n");
 							throw new AccessDeniedException(
-									String.format("Access Not Authorized"));
+									"Access Not Authorized".formatted());
 						}
 
 					} else {
@@ -457,7 +457,7 @@ public class ResourceValidationFilter implements Filter {
 						System.out
 								.printf("ResourceValidationFilter: doFilter - Access Not Authorized\n");
 						throw new AccessDeniedException(
-								String.format("Access Not Authorized"));
+								"Access Not Authorized".formatted());
 					}
 
 				} else {
@@ -465,7 +465,7 @@ public class ResourceValidationFilter implements Filter {
 					System.out
 							.printf("ResourceValidationFilter: doFilter - Access Not Authorized\n");
 					throw new AccessDeniedException(
-							String.format("Access Not Authorized"));
+							"Access Not Authorized".formatted());
 				}
 			}
 		}
@@ -479,7 +479,7 @@ public class ResourceValidationFilter implements Filter {
 			System.out
 					.printf("ResourceValidationFilter: doFilter - Access Not Authorized\n");
 			throw new AccessDeniedException(
-					String.format("Access Not Authorized"));
+					"Access Not Authorized".formatted());
 		}
 
 		// TODO -- Verify contents of query parameters are properly formatted

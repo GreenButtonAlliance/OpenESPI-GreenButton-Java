@@ -37,13 +37,15 @@ spring:
   # Jackson JSON Configuration
   jackson:
     serialization:
-      write-dates-as-timestamps: false
       indent-output: true
     deserialization:
       fail-on-unknown-properties: false
     default-property-inclusion: NON_NULL
     time-zone: UTC
     date-format: yyyy-MM-dd'T'HH:mm:ss.SSSXXX
+    datatype:
+      datetime:
+        write-dates-as-timestamps: false
   
   # Cache Configuration
   cache:
@@ -96,16 +98,9 @@ server:
   port: 8081
   servlet:
     context-path: /DataCustodian
-    encoding:
-      charset: UTF-8
-      enabled: true
-      force: true
   compression:
     enabled: true
     mime-types: application/json,application/xml,text/html,text/xml,text/plain,application/atom+xml
-  error:
-    include-stacktrace: never
-    include-message: always
 
 # Actuator Configuration
 management:
@@ -118,11 +113,8 @@ management:
     health:
       show-details: when-authorized
     metrics:
-      enabled: true
+      access: read-only
   metrics:
-    export:
-      prometheus:
-        enabled: true
     tags:
       application: ${spring.application.name}
 
@@ -185,3 +177,10 @@ springdoc:
   show-actuator: true
   default-consumes-media-type: application/json
   default-produces-media-type: application/json
+
+# Server Configuration
+spring.web.error.include-message: always
+spring.web.error.include-stacktrace: never
+spring.servlet.encoding.charset: UTF-8
+spring.servlet.encoding.enabled: true
+spring.servlet.encoding.force: true

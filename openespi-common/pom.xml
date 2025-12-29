@@ -23,15 +23,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <!-- Spring Boot Parent POM for dependency management -->
     <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
+        <groupId>org.greenbuttonalliance.espi</groupId>
+        <artifactId>openespi-parent</artifactId>
         <version>3.5.0</version>
-        <relativePath/>
     </parent>
 
-    <groupId>org.greenbuttonalliance</groupId>
     <artifactId>OpenESPI-Common</artifactId>
     <version>3.5.0-RC2</version>
     <packaging>jar</packaging>
@@ -43,58 +40,13 @@
         common services.
     </description>
 
-    <url>https://github.com/greenbuttonalliance/OpenESPI-Common-java</url>
-
-    <organization>
-    	<name>Green Button Alliance, Inc.</name>
-    	<url>http://www.greenbuttonalliance.org</url>
-    </organization>
-
-    <licenses>
-    	<license>
-    		<name>The Apache Software License, Version 2.0</name>
-    		<url>http://www.apache.org/licenses/LICENSE-2.o.txt</url>
-    	</license>
-    </licenses>
-
-    <scm>
-       <connection>scm:git:https://github.com/greenbuttonalliance/OpenESPI-Common-java.git/</connection>
-       <developerConnection>scm:git:git@github.com:greenbuttonalliance/OpenESPI-Common-java.git</developerConnection>
-       <url>https://github.com/greenbuttonalliance/OpenESPI-Common-java.git</url>
-       <tag>v1.4-SNAPSHOT</tag>
-    </scm>
-
-    <developers>
-        <developer>
-            <id>dcoffin</id>
-            <name>Donald F. Coffin</name>
-            <email>dcoffin@greenbuttonalliance.org</email>
-        </developer>
-    </developers>
-
-    <inceptionYear>2025</inceptionYear>
-
     <properties>
-        <!-- Spring Boot parent manages version compatibility -->
-        <java.version>21</java.version>
-        <project.scm.id>github</project.scm.id>
 
-        <!-- Modern Dependencies for Spring Boot 3.5.0 -->
-        <lombok.version>1.18.34</lombok.version>
-        <mapstruct.version>1.6.0</mapstruct.version>
-        <testcontainers.version>1.20.1</testcontainers.version>
-
-        <!-- Legacy support for compatibility -->
-        <commons-lang.version>2.6</commons-lang.version>
-        <commons-codec.version>1.9</commons-codec.version>
-        <joda-time.version>2.3</joda-time.version>
-        <rome.version>1.0</rome.version>
-        <xmlunit.version>1.4</xmlunit.version>
     </properties>
 
     <profiles>
         
-        <!-- Modern Spring Boot 3.5 profiles -->
+        <!-- Modern Spring Boot 4.0 profiles -->
         <profile>
             <id>dev-mysql</id>
             <activation>
@@ -260,66 +212,20 @@
         </profile>
     </profiles>
 
-    <repositories>
-<!--        <repository>-->
-<!--            <id>spring-maven-release</id>-->
-<!--            <name>Spring Maven Release Repository</name>-->
-<!--            <url>http://maven.springframework.org/release</url>-->
-<!--        </repository>-->
-<!--        <repository>-->
-<!--            <id>spring-maven-milestone</id>-->
-<!--            <name>Spring Maven Milestone Repository</name>-->
-<!--            <url>http://maven.springframework.org/milestone</url>-->
-<!--        </repository>-->
-<!--        <repository>-->
-<!--            <id>spring-maven-snapshot</id>-->
-<!--            <url>http://maven.springframework.org/snapshot</url>-->
-<!--            <name>Spring Maven Snapshot Repository</name>-->
-<!--            <snapshots>-->
-<!--                <enabled>true</enabled>-->
-<!--            </snapshots>-->
-<!--        </repository>-->
-        <!-- Nexus Maven repositories -->
-        <repository>
-            <id>nexus-snapshot</id>
-            <url>http://localhost:8081/repository/greenbuttonalliance-snapshot</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-        <repository>
-            <id>nexus-release</id>
-            <url>http://localhost:8081/repository/greenbuttonalliance-release</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-        </repository>
-    </repositories>
-
-    <!-- Dependency Management for version consistency -->
-    <dependencyManagement>
-        <dependencies>
-            <!-- Testcontainers BOM for version management -->
-            <dependency>
-                <groupId>org.testcontainers</groupId>
-                <artifactId>testcontainers-bom</artifactId>
-                <version>${testcontainers.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
-
     <dependencies>
         <!-- Spring Boot Starters for Common Library -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
+        <!-- Spring Web for RestTemplate and web components -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
+            <artifactId>spring-boot-starter-webmvc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
@@ -331,59 +237,16 @@
             <artifactId>jackson-annotations</artifactId>
         </dependency>
 
-        <!-- Jakarta Validation API -->
-        <dependency>
-            <groupId>jakarta.validation</groupId>
-            <artifactId>jakarta.validation-api</artifactId>
-        </dependency>
-        
-        <!-- Hibernate Validator Implementation -->
-        <dependency>
-            <groupId>org.hibernate.validator</groupId>
-            <artifactId>hibernate-validator</artifactId>
-            <scope>test</scope>
-        </dependency>
-        
-        <!-- Jakarta EL for Hibernate Validator -->
-        <dependency>
-            <groupId>org.glassfish.expressly</groupId>
-            <artifactId>expressly</artifactId>
-            <version>5.0.0</version>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- DataFaker for realistic test data generation -->
-        <dependency>
-            <groupId>net.datafaker</groupId>
-            <artifactId>datafaker</artifactId>
-            <version>2.4.4</version>
-            <scope>test</scope>
-        </dependency>
-
-
         <!-- Core utilities needed for domain logic -->
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>32.1.3-jre</version>
-        </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
         </dependency>
 
-        <!-- Spring Web for RestTemplate and web components -->
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-web</artifactId>
-        </dependency>
-
-
         <!-- Xerces removed - refactored to use standard Java APIs -->
         <dependency>
             <groupId>jakarta.servlet</groupId>
             <artifactId>jakarta.servlet-api</artifactId>
-            <version>6.0.0</version>
             <scope>provided</scope>
         </dependency>
         <!-- XMLUnit updated to modern version with test scope -->
@@ -392,18 +255,11 @@
             <artifactId>xmlunit-core</artifactId>
             <scope>test</scope>
         </dependency>
-        <!-- Database drivers moved to application-specific pom.xml files -->
-        <!-- HSQL for testing only -->
-        <dependency>
-            <groupId>org.hsqldb</groupId>
-            <artifactId>hsqldb</artifactId>
-            <scope>test</scope>
-        </dependency>
 
+        <!-- Database drivers moved to application-specific pom.xml files -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <version>${h2.version}</version>
             <scope>runtime</scope>
         </dependency>
 
@@ -411,15 +267,13 @@
         <dependency>
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
-            <version>9.1.0</version>
             <scope>test</scope>
         </dependency>
         
         <!-- Flyway for database migrations in tests -->
         <dependency>
-            <groupId>org.flywaydb</groupId>
-            <artifactId>flyway-core</artifactId>
-            <scope>test</scope>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-flyway</artifactId>
         </dependency>
         <dependency>
             <groupId>org.flywaydb</groupId>
@@ -429,61 +283,36 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>42.7.7</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-database-postgresql</artifactId>
-            <version>11.10.4</version>
             <scope>runtime</scope>
         </dependency>
-        <!-- Testcontainers for integration testing -->
-        <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>mysql</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>postgresql</artifactId>
-            <scope>test</scope>
-        </dependency>
+
         <!-- MySQL and PostgreSQL drivers should be in datacustodian/thirdparty apps, not common -->
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>2.17.0</version>
         </dependency>
-        <!-- commons-lang v2.6 removed - using commons-lang3 instead -->
         <dependency>
             <groupId>commons-codec</groupId>
             <artifactId>commons-codec</artifactId>
-            <version>1.17.1</version>
         </dependency>
-        <!-- joda-time removed - using java.time.* APIs in Java 8+ -->
-        <!-- rome v1.0 removed - legacy RSS/Atom library from 2005, replace with modern alternatives -->
-        <!-- Legacy slf4j-log4j12 removed - Spring Boot 3.5 uses Logback by default -->
         <!-- Jakarta XML Binding Dependencies -->
         <dependency>
             <groupId>jakarta.xml.bind</groupId>
             <artifactId>jakarta.xml.bind-api</artifactId>
-            <version>4.0.0</version>
         </dependency>
         <dependency>
             <groupId>org.glassfish.jaxb</groupId>
             <artifactId>jaxb-runtime</artifactId>
-            <version>4.0.2</version>
         </dependency>
         <dependency>
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
-            <version>18.0.0</version>
+            <version>${jetbrains-annotations.version}</version>
             <scope>compile</scope>
         </dependency>
 
@@ -491,7 +320,6 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>${lombok.version}</version>
             <scope>provided</scope>
         </dependency>
 
@@ -512,163 +340,71 @@
         <dependency>
             <groupId>io.swagger.core.v3</groupId>
             <artifactId>swagger-annotations-jakarta</artifactId>
-            <version>2.2.22</version>
         </dependency>
 
-        <!-- Flyway and database-specific dependencies moved to application pom.xml files -->
+        <!-- Testing Deps -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webmvc-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-restclient-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jackson-test</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-flyway-test</artifactId>
+            <scope>test</scope>
+        </dependency>
 
-        <!-- TestContainers for integration testing -->
+        <!-- DataFaker for realistic test data generation -->
         <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <version>${testcontainers.version}</version>
+            <groupId>net.datafaker</groupId>
+            <artifactId>datafaker</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Testcontainers for integration testing -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-testcontainers</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>mysql</artifactId>
-            <version>${testcontainers.version}</version>
+            <artifactId>testcontainers-junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>postgresql</artifactId>
-            <version>${testcontainers.version}</version>
+            <artifactId>testcontainers-mysql</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>testcontainers</artifactId>
-            <version>${testcontainers.version}</version>
+            <artifactId>testcontainers-postgresql</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
 
     <build>
-        <!-- Packagecloud repository configuration -->
-<!--        <extensions>-->
-<!--            <extension>-->
-<!--                <groupId>io.packagecloud.maven.wagon</groupId>-->
-<!--                <artifactId>maven-packagecloud-wagon</artifactId>-->
-<!--                <version>0.0.6</version>-->
-<!--            </extension>-->
-<!--        </extensions>-->
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
-<!--                <directory>src/test/resources/fixtures</directory>-->
-                <filtering>true</filtering>
-<!--                <includes>-->
-<!--                    <include>/*.xml</include>-->
-<!--                </includes>-->
-                <excludes>
-                    <exclude>/10.xml</exclude>
-                </excludes>
-            </resource>
-        </resources>
-
-        <testResources>
-            <testResource>
-                <directory>src/test/resources</directory>
-                <filtering>true</filtering>
-                <includes>
-                    <include>**/*.xml</include>
-                    <include>**/*.properties</include>
-                    <include>**/*.sql</include>
-                    <include>**/*.yml</include>
-                    <include>**/*.yaml</include>
-                </includes>
-            </testResource>
-        </testResources>
-
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <excludes>
-                        <!-- Exclude testing support classes (should be in src/test) -->
-                        <exclude>**/support/**</exclude>
-                        <!-- Exclude classes with missing Xerces dependencies -->
-                        <exclude>**/utils/DurationImpl.java</exclude>
-                        <exclude>**/utils/XMLGregorianCalendarImpl.java</exclude>
-                        <!-- Exclude legacy deprecated classes with Spring Security dependencies -->
-                        <exclude>**/legacy_deprecated/**</exclude>
-                        <!-- Exclude repository interface with Spring Security UserDetails -->
-                        <exclude>**/repositories/usage/RetailCustomerRepository.java</exclude>
-                    </excludes>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                            <version>${lombok.version}</version>
-                        </path>
-                        <path>
-                            <groupId>org.mapstruct</groupId>
-                            <artifactId>mapstruct-processor</artifactId>
-                            <version>${mapstruct.version}</version>
-                        </path>
-                        <path>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok-mapstruct-binding</artifactId>
-                            <version>0.2.0</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <includes>
-                        <include>**/*Tests.java</include>
-                    </includes>
-                    <useSystemClassLoader>false</useSystemClassLoader>
-                    <argLine>
-                        -javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar
-                        -Xshare:off
-                    </argLine>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-failsafe-plugin</artifactId>
-<!--                <scope>test</scope>-->
-<!--                <configuration>-->
-<!--                    <argline>-->
-<!--                        &#45;&#45;illegal-access=permit-->
-<!--                    </argline>-->
-<!--                </configuration>-->
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>integration-test</goal>
-                            <goal>verify</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-site-plugin</artifactId>
-                <version>3.3</version>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.apache.maven.wagon</groupId>
-                        <artifactId>wagon-webdav-jackrabbit</artifactId>
-                        <version>2.9</version>
-                    </dependency>
-                </dependencies>
-                <configuration>
-                    <locales>en</locales>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-release-plugin</artifactId>
-                <version>2.5.3</version>
-            </plugin>
-
             <!-- JT, Disabling temporarily  OWASP Dependency Check for security vulnerability scanning -->
 <!--            <plugin>-->
 <!--                <groupId>org.owasp</groupId>-->
@@ -698,7 +434,6 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>versions-maven-plugin</artifactId>
-                <version>2.18.0</version>
                 <configuration>
                     <generateBackupPoms>false</generateBackupPoms>
                 </configuration>
@@ -708,7 +443,6 @@
             <plugin>
                 <groupId>com.github.spotbugs</groupId>
                 <artifactId>spotbugs-maven-plugin</artifactId>
-                <version>4.8.6.4</version>
                 <configuration>
                     <effort>Max</effort>
                     <threshold>Low</threshold>
@@ -718,32 +452,4 @@
             </plugin>
         </plugins>
     </build>
-
-    <distributionManagement>
-        <!-- GitHub Packages Maven Repository configuration -->
-        <repository>
-            <id>github</id>
-            <name>GitHub Green Button Alliance Apache Maven Packages</name>
-            <url>https://maven.pkg.github.com/GreenButtonAlliance/OpenESPI-GreenButton-Java</url>
-        </repository>
-        <snapshotRepository>
-            <id>github</id>
-            <name>GitHub Green Button Alliance Apache Maven Packages</name>
-            <url>https://maven.pkg.github.com/GreenButtonAlliance/OpenESPI-GreenButton-Java</url>
-        </snapshotRepository>
-        
-        <!-- Alternative: Sonatype Maven Repository configuration (commented out) -->
-        <!--
-        <snapshotRepository>
-            <id>sonatype-snapshot</id>
-            <name>Sonatype Maven Snapshot Repository</name>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-        <repository>
-            <id>sonatype-release</id>
-            <name>Sonatype Maven Release Repository</name>
-            <url>https://oss.sonatype.org/content/repositories/releases</url>
-        </repository>
-        -->
-    </distributionManagement>
 </project>

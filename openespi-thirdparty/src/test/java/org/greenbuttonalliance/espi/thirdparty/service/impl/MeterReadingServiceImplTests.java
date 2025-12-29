@@ -22,14 +22,12 @@ package org.greenbuttonalliance.espi.thirdparty.service.impl;
 import org.greenbuttonalliance.espi.common.domain.usage.MeterReadingEntity;
 import org.greenbuttonalliance.espi.thirdparty.repository.MeterReadingRESTRepository;
 import org.greenbuttonalliance.espi.thirdparty.utils.factories.Factory;
-import org.junit.Before;
-import org.junit.Test;
-
 import jakarta.xml.bind.JAXBException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import java.util.UUID;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -39,8 +37,8 @@ public class MeterReadingServiceImplTests {
 	private MeterReadingRESTRepository repository;
 	private MeterReadingRESTServiceImpl service;
 
-	@Before
-	public void before() {
+	@BeforeEach
+    public void before() {
 		service = new MeterReadingRESTServiceImpl();
 		repository = mock(MeterReadingRESTRepository.class);
 		service.setRepository(repository);

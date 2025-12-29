@@ -20,14 +20,13 @@
 
 package org.greenbuttonalliance.espi.authserver.repository;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
@@ -36,6 +35,8 @@ import org.springframework.security.oauth2.server.authorization.settings.ClientS
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.StringUtils;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -62,6 +63,7 @@ public class JdbcRegisteredClientRepository implements RegisteredClientRepositor
 
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
+    private final PasswordEncoder passwordEncoder;
 
     // SQL Queries
     private static final String SELECT_CLIENT_SQL = """
@@ -70,7 +72,7 @@ public class JdbcRegisteredClientRepository implements RegisteredClientRepositor
                redirect_uris, post_logout_redirect_uris, scopes, client_settings, token_settings
         FROM oauth2_registered_client
         WHERE %s = ?
-        """;
+        """.trim();
 
     private static final String INSERT_CLIENT_SQL = """
         INSERT INTO oauth2_registered_client 
@@ -93,8 +95,9 @@ public class JdbcRegisteredClientRepository implements RegisteredClientRepositor
         DELETE FROM oauth2_registered_client WHERE id = ?
         """;
 
-    public JdbcRegisteredClientRepository(JdbcTemplate jdbcTemplate) {
+    public JdbcRegisteredClientRepository(JdbcTemplate jdbcTemplate, PasswordEncoder passwordEncoder) {
         this.jdbcTemplate = jdbcTemplate;
+        this.passwordEncoder = passwordEncoder;
         this.objectMapper = new ObjectMapper();
     }
 
@@ -161,11 +164,11 @@ public class JdbcRegisteredClientRepository implements RegisteredClientRepositor
     }
 
     private void insertClient(RegisteredClient client) {
-        jdbcTemplate.update(INSERT_CLIENT_SQL,
+        var result = jdbcTemplate.update(INSERT_CLIENT_SQL,
             client.getId(),
             client.getClientId(),
             client.getClientIdIssuedAt(),
-            client.getClientSecret(),
+            passwordEncoder.encode(client.getClientSecret()),
             client.getClientSecretExpiresAt(),
             client.getClientName(),
             serializeClientAuthenticationMethods(client.getClientAuthenticationMethods()),
@@ -176,11 +179,14 @@ public class JdbcRegisteredClientRepository implements RegisteredClientRepositor
             serializeClientSettings(client.getClientSettings()),
             serializeTokenSettings(client.getTokenSettings())
         );
+
+        logger.debug("Inserted registered client: {}", result);
+
     }
 
     private void updateClient(RegisteredClient client) {
-        jdbcTemplate.update(UPDATE_CLIENT_SQL,
-            client.getClientSecret(),
+        var result = jdbcTemplate.update(UPDATE_CLIENT_SQL,
+            passwordEncoder.encode(client.getClientSecret()),
             client.getClientSecretExpiresAt(),
             client.getClientName(),
             serializeClientAuthenticationMethods(client.getClientAuthenticationMethods()),
@@ -192,6 +198,8 @@ public class JdbcRegisteredClientRepository implements RegisteredClientRepositor
             serializeTokenSettings(client.getTokenSettings()),
             client.getId()
         );
+
+        logger.debug("Updated registered client: {}", result);
     }
 
     // Serialization methods

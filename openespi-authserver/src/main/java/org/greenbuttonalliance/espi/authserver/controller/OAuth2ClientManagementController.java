@@ -48,6 +48,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import tools.jackson.databind.ObjectMapper;
+
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
@@ -844,7 +846,7 @@ public class OAuth2ClientManagementController {
                 VALUES (?, ?, ?, ?, ?)
                 """;
             
-            String additionalDataJson = new com.fasterxml.jackson.databind.ObjectMapper()
+            String additionalDataJson = new ObjectMapper()
                 .writeValueAsString(additionalData);
             
             jdbcTemplate.update(sql, eventType, clientId, principalName, success, additionalDataJson);

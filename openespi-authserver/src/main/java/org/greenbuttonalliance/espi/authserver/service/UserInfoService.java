@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -50,16 +51,17 @@ public class UserInfoService {
 
     private final JdbcTemplate jdbcTemplate;
     private final DataCustodianIntegrationService dataCustodianService;
-    
+    private final PasswordEncoder passwordEncoder;
     // Cache for user details to reduce database calls
     private final Map<String, UserDetailsImpl> userCache = new HashMap<>();
     private static final long CACHE_EXPIRY_MS = 300000; // 5 minutes
 
     @Autowired
-    public UserInfoService(JdbcTemplate jdbcTemplate, 
-                          DataCustodianIntegrationService dataCustodianService) {
+    public UserInfoService(JdbcTemplate jdbcTemplate,
+                           DataCustodianIntegrationService dataCustodianService, PasswordEncoder passwordEncoder) {
         this.jdbcTemplate = jdbcTemplate;
         this.dataCustodianService = dataCustodianService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     /**

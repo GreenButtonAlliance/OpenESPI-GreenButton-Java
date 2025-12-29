@@ -20,21 +20,22 @@
 
 package org.greenbuttonalliance.espi.authserver.integration;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureWebMvc;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.Base64;
 import java.util.HashMap;
@@ -59,6 +60,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebMvc
+@AutoConfigureMockMvc
 @ActiveProfiles("test")
 @DisplayName("Security Integration Tests")
 @Transactional
@@ -71,14 +73,9 @@ class SecurityIntegrationTest {
     private ObjectMapper objectMapper;
 
     private static final String CLIENT_ID = "third_party";
-    private static final String CLIENT_SECRET = "secret";
+    private static final String CLIENT_SECRET = "{bcrypt}secret";
     private static final String ADMIN_CLIENT_ID = "data_custodian_admin";
-    private static final String ADMIN_CLIENT_SECRET = "secret";
-
-    @BeforeEach
-    void setUp() {
-        // Test setup is handled by @Transactional and application-test.yml
-    }
+    private static final String ADMIN_CLIENT_SECRET = "{bcrypt}secret";
 
     @Nested
     @DisplayName("Authentication Tests")

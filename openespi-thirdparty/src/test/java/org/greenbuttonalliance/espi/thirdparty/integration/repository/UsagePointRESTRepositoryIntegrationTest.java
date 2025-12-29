@@ -19,6 +19,7 @@
 
 package org.greenbuttonalliance.espi.thirdparty.integration.repository;
 
+
 import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 import org.greenbuttonalliance.espi.common.service.AuthorizationService;
@@ -50,7 +51,7 @@ import static org.mockito.Mockito.when;
 public class UsagePointRESTRepositoryIntegrationTest {
 
     @Container
-    static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.0")
+    static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:9.5.0")
             .withDatabaseName("testdb")
             .withUsername("test")
             .withPassword("test");

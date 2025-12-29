@@ -19,15 +19,12 @@
 
 package org.greenbuttonalliance.espi.thirdparty.web;
 
-//import org.greenbuttonalliance.espi.common.domain.RetailCustomer;
-//import org.greenbuttonalliance.espi.common.domain.UsagePoint;
-
 import jakarta.xml.bind.JAXBException;
 import org.greenbuttonalliance.espi.common.service.UsagePointService;
 import org.greenbuttonalliance.espi.common.service.impl.UsagePointServiceImpl;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.springframework.security.core.Authentication;
 import org.springframework.ui.ModelMap;
 
@@ -41,7 +38,7 @@ public class UsagePointControllerTests {
 	private Authentication authentication;
 //	private RetailCustomer retailCustomer;
 
-	@Before
+	@BeforeEach
 	public void setup() {
 		controller = new UsagePointController();
 		service = mock(UsagePointServiceImpl.class);
@@ -53,7 +50,7 @@ public class UsagePointControllerTests {
 	}
 
 	@Test
-	@Ignore
+	@Disabled
 	public void index_displaysIndexView() throws Exception {
 //		when(resourceService.findAllIds(UsagePoint.class)).thenReturn(
 //				new ArrayList<Long>());
@@ -62,7 +59,7 @@ public class UsagePointControllerTests {
 	}
 
 	@Test
-	@Ignore
+	@Disabled
 	public void index_findsUsagePointsForLoggedInCustomer()
 			throws JAXBException {
 		controller.index(mock(ModelMap.class), authentication);
@@ -72,7 +69,7 @@ public class UsagePointControllerTests {
 	}
 
 	@Test
-	@Ignore
+	@Disabled
 	public void show_displaysShowView() throws Exception {
 //		when(resourceService.findById(anyLong(), UsagePoint.class)).thenReturn(
 //				EspiFactory.newUsagePoint());
@@ -81,7 +78,7 @@ public class UsagePointControllerTests {
 	}
 
 	@Test
-	@Ignore
+	@Disabled
 	public void show_findsTheUsagePointByUUID() throws Exception {
 //		UsagePoint usagePoint = Factory.newUsagePoint();
 //		String hashedId = "hashedId";

@@ -21,8 +21,11 @@ package org.greenbuttonalliance.espi.thirdparty.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProvider;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProviderBuilder;
@@ -70,17 +73,17 @@ public class SecurityConfiguration {
                 .deleteCookies("JSESSIONID")
             )
             .headers(headers -> headers
-                .frameOptions().sameOrigin()
+                .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)
                 .httpStrictTransportSecurity(hstsConfig -> hstsConfig
                     .maxAgeInSeconds(31536000)
                     .includeSubDomains(true)
                     .preload(true)
                 )
-                .contentTypeOptions().and()
-                .referrerPolicy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)
+                .contentTypeOptions(Customizer.withDefaults())
+                    .referrerPolicy(referrerPolicyConfig -> referrerPolicyConfig.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
             )
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .csrf(csrf -> csrf.disable()); // Disabled for API access patterns
+            .csrf(AbstractHttpConfigurer::disable); // Disabled for API access patterns
 
         return http.build();
     }

@@ -21,9 +21,7 @@ package org.greenbuttonalliance.espi.datacustodian.web;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-
+import org.springframework.web.bind.annotation.GetMapping;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
@@ -48,7 +46,7 @@ public class VersionRESTController extends BaseController {
 	 *
 	 * @return implementation details
 	 */
-	@RequestMapping(value = "/about-version", method = RequestMethod.GET)
+	@GetMapping("/about-version")
 	public String getBuildNumber(HttpServletRequest request, ModelMap model)
 			throws IOException {
 

@@ -9,7 +9,7 @@ Complete monorepo implementation of the NAESB Energy Services Provider Interface
 git clone https://github.com/GreenButtonAlliance/OpenESPI-GreenButton-Java.git
 cd OpenESPI-GreenButton-Java
 
-# Build all modules (Java 21 + Jakarta EE throughout)
+# Build all modules (Java 25 + Jakarta EE throughout)
 mvn clean install
 
 # Run Spring Boot 3.5 modules
@@ -21,54 +21,54 @@ cd openespi-authserver && mvn spring-boot:run
 
 | Module | Description | Java | Jakarta EE | Spring Boot | Status |
 |--------|-------------|------|------------|-------------|--------|
-| **openespi-common** | Shared domain models, services | 21 ✅ | 9+ ✅ | 3.5.0 ✅ | **Production** |
-| **openespi-datacustodian** | OAuth2 resource server | 21 ✅ | 9+ ✅ | 3.5.0 ✅ | **Production** |
-| **openespi-authserver** | OAuth2 authorization server | 21 ✅ | 9+ ✅ | 3.5.0 ✅ | **Production** |
-| **openespi-thirdparty** | Client application | 21 ✅ | 9+ ✅ | 4.0.6 ⚠️ | **Partial Migration** |
+| **openespi-common** | Shared domain models, services | 25 ✅ | 11 ✅       | 4.0.1 ✅     | **Production** |
+| **openespi-datacustodian** | OAuth2 resource server | 25 ✅ | 11 ✅       | 4.0.1 ✅     | **Production** |
+| **openespi-authserver** | OAuth2 authorization server | 25 ✅ | 11 ✅       | 4.0.1 ✅     | **Production** |
+| **openespi-thirdparty** | Client application | 25 ✅ | ✅          | 4.0.1 ⚠️    | **Partial Migration** |
 
 ## 🏗️ Architecture
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Third Party   │───▶│ Authorization   │───▶│ Data Custodian  │
-│ (Java 21+Jakarta)│    │ Server (SB 3.5) │    │ Server (SB 3.5) │
+│(Java 25+Jakarta)│    │ Server (SB 4.0) │    │ Server (SB 4.0) │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
          │                       │                       │
          └───────────────────────┼───────────────────────┘
                                  ▼
                     ┌─────────────────┐
                     │ OpenESPI Common │
-                    │ (Spring Boot 3.5)│
+                    │(Spring Boot 4.0)│
                     └─────────────────┘
 ```
 
 ## ✨ Migration Achievements
 
 **All modules now support:**
-- ✅ **Java 21** - Modern JVM with performance improvements
-- ✅ **Jakarta EE 9+** - Modern enterprise Java APIs
+- ✅ **Java 25** - Modern JVM with performance improvements
+- ✅ **Jakarta EE 11+** - Modern enterprise Java APIs
 - ✅ **Consistent build system** - Maven 3.9+ throughout
 
-**Spring Boot 3.5 modules:**
+**Spring Boot 4.0 modules:**
 - ✅ **openespi-common** - Foundation library
 - ✅ **openespi-datacustodian** - Resource server
 - ✅ **openespi-authserver** - Authorization server
 
 **Partially migrated:**
-- ⚠️ **openespi-thirdparty** - Java 21 + Jakarta ready, Spring Boot migration in progress
+- ⚠️ **openespi-thirdparty** - Java 25 + Jakarta ready, Spring Boot migration in progress
 
 ## 🛠️ Development
 
 ### All Modules (Recommended)
 ```bash
-# Build everything - all modules are Java 21 compatible
+# Build everything - all modules are Java 25 compatible
 mvn clean install
 
 # Test specific module
 mvn test -pl openespi-datacustodian -am
 ```
 
-### Spring Boot 3.5 Only
+### Spring Boot 4.0 Only
 ```bash
 # Build only fully-migrated modules
 mvn clean install -Pspring-boot-only
@@ -97,13 +97,13 @@ mvn spring-boot:run
 The ThirdParty module preserves important migration work from the main branch:
 
 **✅ Completed (from main branch):**
-- Java 1.7 → Java 21 upgrade
+- Java 1.7 → Java 25 upgrade
 - javax.servlet → jakarta.servlet migration  
 - JSP/JSTL Jakarta compatibility
 - Modern Maven toolchain
 
 **📝 Next Steps:**
-- Spring Framework → Spring Boot 3.5 migration
+- Spring Framework → Spring Boot 4.0 migration
 - OAuth2 client modernization
 - Configuration externalization
 
@@ -196,6 +196,6 @@ Licensed under the Apache License 2.0. See [LICENSE](./LICENSE) for details.
 
 ---
 
-**Migration Strategy:** All modules use `main` branches to preserve maximum migration work and ensure Java 21 + Jakarta EE consistency across the ecosystem.
+**Migration Strategy:** All modules use `main` branches to preserve maximum migration work and ensure Java 25 + Jakarta EE consistency across the ecosystem.
 
 **Built with ❤️ by the Green Button Alliance community**

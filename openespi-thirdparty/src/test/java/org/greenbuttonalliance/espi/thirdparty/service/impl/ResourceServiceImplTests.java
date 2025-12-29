@@ -19,15 +19,10 @@
 
 package org.greenbuttonalliance.espi.thirdparty.service.impl;
 
-//import org.greenbuttonalliance.espi.common.domain.Authorization;
-//import org.greenbuttonalliance.espi.common.domain.Routes;
-//import org.greenbuttonalliance.espi.common.domain.UsagePoint;
-//import org.greenbuttonalliance.espi.common.repositories.ResourceRepository;
-
 import jakarta.xml.bind.JAXBException;
 import org.greenbuttonalliance.espi.common.repositories.usage.ResourceRepository;
 import org.greenbuttonalliance.espi.thirdparty.repository.ResourceRESTRepository;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.mockito.Mockito.mock;
 

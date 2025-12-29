@@ -19,10 +19,12 @@
 
 package org.greenbuttonalliance.espi.thirdparty.web;
 
-import org.junit.Test;
-import org.junit.jupiter.api.Disabled;
 
-import static org.junit.Assert.assertEquals;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 
 @Disabled
 //@RunWith(SpringJUnit4ClassRunner.class)

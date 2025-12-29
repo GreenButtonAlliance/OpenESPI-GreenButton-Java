@@ -22,7 +22,8 @@ package org.greenbuttonalliance.espi.thirdparty.repository.impl;
 import org.greenbuttonalliance.espi.common.domain.usage.MeterReadingEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 import org.greenbuttonalliance.espi.thirdparty.repository.UsagePointRESTRepository;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
 
 import java.util.ArrayList;
 import java.util.List;

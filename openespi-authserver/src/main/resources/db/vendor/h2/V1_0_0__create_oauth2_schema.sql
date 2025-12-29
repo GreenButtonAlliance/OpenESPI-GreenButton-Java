@@ -54,13 +54,13 @@ CREATE TABLE oauth2_registered_client (
     id varchar(100) NOT NULL,
     client_id varchar(100) NOT NULL,
     client_id_issued_at timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    client_secret varchar(200) DEFAULT NULL,
-    client_secret_expires_at timestamp DEFAULT NULL,
+    client_secret varchar(200),
+    client_secret_expires_at timestamp,
     client_name varchar(200) NOT NULL,
     client_authentication_methods varchar(1000) NOT NULL,
     authorization_grant_types varchar(1000) NOT NULL,
     redirect_uris varchar(1000) DEFAULT NULL,
-    post_logout_redirect_uris varchar(1000) DEFAULT NULL,
+    post_logout_redirect_uris varchar(1000),
     scopes varchar(1000) NOT NULL,
     client_settings varchar(2000) NOT NULL,
     token_settings varchar(2000) NOT NULL,
@@ -109,21 +109,21 @@ CREATE INDEX idx_oauth2_registered_client_id ON oauth2_registered_client (client
 CREATE INDEX idx_espi_application_client_id ON espi_application_info (client_id);
 
 -- Insert sample data for local development
-INSERT INTO oauth2_registered_client (
-    id, client_id, client_name, client_authentication_methods, authorization_grant_types, 
-    redirect_uris, scopes, client_settings, token_settings
-) VALUES (
-    '1', 'data_custodian_admin', 'DataCustodian Admin', 'client_secret_basic', 'client_credentials',
-    '', 'DataCustodian_Admin_Access', '{"@class":"java.util.Collections$UnmodifiableMap","settings.client.require-proof-key":false,"settings.client.require-authorization-consent":false}',
-    '{"@class":"java.util.Collections$UnmodifiableMap","settings.token.reuse-refresh-tokens":true,"settings.token.id-token-signature-algorithm":["org.springframework.security.oauth2.jose.jws.SignatureAlgorithm","RS256"],"settings.token.access-token-time-to-live":["java.time.Duration",3600.000000000],"settings.token.access-token-format":{"@class":"org.springframework.security.oauth2.server.authorization.settings.OAuth2TokenFormat","value":"self-contained"},"settings.token.refresh-token-time-to-live":["java.time.Duration",7200.000000000],"settings.token.authorization-code-time-to-live":["java.time.Duration",300.000000000]}'
-);
-
-INSERT INTO oauth2_registered_client (
-    id, client_id, client_name, client_authentication_methods, authorization_grant_types, 
-    redirect_uris, scopes, client_settings, token_settings
-) VALUES (
-    '2', 'third_party', 'ThirdParty Application', 'client_secret_basic', 'authorization_code,refresh_token',
-    'http://localhost:9090/oauth/callback', 'FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13,openid,profile', 
-    '{"@class":"java.util.Collections$UnmodifiableMap","settings.client.require-proof-key":false,"settings.client.require-authorization-consent":true}',
-    '{"@class":"java.util.Collections$UnmodifiableMap","settings.token.reuse-refresh-tokens":true,"settings.token.id-token-signature-algorithm":["org.springframework.security.oauth2.jose.jws.SignatureAlgorithm","RS256"],"settings.token.access-token-time-to-live":["java.time.Duration",21600.000000000],"settings.token.access-token-format":{"@class":"org.springframework.security.oauth2.server.authorization.settings.OAuth2TokenFormat","value":"self-contained"},"settings.token.refresh-token-time-to-live":["java.time.Duration",129600.000000000],"settings.token.authorization-code-time-to-live":["java.time.Duration",300.000000000]}'
-);
+-- INSERT INTO oauth2_registered_client (
+--     id, client_id, client_name, client_authentication_methods, authorization_grant_types,
+--     redirect_uris, scopes, client_settings, token_settings
+-- ) VALUES (
+--     '1', 'data_custodian_admin', 'DataCustodian Admin', 'client_secret_basic', 'client_credentials',
+--     '', 'DataCustodian_Admin_Access', '{"@class":"java.util.Collections$UnmodifiableMap","settings.client.require-proof-key":false,"settings.client.require-authorization-consent":false}',
+--     '{"@class":"java.util.Collections$UnmodifiableMap","settings.token.reuse-refresh-tokens":true,"settings.token.id-token-signature-algorithm":["org.springframework.security.oauth2.jose.jws.SignatureAlgorithm","RS256"],"settings.token.access-token-time-to-live":["java.time.Duration",3600.000000000],"settings.token.access-token-format":{"@class":"org.springframework.security.oauth2.server.authorization.settings.OAuth2TokenFormat","value":"self-contained"},"settings.token.refresh-token-time-to-live":["java.time.Duration",7200.000000000],"settings.token.authorization-code-time-to-live":["java.time.Duration",300.000000000]}'
+-- );
+--
+-- INSERT INTO oauth2_registered_client (
+--     id, client_id, client_name, client_authentication_methods, authorization_grant_types,
+--     redirect_uris, scopes, client_settings, token_settings
+-- ) VALUES (
+--     '2', 'third_party', 'ThirdParty Application', 'client_secret_basic', 'authorization_code,refresh_token',
+--     'http://localhost:9090/oauth/callback', 'FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13,openid,profile',
+--     '{"@class":"java.util.Collections$UnmodifiableMap","settings.client.require-proof-key":false,"settings.client.require-authorization-consent":true}',
+--     '{"@class":"java.util.Collections$UnmodifiableMap","settings.token.reuse-refresh-tokens":true,"settings.token.id-token-signature-algorithm":["org.springframework.security.oauth2.jose.jws.SignatureAlgorithm","RS256"],"settings.token.access-token-time-to-live":["java.time.Duration",21600.000000000],"settings.token.access-token-format":{"@class":"org.springframework.security.oauth2.server.authorization.settings.OAuth2TokenFormat","value":"self-contained"},"settings.token.refresh-token-time-to-live":["java.time.Duration",129600.000000000],"settings.token.authorization-code-time-to-live":["java.time.Duration",300.000000000]}'
+-- );
