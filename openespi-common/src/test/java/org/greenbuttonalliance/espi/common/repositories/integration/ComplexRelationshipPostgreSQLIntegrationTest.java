@@ -1,0 +1,366 @@
+/*
+ *
+ *        Copyright (c) 2025 Green Button Alliance, Inc.
+ *
+ *     Licensed under the Apache License, Version 2.0 (the "License");
+ *     you may not use this file except in compliance with the License.
+ *     You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *     Unless required by applicable law or agreed to in writing, software
+ *     distributed under the License is distributed on an "AS IS" BASIS,
+ *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *     See the License for the specific language governing permissions and
+ *     limitations under the License.
+ *
+ */
+
+package org.greenbuttonalliance.espi.common.repositories.integration;
+
+import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerEntity;
+import org.greenbuttonalliance.espi.common.domain.customer.entity.StatementEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.IntervalBlockEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.MeterReadingEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
+import org.greenbuttonalliance.espi.common.repositories.customer.CustomerRepository;
+import org.greenbuttonalliance.espi.common.repositories.customer.StatementRepository;
+import org.greenbuttonalliance.espi.common.repositories.usage.IntervalBlockRepository;
+import org.greenbuttonalliance.espi.common.repositories.usage.MeterReadingRepository;
+import org.greenbuttonalliance.espi.common.repositories.usage.RetailCustomerRepository;
+import org.greenbuttonalliance.espi.common.repositories.usage.UsagePointRepository;
+import org.greenbuttonalliance.espi.common.test.BaseTestContainersTest;
+import org.greenbuttonalliance.espi.common.test.TestDataBuilders;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.transaction.annotation.Transactional;
+import org.testcontainers.junit.jupiter.Container;
+
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * Complex relationship integration tests for JPA entities using PostgreSQL TestContainer.
+ *
+ * Tests basic relationship operations and entity hierarchies using
+ * available repositories and methods with a real PostgreSQL database.
+ */
+@DisplayName("Complex Relationship Integration Tests - PostgreSQL")
+@ActiveProfiles({"test", "test-postgresql"})
+class ComplexRelationshipPostgreSQLIntegrationTest extends BaseTestContainersTest {
+
+    @Container
+    private static final org.testcontainers.containers.PostgreSQLContainer<?> postgres = postgresqlContainer;
+
+    static {
+        postgres.start();
+    }
+
+    @DynamicPropertySource
+    static void configurePostgreSQLProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", postgres::getJdbcUrl);
+        registry.add("spring.datasource.username", postgres::getUsername);
+        registry.add("spring.datasource.password", postgres::getPassword);
+        registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
+    }
+
+    @Autowired
+    private CustomerRepository customerRepository;
+
+    @Autowired
+    private StatementRepository statementRepository;
+
+    @Autowired
+    private UsagePointRepository usagePointRepository;
+
+    @Autowired
+    private MeterReadingRepository meterReadingRepository;
+
+    @Autowired
+    private IntervalBlockRepository intervalBlockRepository;
+
+    @Autowired
+    private RetailCustomerRepository retailCustomerRepository;
+
+    @Nested
+    @DisplayName("Basic Relationship Operations")
+    class BasicRelationshipTest {
+
+        @Test
+        @DisplayName("Should handle Customer → Statement relationships")
+        void shouldHandleCustomerStatementRelationships() {
+            // Arrange
+            CustomerEntity customer = TestDataBuilders.createValidCustomer();
+            customer.setCustomerName("PostgreSQL Relationship Test Customer");
+            CustomerEntity savedCustomer = customerRepository.save(customer);
+
+            StatementEntity statement = TestDataBuilders.createValidStatement();
+            statement.setCustomer(savedCustomer);
+            statement.setDescription("PostgreSQL Relationship Test Statement");
+            StatementEntity savedStatement = statementRepository.save(statement);
+
+            flushAndClear();
+
+            // Act - Retrieve customer and statement
+            Optional<CustomerEntity> retrievedCustomer = customerRepository.findById(savedCustomer.getId());
+            Optional<StatementEntity> retrievedStatement = statementRepository.findById(savedStatement.getId());
+
+            // Assert
+            assertThat(retrievedCustomer).isPresent();
+            assertThat(retrievedStatement).isPresent();
+            assertThat(retrievedStatement.get().getCustomer()).isNotNull();
+            assertThat(retrievedStatement.get().getCustomer().getId()).isEqualTo(savedCustomer.getId());
+        }
+
+        @Test
+        @DisplayName("Should handle UsagePoint → MeterReading → IntervalBlock hierarchy")
+        void shouldHandleUsagePointHierarchy() {
+            // Arrange
+            UsagePointEntity usagePoint = TestDataBuilders.createValidUsagePoint();
+            usagePoint.setDescription("PostgreSQL Hierarchy Test Usage Point");
+            UsagePointEntity savedUsagePoint = usagePointRepository.save(usagePoint);
+
+            MeterReadingEntity meterReading = TestDataBuilders.createValidMeterReading();
+            meterReading.setUsagePoint(savedUsagePoint);
+            meterReading.setDescription("PostgreSQL Hierarchy Test Meter Reading");
+            MeterReadingEntity savedMeterReading = meterReadingRepository.save(meterReading);
+
+            IntervalBlockEntity intervalBlock = TestDataBuilders.createValidIntervalBlock();
+            intervalBlock.setMeterReading(savedMeterReading);
+            intervalBlock.setDescription("PostgreSQL Hierarchy Test Interval Block");
+            IntervalBlockEntity savedIntervalBlock = intervalBlockRepository.save(intervalBlock);
+
+            flushAndClear();
+
+            // Act - Retrieve the hierarchy
+            Optional<UsagePointEntity> retrievedUsagePoint = usagePointRepository.findById(savedUsagePoint.getId());
+            Optional<MeterReadingEntity> retrievedMeterReading = meterReadingRepository.findById(savedMeterReading.getId());
+            Optional<IntervalBlockEntity> retrievedIntervalBlock = intervalBlockRepository.findById(savedIntervalBlock.getId());
+
+            // Assert
+            assertThat(retrievedUsagePoint).isPresent();
+            assertThat(retrievedMeterReading).isPresent();
+            assertThat(retrievedIntervalBlock).isPresent();
+
+            assertThat(retrievedMeterReading.get().getUsagePoint()).isNotNull();
+            assertThat(retrievedMeterReading.get().getUsagePoint().getId()).isEqualTo(savedUsagePoint.getId());
+
+            assertThat(retrievedIntervalBlock.get().getMeterReading()).isNotNull();
+            assertThat(retrievedIntervalBlock.get().getMeterReading().getId()).isEqualTo(savedMeterReading.getId());
+        }
+
+        @Test
+        @DisplayName("Should handle RetailCustomer → UsagePoint relationships")
+        void shouldHandleRetailCustomerUsagePointRelationships() {
+            // Arrange
+            RetailCustomerEntity retailCustomer = TestDataBuilders.createValidRetailCustomer();
+            retailCustomer.setUsername("postgresql.test@example.com");
+            RetailCustomerEntity savedRetailCustomer = retailCustomerRepository.save(retailCustomer);
+
+            UsagePointEntity usagePoint = TestDataBuilders.createValidUsagePoint();
+            usagePoint.setRetailCustomer(savedRetailCustomer);
+            usagePoint.setDescription("PostgreSQL Relationship Test Usage Point");
+            UsagePointEntity savedUsagePoint = usagePointRepository.save(usagePoint);
+
+            flushAndClear();
+
+            // Act - Retrieve retail customer and usage point
+            Optional<RetailCustomerEntity> retrievedCustomer = retailCustomerRepository.findById(savedRetailCustomer.getId());
+            Optional<UsagePointEntity> retrievedUsagePoint = usagePointRepository.findById(savedUsagePoint.getId());
+
+            // Assert
+            assertThat(retrievedCustomer).isPresent();
+            assertThat(retrievedUsagePoint).isPresent();
+            assertThat(retrievedUsagePoint.get().getRetailCustomer()).isNotNull();
+            assertThat(retrievedUsagePoint.get().getRetailCustomer().getUsername()).isEqualTo("postgresql.test@example.com");
+        }
+    }
+
+    @Nested
+    @DisplayName("Transaction Boundary Scenarios")
+    class TransactionBoundaryTest {
+
+        @Test
+        @DisplayName("Should maintain data consistency across transaction boundaries")
+        @Transactional
+        void shouldMaintainDataConsistency() {
+            // Arrange
+            UsagePointEntity usagePoint = TestDataBuilders.createValidUsagePoint();
+            usagePoint.setDescription("PostgreSQL Transaction Test");
+            UsagePointEntity savedUsagePoint = usagePointRepository.save(usagePoint);
+
+            MeterReadingEntity meterReading = TestDataBuilders.createValidMeterReading();
+            meterReading.setUsagePoint(savedUsagePoint);
+            meterReading.setDescription("PostgreSQL Transaction Test Reading");
+            MeterReadingEntity savedMeterReading = meterReadingRepository.save(meterReading);
+
+            // Act - Modify within same transaction
+            savedUsagePoint.setDescription("PostgreSQL Modified in Transaction");
+            savedMeterReading.setDescription("PostgreSQL Modified Reading in Transaction");
+
+            usagePointRepository.save(savedUsagePoint);
+            meterReadingRepository.save(savedMeterReading);
+
+            // Assert - Changes should be visible within transaction
+            UsagePointEntity retrievedUsagePoint = usagePointRepository.findById(savedUsagePoint.getId()).orElse(null);
+            assertThat(retrievedUsagePoint).isNotNull();
+            assertThat(retrievedUsagePoint.getDescription()).isEqualTo("PostgreSQL Modified in Transaction");
+
+            MeterReadingEntity retrievedMeterReading = meterReadingRepository.findById(savedMeterReading.getId()).orElse(null);
+            assertThat(retrievedMeterReading).isNotNull();
+            assertThat(retrievedMeterReading.getDescription()).isEqualTo("PostgreSQL Modified Reading in Transaction");
+        }
+    }
+
+    @Nested
+    @DisplayName("Bulk Operation Integrity")
+    class BulkOperationTest {
+
+        @Test
+        @DisplayName("Should handle bulk save operations correctly")
+        void shouldHandleBulkSaveOperations() {
+            // Arrange
+            UsagePointEntity usagePoint = TestDataBuilders.createValidUsagePoint();
+            usagePoint.setDescription("PostgreSQL Bulk Test Usage Point");
+            UsagePointEntity savedUsagePoint = usagePointRepository.save(usagePoint);
+
+            List<MeterReadingEntity> meterReadings = TestDataBuilders.createValidEntities(5,
+                () -> {
+                    MeterReadingEntity reading = TestDataBuilders.createValidMeterReading();
+                    reading.setUsagePoint(savedUsagePoint);
+                    return reading;
+                });
+
+            // Act - Bulk save
+            List<MeterReadingEntity> savedReadings = meterReadingRepository.saveAll(meterReadings);
+            flushAndClear();
+
+            // Assert
+            assertThat(savedReadings)
+                .hasSize(5)
+                .allMatch(reading -> reading.getId() != null);
+
+            // Verify all readings were saved
+            long count = meterReadingRepository.count();
+            assertThat(count).isGreaterThanOrEqualTo(5);
+        }
+
+        @Test
+        @DisplayName("Should handle bulk delete operations correctly")
+        void shouldHandleBulkDeleteOperations() {
+            // Arrange
+            UsagePointEntity usagePoint = TestDataBuilders.createValidUsagePoint();
+            UsagePointEntity savedUsagePoint = usagePointRepository.save(usagePoint);
+
+            List<MeterReadingEntity> meterReadings = TestDataBuilders.createValidEntities(3,
+                () -> {
+                    MeterReadingEntity reading = TestDataBuilders.createValidMeterReading();
+                    reading.setUsagePoint(savedUsagePoint);
+                    return reading;
+                });
+
+            List<MeterReadingEntity> savedReadings = meterReadingRepository.saveAll(meterReadings);
+            long initialCount = meterReadingRepository.count();
+            flushAndClear();
+
+            // Act - Bulk delete
+            meterReadingRepository.deleteAll(savedReadings);
+            flushAndClear();
+
+            // Assert
+            long finalCount = meterReadingRepository.count();
+            assertThat(finalCount).isEqualTo(initialCount - 3);
+        }
+    }
+
+    @Nested
+    @DisplayName("Flyway Migration Verification")
+    class MigrationVerificationTest {
+
+        @Test
+        @DisplayName("Should create all required base migration tables")
+        void shouldCreateBaseMigrationTables() throws Exception {
+            // Verify base migration tables exist (from V1__Create_Base_Tables.sql)
+            try (var connection = postgres.createConnection("")) {
+                assertThat(tableExists(connection, "application_information"))
+                    .as("application_information table should exist from base migration")
+                    .isTrue();
+                assertThat(tableExists(connection, "retail_customers"))
+                    .as("retail_customers table should exist from base migration")
+                    .isTrue();
+                assertThat(tableExists(connection, "reading_types"))
+                    .as("reading_types table should exist from base migration")
+                    .isTrue();
+                assertThat(tableExists(connection, "subscriptions"))
+                    .as("subscriptions table should exist from base migration")
+                    .isTrue();
+                assertThat(tableExists(connection, "batch_lists"))
+                    .as("batch_lists table should exist from base migration")
+                    .isTrue();
+            }
+        }
+
+        @Test
+        @DisplayName("Should create PostgreSQL vendor-specific tables")
+        void shouldCreatePostgreSQLSpecificTables() throws Exception {
+            // Verify PostgreSQL-specific migration tables exist (from V2__PostgreSQL_Specific_Tables.sql or V3__Create_additiional_Base_Tables.sql)
+            try (var connection = postgres.createConnection("")) {
+                assertThat(tableExists(connection, "time_configurations"))
+                    .as("time_configurations table should exist from vendor-specific migration")
+                    .isTrue();
+                assertThat(tableExists(connection, "usage_points"))
+                    .as("usage_points table should exist from vendor-specific migration")
+                    .isTrue();
+                assertThat(tableExists(connection, "meter_readings"))
+                    .as("meter_readings table should exist from vendor-specific migration")
+                    .isTrue();
+                assertThat(tableExists(connection, "interval_blocks"))
+                    .as("interval_blocks table should exist from vendor-specific migration")
+                    .isTrue();
+            }
+        }
+
+        @Test
+        @DisplayName("Should create BYTEA columns for PostgreSQL vendor-specific types")
+        void shouldCreateBYTEAColumns() throws Exception {
+            // Verify that BYTEA columns exist in PostgreSQL-specific tables
+            try (var connection = postgres.createConnection("")) {
+                assertThat(columnExists(connection, "time_configurations", "dst_end_rule"))
+                    .as("dst_end_rule BYTEA column should exist in time_configurations")
+                    .isTrue();
+                assertThat(columnExists(connection, "time_configurations", "dst_start_rule"))
+                    .as("dst_start_rule BYTEA column should exist in time_configurations")
+                    .isTrue();
+                assertThat(columnExists(connection, "usage_points", "role_flags"))
+                    .as("role_flags BYTEA column should exist in usage_points")
+                    .isTrue();
+            }
+        }
+
+        /**
+         * Helper method to check if a table exists in the database.
+         */
+        private boolean tableExists(java.sql.Connection connection, String tableName) throws java.sql.SQLException {
+            try (var rs = connection.getMetaData().getTables(null, null, tableName.toLowerCase(), null)) {
+                return rs.next();
+            }
+        }
+
+        /**
+         * Helper method to check if a column exists in a table.
+         */
+        private boolean columnExists(java.sql.Connection connection, String tableName, String columnName) throws java.sql.SQLException {
+            try (var rs = connection.getMetaData().getColumns(null, null, tableName.toLowerCase(), columnName.toLowerCase())) {
+                return rs.next();
+            }
+        }
+    }
+}

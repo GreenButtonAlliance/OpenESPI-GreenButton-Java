@@ -2,9 +2,6 @@
 CREATE TABLE meter_readings
 (
     id              CHAR(36) PRIMARY KEY ,
-    uuid            VARCHAR(36) NOT NULL UNIQUE,
-    uuid_msb        BIGINT,
-    uuid_lsb        BIGINT,
     description     VARCHAR(255),
     created         TIMESTAMP NOT NULL,
     updated         TIMESTAMP NOT NULL,
@@ -25,7 +22,6 @@ CREATE TABLE meter_readings
 );
 
 -- Indexes for meter_readings table
-CREATE INDEX idx_meter_reading_uuid ON meter_readings (uuid);
 CREATE INDEX idx_meter_reading_usage_point_id ON meter_readings (usage_point_id);
 CREATE INDEX idx_meter_reading_reading_type_id ON meter_readings (reading_type_id);
 CREATE INDEX idx_meter_reading_created ON meter_readings (created);
@@ -46,9 +42,6 @@ CREATE INDEX idx_meter_reading_related_links ON meter_reading_related_links (met
 CREATE TABLE interval_blocks
 (
     id                CHAR(36) PRIMARY KEY ,
-    uuid              VARCHAR(36) NOT NULL UNIQUE,
-    uuid_msb          BIGINT,
-    uuid_lsb          BIGINT,
     description       VARCHAR(255),
     created           TIMESTAMP NOT NULL,
     updated           TIMESTAMP NOT NULL,
@@ -71,7 +64,6 @@ CREATE TABLE interval_blocks
 );
 
 -- Indexes for interval_blocks table
-CREATE INDEX idx_interval_block_uuid ON interval_blocks (uuid);
 CREATE INDEX idx_interval_block_meter_reading_id ON interval_blocks (meter_reading_id);
 CREATE INDEX idx_interval_block_start ON interval_blocks (interval_start);
 CREATE INDEX idx_interval_block_created ON interval_blocks (created);
@@ -92,9 +84,6 @@ CREATE INDEX idx_interval_block_related_links ON interval_block_related_links (i
 CREATE TABLE interval_readings
 (
     id                   CHAR(36) PRIMARY KEY ,
-    uuid                 VARCHAR(36) NOT NULL UNIQUE,
-    uuid_msb             BIGINT,
-    uuid_lsb             BIGINT,
     description          VARCHAR(255),
     created              TIMESTAMP NOT NULL,
     updated              TIMESTAMP NOT NULL,
@@ -122,7 +111,6 @@ CREATE TABLE interval_readings
 );
 
 -- Indexes for interval_readings table
-CREATE INDEX idx_interval_reading_uuid ON interval_readings (uuid);
 CREATE INDEX idx_interval_reading_interval_block_id ON interval_readings (interval_block_id);
 CREATE INDEX idx_interval_reading_time_period_start ON interval_readings (time_period_start);
 CREATE INDEX idx_interval_reading_value ON interval_readings (reading_value);
@@ -145,9 +133,6 @@ CREATE INDEX idx_interval_reading_related_links ON interval_reading_related_link
 CREATE TABLE reading_qualities
 (
     id                  CHAR(36) PRIMARY KEY ,
-    uuid                VARCHAR(36) NOT NULL UNIQUE,
-    uuid_msb            BIGINT,
-    uuid_lsb            BIGINT,
     description         VARCHAR(255),
     created             TIMESTAMP NOT NULL,
     updated             TIMESTAMP NOT NULL,
@@ -169,7 +154,6 @@ CREATE TABLE reading_qualities
 );
 
 -- Indexes for reading_qualities table
-CREATE INDEX idx_reading_quality_uuid ON reading_qualities (uuid);
 CREATE INDEX idx_reading_quality_interval_reading_id ON reading_qualities (interval_reading_id);
 CREATE INDEX idx_reading_quality_quality ON reading_qualities (quality);
 CREATE INDEX idx_reading_quality_created ON reading_qualities (created);
@@ -190,9 +174,6 @@ CREATE INDEX idx_reading_quality_related_links ON reading_quality_related_links 
 CREATE TABLE usage_summaries
 (
     id                          CHAR(36) PRIMARY KEY ,
-    uuid                        VARCHAR(36) NOT NULL UNIQUE,
-    uuid_msb                    BIGINT,
-    uuid_lsb                    BIGINT,
     description                 VARCHAR(255),
     created                     TIMESTAMP NOT NULL,
     updated                     TIMESTAMP NOT NULL,
@@ -297,7 +278,6 @@ CREATE TABLE usage_summaries
 );
 
 -- Indexes for usage_summaries table
-CREATE INDEX idx_usage_summary_uuid ON usage_summaries (uuid);
 CREATE INDEX idx_usage_summary_usage_point_id ON usage_summaries (usage_point_id);
 CREATE INDEX idx_usage_summary_billing_period_start ON usage_summaries (billing_period_start);
 CREATE INDEX idx_usage_summary_created ON usage_summaries (created);
@@ -341,9 +321,6 @@ ALTER TABLE usage_points ADD CONSTRAINT fk_usage_point_subscription
 CREATE TABLE pnode_refs
 (
     id             CHAR(36) PRIMARY KEY ,
-    uuid           VARCHAR(36) NOT NULL UNIQUE,
-    uuid_msb       BIGINT,
-    uuid_lsb       BIGINT,
     description    VARCHAR(255),
     created        TIMESTAMP NOT NULL,
     updated        TIMESTAMP NOT NULL,
@@ -368,7 +345,6 @@ CREATE TABLE pnode_refs
 );
 
 -- Indexes for pnode_refs table
-CREATE INDEX idx_pnode_ref_uuid ON pnode_refs (uuid);
 CREATE INDEX idx_pnode_ref_apnode_type ON pnode_refs (apnode_type);
 CREATE INDEX idx_pnode_ref_ref ON pnode_refs (ref);
 CREATE INDEX idx_pnode_ref_usage_point_id ON pnode_refs (usage_point_id);
@@ -390,9 +366,6 @@ CREATE INDEX idx_pnode_ref_related_links ON pnode_ref_related_links (pnode_ref_i
 CREATE TABLE aggregated_node_refs
 (
     id                   CHAR(36)  PRIMARY KEY ,
-    uuid                 VARCHAR(36)  NOT NULL UNIQUE,
-    uuid_msb             BIGINT,
-    uuid_lsb             BIGINT,
     description          VARCHAR(255),
     created              TIMESTAMP NOT NULL,
     updated              TIMESTAMP NOT NULL,
@@ -419,7 +392,6 @@ CREATE TABLE aggregated_node_refs
 );
 
 -- Indexes for aggregated_node_refs table
-CREATE INDEX idx_aggregated_node_ref_uuid ON aggregated_node_refs (uuid);
 CREATE INDEX idx_aggregated_node_ref_anode_type ON aggregated_node_refs (anode_type);
 CREATE INDEX idx_aggregated_node_ref_ref ON aggregated_node_refs (ref);
 CREATE INDEX idx_aggregated_node_ref_pnode_ref_id ON aggregated_node_refs (pnode_ref_id);
@@ -442,8 +414,6 @@ CREATE INDEX idx_aggregated_node_ref_related_links ON aggregated_node_ref_relate
 CREATE TABLE customers
 (
     id                   CHAR(36) PRIMARY KEY ,
-    uuid_msb             BIGINT,
-    uuid_lsb             BIGINT,
     description          VARCHAR(255),
     created              TIMESTAMP NOT NULL,
     updated              TIMESTAMP NOT NULL,
@@ -510,9 +480,6 @@ CREATE INDEX idx_customer_updated ON customers (updated);
 CREATE TABLE customer_agreements
 (
     id                         CHAR(36) PRIMARY KEY ,
-    uuid                       VARCHAR(36) NOT NULL UNIQUE,
-    uuid_msb                   BIGINT,
-    uuid_lsb                   BIGINT,
     description                VARCHAR(255),
     created                    TIMESTAMP NOT NULL,
     updated                    TIMESTAMP NOT NULL,
@@ -546,7 +513,6 @@ CREATE TABLE customer_agreements
 );
 
 -- Indexes for customer_agreements table
-CREATE INDEX idx_customer_agreement_uuid ON customer_agreements (uuid);
 CREATE INDEX idx_customer_agreement_sign_date ON customer_agreements (sign_date);
 CREATE INDEX idx_customer_agreement_created ON customer_agreements (created);
 CREATE INDEX idx_customer_agreement_updated ON customer_agreements (updated);
@@ -579,9 +545,6 @@ CREATE INDEX idx_customer_agreement_future_status ON customer_agreement_future_s
 CREATE TABLE customer_accounts
 (
     id               CHAR(36) PRIMARY KEY ,
-    uuid             VARCHAR(36) NOT NULL UNIQUE,
-    uuid_msb         BIGINT,
-    uuid_lsb         BIGINT,
     description      VARCHAR(255),
     created          TIMESTAMP NOT NULL,
     updated          TIMESTAMP NOT NULL,
@@ -617,7 +580,6 @@ CREATE TABLE customer_accounts
     FOREIGN KEY (customer_id) REFERENCES customers (id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_customer_account_uuid ON customer_accounts (uuid);
 CREATE INDEX idx_customer_account_number ON customer_accounts (account_number);
 CREATE INDEX idx_customer_account_kind ON customer_accounts (account_kind);
 CREATE INDEX idx_customer_account_customer_id ON customer_accounts (customer_id);
@@ -642,9 +604,6 @@ CREATE INDEX idx_customer_account_notifications ON customer_account_notification
 CREATE TABLE electric_power_quality_summaries
 (
     id                      CHAR(36) PRIMARY KEY ,
-    uuid                    VARCHAR(36) NOT NULL UNIQUE,
-    uuid_msb                BIGINT,
-    uuid_lsb                BIGINT,
     description             VARCHAR(255),
     created                 TIMESTAMP NOT NULL,
     updated                 TIMESTAMP NOT NULL,
@@ -681,10 +640,9 @@ CREATE TABLE electric_power_quality_summaries
     FOREIGN KEY (usage_point_id) REFERENCES usage_points (id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_epqs_uuid ON electric_power_quality_summaries (uuid);
 CREATE INDEX idx_epqs_usage_point_id ON electric_power_quality_summaries (usage_point_id);
-CREATE INDEX idx_epqs_summary_interval_start ON electric_power_quality_summaries (uuid);
-CREATE INDEX idx_epqs_created ON electric_power_quality_summaries (summary_interval_start);
+CREATE INDEX idx_epqs_summary_interval_start ON electric_power_quality_summaries (summary_interval_start);
+CREATE INDEX idx_epqs_created ON electric_power_quality_summaries (created);
 CREATE INDEX idx_epqs_updated ON electric_power_quality_summaries (updated);
 
 
@@ -692,9 +650,6 @@ CREATE INDEX idx_epqs_updated ON electric_power_quality_summaries (updated);
 CREATE TABLE end_devices
 (
     id                   CHAR(36) PRIMARY KEY ,
-    uuid                 VARCHAR(36) NOT NULL UNIQUE,
-    uuid_msb             BIGINT,
-    uuid_lsb             BIGINT,
     description          VARCHAR(255),
     created              TIMESTAMP NOT NULL,
     updated              TIMESTAMP NOT NULL,
@@ -737,7 +692,6 @@ CREATE TABLE end_devices
     amr_system           VARCHAR(100)
 );
 
-CREATE INDEX idx_end_device_uuid ON end_devices (uuid);
 CREATE INDEX idx_end_device_type ON end_devices (type);
 CREATE INDEX idx_end_device_serial_number ON end_devices (serial_number);
 CREATE INDEX idx_end_device_status ON end_devices (status_value);
@@ -759,9 +713,6 @@ CREATE INDEX idx_end_device_related_links ON end_device_related_links (end_devic
 CREATE TABLE line_items
 (
     id               CHAR(36) PRIMARY KEY ,
-    uuid             VARCHAR(36)  NOT NULL UNIQUE,
-    uuid_msb         BIGINT,
-    uuid_lsb         BIGINT,
     description      VARCHAR(255),
     created          TIMESTAMP NOT NULL,
     updated          TIMESTAMP NOT NULL,
@@ -785,7 +736,6 @@ CREATE TABLE line_items
     FOREIGN KEY (usage_summary_id) REFERENCES usage_summaries (id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_line_item_uuid ON line_items (uuid);
 CREATE INDEX idx_line_item_usage_summary ON line_items (usage_summary_id);
 CREATE INDEX idx_line_item_date_time ON line_items (date_time);
 CREATE INDEX idx_line_item_amount ON line_items (amount);
@@ -817,9 +767,6 @@ CREATE INDEX idx_meters_form_number ON meters (form_number);
 CREATE TABLE phone_numbers
 (
     id                   CHAR(36) PRIMARY KEY ,
-    uuid                 VARCHAR(36) NOT NULL UNIQUE,
-    uuid_msb             BIGINT,
-    uuid_lsb             BIGINT,
     description          VARCHAR(255),
     created              TIMESTAMP NOT NULL,
     updated              TIMESTAMP NOT NULL,
@@ -843,11 +790,9 @@ CREATE TABLE phone_numbers
     phone_type           VARCHAR(20),
 
     -- Polymorphic relationship fields
-    parent_entity_uuid   VARCHAR(36),
     parent_entity_type   VARCHAR(255)
 );
 
-CREATE INDEX idx_phone_number_uuid ON phone_numbers (uuid);
 CREATE INDEX idx_phone_number_itu_phone ON phone_numbers (itu_phone);
 CREATE INDEX idx_phone_number_created ON phone_numbers (created);
 CREATE INDEX idx_phone_number_updated ON phone_numbers (updated);
@@ -868,9 +813,6 @@ CREATE INDEX idx_phone_number_related_links ON phone_number_related_links (phone
 CREATE TABLE program_date_id_mappings
 (
     id             CHAR(36) PRIMARY KEY ,
-    uuid           VARCHAR(36) NOT NULL UNIQUE,
-    uuid_msb       BIGINT,
-    uuid_lsb       BIGINT,
     description    VARCHAR(255),
     created        TIMESTAMP NOT NULL,
     updated        TIMESTAMP NOT NULL,
@@ -887,7 +829,6 @@ CREATE TABLE program_date_id_mappings
     program_id     VARCHAR(100)
 );
 
-CREATE INDEX idx_program_date_id_mapping_uuid ON program_date_id_mappings (uuid);
 CREATE INDEX idx_program_date_id_mapping_program_date ON program_date_id_mappings (program_date);
 CREATE INDEX idx_program_date_id_mapping_program_id ON program_date_id_mappings (program_id);
 CREATE INDEX idx_program_date_id_mapping_created ON program_date_id_mappings (created);
@@ -908,9 +849,6 @@ CREATE INDEX idx_program_date_id_mapping_related_links ON program_date_id_mappin
 CREATE TABLE service_locations
 (
     id                  CHAR(36) PRIMARY KEY ,
-    uuid                VARCHAR(36) NOT NULL UNIQUE,
-    uuid_msb            BIGINT,
-    uuid_lsb            BIGINT,
     description         VARCHAR(255),
     created             TIMESTAMP NOT NULL,
     updated             TIMESTAMP NOT NULL,
@@ -959,7 +897,6 @@ CREATE TABLE service_locations
     outage_block        VARCHAR(32)
 );
 
-CREATE INDEX idx_service_location_uuid ON service_locations (uuid);
 CREATE INDEX idx_service_location_access_method ON service_locations (access_method);
 CREATE INDEX idx_service_location_needs_inspection ON service_locations (needs_inspection);
 CREATE INDEX idx_service_location_created ON service_locations (created);
@@ -981,9 +918,6 @@ CREATE INDEX idx_service_location_related_links ON service_location_related_link
 CREATE TABLE service_suppliers
 (
     id                           CHAR(36) PRIMARY KEY ,
-    uuid                         VARCHAR(36) NOT NULL UNIQUE,
-    uuid_msb                     BIGINT,
-    uuid_lsb                     BIGINT,
     description                  VARCHAR(255),
     created                      TIMESTAMP NOT NULL,
     updated                      TIMESTAMP NOT NULL,
@@ -1018,7 +952,6 @@ CREATE TABLE service_suppliers
     supplier_radio               VARCHAR(255)
 );
 
-CREATE INDEX idx_service_supplier_uuid ON service_suppliers (uuid);
 CREATE INDEX idx_service_supplier_kind ON service_suppliers (kind);
 CREATE INDEX idx_service_supplier_issuer_id ON service_suppliers (issuer_identification_number);
 CREATE INDEX idx_service_supplier_created ON service_suppliers (created);
@@ -1040,9 +973,6 @@ CREATE INDEX idx_service_supplier_related_links ON service_supplier_related_link
 CREATE TABLE statements
 (
     id                      CHAR(36) PRIMARY KEY ,
-    uuid                    VARCHAR(36) NOT NULL UNIQUE,
-    uuid_msb                BIGINT,
-    uuid_lsb                BIGINT,
     description             VARCHAR(255),
     created                 TIMESTAMP NOT NULL,
     updated                 TIMESTAMP NOT NULL,
@@ -1063,7 +993,6 @@ CREATE TABLE statements
     FOREIGN KEY (customer_id) REFERENCES customers(id)
 );
 
-CREATE INDEX idx_statement_uuid ON statements (uuid);
 CREATE INDEX idx_statement_issue_date_time ON statements (issue_date_time);
 CREATE INDEX idx_statement_customer_id ON statements (customer_id);
 CREATE INDEX idx_statement_statement_date ON statements (statement_date);
@@ -1085,9 +1014,6 @@ CREATE INDEX idx_statement_related_links ON statement_related_links (statement_i
 CREATE TABLE statement_refs
 (
     id             CHAR(36) PRIMARY KEY ,
-    uuid           VARCHAR(36) NOT NULL UNIQUE,
-    uuid_msb       BIGINT,
-    uuid_lsb       BIGINT,
     description    VARCHAR(255),
     created        TIMESTAMP NOT NULL,
     updated        TIMESTAMP NOT NULL,
@@ -1107,7 +1033,6 @@ CREATE TABLE statement_refs
     FOREIGN KEY (statement_id) REFERENCES statements(id)
 );
 
-CREATE INDEX idx_statement_ref_uuid ON statement_refs (uuid);
 CREATE INDEX idx_statement_ref_statement_id ON statement_refs (statement_id);
 CREATE INDEX idx_statement_ref_created ON statement_refs (created);
 CREATE INDEX idx_statement_ref_updated ON statement_refs (updated);

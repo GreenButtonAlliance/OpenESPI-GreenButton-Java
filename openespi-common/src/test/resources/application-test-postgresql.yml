@@ -1,6 +1,6 @@
 spring:
   jpa:
-    database-platform: org.hibernate.dialect.MySQLDialect
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: none
     properties:
@@ -10,13 +10,13 @@ spring:
             database:
               action: none
       hibernate:
-        dialect: org.hibernate.dialect.MySQLDialect
+        dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
     show-sql: true
 
   flyway:
     enabled: true
-    locations: classpath:db/migration,classpath:db/vendor/mysql
+    locations: classpath:db/migration,classpath:db/vendor/postgres
 
 logging:
   level:
