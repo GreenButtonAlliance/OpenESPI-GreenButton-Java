@@ -28,7 +28,7 @@
         <version>3.5.0</version>
     </parent>
 
-    <artifactId>open-espi-third-party</artifactId>
+    <artifactId>OpenESPI-ThirdParty</artifactId>
     <version>1.3.0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
