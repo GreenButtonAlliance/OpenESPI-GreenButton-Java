@@ -4,6 +4,37 @@
 
 This plan reviews domain entities in `/domain/usage`, `/domain/customer`, and `/domain/common` to ensure compliance with NAESB ESPI 4.0 schema (espi.xsd and customer.xsd) element sequences.
 
+---
+
+## Technology Stack
+
+**Baseline (Spring Boot 4.0 + Java 25):**
+- **Java**: 25 (LTS - Zulu 25.28+85-CA)
+- **Spring Boot**: 4.0.1
+- **Jakarta EE**: 11
+- **Maven**: 3.9+
+- **MapStruct**: 1.6.3
+- **JAXB**: jakarta.xml.bind-api 4.x
+- **TestContainers**: 1.20.x
+
+**Testing Framework:**
+- **JUnit**: 5.x (JUnit Platform 6.0.1)
+- **Mockito**: 5.x via @MockitoBean/@MockitoSpyBean (Spring Boot 4.0)
+- **AssertJ**: 3.x
+- **Test Dependencies**: Granular test starters:
+  - `spring-boot-starter-webmvc-test`
+  - `spring-boot-starter-data-jpa-test`
+  - `spring-boot-starter-validation-test`
+  - `spring-boot-starter-restclient-test`
+
+**DTO Marshalling Approach:**
+- **JAXB (Jakarta XML Binding)** - Selected for all 26 phases
+- **Rationale**: Jackson 3.0 XML support is immature in Spring Boot 4.0; JAXB provides proven, stable XML schema compliance with strict XSD element sequencing
+
+**IMPORTANT:** All 26 phases are implemented against the Spring Boot 4.0 + Java 25 baseline established by PR #50 (merged 2025-12-29).
+
+---
+
 **Excluded Entities** (already completed):
 - ApplicationInformationEntity
 - AuthorizationEntity
@@ -66,11 +97,18 @@ This plan reviews domain entities in `/domain/usage`, `/domain/customer`, and `/
      - `db/vendor/mysql/V2__MySQL_Specific_Tables.sql`
      - `db/vendor/postgres/V2__PostgreSQL_Specific_Tables.sql`
 
-7. **Testing**:
-   - Update unit tests for TimeConfiguration entity, service, repository
-   - Add/update integration tests using TestContainers
-   - Add XML marshalling/unmarshalling tests to verify schema compliance
-   - Validate generated XML against espi.xsd using XSD schema validation
+7. **Testing** (Spring Boot 4.0 Patterns):
+   - **Unit Tests**: Update tests for TimeConfiguration entity, service, repository
+     - Use `@MockitoBean` instead of deprecated `@MockBean`
+     - Use `@MockitoSpyBean` instead of deprecated `@SpyBean`
+     - Add `@AutoConfigureMockMvc` if using `@SpringBootTest` with web layer
+   - **Integration Tests**: Add/update tests using TestContainers
+     - TestContainers dependency: `org.testcontainers:testcontainers-junit-jupiter` (artifact ID changed in Spring Boot 4.0)
+   - **XML Marshalling Tests**: Create JAXB XML marshalling/unmarshalling tests
+     - Use pure JUnit 5 (no Spring Boot test dependencies required)
+     - Verify element sequence matches espi.xsd
+     - Test round-trip serialization (marshal → unmarshal → verify equality)
+   - **XSD Validation**: Validate generated XML against espi.xsd using schema validation
 
 8. **Commit, Push, PR**:
    - Stage all changes: `git add .`
@@ -1120,8 +1158,24 @@ This 26-phase plan ensures comprehensive schema compliance review for all NAESB 
 **Git Branch Naming Pattern**:
 `feature/schema-compliance-phase-{number}-{entity-name}`
 
-**Test Requirements**:
-- Unit tests for entity, service, repository
-- Integration tests using TestContainers (MySQL, PostgreSQL, H2)
-- XML marshalling/unmarshalling tests for ALL phases
-- XSD schema validation (espi.xsd for usage domain, customer.xsd for customer domain)
+**Test Requirements** (Spring Boot 4.0 + Java 25):
+- **Unit Tests**: Entity, service, repository tests using:
+  - `@MockitoBean` (NOT `@MockBean` - deprecated in Spring Boot 4.0)
+  - `@MockitoSpyBean` (NOT `@SpyBean` - deprecated in Spring Boot 4.0)
+  - `@AutoConfigureMockMvc` annotation required when using `@SpringBootTest` with web layer
+- **Integration Tests**: TestContainers for MySQL, PostgreSQL, H2
+  - Dependency: `org.testcontainers:testcontainers-junit-jupiter` (artifact ID changed from `junit-jupiter`)
+- **XML Marshalling Tests**: JAXB XML marshalling/unmarshalling tests for ALL 26 phases
+  - Pure JUnit 5 tests (no Spring Boot test dependencies needed)
+  - Verify XSD element sequence compliance
+  - Test round-trip serialization
+- **XSD Schema Validation**:
+  - Usage domain (Phases 1-16): Validate against `espi.xsd`
+  - Customer domain (Phases 17-26): Validate against `customer.xsd`
+
+**Spring Boot 4.0 Migration Notes:**
+- Test annotation package relocations:
+  - `@WebMvcTest`: `org.springframework.boot.webmvc.test.autoconfigure` (moved from `org.springframework.boot.test.autoconfigure.web.servlet`)
+  - `@DataJpaTest`: `org.springframework.boot.data.jpa.test.autoconfigure` (moved from `org.springframework.boot.test.autoconfigure.orm.jpa`)
+- Granular test dependencies replace single `spring-boot-starter-test`
+- See `.junie/guidelines.md` for comprehensive Spring Boot 4.0 test migration guidance

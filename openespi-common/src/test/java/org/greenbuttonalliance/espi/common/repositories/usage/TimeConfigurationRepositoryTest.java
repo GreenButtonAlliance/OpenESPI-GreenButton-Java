@@ -18,9 +18,9 @@
 
 package org.greenbuttonalliance.espi.common.repositories.usage;
 
+import jakarta.validation.ConstraintViolation;
 import org.greenbuttonalliance.espi.common.domain.usage.TimeConfigurationEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
-import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerEntity;
 import org.greenbuttonalliance.espi.common.test.BaseRepositoryTest;
 import org.greenbuttonalliance.espi.common.test.TestDataBuilders;
 import org.junit.jupiter.api.DisplayName;
@@ -28,18 +28,17 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import jakarta.validation.ConstraintViolation;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Comprehensive test suite for TimeConfigurationRepository.
- * 
- * Tests all CRUD operations, 5 custom query methods,
+ *
+ * Tests all CRUD operations, 2 custom query methods (index-based only),
  * time zone and DST configuration field testing, and relationships.
  */
 @DisplayName("TimeConfiguration Repository Tests")
@@ -209,7 +208,6 @@ class TimeConfigurationRepositoryTest extends BaseRepositoryTest {
         @DisplayName("Should find all time configuration IDs")
         void shouldFindAllTimeConfigurationIds() {
             // Arrange
-            long initialCount = timeConfigurationRepository.count();
             List<TimeConfigurationEntity> timeConfigs = List.of(
                 createValidTimeConfiguration(),
                 createValidTimeConfiguration(),
@@ -222,12 +220,13 @@ class TimeConfigurationRepositoryTest extends BaseRepositoryTest {
             List<UUID> allIds = timeConfigurationRepository.findAllIds();
 
             // Assert
-            assertThat(allIds).hasSizeGreaterThanOrEqualTo(3);
-            assertThat(allIds).contains(
-                    savedTimeConfigs.get(0).getId(),
-                    savedTimeConfigs.get(1).getId(),
-                    savedTimeConfigs.get(2).getId()
-            );
+            assertThat(allIds)
+                    .hasSizeGreaterThanOrEqualTo(3)
+                    .contains(
+                            savedTimeConfigs.get(0).getId(),
+                            savedTimeConfigs.get(1).getId(),
+                            savedTimeConfigs.get(2).getId()
+                    );
         }
 
         @Test
@@ -253,8 +252,8 @@ class TimeConfigurationRepositoryTest extends BaseRepositoryTest {
         }
 
         @Test
-        @DisplayName("Should find all distinct time configuration IDs by xpath")
-        void shouldFindAllDistinctTimeConfigurationIdsByXpath() {
+        @DisplayName("Should find all distinct time configuration IDs")
+        void shouldFindAllDistinctTimeConfigurationIds() {
             // Arrange
             List<TimeConfigurationEntity> timeConfigs = List.of(
                 createValidTimeConfiguration(),
@@ -264,31 +263,34 @@ class TimeConfigurationRepositoryTest extends BaseRepositoryTest {
             flushAndClear();
 
             // Act
-            List<UUID> results = timeConfigurationRepository.findAllIdsByXpath0();
+            List<UUID> results = timeConfigurationRepository.findAllIds();
 
             // Assert
-            assertThat(results).hasSizeGreaterThanOrEqualTo(2);
-            assertThat(results).contains(
-                    savedTimeConfigs.get(0).getId(),
-                    savedTimeConfigs.get(1).getId()
-            );
+            assertThat(results)
+                    .hasSizeGreaterThanOrEqualTo(2)
+                    .contains(
+                            savedTimeConfigs.get(0).getId(),
+                            savedTimeConfigs.get(1).getId()
+                    );
         }
 
         @Test
-        @DisplayName("Should find time configuration ID by specific xpath")
-        void shouldFindTimeConfigurationIdBySpecificXpath() {
+        @DisplayName("Should verify time configuration exists by ID")
+        void shouldVerifyTimeConfigurationExistsById() {
             // Arrange
             TimeConfigurationEntity timeConfig = createValidTimeConfiguration();
-            timeConfig.setDescription("Time Config for Xpath Test");
+            timeConfig.setDescription("Time Config for Existence Test");
             TimeConfigurationEntity saved = timeConfigurationRepository.save(timeConfig);
             flushAndClear();
 
             // Act
-            Optional<UUID> result = timeConfigurationRepository.findIdsByXpath(saved.getId());
+            boolean exists = timeConfigurationRepository.existsById(saved.getId());
+            Optional<TimeConfigurationEntity> found = timeConfigurationRepository.findById(saved.getId());
 
             // Assert
-            assertThat(result).isPresent();
-            assertThat(result.get()).isEqualTo(saved.getId());
+            assertThat(exists).isTrue();
+            assertThat(found).isPresent();
+            assertThat(found.get().getId()).isEqualTo(saved.getId());
         }
 
         @Test
@@ -296,7 +298,7 @@ class TimeConfigurationRepositoryTest extends BaseRepositoryTest {
         void shouldHandleEmptyResultsGracefully() {
             // Act & Assert
             assertThat(timeConfigurationRepository.findAllIdsByUsagePointId(UUID.randomUUID())).isEmpty();
-            assertThat(timeConfigurationRepository.findIdsByXpath(UUID.randomUUID())).isEmpty();
+            assertThat(timeConfigurationRepository.existsById(UUID.randomUUID())).isFalse();
         }
     }
 
@@ -423,7 +425,6 @@ class TimeConfigurationRepositoryTest extends BaseRepositoryTest {
 
             // Assert
             assertThat(retrieved).isPresent();
-            TimeConfigurationEntity entity = retrieved.get();
             // Note: Due to lazy loading, we verify the relationship exists through the usage point
             Optional<UsagePointEntity> usagePointCheck = usagePointRepository.findById(savedUsagePoint.getId());
             assertThat(usagePointCheck).isPresent();
@@ -520,10 +521,11 @@ class TimeConfigurationRepositoryTest extends BaseRepositoryTest {
             assertThat(saved1).isNotEqualTo(saved2);
             // Note: TimeConfigurationEntity.hashCode() returns class hashCode, so all instances have same hash code
             // This is acceptable as long as equals() works correctly with different IDs
-            
+
             // Same entity should be equal to itself
-            assertThat(saved1).isEqualTo(saved1);
-            assertThat(saved1.hashCode()).isEqualTo(saved1.hashCode());
+            assertThat(saved1)
+                    .isEqualTo(saved1)
+                    .hasSameHashCodeAs(saved1);
         }
     }
 }
