@@ -19,26 +19,37 @@
 
 package org.greenbuttonalliance.espi.common.domain.customer.entity;
 
-import lombok.*;
-import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
-
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.proxy.HibernateProxy;
 
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Pure JPA/Hibernate entity for StatementRef without JAXB concerns.
- * 
+ *
  * [extension] A sequence of references to a document associated with a Statement.
- * ESPI compliant with proper UUID identifiers and ATOM feed support.
+ *
+ * Note: StatementRef does NOT extend IdentifiedObject per ESPI 4.0 specification.
+ * It is not a top-level resource with selfLink/upLink/relatedLinks.
  */
 @Entity
 @Table(name = "statement_refs")
 @Getter
 @Setter
 @NoArgsConstructor
-public class StatementRefEntity extends IdentifiedObject {
+public class StatementRefEntity {
+
+    /**
+     * Primary key identifier.
+     */
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", nullable = false)
+    private UUID id;
 
     /**
      * [extension] Name of document or file including filename extension if present.
@@ -70,8 +81,10 @@ public class StatementRefEntity extends IdentifiedObject {
     public final boolean equals(Object o) {
         if (this == o) return true;
         if (o == null) return false;
-        Class<?> oEffectiveClass = o instanceof HibernateProxy ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
-        Class<?> thisEffectiveClass = this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
+        Class<?> oEffectiveClass = o instanceof HibernateProxy hibernateProxy ?
+            hibernateProxy.getHibernateLazyInitializer().getPersistentClass() : o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy hibernateProxy ?
+            hibernateProxy.getHibernateLazyInitializer().getPersistentClass() : this.getClass();
         if (thisEffectiveClass != oEffectiveClass) return false;
         StatementRefEntity that = (StatementRefEntity) o;
         return getId() != null && Objects.equals(getId(), that.getId());
@@ -79,7 +92,8 @@ public class StatementRefEntity extends IdentifiedObject {
 
     @Override
     public final int hashCode() {
-        return this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
+        return this instanceof HibernateProxy hibernateProxy ?
+            hibernateProxy.getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
     }
 
     @Override
@@ -88,10 +102,6 @@ public class StatementRefEntity extends IdentifiedObject {
                 "id = " + getId() + ", " +
                 "fileName = " + getFileName() + ", " +
                 "mediaType = " + getMediaType() + ", " +
-                "statementURL = " + getStatementURL() + ", " +
-                "description = " + getDescription() + ", " +
-                "created = " + getCreated() + ", " +
-                "updated = " + getUpdated() + ", " +
-                "published = " + getPublished() + ")";
+                "statementURL = " + getStatementURL() + ")";
     }
 }
