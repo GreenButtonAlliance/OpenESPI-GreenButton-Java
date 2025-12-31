@@ -23,23 +23,34 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
 import org.hibernate.proxy.HibernateProxy;
 
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * JPA entity for AggregatedNodeRef (Aggregated Node Reference).
- * 
+ *
  * Represents a reference to an aggregated node in the electrical grid used within UsagePoint.
  * Each aggregated node reference includes an associated pricing node reference.
+ *
+ * Note: AggregatedNodeRef does NOT extend IdentifiedObject per ESPI 4.0 specification.
+ * It is not a top-level resource with selfLink/upLink/relatedLinks.
  */
 @Entity
 @Table(name = "aggregated_node_refs")
 @Getter
 @Setter
 @NoArgsConstructor
-public class AggregatedNodeRefEntity extends IdentifiedObject {
+public class AggregatedNodeRefEntity {
+
+    /**
+     * Primary key identifier.
+     */
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", nullable = false)
+    private UUID id;
 
     /**
      * Type of the aggregated node.
@@ -145,8 +156,8 @@ public class AggregatedNodeRefEntity extends IdentifiedObject {
     public final boolean equals(Object o) {
         if (this == o) return true;
         if (o == null) return false;
-        Class<?> oEffectiveClass = o instanceof HibernateProxy ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
-        Class<?> thisEffectiveClass = this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
+        Class<?> oEffectiveClass = o instanceof HibernateProxy hibernateProxy ? hibernateProxy.getHibernateLazyInitializer().getPersistentClass() : o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy hibernateProxy ? hibernateProxy.getHibernateLazyInitializer().getPersistentClass() : this.getClass();
         if (thisEffectiveClass != oEffectiveClass) return false;
         AggregatedNodeRefEntity that = (AggregatedNodeRefEntity) o;
         return getId() != null && Objects.equals(getId(), that.getId());
@@ -154,7 +165,7 @@ public class AggregatedNodeRefEntity extends IdentifiedObject {
 
     @Override
     public final int hashCode() {
-        return this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
+        return this instanceof HibernateProxy hibernateProxy ? hibernateProxy.getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
     }
 
     @Override
@@ -164,10 +175,6 @@ public class AggregatedNodeRefEntity extends IdentifiedObject {
                 "anodeType = " + getAnodeType() + ", " +
                 "ref = " + getRef() + ", " +
                 "startEffectiveDate = " + getStartEffectiveDate() + ", " +
-                "endEffectiveDate = " + getEndEffectiveDate() + ", " +
-                "description = " + getDescription() + ", " +
-                "created = " + getCreated() + ", " +
-                "updated = " + getUpdated() + ", " +
-                "published = " + getPublished() + ")";
+                "endEffectiveDate = " + getEndEffectiveDate() + ")";
     }
 }

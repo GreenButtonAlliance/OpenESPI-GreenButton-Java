@@ -47,19 +47,12 @@ public interface AggregatedNodeRefMapper extends BaseIdentifiedObjectMapper {
 
     /**
      * Converts an AggregatedNodeRefDto to an AggregatedNodeRefEntity.
-     * 
+     *
      * @param dto the aggregated node reference DTO
      * @return the aggregated node reference entity
      */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "usagePoint", ignore = true)
-    @Mapping(target = "description", ignore = true) // Inherited from IdentifiedObject
-    @Mapping(target = "created", ignore = true) // Inherited from IdentifiedObject
-    @Mapping(target = "updated", ignore = true) // Inherited from IdentifiedObject
-    @Mapping(target = "published", ignore = true) // Inherited from IdentifiedObject
-    @Mapping(target = "upLink", ignore = true) // Inherited from IdentifiedObject
-    @Mapping(target = "selfLink", ignore = true) // Inherited from IdentifiedObject
-    @Mapping(target = "relatedLinks", ignore = true) // Inherited from IdentifiedObject
     @Mapping(target = "anodeType", source = "anodeType")
     @Mapping(target = "ref", source = "ref")
     @Mapping(target = "startEffectiveDate", source = "startEffectiveDate")
@@ -69,18 +62,11 @@ public interface AggregatedNodeRefMapper extends BaseIdentifiedObjectMapper {
 
     /**
      * Updates an existing AggregatedNodeRefEntity with data from an AggregatedNodeRefDto.
-     * 
+     *
      * @param dto the source DTO
      * @param entity the target entity to update
      */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "usagePoint", ignore = true)
-    @Mapping(target = "description", ignore = true) // Inherited from IdentifiedObject
-    @Mapping(target = "created", ignore = true) // Inherited from IdentifiedObject
-    @Mapping(target = "updated", ignore = true) // Inherited from IdentifiedObject
-    @Mapping(target = "published", ignore = true) // Inherited from IdentifiedObject
-    @Mapping(target = "upLink", ignore = true) // Inherited from IdentifiedObject
-    @Mapping(target = "selfLink", ignore = true) // Inherited from IdentifiedObject
-    @Mapping(target = "relatedLinks", ignore = true) // Inherited from IdentifiedObject
     void updateEntity(AggregatedNodeRefDto dto, @MappingTarget AggregatedNodeRefEntity entity);
 }
