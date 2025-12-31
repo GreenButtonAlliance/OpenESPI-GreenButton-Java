@@ -21,7 +21,6 @@ package org.greenbuttonalliance.espi.common.mapper.usage;
 
 import org.greenbuttonalliance.espi.common.domain.usage.AggregatedNodeRefEntity;
 import org.greenbuttonalliance.espi.common.dto.usage.AggregatedNodeRefDto;
-import org.greenbuttonalliance.espi.common.mapper.BaseIdentifiedObjectMapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
@@ -30,7 +29,7 @@ import org.mapstruct.MappingTarget;
  * MapStruct mapper for converting between AggregatedNodeRefEntity and AggregatedNodeRefDto.
  */
 @Mapper(componentModel = "spring", uses = {PnodeRefMapper.class})
-public interface AggregatedNodeRefMapper extends BaseIdentifiedObjectMapper {
+public interface AggregatedNodeRefMapper {
 
     /**
      * Converts an AggregatedNodeRefEntity to an AggregatedNodeRefDto.
