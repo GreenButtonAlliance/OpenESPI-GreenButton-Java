@@ -19,70 +19,32 @@
 
 package org.greenbuttonalliance.espi.common.dto.usage;
 
-import org.greenbuttonalliance.espi.common.dto.atom.LinkDto;
-
 import jakarta.xml.bind.annotation.*;
-import java.time.OffsetDateTime;
-import java.util.List;
 
 /**
  * ReadingQuality DTO record for JAXB XML marshalling/unmarshalling.
- * 
+ *
  * Represents quality indicators for readings, providing information about
  * the accuracy, validation status, and reliability of meter readings.
+ *
+ * Note: ReadingQuality does NOT extend IdentifiedObject per ESPI 4.0 specification.
+ * It is not a top-level resource with selfLink/upLink/relatedLinks.
  */
 @XmlRootElement(name = "ReadingQuality", namespace = "http://naesb.org/espi")
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "ReadingQuality", namespace = "http://naesb.org/espi", propOrder = {
-    "uuid", "published", "updated", "selfLink", "upLink", "relatedLinks",
-    "description", "quality"
+    "quality"
 })
 public record ReadingQualityDto(
-    
-    @XmlAttribute(name = "mRID")
-    String uuid,
-    
-    @XmlElement(name = "published")
-    OffsetDateTime published,
-    
-    @XmlElement(name = "updated")
-    OffsetDateTime updated,
-    
-    @XmlElement(name = "link", namespace = "http://www.w3.org/2005/Atom")
-    @XmlElementWrapper(name = "links", namespace = "http://www.w3.org/2005/Atom")
-    List<LinkDto> relatedLinks,
-    
-    @XmlElement(name = "link", namespace = "http://www.w3.org/2005/Atom")
-    LinkDto selfLink,
-    
-    @XmlElement(name = "link", namespace = "http://www.w3.org/2005/Atom")
-    LinkDto upLink,
-    
-    @XmlElement(name = "description")
-    String description,
-    
+
     @XmlElement(name = "quality")
     String quality
 ) {
-    
+
     /**
      * Default constructor for JAXB.
      */
     public ReadingQualityDto() {
-        this(null, null, null, null, null, null, null, null);
-    }
-    
-    /**
-     * Minimal constructor for basic reading quality data.
-     */
-    public ReadingQualityDto(String uuid, String quality) {
-        this(uuid, null, null, null, null, null, null, quality);
-    }
-    
-    /**
-     * Constructor with description.
-     */
-    public ReadingQualityDto(String uuid, String description, String quality) {
-        this(uuid, null, null, null, null, null, description, quality);
+        this(null);
     }
 }

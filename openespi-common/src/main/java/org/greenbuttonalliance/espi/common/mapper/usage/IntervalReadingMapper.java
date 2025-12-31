@@ -27,8 +27,8 @@ import org.mapstruct.MappingTarget;
 
 /**
  * MapStruct mapper for converting between IntervalReadingEntity and IntervalReadingDto.
- * 
- * Handles the conversion between the JPA entity used for persistence and the DTO 
+ *
+ * Handles the conversion between the JPA entity used for persistence and the DTO
  * used for JAXB XML marshalling in the Green Button API.
  */
 @Mapper(componentModel = "spring", uses = {
@@ -40,19 +40,12 @@ public interface IntervalReadingMapper {
     /**
      * Converts an IntervalReadingEntity to an IntervalReadingDto.
      * Maps all related entities to their corresponding DTOs.
-     * 
+     *
      * @param entity the interval reading entity
      * @return the interval reading DTO
      */
-    @Mapping(target = "uuid", ignore = true) // IntervalReading does not have UUID
-    @Mapping(target = "published", ignore = true) // IntervalReading does not have timestamps
-    @Mapping(target = "updated", ignore = true) // IntervalReading does not have timestamps
-    @Mapping(target = "relatedLinks", ignore = true) // Links handled separately
-    @Mapping(target = "selfLink", ignore = true)
-    @Mapping(target = "upLink", ignore = true)
-    @Mapping(target = "description", ignore = true) // IntervalReading does not have description
     @Mapping(target = "cost", source = "cost")
-    @Mapping(target = "currency", ignore = true) // IntervalReading does not have currency
+    @Mapping(target = "currency", ignore = true)
     @Mapping(target = "value", source = "value")
     @Mapping(target = "timePeriod", source = "timePeriod")
     @Mapping(target = "readingQualities", source = "readingQualities")
@@ -64,18 +57,11 @@ public interface IntervalReadingMapper {
     /**
      * Converts an IntervalReadingDto to an IntervalReadingEntity.
      * Maps all related DTOs to their corresponding entities.
-     * 
+     *
      * @param dto the interval reading DTO
      * @return the interval reading entity
      */
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "description", ignore = true) // Inherited from IdentifiedObject
-    @Mapping(target = "created", ignore = true) // Inherited from IdentifiedObject
-    @Mapping(target = "updated", ignore = true) // Inherited from IdentifiedObject
-    @Mapping(target = "published", ignore = true) // Inherited from IdentifiedObject
-    @Mapping(target = "upLink", ignore = true) // Inherited from IdentifiedObject
-    @Mapping(target = "selfLink", ignore = true) // Inherited from IdentifiedObject
-    @Mapping(target = "relatedLinks", ignore = true) // Inherited from IdentifiedObject
     @Mapping(target = "cost", source = "cost")
     @Mapping(target = "value", source = "value")
     @Mapping(target = "timePeriod", source = "timePeriod")
@@ -83,24 +69,17 @@ public interface IntervalReadingMapper {
     @Mapping(target = "consumptionTier", source = "consumptionTier")
     @Mapping(target = "tou", source = "tou")
     @Mapping(target = "cpp", source = "cpp")
-    @Mapping(target = "intervalBlock", ignore = true) // Relationships handled separately
+    @Mapping(target = "intervalBlock", ignore = true)
     IntervalReadingEntity toEntity(IntervalReadingDto dto);
 
     /**
      * Updates an existing IntervalReadingEntity with data from an IntervalReadingDto.
      * Useful for merge operations where the entity ID should be preserved.
-     * 
+     *
      * @param dto the source DTO
      * @param entity the target entity to update
      */
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "description", ignore = true) // Inherited from IdentifiedObject
-    @Mapping(target = "created", ignore = true) // Inherited from IdentifiedObject
-    @Mapping(target = "updated", ignore = true) // Inherited from IdentifiedObject
-    @Mapping(target = "published", ignore = true) // Inherited from IdentifiedObject
-    @Mapping(target = "upLink", ignore = true) // Inherited from IdentifiedObject
-    @Mapping(target = "selfLink", ignore = true) // Inherited from IdentifiedObject
-    @Mapping(target = "relatedLinks", ignore = true) // Inherited from IdentifiedObject
-    @Mapping(target = "intervalBlock", ignore = true) // Relationships handled separately
+    @Mapping(target = "intervalBlock", ignore = true)
     void updateEntity(IntervalReadingDto dto, @MappingTarget IntervalReadingEntity entity);
 }
