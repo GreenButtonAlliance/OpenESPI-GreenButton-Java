@@ -18,6 +18,7 @@
 
 package org.greenbuttonalliance.espi.common.repositories.usage;
 
+import jakarta.validation.ConstraintViolation;
 import org.greenbuttonalliance.espi.common.domain.usage.BatchListEntity;
 import org.greenbuttonalliance.espi.common.test.BaseRepositoryTest;
 import org.junit.jupiter.api.DisplayName;
@@ -25,19 +26,20 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import jakarta.validation.ConstraintViolation;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Comprehensive test suite for BatchListRepository.
- * 
+ *
  * Tests CRUD operations, validation constraints, and entity behavior
  * for BatchList entities.
+ *
+ * Note: BatchListEntity does NOT extend IdentifiedObject per ESPI 4.0 specification.
  */
 @DisplayName("BatchList Repository Tests")
 class BatchListRepositoryTest extends BaseRepositoryTest {
@@ -53,8 +55,7 @@ class BatchListRepositoryTest extends BaseRepositoryTest {
         @DisplayName("Should save and retrieve batch list successfully")
         void shouldSaveAndRetrieveBatchListSuccessfully() {
             // Arrange
-            BatchListEntity batchList = new BatchListEntity("Test Batch List");
-            batchList.setId(java.util.UUID.randomUUID()); // Set required UUID id
+            BatchListEntity batchList = new BatchListEntity();
             batchList.addResource("/espi/1_1/resource/UsagePoint/1");
             batchList.addResource("/espi/1_1/resource/MeterReading/1");
 
@@ -67,10 +68,8 @@ class BatchListRepositoryTest extends BaseRepositoryTest {
             assertThat(saved).isNotNull();
             assertThat(saved.getId()).isNotNull();
             assertThat(retrieved).isPresent();
-            assertThat(retrieved.get().getDescription()).isEqualTo("Test Batch List");
             assertThat(retrieved.get().getResources()).hasSize(2);
-            // Test the actual size instead of cached resourceCount since it might not be updated correctly
-            assertThat(retrieved.get().getResources().size()).isEqualTo(2);
+            assertThat(retrieved.get().getResourceCount()).isEqualTo(2);
         }
 
         @Test
@@ -83,8 +82,7 @@ class BatchListRepositoryTest extends BaseRepositoryTest {
                 "/espi/1_1/resource/MeterReading/1",
                 "/espi/1_1/resource/IntervalBlock/1"
             );
-            BatchListEntity batchList = new BatchListEntity(resources, "Multi-Resource Batch");
-            batchList.setId(java.util.UUID.randomUUID()); // Set required UUID id
+            BatchListEntity batchList = new BatchListEntity(resources);
 
             // Act
             BatchListEntity saved = batchListRepository.save(batchList);
@@ -94,8 +92,7 @@ class BatchListRepositoryTest extends BaseRepositoryTest {
             // Assert
             assertThat(retrieved).isPresent();
             assertThat(retrieved.get().getResources()).hasSize(4);
-            // Test the actual size instead of cached resourceCount since it might not be updated correctly
-            assertThat(retrieved.get().getResources().size()).isEqualTo(4);
+            assertThat(retrieved.get().getResourceCount()).isEqualTo(4);
             assertThat(retrieved.get().getResources()).containsExactlyInAnyOrderElementsOf(resources);
         }
 
@@ -103,10 +100,10 @@ class BatchListRepositoryTest extends BaseRepositoryTest {
         @DisplayName("Should find all batch lists")
         void shouldFindAllBatchLists() {
             // Arrange
-            BatchListEntity batchList1 = new BatchListEntity("Batch List 1");
-            batchList1.setId(java.util.UUID.randomUUID()); // Set required UUID id
-            BatchListEntity batchList2 = new BatchListEntity("Batch List 2");
-            batchList2.setId(java.util.UUID.randomUUID()); // Set required UUID id
+            BatchListEntity batchList1 = new BatchListEntity();
+            batchList1.addResource("/espi/1_1/resource/UsagePoint/1");
+            BatchListEntity batchList2 = new BatchListEntity();
+            batchList2.addResource("/espi/1_1/resource/UsagePoint/2");
             batchListRepository.saveAll(Arrays.asList(batchList1, batchList2));
             flushAndClear();
 
@@ -115,16 +112,16 @@ class BatchListRepositoryTest extends BaseRepositoryTest {
 
             // Assert
             assertThat(allBatchLists).hasSizeGreaterThanOrEqualTo(2);
-            assertThat(allBatchLists).extracting(BatchListEntity::getDescription)
-                .contains("Batch List 1", "Batch List 2");
+            assertThat(allBatchLists).extracting(BatchListEntity::getResourceCount)
+                .contains(1, 1);
         }
 
         @Test
         @DisplayName("Should delete batch list successfully")
         void shouldDeleteBatchListSuccessfully() {
             // Arrange
-            BatchListEntity batchList = new BatchListEntity("To Be Deleted");
-            batchList.setId(java.util.UUID.randomUUID()); // Set required UUID id
+            BatchListEntity batchList = new BatchListEntity();
+            batchList.addResource("/espi/1_1/resource/UsagePoint/1");
             BatchListEntity saved = batchListRepository.save(batchList);
             flushAndClear();
 
@@ -142,10 +139,10 @@ class BatchListRepositoryTest extends BaseRepositoryTest {
         void shouldCountBatchListsCorrectly() {
             // Arrange
             long initialCount = batchListRepository.count();
-            BatchListEntity batchList1 = new BatchListEntity("Count Test 1");
-            batchList1.setId(java.util.UUID.randomUUID()); // Set required UUID id
-            BatchListEntity batchList2 = new BatchListEntity("Count Test 2");
-            batchList2.setId(java.util.UUID.randomUUID()); // Set required UUID id
+            BatchListEntity batchList1 = new BatchListEntity();
+            batchList1.addResource("/espi/1_1/resource/UsagePoint/1");
+            BatchListEntity batchList2 = new BatchListEntity();
+            batchList2.addResource("/espi/1_1/resource/UsagePoint/2");
             batchListRepository.saveAll(Arrays.asList(batchList1, batchList2));
             flushAndClear();
 
@@ -165,22 +162,21 @@ class BatchListRepositoryTest extends BaseRepositoryTest {
         @DisplayName("Should validate resource URI constraints")
         void shouldValidateResourceUriConstraints() {
             // Arrange
-            BatchListEntity batchList = new BatchListEntity("Validation Test");
-            batchList.setId(java.util.UUID.randomUUID()); // Set required UUID id
-            
+            BatchListEntity batchList = new BatchListEntity();
+
             // Create a URI that definitely exceeds 512 characters
             String baseUri = "/espi/1_1/resource/UsagePoint/";
             String longSuffix = "x".repeat(600); // Create a very long suffix
             String longUri = baseUri + longSuffix; // This will be > 512 chars
-            
+
             // Verify the URI is actually longer than 512 characters
             assertThat(longUri.length()).isGreaterThan(512);
-            
+
             batchList.addResource(longUri);
 
             // Act & Assert
             Set<ConstraintViolation<BatchListEntity>> violations = validator.validate(batchList);
-            
+
             // If validation on collection elements doesn't work, test with a simpler approach
             if (violations.isEmpty()) {
                 // Alternative: test that the entity can be created but might fail on persistence
@@ -196,8 +192,7 @@ class BatchListRepositoryTest extends BaseRepositoryTest {
         @DisplayName("Should handle empty resource list")
         void shouldHandleEmptyResourceList() {
             // Arrange
-            BatchListEntity batchList = new BatchListEntity("Empty Resources");
-            batchList.setId(java.util.UUID.randomUUID()); // Set required UUID id
+            BatchListEntity batchList = new BatchListEntity();
 
             // Act
             BatchListEntity saved = batchListRepository.save(batchList);
@@ -207,20 +202,20 @@ class BatchListRepositoryTest extends BaseRepositoryTest {
             // Assert
             assertThat(retrieved).isPresent();
             assertThat(retrieved.get().getResources()).isEmpty();
-            assertThat(retrieved.get().getResourceCount()).isEqualTo(0);
+            assertThat(retrieved.get().getResourceCount()).isZero();
         }
     }
 
     @Nested
-    @DisplayName("Base Class Functionality")
-    class BaseClassTest {
+    @DisplayName("Entity Functionality")
+    class EntityFunctionalityTest {
 
         @Test
-        @DisplayName("Should inherit IdentifiedObject functionality")
-        void shouldInheritIdentifiedObjectFunctionality() {
+        @DisplayName("Should persist with auto-generated UUID")
+        void shouldPersistWithAutoGeneratedUuid() {
             // Arrange
-            BatchListEntity batchList = new BatchListEntity("Base Class Test");
-            batchList.setId(java.util.UUID.randomUUID()); // Set required UUID id
+            BatchListEntity batchList = new BatchListEntity();
+            batchList.addResource("/espi/1_1/resource/UsagePoint/1");
 
             // Act
             BatchListEntity saved = batchListRepository.save(batchList);
@@ -228,8 +223,7 @@ class BatchListRepositoryTest extends BaseRepositoryTest {
 
             // Assert
             assertThat(saved.getId()).isNotNull();
-            assertThat(saved.getCreated()).isNotNull();
-            assertThat(saved.getUpdated()).isNotNull();
+            assertThat(saved.getResourceCount()).isEqualTo(1);
         }
     }
 }

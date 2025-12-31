@@ -139,8 +139,8 @@ public class TestDataBuilders {
      */
     public static IntervalReadingEntity createValidIntervalReading() {
         IntervalReadingEntity intervalReading = new IntervalReadingEntity();
-        intervalReading.setCost(faker.number().randomNumber(6, true));
-        intervalReading.setValue(faker.number().randomNumber(5, true));
+        intervalReading.setCost(faker.number().numberBetween(100000L, 999999L));
+        intervalReading.setValue(faker.number().numberBetween(10000L, 99999L));
         
         // Add basic DateTimeInterval for time period
         DateTimeInterval timePeriod = new DateTimeInterval();
@@ -219,7 +219,8 @@ public class TestDataBuilders {
      * Creates a valid BatchListEntity for testing.
      */
     public static BatchListEntity createValidBatchList() {
-        BatchListEntity batchList = new BatchListEntity(faker.lorem().sentence(3, 6));
+        BatchListEntity batchList = new BatchListEntity();
+        batchList.addResource("/espi/1_1/resource/UsagePoint/" + faker.number().numberBetween(1, 1000));
         return batchList;
     }
 
@@ -267,8 +268,8 @@ public class TestDataBuilders {
             clientId = clientId.substring(0, 64);
         }
         app.setClientId(clientId);
-        
-        app.setClientSecret(faker.internet().password());
+
+        app.setClientSecret(faker.regexify("[a-zA-Z0-9]{16,32}"));
 
         // Ensure dataCustodianId meets validation constraints (2-64 chars if present)
         String dataCustodianId = "test-datacustodian-" + faker.number().digits(6);

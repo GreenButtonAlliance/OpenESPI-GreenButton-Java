@@ -21,10 +21,10 @@ package org.greenbuttonalliance.espi.common.repositories.usage;
 import org.greenbuttonalliance.espi.common.domain.common.DateTimeInterval;
 import org.greenbuttonalliance.espi.common.domain.common.ServiceCategory;
 import org.greenbuttonalliance.espi.common.domain.common.SummaryMeasurement;
-import org.greenbuttonalliance.espi.common.domain.usage.UsageSummaryEntity;
-import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
-import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.LineItemEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.UsageSummaryEntity;
 import org.greenbuttonalliance.espi.common.test.BaseRepositoryTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Comprehensive test suite for UsageSummaryRepository.
@@ -298,8 +298,9 @@ class UsageSummaryRepositoryTest extends BaseRepositoryTest {
             List<UUID> ids = usageSummaryRepository.findAllIdsByUsagePointId(summary1.getUsagePoint().getId());
 
             // Assert
-            assertThat(ids).hasSize(2);
-            assertThat(ids).contains(saved1.getId(), saved2.getId());
+            assertThat(ids)
+                .hasSize(2)
+                .contains(saved1.getId(), saved2.getId());
         }
 
         @Test
@@ -334,8 +335,9 @@ class UsageSummaryRepositoryTest extends BaseRepositoryTest {
             Optional<UUID> foundId = usageSummaryRepository.findIdByXpath(retailCustomerId, usagePointId, summaryId);
 
             // Assert
-            assertThat(foundId).isPresent();
-            assertThat(foundId.get()).isEqualTo(summaryId);
+            assertThat(foundId)
+                .isPresent()
+                .contains(summaryId);
         }
     }
 
@@ -467,13 +469,11 @@ class UsageSummaryRepositoryTest extends BaseRepositoryTest {
             UsageSummaryEntity saved = persistAndFlush(summary);
 
             LineItemEntity lineItem1 = new LineItemEntity();
-            lineItem1.setDescription("Test Line Item 1");
             lineItem1.setAmount(1000L);
             lineItem1.setDateTime(randomOffsetDateTime().toEpochSecond());
             lineItem1.setNote("Additional charge 1");
 
             LineItemEntity lineItem2 = new LineItemEntity();
-            lineItem2.setDescription("Test Line Item 2");
             lineItem2.setAmount(2000L);
             lineItem2.setDateTime(randomOffsetDateTime().toEpochSecond());
             lineItem2.setNote("Additional charge 2");
@@ -525,13 +525,6 @@ class UsageSummaryRepositoryTest extends BaseRepositoryTest {
             // Arrange
             UsageSummaryEntity summary = createCompleteTestSetup();
             UsageSummaryEntity saved = persistAndFlush(summary);
-            
-            // Wait a moment to ensure timestamp difference
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
 
             // Act
             saved.setDescription("Updated Description");

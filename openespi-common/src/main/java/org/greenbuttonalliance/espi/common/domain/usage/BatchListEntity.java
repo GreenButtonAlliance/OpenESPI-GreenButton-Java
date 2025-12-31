@@ -19,43 +19,48 @@
 
 package org.greenbuttonalliance.espi.common.domain.usage;
 
-import lombok.Getter;
-import lombok.Setter;
-import lombok.NoArgsConstructor;
-
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.proxy.HibernateProxy;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
  * Pure JPA/Hibernate entity for BatchList without JAXB concerns.
- * 
+ *
  * List of resource URIs that can be used to GET ESPI resources.
  * This entity supports batch operations by collecting multiple resource
  * URIs that can be processed together for efficient data retrieval
  * and manipulation operations.
+ *
+ * Note: BatchList does NOT extend IdentifiedObject per ESPI 4.0 specification.
+ * It is not a top-level resource with selfLink/upLink/relatedLinks.
  */
 @Entity
 @Table(name = "batch_lists", indexes = {
-    @Index(name = "idx_batch_list_created", columnList = "created"),
     @Index(name = "idx_batch_list_resource_count", columnList = "resource_count")
 })
 @Getter
 @Setter
 @NoArgsConstructor
-public class BatchListEntity extends IdentifiedObject {
+public class BatchListEntity {
 
     private static final long serialVersionUID = 1L;
+
+    /**
+     * Primary key identifier.
+     */
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", nullable = false)
+    private UUID id;
 
     /**
      * List of resource URIs for batch processing.
@@ -84,37 +89,11 @@ public class BatchListEntity extends IdentifiedObject {
 
 
     /**
-     * Constructor with description.
-     * 
-     * @param description the description of this batch list
-     */
-    public BatchListEntity(String description) {
-        super();
-        setDescription(description);
-    }
-
-    /**
      * Constructor with initial resources.
-     * 
+     *
      * @param resources the initial list of resource URIs
      */
     public BatchListEntity(List<String> resources) {
-        super();
-        if (resources != null) {
-            this.resources = new ArrayList<>(resources);
-            updateResourceCount();
-        }
-    }
-
-    /**
-     * Constructor with resources and description.
-     * 
-     * @param resources the initial list of resource URIs
-     * @param description the description of this batch list
-     */
-    public BatchListEntity(List<String> resources, String description) {
-        super();
-        setDescription(description);
         if (resources != null) {
             this.resources = new ArrayList<>(resources);
             updateResourceCount();
@@ -303,7 +282,7 @@ public class BatchListEntity extends IdentifiedObject {
         int originalSize = resources.size();
         List<String> uniqueResources = resources.stream()
             .distinct()
-            .collect(Collectors.toList());
+            .toList();
         
         this.resources = uniqueResources;
         updateResourceCount();
@@ -344,7 +323,7 @@ public class BatchListEntity extends IdentifiedObject {
         try {
             URI uri = new URI(uriString.trim());
             return uri.getScheme() != null; // Basic validation - has scheme
-        } catch (URISyntaxException e) {
+        } catch (URISyntaxException _) {
             return false;
         }
     }
@@ -363,7 +342,7 @@ public class BatchListEntity extends IdentifiedObject {
         String regexPattern = pattern.replace("*", ".*");
         return resources.stream()
             .filter(uri -> uri.matches(regexPattern))
-            .collect(Collectors.toList());
+            .toList();
     }
 
     /**
@@ -379,52 +358,34 @@ public class BatchListEntity extends IdentifiedObject {
         
         return resources.stream()
             .filter(uri -> uri.contains("/" + resourceType + "/"))
-            .collect(Collectors.toList());
+            .toList();
     }
 
     /**
      * Gets a summary string for this batch list.
-     * 
+     *
      * @return summary string with key information
      */
     public String getSummary() {
         StringBuilder summary = new StringBuilder();
         summary.append("Batch List ID: ").append(getId());
         summary.append(" (").append(getResourceCount()).append(" resources)");
-        
-        if (getDescription() != null && !getDescription().trim().isEmpty()) {
-            summary.append(" - ").append(getDescription());
-        }
-        
-        if (getCreated() != null) {
-            summary.append(" created at ").append(getCreated());
-        }
-        
         return summary.toString();
     }
 
     /**
      * Gets statistics about the batch list.
-     * 
+     *
      * @return statistics string
      */
     public String getStatistics() {
         StringBuilder stats = new StringBuilder();
         stats.append("Total resources: ").append(getResourceCount());
         stats.append(", Unique resources: ").append(getUniqueResources().size());
-        
+
         List<String> invalidUris = validateResourceUris();
         stats.append(", Invalid URIs: ").append(invalidUris.size());
-        
-        if (getCreated() != null && getUpdated() != null) {
-            stats.append(", Last modified: ");
-            if (getCreated().equals(getUpdated())) {
-                stats.append("never (created only)");
-            } else {
-                stats.append(getUpdated());
-            }
-        }
-        
+
         return stats.toString();
     }
 
@@ -477,8 +438,8 @@ public class BatchListEntity extends IdentifiedObject {
     public final boolean equals(Object o) {
         if (this == o) return true;
         if (o == null) return false;
-        Class<?> oEffectiveClass = o instanceof HibernateProxy ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
-        Class<?> thisEffectiveClass = this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
+        Class<?> oEffectiveClass = o instanceof HibernateProxy hibernateProxy ? hibernateProxy.getHibernateLazyInitializer().getPersistentClass() : o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy hibernateProxy ? hibernateProxy.getHibernateLazyInitializer().getPersistentClass() : this.getClass();
         if (thisEffectiveClass != oEffectiveClass) return false;
         BatchListEntity that = (BatchListEntity) o;
         return getId() != null && Objects.equals(getId(), that.getId());
@@ -486,7 +447,7 @@ public class BatchListEntity extends IdentifiedObject {
 
     @Override
     public final int hashCode() {
-        return this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
+        return this instanceof HibernateProxy hibernateProxy ? hibernateProxy.getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
     }
 
     @Override
@@ -494,9 +455,6 @@ public class BatchListEntity extends IdentifiedObject {
         return getClass().getSimpleName() + "(" +
                 "id = " + getId() + ", " +
                 "resources = " + resources + ", " +
-                "resourceCount = " + resourceCount + ", " +
-                "created = " + getCreated() + ", " +
-                "updated = " + getUpdated() + ", " +
-                "description = " + getDescription() + ")";
+                "resourceCount = " + resourceCount + ")";
     }
 }
