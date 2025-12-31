@@ -476,6 +476,16 @@ CREATE INDEX idx_customer_status ON customers (status);
 CREATE INDEX idx_customer_created ON customers (created);
 CREATE INDEX idx_customer_updated ON customers (updated);
 
+-- Related Links Table for Customers
+CREATE TABLE customer_related_links
+(
+    customer_id   CHAR(36) NOT NULL,
+    related_links VARCHAR(1024),
+    FOREIGN KEY (customer_id) REFERENCES customers (id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_customer_related_links ON customer_related_links (customer_id);
+
 -- Customer Agreement Table
 CREATE TABLE customer_agreements
 (
@@ -586,6 +596,16 @@ CREATE INDEX idx_customer_account_customer_id ON customer_accounts (customer_id)
 CREATE INDEX idx_customer_account_created ON customer_accounts (created);
 CREATE INDEX idx_customer_account_updated ON customer_accounts (updated);
 
+-- Related Links Table for Customer Accounts
+CREATE TABLE customer_account_related_links
+(
+    customer_account_id CHAR(36) NOT NULL,
+    related_links       VARCHAR(1024),
+    FOREIGN KEY (customer_account_id) REFERENCES customer_accounts (id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_customer_account_related_links ON customer_account_related_links (customer_account_id);
+
 -- Customer Account Notifications Table
 CREATE TABLE customer_account_notifications
 (
@@ -645,6 +665,15 @@ CREATE INDEX idx_epqs_summary_interval_start ON electric_power_quality_summaries
 CREATE INDEX idx_epqs_created ON electric_power_quality_summaries (created);
 CREATE INDEX idx_epqs_updated ON electric_power_quality_summaries (updated);
 
+-- Related Links Table for Electric Power Quality Summaries
+CREATE TABLE electric_power_quality_summary_related_links
+(
+    electric_power_quality_summary_id CHAR(36) NOT NULL,
+    related_links                     VARCHAR(1024),
+    FOREIGN KEY (electric_power_quality_summary_id) REFERENCES electric_power_quality_summaries (id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_epqs_related_links ON electric_power_quality_summary_related_links (electric_power_quality_summary_id);
 
 -- End Device Table
 CREATE TABLE end_devices
@@ -762,6 +791,16 @@ CREATE TABLE meters
 );
 
 CREATE INDEX idx_meters_form_number ON meters (form_number);
+
+-- Related Links Table for Meters
+CREATE TABLE meter_related_links
+(
+    meter_id      CHAR(36) NOT NULL,
+    related_links VARCHAR(1024),
+    FOREIGN KEY (meter_id) REFERENCES meters (id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_meter_related_links ON meter_related_links (meter_id);
 
 -- Phone Number Table
 CREATE TABLE phone_numbers
