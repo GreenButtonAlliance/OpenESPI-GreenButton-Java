@@ -20,15 +20,17 @@
 package org.greenbuttonalliance.espi.common.domain.usage;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.greenbuttonalliance.espi.common.domain.common.DateTimeInterval;
-import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.proxy.HibernateProxy;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Pure JPA/Hibernate entity for IntervalReading without JAXB concerns.
@@ -36,15 +38,24 @@ import java.util.Objects;
  * Represents a specific value measured by a meter or other asset.
  * Each reading is associated with a specific ReadingType and contains
  * cost, value, consumption tier, time-of-use, and critical peak pricing information.
+ *
+ * Note: IntervalReading does NOT extend IdentifiedObject per ESPI 4.0 specification.
+ * It is not a top-level resource with selfLink/upLink/relatedLinks.
  */
 @Entity
 @Table(name = "interval_readings")
 @Getter
 @Setter
 @NoArgsConstructor
-public class IntervalReadingEntity extends IdentifiedObject {
+public class IntervalReadingEntity {
 
-    private static final long serialVersionUID = 1L;
+    /**
+     * Primary key identifier.
+     */
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", nullable = false)
+    private UUID id;
 
     /**
      * Cost associated with this interval reading.
@@ -86,10 +97,8 @@ public class IntervalReadingEntity extends IdentifiedObject {
      * Embedded value object containing start time and duration.
      */
     @Embedded
-    @AttributeOverrides({
-        @AttributeOverride(name = "start", column = @Column(name = "time_period_start")),
-        @AttributeOverride(name = "duration", column = @Column(name = "time_period_duration"))
-    })
+    @AttributeOverride(name = "start", column = @Column(name = "time_period_start"))
+    @AttributeOverride(name = "duration", column = @Column(name = "time_period_duration"))
     private DateTimeInterval timePeriod;
 
     /**
@@ -301,8 +310,10 @@ public class IntervalReadingEntity extends IdentifiedObject {
     public final boolean equals(Object o) {
         if (this == o) return true;
         if (o == null) return false;
-        Class<?> oEffectiveClass = o instanceof HibernateProxy ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
-        Class<?> thisEffectiveClass = this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
+        Class<?> oEffectiveClass = o instanceof HibernateProxy hibernateProxy ?
+            hibernateProxy.getHibernateLazyInitializer().getPersistentClass() : o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy hibernateProxy ?
+            hibernateProxy.getHibernateLazyInitializer().getPersistentClass() : this.getClass();
         if (thisEffectiveClass != oEffectiveClass) return false;
         IntervalReadingEntity that = (IntervalReadingEntity) o;
         return getId() != null && Objects.equals(getId(), that.getId());
@@ -310,7 +321,8 @@ public class IntervalReadingEntity extends IdentifiedObject {
 
     @Override
     public final int hashCode() {
-        return this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
+        return this instanceof HibernateProxy hibernateProxy ?
+            hibernateProxy.getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
     }
 
     @Override
@@ -322,10 +334,6 @@ public class IntervalReadingEntity extends IdentifiedObject {
                 "consumptionTier = " + getConsumptionTier() + ", " +
                 "tou = " + getTou() + ", " +
                 "cpp = " + getCpp() + ", " +
-                "timePeriod = " + getTimePeriod() + ", " +
-                "description = " + getDescription() + ", " +
-                "created = " + getCreated() + ", " +
-                "updated = " + getUpdated() + ", " +
-                "published = " + getPublished() + ")";
+                "timePeriod = " + getTimePeriod() + ")";
     }
 }
