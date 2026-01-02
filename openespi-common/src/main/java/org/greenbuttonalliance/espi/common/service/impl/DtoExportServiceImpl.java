@@ -19,9 +19,7 @@
 
 package org.greenbuttonalliance.espi.common.service.impl;
 
-import jakarta.xml.bind.JAXBContext;
-import jakarta.xml.bind.JAXBException;
-import jakarta.xml.bind.Marshaller;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
@@ -32,13 +30,23 @@ import org.greenbuttonalliance.espi.common.mapper.usage.UsagePointMapper;
 import org.greenbuttonalliance.espi.common.repositories.usage.UsagePointRepository;
 import org.greenbuttonalliance.espi.common.service.DtoExportService;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.AnnotationIntrospector;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.cfg.DatatypeFeature;
+import tools.jackson.databind.cfg.DateTimeFeature;
+import tools.jackson.databind.introspect.JacksonAnnotationIntrospector;
+import tools.jackson.databind.util.StdDateFormat;
+import tools.jackson.dataformat.xml.XmlAnnotationIntrospector;
+import tools.jackson.dataformat.xml.XmlMapper;
+import tools.jackson.dataformat.xml.XmlWriteFeature;
+import tools.jackson.module.jakarta.xmlbind.JakartaXmlBindAnnotationIntrospector;
+import tools.jackson.module.jakarta.xmlbind.JakartaXmlBindAnnotationModule;
 
+import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Modern DTO-based export service implementation using JAXB marshalling.
@@ -50,6 +58,11 @@ public class DtoExportServiceImpl implements DtoExportService {
 
     private final UsagePointRepository usagePointRepository;
     private final UsagePointMapper usagePointMapper;
+
+    private final String XML_HEADER = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <?xml-stylesheet type="text/xsl" href="GreenButtonDataStyleSheet.xslt"?>
+            """;
 
     @Override
     public void exportUsagePointEntry(UUID usagePointId, OutputStream stream) {
@@ -112,26 +125,50 @@ public class DtoExportServiceImpl implements DtoExportService {
 
     @Override
     public void exportDto(Object dto, OutputStream stream) {
+
+        // Create JAXB context for DTO classes
+        final XmlMapper xmlMapper = createXmlMapper();
+
+        xmlMapper.writeValue(stream, dto);
+
+        log.info("Successfully exported DTO of type: " + dto.getClass().getSimpleName());
+    }
+
+    @Override
+    public void exportAtomFeed(AtomFeedDto atomFeedDto, OutputStream stream) {
+
         try {
-            // Create JAXB context for DTO classes
-            JAXBContext context = JAXBContext.newInstance(
-                "org.greenbuttonalliance.espi.common.dto.atom:" +
-                "org.greenbuttonalliance.espi.common.dto.usage:" +
-                "org.greenbuttonalliance.espi.common.dto.customer"
-            );
-            
-            Marshaller marshaller = context.createMarshaller();
-            marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
-            marshaller.setProperty(Marshaller.JAXB_ENCODING, "UTF-8");
-            
-            // Marshal DTO to stream
-            marshaller.marshal(dto, stream);
-            
-            log.info("Successfully exported DTO of type: " + dto.getClass().getSimpleName());
-            
-        } catch (JAXBException e) {
-            log.error("Failed to export DTO: " + e.getMessage(), e);
+            stream.write(XML_HEADER.getBytes(StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
+
+        // Create JAXB context for DTO classes
+        final XmlMapper xmlMapper = createXmlMapper();
+
+        xmlMapper.writeValue(stream, atomFeedDto);
+
+        log.info("Successfully exported DTO of type: " + atomFeedDto.getClass().getSimpleName());
+    }
+
+    private XmlMapper createXmlMapper() {
+        AnnotationIntrospector intr = XmlAnnotationIntrospector.Pair.instance
+                (new JakartaXmlBindAnnotationIntrospector(),
+                        new JacksonAnnotationIntrospector());
+
+        // Create JAXB context for DTO classes
+        //2012-10-24T00:00:00Z
+        return XmlMapper.xmlBuilder()
+               // .configure(XmlWriteFeature.WRITE_XML_DECLARATION, true)
+                .annotationIntrospector(intr)
+                .addModule(new JakartaXmlBindAnnotationModule().setNonNillableInclusion(JsonInclude.Include.NON_EMPTY))
+                .enable(SerializationFeature.INDENT_OUTPUT)
+                .enable(DateTimeFeature.WRITE_DATES_WITH_ZONE_ID)
+                //.enable(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS)
+                //.enable(SerializationFeature.WRITE_DATES_AS_TIMESTAMP)
+                .disable(XmlWriteFeature.WRITE_NULLS_AS_XSI_NIL)
+                .defaultDateFormat(new StdDateFormat())
+                .build();
     }
 
     @Override

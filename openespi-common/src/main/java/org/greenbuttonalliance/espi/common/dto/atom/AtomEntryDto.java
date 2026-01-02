@@ -19,13 +19,22 @@
 
 package org.greenbuttonalliance.espi.common.dto.atom;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import jakarta.xml.bind.annotation.*;
+import org.greenbuttonalliance.espi.common.dto.usage.MeterReadingDto;
+import org.greenbuttonalliance.espi.common.dto.usage.ReadingTypeDto;
+import org.greenbuttonalliance.espi.common.dto.usage.UsagePointDto;
+
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 /**
  * Atom Entry DTO record for individual entries in Atom feeds.
- * 
+ * <p>
  * Represents an individual entry within an Atom feed containing Green Button data.
  * Used to wrap individual resources (usage points, customers, etc.) in Atom format.
  */
@@ -41,7 +50,7 @@ public record AtomEntryDto(
     
     @XmlElement(name = "title", namespace = "http://www.w3.org/2005/Atom")
     String title,
-    
+
     @XmlElement(name = "published", namespace = "http://www.w3.org/2005/Atom")
     OffsetDateTime published,
     
@@ -50,9 +59,18 @@ public record AtomEntryDto(
     
     @XmlElement(name = "link", namespace = "http://www.w3.org/2005/Atom")
     List<LinkDto> links,
-    
+
+    @JsonTypeInfo(use = JsonTypeInfo.Id.NAME,
+            include = JsonTypeInfo.As.WRAPPER_OBJECT,
+            property = "type")
+    @JsonSubTypes({
+            @JsonSubTypes.Type(value = UsagePointDto.class, name = "espi:UsagePoint"),
+            @JsonSubTypes.Type(value = MeterReadingDto.class, name = "espi:MeterReading"),
+            @JsonSubTypes.Type(value = ReadingTypeDto.class, name = "espi:ReadingType")
+    })
+    @XmlAnyElement(lax = true)
     @XmlElement(name = "content", namespace = "http://www.w3.org/2005/Atom")
-    AtomContentDto content
+    Object content
 ) {
     
     /**
@@ -66,7 +84,12 @@ public record AtomEntryDto(
      * Constructor for basic entry data.
      */
     public AtomEntryDto(String id, String title, Object resource) {
-        this(id, title, OffsetDateTime.now(), OffsetDateTime.now(), null, 
+
+        //get date in UTC and truncate to seconds for proper ESPI date format
+        LocalDateTime localDateTime = LocalDateTime.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS);
+        OffsetDateTime now = localDateTime.atOffset(ZoneOffset.UTC).toZonedDateTime().toOffsetDateTime();
+
+        this(id, title, now, now, null,
              new AtomContentDto("application/xml", resource));
     }
     
@@ -100,6 +123,6 @@ public record AtomEntryDto(
      * @return resource content or null if not available
      */
     public Object getResource() {
-        return content != null ? content.resource() : null;
+        return content; // != null ? content.resource() : null;
     }
 }

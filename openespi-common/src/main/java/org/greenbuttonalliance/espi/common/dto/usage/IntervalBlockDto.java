@@ -39,8 +39,9 @@ public record IntervalBlockDto(
     
     @XmlTransient
     Long id,
-    
-    @XmlAttribute(name = "mRID")
+
+    @XmlTransient
+    //@XmlAttribute(name = "mRID")
     String uuid,
     
     @XmlElement(name = "published")
@@ -66,7 +67,7 @@ public record IntervalBlockDto(
     DateTimeIntervalDto interval,
     
     @XmlElement(name = "IntervalReading")
-    @XmlElementWrapper(name = "IntervalReadings")
+   // @XmlElementWrapper(name = "IntervalReadings")
     List<IntervalReadingDto> intervalReadings
 ) {
     

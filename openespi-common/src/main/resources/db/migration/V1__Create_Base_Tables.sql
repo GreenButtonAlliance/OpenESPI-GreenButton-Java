@@ -389,8 +389,8 @@ CREATE TABLE batch_lists
 (
     id             CHAR(36) PRIMARY KEY ,
     description    VARCHAR(255),
-    created        TIMESTAMP NOT NULL,
-    updated        TIMESTAMP NOT NULL,
+    created        TIMESTAMP,
+    updated        TIMESTAMP,
     published      TIMESTAMP,
     up_link_rel    VARCHAR(255),
     up_link_href   VARCHAR(1024),

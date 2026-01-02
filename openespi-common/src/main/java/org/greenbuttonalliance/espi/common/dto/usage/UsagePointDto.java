@@ -19,12 +19,15 @@
 
 package org.greenbuttonalliance.espi.common.dto.usage;
 
+import com.fasterxml.jackson.annotation.JsonRootName;
 import org.greenbuttonalliance.espi.common.domain.common.ServiceCategory;
 import org.greenbuttonalliance.espi.common.dto.SummaryMeasurementDto;
 
 import jakarta.xml.bind.annotation.*;
 import jakarta.xml.bind.annotation.adapters.HexBinaryAdapter;
 import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
+import tools.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import tools.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 
 /**
  * UsagePoint DTO record for JAXB XML marshalling/unmarshalling.
@@ -41,7 +44,9 @@ import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
     "pnodeRefs", "aggregatedNodeRefs"
 })
 public class UsagePointDto {
-    
+
+    private String schema ="http://naesb.org/espi";
+
     private String uuid;
     private String description;
     private byte[] roleFlags;
@@ -73,7 +78,7 @@ public class UsagePointDto {
     public byte[] getRoleFlags() {
         return roleFlags;
     }
-    
+
     @XmlElement(name = "ServiceCategory")
     public ServiceCategory getServiceCategory() {
         return serviceCategory;
@@ -151,7 +156,16 @@ public class UsagePointDto {
     public Object getElectricPowerQualitySummaries() {
         return electricPowerQualitySummaries;
     }
-    
+
+    @XmlAttribute(name = "xmlns:espi")
+    public String getSchema() {
+        return schema;
+    }
+
+    public void setSchema(String schema) {
+        this.schema = schema;
+    }
+
     // Setters for JAXB unmarshalling
     public void setUuid(String uuid) {
         this.uuid = uuid;

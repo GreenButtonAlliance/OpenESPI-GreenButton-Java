@@ -14,34 +14,6 @@ jobs:
   build-and-test:
     name: Build and Test All Modules
     runs-on: ubuntu-latest
-
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: test_db
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=3
-
-      postgres:
-        image: postgres:18
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: test_db
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd=pg_isready
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=3
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -75,13 +47,9 @@ jobs:
 
       - name: Run tests - openespi-common
         run: mvn test -pl openespi-common -am
-        env:
-          SPRING_PROFILES_ACTIVE: test
 
       - name: Run tests - openespi-datacustodian
         run: mvn test -pl openespi-datacustodian -am
-        env:
-          SPRING_PROFILES_ACTIVE: test
 
       # TODO: Enable when authserver implementation is complete
       # - name: Run tests - openespi-authserver
@@ -91,13 +59,9 @@ jobs:
 
       - name: Run tests - openespi-thirdparty
         run: mvn test -pl openespi-thirdparty -am
-        env:
-          SPRING_PROFILES_ACTIVE: test
 
       - name: Run integration tests with TestContainers
         run: mvn verify -Pintegration-tests -pl openespi-common,openespi-datacustodian,openespi-thirdparty
-        env:
-          SPRING_PROFILES_ACTIVE: testcontainers
 
       # JaCoCo reports are automatically generated during test phase (configured in root pom.xml)
 

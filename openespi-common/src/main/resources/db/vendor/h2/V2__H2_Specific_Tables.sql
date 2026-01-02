@@ -33,7 +33,7 @@
 -- Time Configuration Table (H2 with BINARY columns)
 CREATE TABLE time_configurations
 (
-    id              UUID PRIMARY KEY ,
+    id              CHAR(36) PRIMARY KEY ,
     description     VARCHAR(255),
     created         TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     updated         TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
@@ -46,9 +46,9 @@ CREATE TABLE time_configurations
     self_link_type  VARCHAR(255),
 
     -- Time configuration specific fields
-    dst_end_rule    BINARY,
+    dst_end_rule    BINARY VARYING(255),
     dst_offset      BIGINT,
-    dst_start_rule  BINARY,
+    dst_start_rule  BINARY VARYING(255),
     tz_offset       BIGINT
 );
 
@@ -59,7 +59,7 @@ CREATE INDEX idx_time_config_updated ON time_configurations (updated);
 -- Related Links Table for Time Configurations
 CREATE TABLE time_configuration_related_links
 (
-    time_configuration_id UUID NOT NULL,
+    time_configuration_id CHAR(36) NOT NULL,
     related_links         VARCHAR(1024),
     FOREIGN KEY (time_configuration_id) REFERENCES time_configurations (id) ON DELETE CASCADE
 );
@@ -70,7 +70,7 @@ CREATE INDEX idx_time_config_related_links ON time_configuration_related_links (
 -- Usage Point Table (H2 with BINARY column)
 CREATE TABLE usage_points
 (
-    id                        UUID PRIMARY KEY ,
+    id                        CHAR(36) PRIMARY KEY ,
     description               VARCHAR(255),
     created                   TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     updated                   TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
@@ -84,16 +84,45 @@ CREATE TABLE usage_points
 
     -- Usage point specific fields
     kind                      VARCHAR(50),
-    status                    VARCHAR(50),
+    status                    smallint,
+    uri                       VARCHAR(1024),
     service_category          VARCHAR(50),
     service_delivery_remark   VARCHAR(255),
-    role_flags                BINARY,
+    role_flags                VARBINARY(255),
+
+    -- Embedded SummaryMeasurement: estimatedLoad
+    estimated_load_multiplier                                          VARCHAR(255),
+    estimated_load_timestamp                                           BIGINT,
+    estimated_load_uom                                                 VARCHAR(50),
+    estimated_load_value                                               BIGINT,
+    estimated_load_reading_type_ref                                    VARCHAR(512),
+
+    -- Embedded SummaryMeasurement: nominalServiceVoltage
+    nominal_voltage_multiplier                                         VARCHAR(255),
+    nominal_voltage_timestamp                                          BIGINT,
+    nominal_voltage_uom                                                VARCHAR(50),
+    nominal_voltage_value                                              BIGINT,
+    nominal_voltage_reading_type_ref                                   VARCHAR(512),
+
+    -- Embedded SummaryMeasurement: ratedCurrent
+    rated_current_multiplier                                           VARCHAR(255),
+    rated_current_timestamp                                            BIGINT,
+    rated_current_uom                                                  VARCHAR(50),
+    rated_current_value                                                BIGINT,
+    rated_current_reading_type_ref                                     VARCHAR(512),
+
+    -- Embedded SummaryMeasurement: ratedPower
+    rated_power_multiplier                                             VARCHAR(255),
+    rated_power_timestamp                                              BIGINT,
+    rated_power_uom                                                    VARCHAR(50),
+    rated_power_value                                                  BIGINT,
+    rated_power_reading_type_ref                                       VARCHAR(512),
 
     -- Foreign key relationships
-    retail_customer_id        UUID,
-    service_delivery_point_id UUID,
-    local_time_parameters_id  UUID,
-    subscription_id           UUID,
+    retail_customer_id        CHAR(36),
+    service_delivery_point_id CHAR(36),
+    local_time_parameters_id  CHAR(36),
+    subscription_id           CHAR(36),
 
     FOREIGN KEY (retail_customer_id) REFERENCES retail_customers (id) ON DELETE CASCADE,
     FOREIGN KEY (service_delivery_point_id) REFERENCES service_delivery_points (id) ON DELETE SET NULL,
@@ -112,7 +141,7 @@ CREATE INDEX idx_usage_point_updated ON usage_points (updated);
 -- Related Links Table for Usage Points
 CREATE TABLE usage_point_related_links
 (
-    usage_point_id UUID NOT NULL,
+    usage_point_id CHAR(36) NOT NULL,
     related_links  VARCHAR(1024),
     FOREIGN KEY (usage_point_id) REFERENCES usage_points (id) ON DELETE CASCADE
 );

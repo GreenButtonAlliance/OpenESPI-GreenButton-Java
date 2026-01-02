@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Integration test for the OpenESPI Data Custodian Spring Boot application with PostgreSQL Test Container.
- *
+ * <p>
  * This test verifies that the application context loads successfully with a real PostgreSQL database
  * running in a Docker container, and that Flyway migrations execute correctly with the new
  * vendor-specific migration structure.
@@ -49,13 +49,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ActiveProfiles("test-postgres")
 @Testcontainers
 @DisplayName("PostgreSQL Test Container Integration Tests")
-@Disabled("Temporarily disabled due to Issue #53: PostgreSQL UUID CHAR(36) type mismatch. " +
-          "JPA entities use @GeneratedValue(strategy = GenerationType.UUID) expecting native UUID type, " +
-          "but Flyway migrations use CHAR(36) for MySQL/H2 compatibility. " +
-          "Configuration issues (Issue #55) have been resolved - Flyway paths and PostgreSQL version are correct. " +
-          "This test will be re-enabled after MULTI_PHASE schema compliance plan completes and UUID conversion is implemented. " +
-          "See: https://github.com/GreenButtonAlliance/OpenESPI-GreenButton-Java/issues/53 " +
-          "and https://github.com/GreenButtonAlliance/OpenESPI-GreenButton-Java/issues/55")
 class DataCustodianApplicationPostgresTest {
 
     @Container

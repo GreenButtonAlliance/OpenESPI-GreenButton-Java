@@ -19,21 +19,41 @@
 
 package org.greenbuttonalliance.espi.common.dto.atom;
 
+import com.fasterxml.jackson.annotation.*;
 import jakarta.xml.bind.annotation.*;
+import org.greenbuttonalliance.espi.common.dto.usage.MeterReadingDto;
+import org.greenbuttonalliance.espi.common.dto.usage.ReadingTypeDto;
+import org.greenbuttonalliance.espi.common.dto.usage.UsagePointDto;
+import tools.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 
 /**
  * Atom Content DTO record for content within Atom entries.
  * 
  * Represents the content section of an Atom entry containing the actual
  * Green Button resource data (Customer, UsagePoint, MeterReading, etc.).
+ *
+ * @deprecated AtomContentDto no longer used. Payload moved to AtomEntryDto
  */
+@Deprecated
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "AtomContent", namespace = "http://www.w3.org/2005/Atom")
 public record AtomContentDto(
     
     @XmlAttribute(name = "type")
     String type,
-    
+
+    @JsonProperty("resource")
+    @JacksonXmlProperty(namespace = "http://naesb.org/espi")
+
+    @XmlElementWrapper(name = "resource", namespace = "http://naesb.org/espi")
+    @JsonTypeInfo(use = JsonTypeInfo.Id.NAME,
+            include = JsonTypeInfo.As.WRAPPER_OBJECT,
+            property = "type")
+    @JsonSubTypes({
+            @JsonSubTypes.Type(value = UsagePointDto.class, name = "UsagePoint"),
+            @JsonSubTypes.Type(value = MeterReadingDto.class, name = "MeterReading"),
+            @JsonSubTypes.Type(value = ReadingTypeDto.class, name = "ReadingType")
+    })
     @XmlAnyElement(lax = true)
     Object resource
 ) {
