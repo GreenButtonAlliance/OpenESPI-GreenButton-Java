@@ -27,9 +27,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -52,8 +52,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Disabled("Temporarily disabled due to Issue #53: PostgreSQL UUID CHAR(36) type mismatch. " +
           "JPA entities use @GeneratedValue(strategy = GenerationType.UUID) expecting native UUID type, " +
           "but Flyway migrations use CHAR(36) for MySQL/H2 compatibility. " +
-          "This will be resolved after MULTI_PHASE schema compliance plan completes. " +
-          "See: https://github.com/GreenButtonAlliance/OpenESPI-GreenButton-Java/issues/53")
+          "Configuration issues (Issue #55) have been resolved - Flyway paths and PostgreSQL version are correct. " +
+          "This test will be re-enabled after MULTI_PHASE schema compliance plan completes and UUID conversion is implemented. " +
+          "See: https://github.com/GreenButtonAlliance/OpenESPI-GreenButton-Java/issues/53 " +
+          "and https://github.com/GreenButtonAlliance/OpenESPI-GreenButton-Java/issues/55")
 class DataCustodianApplicationPostgresTest {
 
     @Container
