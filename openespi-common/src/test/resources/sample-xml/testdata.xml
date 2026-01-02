@@ -1,0 +1,304 @@
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <id>urn:uuid:01e5ada4-476e-51d7-95e5-49a98490678c</id>
+    <link href="https://cert.greenbuttonalliance.org/certificate/5808edcc-be54-5b1a-811e-325c2675e584" type="text/xml" rel="related"/>
+    <title>Green Button Usage Feed</title>
+    <updated>2022-05-20T17:38:49Z</updated>
+    <link href="https://greenbutton.enwin.com/espi/1_1/resource/Batch/Subscription/9b22af06-ce73-33bd-8c92-dc6e2aaa4b71" type="espi-entry/Subscription" rel="self"/>
+    <entry xmlns:espi="http://naesb.org/espi">
+        <id>urn:uuid:a5b81db5-ea77-535f-ac71-bb6b4f1363e5</id>
+        <link href="https://greenbutton.enwin.com/espi/1_1/resource/Subscription/9b22af06-ce73-33bd-8c92-dc6e2aaa4b71/UsagePoint" rel="up" type="espi-feed/UsagePoint"/>
+        <link href="https://greenbutton.enwin.com/espi/1_1/resource/Subscription/9b22af06-ce73-33bd-8c92-dc6e2aaa4b71/UsagePoint/a5b81db5-ea77-535f-ac71-bb6b4f1363e5" rel="self" type="espi-entry/UsagePoint"/>
+        <link href="https://greenbutton.enwin.com/espi/1_1/resource/Subscription/9b22af06-ce73-33bd-8c92-dc6e2aaa4b71/UsagePoint/a5b81db5-ea77-535f-ac71-bb6b4f1363e5/MeterReading/618274dc-ea93-5e59-9357-81d6d8fe45e6" rel="related" type="espi-entry/MeterReading"/>
+        <link href="https://greenbutton.enwin.com/espi/1_1/resource/Subscription/9b22af06-ce73-33bd-8c92-dc6e2aaa4b71/UsagePoint/a5b81db5-ea77-535f-ac71-bb6b4f1363e5/UsageSummary/273b0c90-188d-53db-99f6-a7aad0836120" rel="related" type="espi-entry/UsageSummary"/>
+        <link href="https://greenbutton.enwin.com/espi/1_1/resource/LocalTimeParameters/100000000001" rel="related" type="espi-entry/LocalTimeParameters"/>
+        <title>UsagePoint</title>
+        <content>
+            <espi:UsagePoint>
+                <espi:ServiceCategory>
+                    <espi:kind>0</espi:kind>
+                </espi:ServiceCategory>
+                <espi:status>0</espi:status>
+            </espi:UsagePoint>
+        </content>
+        <published>2013-08-30T00:00:00Z</published>
+        <updated>2013-08-30T00:00:00Z</updated>
+    </entry>
+    <entry xmlns:espi="http://naesb.org/espi">
+        <id>urn:uuid:bbc0e37f-3f90-5a9c-870d-d27f19b6fb07</id>
+        <link href="https://greenbutton.enwin.com/espi/1_1/resource/LocalTimeParameters" rel="up" type="espi-feed/LocalTimeParameters"/>
+        <link href="https://greenbutton.enwin.com/espi/1_1/resource/LocalTimeParameters/100000000001" rel="self" type="espi-entry/LocalTimeParameters"/>
+        <link href="https://greenbutton.enwin.com/espi/1_1/resource/Subscription/9b22af06-ce73-33bd-8c92-dc6e2aaa4b71/UsagePoint/a5b81db5-ea77-535f-ac71-bb6b4f1363e5" rel="related" type="espi-entry/UsagePoint"/>
+        <title>EST</title>
+        <content>
+            <espi:LocalTimeParameters>
+                <espi:dstEndRule>30</espi:dstEndRule>
+                <espi:dstOffset>3600</espi:dstOffset>
+                <espi:dstStartRule>30</espi:dstStartRule>
+                <espi:tzOffset>-18000</espi:tzOffset>
+            </espi:LocalTimeParameters>
+        </content>
+        <published>2021-04-20T19:34:18Z</published>
+        <updated>2021-04-20T19:34:18Z</updated>
+    </entry>
+    <entry xmlns:espi="http://naesb.org/espi">
+        <id>urn:uuid:618274dc-ea93-5e59-9357-81d6d8fe45e6</id>
+        <link href="https://greenbutton.enwin.com/espi/1_1/resource/Subscription/9b22af06-ce73-33bd-8c92-dc6e2aaa4b71/UsagePoint/a5b81db5-ea77-535f-ac71-bb6b4f1363e5/MeterReading" rel="up" type="espi-feed/MeterReading"/>
+        <link href="https://greenbutton.enwin.com/espi/1_1/resource/Subscription/9b22af06-ce73-33bd-8c92-dc6e2aaa4b71/UsagePoint/a5b81db5-ea77-535f-ac71-bb6b4f1363e5/MeterReading/618274dc-ea93-5e59-9357-81d6d8fe45e6" rel="self" type="espi-entry/MeterReading"/>
+        <link href="https://greenbutton.enwin.com/espi/1_1/resource/Subscription/9b22af06-ce73-33bd-8c92-dc6e2aaa4b71/UsagePoint/a5b81db5-ea77-535f-ac71-bb6b4f1363e5" rel="related" type="espi-entry/UsagePoint"/>
+        <link href="https://greenbutton.enwin.com/espi/1_1/resource/Subscription/9b22af06-ce73-33bd-8c92-dc6e2aaa4b71/UsagePoint/a5b81db5-ea77-535f-ac71-bb6b4f1363e5/MeterReading/618274dc-ea93-5e59-9357-81d6d8fe45e6/IntervalBlock" rel="related" type="espi-feed/IntervalBlock"/>
+        <link href="https://greenbutton.enwin.com/espi/1_1/resource/ReadingType/100001" rel="related" type="espi-entry/ReadingType"/>
+        <title>MeterReading</title>
+        <content>
+            <espi:MeterReading/>
+        </content>
+        <published>2022-02-23T06:00:00Z</published>
+        <updated>2022-03-22T13:47:18Z</updated>
+    </entry>
+    1:55
+    <entry xmlns:espi="http://naesb.org/espi">
+        <id>urn:uuid:fa404785-1dc7-5aab-952d-14f8841df8de</id>
+        <link href="https://greenbutton.enwin.com/espi/1_1/resource/Subscription/9b22af06-ce73-33bd-8c92-dc6e2aaa4b71/UsagePoint/a5b81db5-ea77-535f-ac71-bb6b4f1363e5/MeterReading/618274dc-ea93-5e59-9357-81d6d8fe45e6/IntervalBlock" rel="up" type="espi-feed/IntervalBlock"/>
+        <link href="https://greenbutton.enwin.com/espi/1_1/resource/Subscription/9b22af06-ce73-33bd-8c92-dc6e2aaa4b71/UsagePoint/a5b81db5-ea77-535f-ac71-bb6b4f1363e5/MeterReading/618274dc-ea93-5e59-9357-81d6d8fe45e6/IntervalBlock/fa404785-1dc7-5aab-952d-14f8841df8de" rel="self" type="espi-entry/IntervalBlock"/>
+        <link href="https://cert.greenbuttonalliance.org/certificate/5808edcc-be54-5b1a-811e-325c2675e584" rel="related" type="text/xml"/>
+        <title/>
+        <content>
+            <espi:IntervalBlock>
+                <espi:interval>
+                    <espi:duration>86400</espi:duration>
+                    <espi:start>1641099600</espi:start>
+                </espi:interval>
+                <espi:IntervalReading>
+                    <espi:timePeriod>
+                        <espi:duration>86400</espi:duration>
+                        <espi:start>1641099600</espi:start>
+                    </espi:timePeriod>
+                    <espi:value>3880</espi:value>
+                </espi:IntervalReading>
+                <espi:IntervalReading>
+                    <espi:timePeriod>
+                        <espi:duration>86400</espi:duration>
+                        <espi:start>1641103200</espi:start>
+                    </espi:timePeriod>
+                    <espi:value>1480</espi:value>
+                </espi:IntervalReading>
+                <espi:IntervalReading>
+                    <espi:timePeriod>
+                        <espi:duration>86400</espi:duration>
+                        <espi:start>1641106800</espi:start>
+                    </espi:timePeriod>
+                    <espi:value>1360</espi:value>
+                </espi:IntervalReading>
+                <espi:IntervalReading>
+                    <espi:timePeriod>
+                        <espi:duration>86400</espi:duration>
+                        <espi:start>1641110400</espi:start>
+                    </espi:timePeriod>
+                    <espi:value>1300</espi:value>
+                </espi:IntervalReading>
+                <espi:IntervalReading>
+                    <espi:timePeriod>
+                        <espi:duration>86400</espi:duration>
+                        <espi:start>1641114000</espi:start>
+                    </espi:timePeriod>
+                    <espi:value>1380</espi:value>
+                </espi:IntervalReading>
+                <espi:IntervalReading>
+                    <espi:timePeriod>
+                        <espi:duration>86400</espi:duration>
+                        <espi:start>1641117600</espi:start>
+                    </espi:timePeriod>
+                    <espi:value>1250</espi:value>
+                </espi:IntervalReading>
+                <espi:IntervalReading>
+                    <espi:timePeriod>
+                        <espi:duration>86400</espi:duration>
+                        <espi:start>1641121200</espi:start>
+                    </espi:timePeriod>
+                    <espi:value>1290</espi:value>
+                </espi:IntervalReading>
+                <espi:IntervalReading>
+                    <espi:timePeriod>
+                        <espi:duration>86400</espi:duration>
+                        <espi:start>1641124800</espi:start>
+                    </espi:timePeriod>
+                    <espi:value>1200</espi:value>
+                </espi:IntervalReading>
+                <espi:IntervalReading>
+                    <espi:timePeriod>
+                        <espi:duration>86400</espi:duration>
+                        <espi:start>1641128400</espi:start>
+                    </espi:timePeriod>
+                    <espi:value>1230</espi:value>
+                </espi:IntervalReading>
+                <espi:IntervalReading>
+                    <espi:timePeriod>
+                        <espi:duration>86400</espi:duration>
+                        <espi:start>1641132000</espi:start>
+                    </espi:timePeriod>
+                    <espi:value>1120</espi:value>
+                </espi:IntervalReading>
+                <espi:IntervalReading>
+                    <espi:timePeriod>
+                        <espi:duration>86400</espi:duration>
+                        <espi:start>1641135600</espi:start>
+                    </espi:timePeriod>
+                    <espi:value>1550</espi:value>
+                </espi:IntervalReading>
+                <espi:IntervalReading>
+                    <espi:timePeriod>
+                        <espi:duration>86400</espi:duration>
+                        <espi:start>1641139200</espi:start>
+                    </espi:timePeriod>
+                    <espi:value>1760</espi:value>
+                </espi:IntervalReading>
+                <espi:IntervalReading>
+                    <espi:timePeriod>
+                        <espi:duration>86400</espi:duration>
+                        <espi:start>1641142800</espi:start>
+                    </espi:timePeriod>
+                    <espi:value>3120</espi:value>
+                </espi:IntervalReading>
+                <espi:IntervalReading>
+                    <espi:timePeriod>
+                        <espi:duration>86400</espi:duration>
+                        <espi:start>1641146400</espi:start>
+                    </espi:timePeriod>
+                    <espi:value>3020</espi:value>
+                </espi:IntervalReading>
+                <espi:IntervalReading>
+                    <espi:timePeriod>
+                        <espi:duration>86400</espi:duration>
+                        <espi:start>1641150000</espi:start>
+                    </espi:timePeriod>
+                    <espi:value>3830</espi:value>
+                </espi:IntervalReading>
+                <espi:IntervalReading>
+                    <espi:timePeriod>
+                        <espi:duration>86400</espi:duration>
+                        <espi:start>1641153600</espi:start>
+                    </espi:timePeriod>
+                    <espi:value>3170</espi:value>
+                </espi:IntervalReading>
+                <espi:IntervalReading>
+                    <espi:timePeriod>
+                        <espi:duration>86400</espi:duration>
+                        <espi:start>1641157200</espi:start>
+                    </espi:timePeriod>
+                    <espi:value>2960</espi:value>
+                </espi:IntervalReading>
+                <espi:IntervalReading>
+                    <espi:timePeriod>
+                        <espi:duration>86400</espi:duration>
+                        <espi:start>1641160800</espi:start>
+                    </espi:timePeriod>
+                    <espi:value>3030</espi:value>
+                </espi:IntervalReading>
+                <espi:IntervalReading>
+                    <espi:timePeriod>
+                        <espi:duration>86400</espi:duration>
+                        <espi:start>1641164400</espi:start>
+                    </espi:timePeriod>
+                    <espi:value>5380</espi:value>
+                </espi:IntervalReading>
+                <espi:IntervalReading>
+                    <espi:timePeriod>
+                        <espi:duration>86400</espi:duration>
+                        <espi:start>1641168000</espi:start>
+                    </espi:timePeriod>
+                    <espi:value>3190</espi:value>
+                </espi:IntervalReading>
+                <espi:IntervalReading>
+                    <espi:timePeriod>
+                        <espi:duration>86400</espi:duration>
+                        <espi:start>1641171600</espi:start>
+                    </espi:timePeriod>
+                    <espi:value>2180</espi:value>
+                </espi:IntervalReading>
+                <espi:IntervalReading>
+                    <espi:timePeriod>
+                        <espi:duration>86400</espi:duration>
+                        <espi:start>1641175200</espi:start>
+                    </espi:timePeriod>
+                    <espi:value>2500</espi:value>
+                </espi:IntervalReading>
+                <espi:IntervalReading>
+                    <espi:timePeriod>
+                        <espi:duration>86400</espi:duration>
+                        <espi:start>1641178800</espi:start>
+                    </espi:timePeriod>
+                    <espi:value>4180</espi:value>
+                </espi:IntervalReading>
+                <espi:IntervalReading>
+                    <espi:timePeriod>
+                        <espi:duration>86400</espi:duration>
+                        <espi:start>1641182400</espi:start>
+                    </espi:timePeriod>
+                    <espi:value>2200</espi:value>
+                </espi:IntervalReading>
+            </espi:IntervalBlock>
+        </content>
+        <published>2022-01-02T06:00:00Z</published>
+        <updated>2022-05-19T21:44:50Z</updated>
+    </entry>
+    <entry xmlns:espi="http://naesb.org/espi">
+        <id>urn:uuid:273b0c90-188d-53db-99f6-a7aad0836120</id>
+        <link href="https://greenbutton.enwin.com/espi/1_1/resource/Subscription/9b22af06-ce73-33bd-8c92-dc6e2aaa4b71/UsagePoint/a5b81db5-ea77-535f-ac71-bb6b4f1363e5/UsageSummary" rel="up" type="espi-feed/UsageSummary"/>
+        <link href="https://greenbutton.enwin.com/espi/1_1/resource/Subscription/9b22af06-ce73-33bd-8c92-dc6e2aaa4b71/UsagePoint/a5b81db5-ea77-535f-ac71-bb6b4f1363e5/UsageSummary/273b0c90-188d-53db-99f6-a7aad0836120" rel="self" type="espi-entry/UsageSummary"/>
+        <link href="https://cert.greenbuttonalliance.org/certificate/5808edcc-be54-5b1a-811e-325c2675e584" rel="related" type="text/xml"/>
+        <link href="https://greenbutton.enwin.com/espi/1_1/resource/Subscription/9b22af06-ce73-33bd-8c92-dc6e2aaa4b71/UsagePoint/a5b81db5-ea77-535f-ac71-bb6b4f1363e5" rel="related" type="espi-entry/UsagePoint"/>
+        <title/>
+        <content>
+            <espi:UsageSummary>
+                <espi:billingPeriod>
+                    <espi:duration>2592000</espi:duration>
+                    <espi:start>1632528000</espi:start>
+                </espi:billingPeriod>
+                <espi:billLastPeriod>9</espi:billLastPeriod>
+                <espi:billToDate>9</espi:billToDate>
+                <espi:costAdditionalLastPeriod>30</espi:costAdditionalLastPeriod>
+                <espi:currency>124</espi:currency>
+                <espi:overallConsumptionLastPeriod>
+                    <espi:powerOfTenMultiplier>3</espi:powerOfTenMultiplier>
+                    <espi:timeStamp>1652996682269</espi:timeStamp>
+                    <espi:uom>72</espi:uom>
+                    <espi:value>32004060</espi:value>
+                </espi:overallConsumptionLastPeriod>
+                <espi:currentBillingPeriodOverAllConsumption>
+                    <espi:powerOfTenMultiplier>3</espi:powerOfTenMultiplier>
+                    <espi:timeStamp>1652996682269</espi:timeStamp>
+                    <espi:uom>72</espi:uom>
+                    <espi:value>32004060</espi:value>
+                </espi:currentBillingPeriodOverAllConsumption>
+                <espi:qualityOfReading>0</espi:qualityOfReading>
+                <espi:statusTimeStamp>0</espi:statusTimeStamp>
+            </espi:UsageSummary>
+        </content>
+        <published>2021-10-25T00:00:00Z</published>
+        <updated>2021-10-25T00:00:00Z</updated>
+    </entry>
+    <entry xmlns:espi="http://naesb.org/espi">
+        <id>urn:uuid:6f8569ce-0367-5ccb-a125-3f28ce47894e</id>
+        <link href="https://greenbutton.enwin.com/espi/1_1/resource/ReadingType" rel="up" type="espi-feed/ReadingType"/>
+        <link href="https://greenbutton.enwin.com/espi/1_1/resource/ReadingType/100001" rel="self" type="espi-entry/ReadingType"/>
+        <link href="https://greenbutton.enwin.com/espi/1_1/resource/Subscription/9b22af06-ce73-33bd-8c92-dc6e2aaa4b71/UsagePoint/a5b81db5-ea77-535f-ac71-bb6b4f1363e5/MeterReading/618274dc-ea93-5e59-9357-81d6d8fe45e6" rel="related" type="espi-entry/MeterReading"/>
+        <title>WH</title>
+        <content>
+            <espi:ReadingType>
+                <espi:accumulationBehaviour>4</espi:accumulationBehaviour>
+                <espi:commodity>1</espi:commodity>
+                <espi:currency>124</espi:currency>
+                <espi:dataQualifier>12</espi:dataQualifier>
+                <espi:defaultQuality>0</espi:defaultQuality>
+                <espi:flowDirection>1</espi:flowDirection>
+                <espi:intervalLength>3600</espi:intervalLength>
+                <espi:kind>12</espi:kind>
+                <espi:phase>0</espi:phase>
+                <espi:powerOfTenMultiplier>0</espi:powerOfTenMultiplier>
+                <espi:timeAttribute>0</espi:timeAttribute>
+                <espi:uom>72</espi:uom>
+            </espi:ReadingType>
+        </content>
+        <published>2013-04-04T03:35:38Z</published>
+        <updated>2013-04-04T03:35:38Z</updated>
+    </entry>
+</feed>
