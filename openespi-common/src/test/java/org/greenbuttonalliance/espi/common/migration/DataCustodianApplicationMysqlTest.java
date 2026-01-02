@@ -44,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * running in a Docker container, and that Flyway migrations execute correctly with the new
  * vendor-specific migration structure.
  */
-@Disabled //JT - temp until flyway migration is fixed
+//@Disabled //JT - temp until flyway migration is fixed
 @SpringBootTest(classes = { TestApplication.class })
 @ActiveProfiles("test-mysql")
 @Testcontainers

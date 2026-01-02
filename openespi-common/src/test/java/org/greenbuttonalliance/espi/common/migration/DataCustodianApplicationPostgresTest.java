@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Integration test for the OpenESPI Data Custodian Spring Boot application with PostgreSQL Test Container.
- *
+ * <p>
  * This test verifies that the application context loads successfully with a real PostgreSQL database
  * running in a Docker container, and that Flyway migrations execute correctly with the new
  * vendor-specific migration structure.

@@ -3,12 +3,6 @@ spring:
     database-platform: org.hibernate.dialect.MySQLDialect
     hibernate:
       ddl-auto: none
-    properties:
-      jakarta:
-        persistence:
-          schema-generation:
-            database:
-              action: none
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
@@ -18,7 +12,8 @@ spring:
     enabled: true
     locations: classpath:db/migration,classpath:db/vendor/mysql
 
-logging:
-  level:
-    org.flywaydb: DEBUG
-    org.hibernate.SQL: DEBUG
+# JT Commenting out to reduce logging in builds
+#logging:
+#  level:
+#    org.flywaydb: DEBUG
+#    org.hibernate.SQL: DEBUG
