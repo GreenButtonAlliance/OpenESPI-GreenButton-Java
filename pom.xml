@@ -102,7 +102,6 @@
                 <module>openespi-authserver</module>
             </modules>
         </profile>
-
         <!-- Integration Tests Profile -->
         <profile>
             <id>integration-tests</id>
