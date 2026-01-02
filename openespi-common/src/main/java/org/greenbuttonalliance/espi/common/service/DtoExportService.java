@@ -29,7 +29,7 @@ import java.util.UUID;
 
 /**
  * Modern DTO-based export service using JAXB marshalling.
- * 
+ * <p>
  * Provides methods to export entities as DTOs in Green Button XML format,
  * supporting both individual resources and collections wrapped in Atom feeds.
  */
@@ -92,4 +92,6 @@ public interface DtoExportService {
      * @return Atom entry DTO
      */
     AtomEntryDto createAtomEntry(String title, Object resource);
+
+    void exportAtomFeed(AtomFeedDto atomFeedDto, OutputStream stream);
 }

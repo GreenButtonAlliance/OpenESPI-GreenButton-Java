@@ -46,8 +46,9 @@ public record ReadingTypeDto(
     
     @XmlTransient
     Long id,
-    
-    @XmlAttribute(name = "mRID")
+
+   @XmlTransient
+   // @XmlAttribute(name = "mRID")
     String uuid,
     
     @XmlElement(name = "description")

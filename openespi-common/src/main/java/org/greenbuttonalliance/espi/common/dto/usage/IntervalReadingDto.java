@@ -53,7 +53,7 @@ public record IntervalReadingDto(
     DateTimeIntervalDto timePeriod,
 
     @XmlElement(name = "ReadingQuality")
-    @XmlElementWrapper(name = "ReadingQualities")
+    //@XmlElementWrapper(name = "ReadingQualities")
     List<ReadingQualityDto> readingQualities,
 
     @XmlElement(name = "consumptionTier")
