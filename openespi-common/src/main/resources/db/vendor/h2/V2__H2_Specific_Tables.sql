@@ -46,9 +46,9 @@ CREATE TABLE time_configurations
     self_link_type  VARCHAR(255),
 
     -- Time configuration specific fields
-    dst_end_rule    VARBINARY(255),
+    dst_end_rule    BINARY VARYING(255),
     dst_offset      BIGINT,
-    dst_start_rule  VARBINARY(255),
+    dst_start_rule  BINARY VARYING(255),
     tz_offset       BIGINT
 );
 

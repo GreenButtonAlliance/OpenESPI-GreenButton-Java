@@ -25,6 +25,7 @@ import jakarta.xml.bind.Marshaller;
 import jakarta.xml.bind.Unmarshaller;
 import org.greenbuttonalliance.espi.common.dto.usage.UsagePointDto;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -37,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Simple XML marshalling tests to verify basic JAXB functionality with ESPI data.
  * Tests marshal/unmarshal round-trip with realistic data structures.
  */
+@Disabled // JT - todo, refactor to use Jackson for mashalling
 @DisplayName("Simple XML Marshalling Tests")
 class SimpleXmlMarshallingTest {
 

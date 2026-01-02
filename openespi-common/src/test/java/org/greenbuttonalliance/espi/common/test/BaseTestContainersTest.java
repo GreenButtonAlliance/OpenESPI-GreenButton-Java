@@ -65,7 +65,7 @@ public abstract class BaseTestContainersTest {
      * PostgreSQL 15 container for integration testing.
      * Reusable across tests for better performance.
      */
-    protected static final PostgreSQLContainer<?> postgresqlContainer = new PostgreSQLContainer<>("postgres:15-alpine")
+    protected static final PostgreSQLContainer<?> postgresqlContainer = new PostgreSQLContainer<>("postgres:18")
             .withDatabaseName("openespi_test")
             .withUsername("test")
             .withPassword("test")
