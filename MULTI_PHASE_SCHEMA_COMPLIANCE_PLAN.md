@@ -14,7 +14,8 @@ This plan reviews domain entities in `/domain/usage`, `/domain/customer`, and `/
 - **Jakarta EE**: 11
 - **Maven**: 3.9+
 - **MapStruct**: 1.6.3
-- **JAXB**: jakarta.xml.bind-api 4.x
+- **Jackson 3 XML**: tools.jackson.dataformat:jackson-dataformat-xml:3.0.3
+- **Jackson JAXB Module**: tools.jackson.module:jackson-module-jakarta-xmlbind-annotations:3.0.3
 - **TestContainers**: 1.20.x
 
 **Testing Framework:**
@@ -28,8 +29,11 @@ This plan reviews domain entities in `/domain/usage`, `/domain/customer`, and `/
   - `spring-boot-starter-restclient-test`
 
 **DTO Marshalling Approach:**
-- **JAXB (Jakarta XML Binding)** - Selected for all 26 phases
-- **Rationale**: Jackson 3.0 XML support is immature in Spring Boot 4.0; JAXB provides proven, stable XML schema compliance with strict XSD element sequencing
+- **Jackson 3 (jackson-dataformat-xml)** with Jakarta XML Bind annotations - Selected for all 26 phases
+- **Serialization Engine**: Jackson XmlMapper (jackson-dataformat-xml)
+- **DTO Annotations**: Jakarta XML Bind (JAXB 3.0) annotations (jakarta.xml.bind.annotation.*)
+- **Bridge Module**: jackson-module-jakarta-xmlbind-annotations (enables Jackson to process JAXB annotations)
+- **Rationale**: Combines Jackson 3's modern features and performance with JAXB's standardized annotations, leveraging Spring Boot 4's managed dependencies
 
 **IMPORTANT:** All 26 phases are implemented against the Spring Boot 4.0 + Java 25 baseline established by PR #50 (merged 2025-12-29).
 
@@ -68,12 +72,13 @@ This plan reviews domain entities in `/domain/usage`, `/domain/customer`, and `/
 1. **Entity Updates** (TimeConfigurationEntity.java):
    - Review field order against espi.xsd TimeConfiguration element sequence
    - Verify JPA annotations match schema constraints
-   - Ensure JAXB annotations align with XML element names and order
    - Update field JavaDoc to reference XSD documentation
 
 2. **DTO Updates** (TimeConfigurationDto.java):
    - Match DTO field order to espi.xsd TimeConfiguration element sequence
-   - Verify JAXB annotations for XML marshalling
+   - Verify Jakarta XML Bind annotations for XML marshalling (jakarta.xml.bind.annotation.*)
+     - `@XmlRootElement`, `@XmlElement`, `@XmlAttribute`, `@XmlType(propOrder)`
+     - Jackson will process these annotations via jackson-module-jakarta-xmlbind-annotations
    - Add XSD constraint validation annotations
 
 3. **MapStruct Mapper Updates** (TimeConfigurationMapper.java):
@@ -104,8 +109,10 @@ This plan reviews domain entities in `/domain/usage`, `/domain/customer`, and `/
      - Add `@AutoConfigureMockMvc` if using `@SpringBootTest` with web layer
    - **Integration Tests**: Add/update tests using TestContainers
      - TestContainers dependency: `org.testcontainers:testcontainers-junit-jupiter` (artifact ID changed in Spring Boot 4.0)
-   - **XML Marshalling Tests**: Create JAXB XML marshalling/unmarshalling tests
+   - **XML Marshalling Tests**: Create Jackson 3 XML marshalling/unmarshalling tests with JAXB annotations
      - Use pure JUnit 5 (no Spring Boot test dependencies required)
+     - Use Jackson XmlMapper for serialization (processes Jakarta XML Bind annotations)
+     - Ensure jackson-module-jakarta-xmlbind-annotations is available
      - Verify element sequence matches espi.xsd
      - Test round-trip serialization (marshal → unmarshal → verify equality)
    - **XSD Validation**: Validate generated XML against espi.xsd using schema validation
@@ -735,11 +742,12 @@ This plan reviews domain entities in `/domain/usage`, `/domain/customer`, and `/
 1. **Entity Updates** (ProgramDateIdMappingsEntity.java):
    - Review field order against customer.xsd ProgramDateIdMappings element sequence
    - Verify JPA annotations match schema constraints
-   - Verify JAXB annotations align with XML element names and order
 
 2. **DTO Updates** (ProgramDateIdMappingsDto.java):
    - Match DTO field order to customer.xsd ProgramDateIdMappings element sequence
-   - Verify JAXB annotations for XML marshalling
+   - Verify Jakarta XML Bind annotations for XML marshalling (jakarta.xml.bind.annotation.*)
+     - `@XmlRootElement`, `@XmlElement`, `@XmlAttribute`, `@XmlType(propOrder)`
+     - Jackson will process these annotations via jackson-module-jakarta-xmlbind-annotations
 
 3. **MapStruct Mapper Updates** (ProgramDateIdMappingsMapper.java):
    - Update Entity-to-DTO conversion mapping
@@ -1132,12 +1140,12 @@ This plan reviews domain entities in `/domain/usage`, `/domain/customer`, and `/
 This 26-phase plan ensures comprehensive schema compliance review for all NAESB ESPI 4.0 domain entities and associated classes. Each phase focuses on a single entity and includes:
 
 1. Entity field order verification against XSD schema
-2. DTO field order verification and JAXB annotations
+2. DTO field order verification with Jakarta XML Bind (JAXB 3.0) annotations
 3. Bidirectional MapStruct mapper updates (Entity-to-DTO and DTO-to-Entity)
 4. Repository query simplification (index fields only)
 5. Service method schema compliance review
 6. Flyway migration script updates (original scripts, no new scripts)
-7. Comprehensive testing including XML marshalling/unmarshalling and XSD validation
+7. Comprehensive testing including Jackson 3 XML marshalling/unmarshalling and XSD validation
 8. Git workflow (branch, commit, push, PR merge)
 
 **Processing Order**:
@@ -1165,8 +1173,11 @@ This 26-phase plan ensures comprehensive schema compliance review for all NAESB 
   - `@AutoConfigureMockMvc` annotation required when using `@SpringBootTest` with web layer
 - **Integration Tests**: TestContainers for MySQL, PostgreSQL, H2
   - Dependency: `org.testcontainers:testcontainers-junit-jupiter` (artifact ID changed from `junit-jupiter`)
-- **XML Marshalling Tests**: JAXB XML marshalling/unmarshalling tests for ALL 26 phases
+- **XML Marshalling Tests**: Jackson 3 XML marshalling/unmarshalling tests for ALL 26 phases
   - Pure JUnit 5 tests (no Spring Boot test dependencies needed)
+  - Use Jackson XmlMapper (from jackson-dataformat-xml)
+  - DTOs use Jakarta XML Bind annotations (jakarta.xml.bind.annotation.*)
+  - Requires jackson-module-jakarta-xmlbind-annotations module
   - Verify XSD element sequence compliance
   - Test round-trip serialization
 - **XSD Schema Validation**:
