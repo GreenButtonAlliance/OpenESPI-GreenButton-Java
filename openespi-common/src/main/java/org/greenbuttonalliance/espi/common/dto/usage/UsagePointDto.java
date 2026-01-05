@@ -287,36 +287,40 @@ public class UsagePointDto {
     
     /**
      * Generates the default self href for a usage point.
-     * 
+     *
      * @return default self href
      */
+    @XmlTransient
     public String generateSelfHref() {
         return uuid != null ? "/espi/1_1/resource/UsagePoint/" + uuid : null;
     }
-    
+
     /**
      * Generates the default up href for a usage point.
-     * 
+     *
      * @return default up href
      */
+    @XmlTransient
     public String generateUpHref() {
         return "/espi/1_1/resource/UsagePoint";
     }
     
     /**
      * Gets the total number of meter readings.
-     * 
+     *
      * @return meter reading count
      */
+    @XmlTransient
     public int getMeterReadingCount() {
         return 0; // Temporarily disabled for compilation
     }
-    
+
     /**
      * Gets the total number of usage summaries.
-     * 
+     *
      * @return usage summary count
      */
+    @XmlTransient
     public int getUsageSummaryCount() {
         return 0; // Temporarily disabled for compilation
     }
