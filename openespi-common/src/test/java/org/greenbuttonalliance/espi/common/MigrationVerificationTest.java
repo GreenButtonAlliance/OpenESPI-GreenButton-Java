@@ -19,6 +19,7 @@
 
 package org.greenbuttonalliance.espi.common;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
 import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerEntity;
@@ -28,15 +29,21 @@ import org.greenbuttonalliance.espi.common.dto.usage.UsagePointDto;
 import org.greenbuttonalliance.espi.common.dto.SummaryMeasurementDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
+import tools.jackson.databind.AnnotationIntrospector;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.cfg.DateTimeFeature;
+import tools.jackson.databind.introspect.JacksonAnnotationIntrospector;
+import tools.jackson.databind.util.StdDateFormat;
+import tools.jackson.dataformat.xml.XmlAnnotationIntrospector;
+import tools.jackson.dataformat.xml.XmlMapper;
+import tools.jackson.dataformat.xml.XmlWriteFeature;
+import tools.jackson.module.jakarta.xmlbind.JakartaXmlBindAnnotationIntrospector;
+import tools.jackson.module.jakarta.xmlbind.JakartaXmlBindAnnotationModule;
 
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
-import jakarta.xml.bind.JAXBContext;
-import jakarta.xml.bind.JAXBException;
-import jakarta.xml.bind.Marshaller;
 
-import java.io.StringWriter;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -63,18 +70,31 @@ class MigrationVerificationTest {
     }
 
     @Test
-    @DisplayName("Jakarta XML Binding should work for DTOs")
-    void jakartaXmlBindingShouldWork() throws JAXBException {
-        JAXBContext context = JAXBContext.newInstance(UsagePointDto.class);
-        Marshaller marshaller = context.createMarshaller();
-        
+    @DisplayName("Jackson 3 XML with JAXB annotations should work for DTOs")
+    void jackson3XmlWithJaxbAnnotationsShouldWork() throws Exception {
+        // Production code uses Jackson 3 XmlMapper with JAXB annotation support
+        AnnotationIntrospector intr = XmlAnnotationIntrospector.Pair.instance(
+            new JakartaXmlBindAnnotationIntrospector(),
+            new JacksonAnnotationIntrospector()
+        );
+
+        XmlMapper xmlMapper = XmlMapper.xmlBuilder()
+            .annotationIntrospector(intr)
+            .addModule(new JakartaXmlBindAnnotationModule()
+                .setNonNillableInclusion(JsonInclude.Include.NON_EMPTY))
+            .enable(SerializationFeature.INDENT_OUTPUT)
+            .enable(DateTimeFeature.WRITE_DATES_WITH_ZONE_ID)
+            .disable(XmlWriteFeature.WRITE_NULLS_AS_XSI_NIL)
+            .defaultDateFormat(new StdDateFormat())
+            .build();
+
         // Create a simple DTO without constructor arguments
         UsagePointDto dto = new UsagePointDto();
-        
-        StringWriter writer = new StringWriter();
-        assertDoesNotThrow(() -> marshaller.marshal(dto, writer));
-        
-        String xml = writer.toString();
+
+        // Marshal using Jackson 3
+        String xml = assertDoesNotThrow(() -> xmlMapper.writeValueAsString(dto));
+
+        // Verify XML structure
         assertTrue(xml.contains("UsagePoint"));
         assertTrue(xml.contains("http://naesb.org/espi"));
     }

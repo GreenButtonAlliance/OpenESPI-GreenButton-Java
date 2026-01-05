@@ -19,187 +19,176 @@
 
 package org.greenbuttonalliance.espi.common.dto.usage;
 
-import jakarta.xml.bind.JAXBContext;
-import jakarta.xml.bind.JAXBException;
-import jakarta.xml.bind.Marshaller;
-import jakarta.xml.bind.Unmarshaller;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.AnnotationIntrospector;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.cfg.DateTimeFeature;
+import tools.jackson.databind.introspect.JacksonAnnotationIntrospector;
+import tools.jackson.databind.util.StdDateFormat;
+import tools.jackson.dataformat.xml.XmlAnnotationIntrospector;
+import tools.jackson.dataformat.xml.XmlMapper;
+import tools.jackson.dataformat.xml.XmlWriteFeature;
+import tools.jackson.module.jakarta.xmlbind.JakartaXmlBindAnnotationIntrospector;
+import tools.jackson.module.jakarta.xmlbind.JakartaXmlBindAnnotationModule;
 
-import java.io.StringReader;
-import java.io.StringWriter;
-
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * XML marshalling/unmarshalling tests for TimeConfigurationDto.
- * Verifies JAXB functionality and ESPI 4.0 schema compliance.
+ * Verifies Jackson 3 XmlMapper processes JAXB annotations correctly for ESPI 4.0 schema compliance.
  */
 @DisplayName("TimeConfigurationDto XML Marshalling Tests")
 class TimeConfigurationDtoTest {
 
-    private JAXBContext jaxbContext;
-    private Marshaller marshaller;
-    private Unmarshaller unmarshaller;
+    private XmlMapper xmlMapper;
 
     @BeforeEach
-    void setUp() throws JAXBException {
-        // Initialize JAXB context for TimeConfiguration DTO
-        jaxbContext = JAXBContext.newInstance(TimeConfigurationDto.class);
+    void setUp() {
+        // Initialize Jackson 3 XmlMapper with JAXB annotation support
+        AnnotationIntrospector intr = XmlAnnotationIntrospector.Pair.instance(
+            new JakartaXmlBindAnnotationIntrospector(),
+            new JacksonAnnotationIntrospector()
+        );
 
-        marshaller = jaxbContext.createMarshaller();
-        marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
-        marshaller.setProperty(Marshaller.JAXB_ENCODING, "UTF-8");
-
-        unmarshaller = jaxbContext.createUnmarshaller();
+        xmlMapper = XmlMapper.xmlBuilder()
+            .annotationIntrospector(intr)
+            .addModule(new JakartaXmlBindAnnotationModule()
+                .setNonNillableInclusion(JsonInclude.Include.NON_EMPTY))
+            .enable(SerializationFeature.INDENT_OUTPUT)
+            .enable(DateTimeFeature.WRITE_DATES_WITH_ZONE_ID)
+            .disable(XmlWriteFeature.WRITE_NULLS_AS_XSI_NIL)
+            .defaultDateFormat(new StdDateFormat())
+            .build();
     }
 
     @Test
     @DisplayName("Should marshal TimeConfigurationDto with realistic timezone data")
-    void shouldMarshalTimeConfigurationWithRealisticData() {
+    void shouldMarshalTimeConfigurationWithRealisticData() throws Exception {
         // Create TimeConfigurationDto with Pacific Time (UTC-8)
         TimeConfigurationDto timeConfig = new TimeConfigurationDto(
             null, // id (transient)
-            "urn:uuid:550e8400-e29b-41d4-a716-446655440000", // uuid
+            "urn:uuid:550e8400-e29b-51d4-a716-446655440000", // uuid (Version-5)
             new byte[]{0x01, 0x0B, 0x05, 0x00, 0x02, 0x00}, // dstEndRule (Nov 1st, 2am)
             3600L, // dstOffset (1 hour in seconds)
             new byte[]{0x01, 0x03, 0x02, 0x00, 0x02, 0x00}, // dstStartRule (Mar 2nd, 2am)
             -28800L  // tzOffset (UTC-8 in seconds)
         );
 
-        // Marshal to XML
-        StringWriter writer = new StringWriter();
-        assertDoesNotThrow(() -> marshaller.marshal(timeConfig, writer));
-
-        String xml = writer.toString();
+        // Marshal to XML using Jackson 3
+        String xml = xmlMapper.writeValueAsString(timeConfig);
 
         // Verify XML structure
-        assertTrue(xml.contains("TimeConfiguration"), "XML should contain TimeConfiguration element");
-        assertTrue(xml.contains("http://naesb.org/espi"), "XML should contain ESPI namespace");
-        assertTrue(xml.contains("mRID"), "XML should contain mRID attribute");
-        assertTrue(xml.contains("550e8400-e29b-41d4-a716-446655440000"), "XML should contain UUID");
-        assertTrue(xml.contains("<espi:tzOffset>-28800</espi:tzOffset>"), "XML should contain timezone offset");
-        assertTrue(xml.contains("<espi:dstOffset>3600</espi:dstOffset>"), "XML should contain DST offset");
+        assertThat(xml).contains("TimeConfiguration");
+        assertThat(xml).contains("http://naesb.org/espi");
+        assertThat(xml).contains("mRID"); // DTO uses mRID attribute for UUID
+        assertThat(xml).contains("550e8400-e29b-51d4-a716-446655440000"); // Version-5 UUID
+        assertThat(xml).contains("<tzOffset>-28800</tzOffset>"); // Jackson 3 uses default namespace
+        assertThat(xml).contains("<dstOffset>3600</dstOffset>");
     }
 
     @Test
     @DisplayName("Should perform round-trip marshalling for TimeConfigurationDto")
-    void shouldPerformRoundTripMarshallingForTimeConfiguration() throws JAXBException {
+    void shouldPerformRoundTripMarshallingForTimeConfiguration() throws Exception {
         // Create original TimeConfiguration with Eastern Time (UTC-5)
         TimeConfigurationDto original = new TimeConfigurationDto(
             null, // id
-            "urn:uuid:commercial-time-config", // uuid
+            "urn:uuid:550e8400-e29b-51d4-a716-446655440001", // uuid (Version-5)
             new byte[]{0x01, 0x0B, 0x01, 0x00, 0x02, 0x00}, // dstEndRule
             3600L, // dstOffset
             new byte[]{0x01, 0x03, 0x08, 0x00, 0x02, 0x00}, // dstStartRule
             -18000L  // tzOffset (UTC-5)
         );
 
-        // Marshal to XML
-        StringWriter writer = new StringWriter();
-        marshaller.marshal(original, writer);
-        String xml = writer.toString();
+        // Marshal to XML using Jackson 3
+        String xml = xmlMapper.writeValueAsString(original);
 
-        // Unmarshal back from XML
-        StringReader reader = new StringReader(xml);
-        TimeConfigurationDto roundTrip = (TimeConfigurationDto) unmarshaller.unmarshal(reader);
+        // Unmarshal back from XML using Jackson 3
+        TimeConfigurationDto roundTrip = xmlMapper.readValue(xml, TimeConfigurationDto.class);
 
         // Verify data integrity survived round trip
-        assertEquals(original.getUuid(), roundTrip.getUuid(),
-                    "UUID should survive round trip");
-        assertEquals(original.getTzOffset(), roundTrip.getTzOffset(),
-                    "Timezone offset should survive round trip");
-        assertEquals(original.getDstOffset(), roundTrip.getDstOffset(),
-                    "DST offset should survive round trip");
-        assertArrayEquals(original.getDstStartRule(), roundTrip.getDstStartRule(),
-                         "DST start rule should survive round trip");
-        assertArrayEquals(original.getDstEndRule(), roundTrip.getDstEndRule(),
-                         "DST end rule should survive round trip");
+        assertThat(roundTrip.getUuid()).isEqualTo(original.getUuid());
+        assertThat(roundTrip.getTzOffset()).isEqualTo(original.getTzOffset());
+        assertThat(roundTrip.getDstOffset()).isEqualTo(original.getDstOffset());
+        assertThat(roundTrip.getDstStartRule()).isEqualTo(original.getDstStartRule());
+        assertThat(roundTrip.getDstEndRule()).isEqualTo(original.getDstEndRule());
     }
 
     @Test
     @DisplayName("Should handle TimeConfigurationDto with only timezone offset")
-    void shouldHandleTimeConfigurationWithOnlyTimezoneOffset() throws JAXBException {
+    void shouldHandleTimeConfigurationWithOnlyTimezoneOffset() throws Exception {
         // Create TimeConfiguration with only timezone offset (no DST)
         TimeConfigurationDto simple = new TimeConfigurationDto(
             null, // id
-            "urn:uuid:simple-timezone", // uuid
+            "urn:uuid:550e8400-e29b-51d4-a716-446655440002", // uuid (Version-5)
             null, // dstEndRule
             null, // dstOffset
             null, // dstStartRule
             7200L  // tzOffset (UTC+2)
         );
 
-        // Marshal to XML
-        StringWriter writer = new StringWriter();
-        assertDoesNotThrow(() -> marshaller.marshal(simple, writer));
-
-        String xml = writer.toString();
+        // Marshal to XML using Jackson 3
+        String xml = xmlMapper.writeValueAsString(simple);
 
         // Verify XML structure
-        assertTrue(xml.contains("TimeConfiguration"), "XML should contain TimeConfiguration element");
-        assertTrue(xml.contains("<espi:tzOffset>7200</espi:tzOffset>"), "XML should contain timezone offset");
-        assertFalse(xml.contains("dstOffset"), "XML should not contain DST offset element");
-        assertFalse(xml.contains("dstStartRule"), "XML should not contain DST start rule element");
-        assertFalse(xml.contains("dstEndRule"), "XML should not contain DST end rule element");
+        assertThat(xml).contains("TimeConfiguration");
+        assertThat(xml).contains("<tzOffset>7200</tzOffset>"); // Jackson 3 uses default namespace
+        assertThat(xml).doesNotContain("dstOffset");
+        assertThat(xml).doesNotContain("dstStartRule");
+        assertThat(xml).doesNotContain("dstEndRule");
 
-        // Unmarshal back
-        StringReader reader = new StringReader(xml);
-        TimeConfigurationDto roundTrip = (TimeConfigurationDto) unmarshaller.unmarshal(reader);
+        // Unmarshal back using Jackson 3
+        TimeConfigurationDto roundTrip = xmlMapper.readValue(xml, TimeConfigurationDto.class);
 
         // Verify data integrity
-        assertEquals(simple.getTzOffset(), roundTrip.getTzOffset(), "Timezone offset should survive round trip");
-        assertNull(roundTrip.getDstOffset(), "DST offset should be null");
-        assertNull(roundTrip.getDstStartRule(), "DST start rule should be null");
-        assertNull(roundTrip.getDstEndRule(), "DST end rule should be null");
+        assertThat(roundTrip.getTzOffset()).isEqualTo(simple.getTzOffset());
+        assertThat(roundTrip.getDstOffset()).isNull();
+        assertThat(roundTrip.getDstStartRule()).isNull();
+        assertThat(roundTrip.getDstEndRule()).isNull();
     }
 
     @Test
     @DisplayName("Should handle empty TimeConfigurationDto without errors")
-    void shouldHandleEmptyTimeConfigurationWithoutErrors() throws JAXBException {
+    void shouldHandleEmptyTimeConfigurationWithoutErrors() throws Exception {
         // Create empty TimeConfiguration
         TimeConfigurationDto empty = new TimeConfigurationDto();
 
-        // Marshal to XML
-        StringWriter writer = new StringWriter();
-        assertDoesNotThrow(() -> marshaller.marshal(empty, writer));
-
-        String xml = writer.toString();
+        // Marshal to XML using Jackson 3
+        String xml = xmlMapper.writeValueAsString(empty);
 
         // Should still contain basic structure
-        assertTrue(xml.contains("TimeConfiguration"), "XML should contain TimeConfiguration element");
-        assertTrue(xml.contains("http://naesb.org/espi"), "XML should contain ESPI namespace");
+        assertThat(xml).contains("TimeConfiguration");
+        assertThat(xml).contains("http://naesb.org/espi");
 
-        // Unmarshal back
-        StringReader reader = new StringReader(xml);
-        TimeConfigurationDto roundTrip = (TimeConfigurationDto) unmarshaller.unmarshal(reader);
+        // Unmarshal back using Jackson 3
+        TimeConfigurationDto roundTrip = xmlMapper.readValue(xml, TimeConfigurationDto.class);
 
         // Should not throw exceptions
-        assertNotNull(roundTrip, "Round trip should produce valid object");
+        assertThat(roundTrip).isNotNull();
     }
 
     @Test
     @DisplayName("Should include proper XML namespaces and element order")
-    void shouldIncludeProperXmlNamespacesAndElementOrder() {
+    void shouldIncludeProperXmlNamespacesAndElementOrder() throws Exception {
         // Create TimeConfiguration with all fields
         TimeConfigurationDto timeConfig = new TimeConfigurationDto(
             null,
-            "urn:uuid:test-namespaces",
+            "urn:uuid:550e8400-e29b-51d4-a716-446655440003", // uuid (Version-5)
             new byte[]{0x01}, // dstEndRule
             3600L, // dstOffset
             new byte[]{0x01}, // dstStartRule
             -28800L  // tzOffset
         );
 
-        // Marshal to XML
-        StringWriter writer = new StringWriter();
-        assertDoesNotThrow(() -> marshaller.marshal(timeConfig, writer));
-        String xml = writer.toString();
+        // Marshal to XML using Jackson 3
+        String xml = xmlMapper.writeValueAsString(timeConfig);
 
         // Verify namespace declarations
-        assertTrue(xml.contains("xmlns") && xml.contains("http://naesb.org/espi"),
-                  "XML should contain ESPI namespace declaration");
+        assertThat(xml).contains("xmlns");
+        assertThat(xml).contains("http://naesb.org/espi");
 
         // Verify element order matches XSD propOrder: dstEndRule, dstOffset, dstStartRule, tzOffset
         int dstEndRulePos = xml.indexOf("dstEndRule");
@@ -207,9 +196,9 @@ class TimeConfigurationDtoTest {
         int dstStartRulePos = xml.indexOf("dstStartRule");
         int tzOffsetPos = xml.indexOf("tzOffset");
 
-        assertTrue(dstEndRulePos < dstOffsetPos, "dstEndRule should come before dstOffset");
-        assertTrue(dstOffsetPos < dstStartRulePos, "dstOffset should come before dstStartRule");
-        assertTrue(dstStartRulePos < tzOffsetPos, "dstStartRule should come before tzOffset");
+        assertThat(dstEndRulePos).isLessThan(dstOffsetPos);
+        assertThat(dstOffsetPos).isLessThan(dstStartRulePos);
+        assertThat(dstStartRulePos).isLessThan(tzOffsetPos);
     }
 
     @Test

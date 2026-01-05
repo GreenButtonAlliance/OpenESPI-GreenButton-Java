@@ -164,12 +164,15 @@ public class TimeConfigurationDto {
     }
 
     // Utility methods
+    // TEMPORARY: @XmlTransient annotations prevent serialization with XmlAccessType.PROPERTY
+    // TODO: Remove when converting to record with XmlAccessType.FIELD (see issue #61)
 
     /**
      * Gets the timezone offset in hours.
      *
      * @return timezone offset in hours, or null if not set
      */
+    @XmlTransient
     public Double getTzOffsetInHours() {
         return tzOffset != null ? tzOffset / 3600.0 : null;
     }
@@ -179,6 +182,7 @@ public class TimeConfigurationDto {
      *
      * @return DST offset in hours, or null if not set
      */
+    @XmlTransient
     public Double getDstOffsetInHours() {
         return dstOffset != null ? dstOffset / 3600.0 : null;
     }
@@ -188,6 +192,7 @@ public class TimeConfigurationDto {
      *
      * @return total offset in seconds including DST
      */
+    @XmlTransient
     public Long getEffectiveOffset() {
         Long base = tzOffset != null ? tzOffset : 0L;
         Long dst = dstOffset != null ? dstOffset : 0L;
@@ -199,6 +204,7 @@ public class TimeConfigurationDto {
      *
      * @return total offset in hours including DST
      */
+    @XmlTransient
     public Double getEffectiveOffsetInHours() {
         return getEffectiveOffset() / 3600.0;
     }
@@ -208,6 +214,7 @@ public class TimeConfigurationDto {
      *
      * @return true if DST rules are present, false otherwise
      */
+    @XmlTransient
     public boolean hasDstRules() {
         return dstStartRule != null && dstStartRule.length > 0 &&
                dstEndRule != null && dstEndRule.length > 0;
@@ -218,6 +225,7 @@ public class TimeConfigurationDto {
      *
      * @return true if DST offset is defined and non-zero, false otherwise
      */
+    @XmlTransient
     public boolean isDstActive() {
         return dstOffset != null && dstOffset != 0;
     }
