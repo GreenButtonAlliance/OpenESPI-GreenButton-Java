@@ -113,9 +113,9 @@ class Jackson3XmlMarshallingTest {
         UsagePointDto roundTrip = xmlMapper.readValue(xml, UsagePointDto.class);
 
         // Verify data integrity survived round trip
-        assertThat(roundTrip.getDescription()).isEqualTo(original.getDescription());
-        assertThat(roundTrip.getStatus()).isEqualTo(original.getStatus());
-        assertThat(roundTrip.getRoleFlags()).isEqualTo(original.getRoleFlags());
+        assertThat(roundTrip.description()).isEqualTo(original.description());
+        assertThat(roundTrip.status()).isEqualTo(original.status());
+        assertThat(roundTrip.roleFlags()).isEqualTo(original.roleFlags());
     }
 
     @Test
@@ -165,9 +165,9 @@ class Jackson3XmlMarshallingTest {
         UsagePointDto roundTrip = xmlMapper.readValue(xml, UsagePointDto.class);
 
         // Verify nulls are preserved
-        assertThat(roundTrip.getDescription()).isNull();
-        assertThat(roundTrip.getRoleFlags()).isNull();
-        assertThat(roundTrip.getStatus()).isEqualTo(withNulls.getStatus());
+        assertThat(roundTrip.description()).isNull();
+        assertThat(roundTrip.roleFlags()).isNull();
+        assertThat(roundTrip.status()).isEqualTo(withNulls.status());
     }
 
     @Test
@@ -222,7 +222,7 @@ class Jackson3XmlMarshallingTest {
         // Unmarshal back and verify data integrity using Jackson 3
         UsagePointDto roundTrip = xmlMapper.readValue(xml, UsagePointDto.class);
 
-        assertThat(roundTrip.getDescription()).isEqualTo(usagePoint.getDescription());
+        assertThat(roundTrip.description()).isEqualTo(usagePoint.description());
     }
 
     @Test
