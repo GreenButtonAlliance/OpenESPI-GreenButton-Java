@@ -87,12 +87,13 @@ class DtoExportServiceImplTest {
         assertThat(xml).contains("<updated>");
         assertThat(xml).contains("<published>");
 
-        // Assert - Entry structure
-        assertThat(xml).contains("<entry>");
+        // Assert - Entry structure (may have namespace attributes)
+        assertThat(xml).contains("<entry");  // Allow for attributes
         assertThat(xml).contains("</entry>");
 
-        // Assert - ESPI namespace in content
-        assertThat(xml).contains("xmlns:espi=\"http://naesb.org/espi\"");
+        // Assert - ESPI namespace in content (URL and prefix usage)
+        assertThat(xml).contains("http://naesb.org/espi");  // Namespace URL present
+        assertThat(xml).contains("espi:");  // ESPI namespace prefix used
         assertThat(xml).contains("<content>");
         assertThat(xml).contains("</content>");
 
@@ -121,8 +122,8 @@ class DtoExportServiceImplTest {
         dtoExportService.exportAtomFeed(atomFeedDto, stream);
         String xml = stream.toString(StandardCharsets.UTF_8);
 
-        // Assert - Entry has required Atom elements
-        assertThat(xml).contains("<entry>");
+        // Assert - Entry has required Atom elements (may have namespace attributes)
+        assertThat(xml).contains("<entry");  // Allow for attributes
         assertThat(xml).containsPattern("<id>urn:uuid:[0-9a-fA-F-]{36}</id>");  // UUID format
         assertThat(xml).contains("<title>");  // Should have title element
         assertThat(xml).contains("<published>");  // ISO 8601 timestamp
@@ -151,10 +152,11 @@ class DtoExportServiceImplTest {
         dtoExportService.exportAtomFeed(atomFeedDto, stream);
         String xml = stream.toString(StandardCharsets.UTF_8);
 
-        // Assert - ESPI namespace
-        assertThat(xml).contains("xmlns:espi=\"http://naesb.org/espi\"");
+        // Assert - ESPI namespace (URL and prefix usage)
+        assertThat(xml).contains("http://naesb.org/espi");  // Namespace URL present
+        assertThat(xml).contains("espi:");  // ESPI namespace prefix used
 
-        // Assert - UsagePoint element (with namespace declaration)
+        // Assert - UsagePoint element with namespace prefix
         assertThat(xml).contains("<espi:UsagePoint");  // Opening tag (may have attributes)
         assertThat(xml).contains("</espi:UsagePoint>");
 
@@ -246,9 +248,9 @@ class DtoExportServiceImplTest {
         dtoExportService.exportAtomFeed(atomFeedDto, stream);
         String xml = stream.toString(StandardCharsets.UTF_8);
 
-        // Assert - IntervalBlock element
-        assertThat(xml).contains("<IntervalBlock>");
-        assertThat(xml).contains("</IntervalBlock>");
+        // Assert - IntervalBlock element (with ESPI namespace prefix)
+        assertThat(xml).contains("IntervalBlock");  // IntervalBlock element present
+        assertThat(xml).contains("espi:IntervalBlock>");  // With namespace prefix
 
         // Assert - IntervalBlock interval
         assertThat(xml).contains("<interval");

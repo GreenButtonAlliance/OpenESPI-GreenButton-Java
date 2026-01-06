@@ -19,278 +19,149 @@
 
 package org.greenbuttonalliance.espi.common.dto.usage;
 
-import com.fasterxml.jackson.annotation.JsonRootName;
 import org.greenbuttonalliance.espi.common.domain.common.ServiceCategory;
 import org.greenbuttonalliance.espi.common.dto.SummaryMeasurementDto;
 
 import jakarta.xml.bind.annotation.*;
 import jakarta.xml.bind.annotation.adapters.HexBinaryAdapter;
 import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
-import tools.jackson.dataformat.xml.annotation.JacksonXmlProperty;
-import tools.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 
 /**
  * UsagePoint DTO record for JAXB XML marshalling/unmarshalling.
- * 
+ *
  * Represents a logical point on a network at which consumption or production
  * is either physically measured (e.g., metered) or estimated (e.g., unmetered street lights).
  * Supports Atom protocol XML wrapping.
  */
 @XmlRootElement(name = "UsagePoint", namespace = "http://naesb.org/espi")
-@XmlAccessorType(XmlAccessType.PROPERTY)
+@XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "UsagePoint", namespace = "http://naesb.org/espi", propOrder = {
-    "description", "roleFlags", "serviceCategory", "status", "estimatedLoad", 
+    "description", "roleFlags", "serviceCategory", "status", "estimatedLoad",
     "nominalServiceVoltage", "ratedCurrent", "ratedPower", "serviceDeliveryPoint",
     "pnodeRefs", "aggregatedNodeRefs"
 })
-public class UsagePointDto {
+public record UsagePointDto(
 
-    private String schema ="http://naesb.org/espi";
-
-    private String uuid;
-    private String description;
-    private byte[] roleFlags;
-    private ServiceCategory serviceCategory;
-    private Short status;
-    private SummaryMeasurementDto estimatedLoad;
-    private SummaryMeasurementDto nominalServiceVoltage;
-    private SummaryMeasurementDto ratedCurrent;
-    private SummaryMeasurementDto ratedPower;
-    private ServiceDeliveryPointDto serviceDeliveryPoint;
-    private PnodeRefsDto pnodeRefs;
-    private AggregatedNodeRefsDto aggregatedNodeRefs;
-    private Object meterReadings;  // List<MeterReadingDto> - temporarily Object for compilation
-    private Object usageSummaries; // List<UsageSummaryDto> - temporarily Object for compilation  
-    private Object electricPowerQualitySummaries; // List<ElectricPowerQualitySummaryDto> - temporarily Object for compilation
-    
     @XmlTransient
-    public String getUuid() {
-        return uuid;
-    }
-    
+    String uuid,
+
     @XmlElement(name = "description")
-    public String getDescription() {
-        return description;
-    }
-    
+    String description,
+
     @XmlElement(name = "roleFlags", type = String.class)
     @XmlJavaTypeAdapter(HexBinaryAdapter.class)
-    public byte[] getRoleFlags() {
-        return roleFlags;
-    }
+    byte[] roleFlags,
 
     @XmlElement(name = "ServiceCategory")
-    public ServiceCategory getServiceCategory() {
-        return serviceCategory;
-    }
-    
+    ServiceCategory serviceCategory,
+
     @XmlElement(name = "status")
-    public Short getStatus() {
-        return status;
-    }
-    
+    Short status,
+
     /**
      * Estimated load for the usage point as SummaryMeasurement.
      */
     @XmlElement(name = "estimatedLoad")
-    public SummaryMeasurementDto getEstimatedLoad() {
-        return estimatedLoad;
-    }
-    
+    SummaryMeasurementDto estimatedLoad,
+
     /**
      * Nominal service voltage for the usage point as SummaryMeasurement.
      */
     @XmlElement(name = "nominalServiceVoltage")
-    public SummaryMeasurementDto getNominalServiceVoltage() {
-        return nominalServiceVoltage;
-    }
-    
+    SummaryMeasurementDto nominalServiceVoltage,
+
     /**
      * Rated current for the usage point as SummaryMeasurement.
      */
     @XmlElement(name = "ratedCurrent")
-    public SummaryMeasurementDto getRatedCurrent() {
-        return ratedCurrent;
-    }
-    
+    SummaryMeasurementDto ratedCurrent,
+
     /**
      * Rated power for the usage point as SummaryMeasurement.
      */
     @XmlElement(name = "ratedPower")
-    public SummaryMeasurementDto getRatedPower() {
-        return ratedPower;
-    }
-    
+    SummaryMeasurementDto ratedPower,
+
     @XmlElement(name = "ServiceDeliveryPoint")
-    public ServiceDeliveryPointDto getServiceDeliveryPoint() {
-        return serviceDeliveryPoint;
-    }
-    
+    ServiceDeliveryPointDto serviceDeliveryPoint,
+
     /**
      * Array of pricing node references.
      */
     @XmlElement(name = "pnodeRefs")
-    public PnodeRefsDto getPnodeRefs() {
-        return pnodeRefs;
-    }
-    
+    PnodeRefsDto pnodeRefs,
+
     /**
      * Array of aggregated node references.
      */
     @XmlElement(name = "aggregatedNodeRefs")
-    public AggregatedNodeRefsDto getAggregatedNodeRefs() {
-        return aggregatedNodeRefs;
-    }
-    
-    @XmlTransient
-    public Object getMeterReadings() {
-        return meterReadings;
-    }
-    
-    @XmlTransient
-    public Object getUsageSummaries() {
-        return usageSummaries;
-    }
-    
-    @XmlTransient
-    public Object getElectricPowerQualitySummaries() {
-        return electricPowerQualitySummaries;
-    }
+    AggregatedNodeRefsDto aggregatedNodeRefs,
 
-    @XmlAttribute(name = "xmlns:espi")
-    public String getSchema() {
-        return schema;
-    }
+    @XmlTransient
+    Object meterReadings,  // List<MeterReadingDto> - temporarily Object for compilation
 
-    public void setSchema(String schema) {
-        this.schema = schema;
-    }
+    @XmlTransient
+    Object usageSummaries, // List<UsageSummaryDto> - temporarily Object for compilation
 
-    // Setters for JAXB unmarshalling
-    public void setUuid(String uuid) {
-        this.uuid = uuid;
-    }
-    
-    public void setDescription(String description) {
-        this.description = description;
-    }
-    
-    public void setRoleFlags(byte[] roleFlags) {
-        this.roleFlags = roleFlags;
-    }
-    
-    public void setServiceCategory(ServiceCategory serviceCategory) {
-        this.serviceCategory = serviceCategory;
-    }
-    
-    public void setStatus(Short status) {
-        this.status = status;
-    }
-    
-    public void setEstimatedLoad(SummaryMeasurementDto estimatedLoad) {
-        this.estimatedLoad = estimatedLoad;
-    }
-    
-    public void setNominalServiceVoltage(SummaryMeasurementDto nominalServiceVoltage) {
-        this.nominalServiceVoltage = nominalServiceVoltage;
-    }
-    
-    public void setRatedCurrent(SummaryMeasurementDto ratedCurrent) {
-        this.ratedCurrent = ratedCurrent;
-    }
-    
-    public void setRatedPower(SummaryMeasurementDto ratedPower) {
-        this.ratedPower = ratedPower;
-    }
-    
-    public void setServiceDeliveryPoint(ServiceDeliveryPointDto serviceDeliveryPoint) {
-        this.serviceDeliveryPoint = serviceDeliveryPoint;
-    }
-    
-    public void setPnodeRefs(PnodeRefsDto pnodeRefs) {
-        this.pnodeRefs = pnodeRefs;
-    }
-    
-    public void setAggregatedNodeRefs(AggregatedNodeRefsDto aggregatedNodeRefs) {
-        this.aggregatedNodeRefs = aggregatedNodeRefs;
-    }
-    
-    public void setMeterReadings(Object meterReadings) {
-        this.meterReadings = meterReadings;
-    }
-    
-    public void setUsageSummaries(Object usageSummaries) {
-        this.usageSummaries = usageSummaries;
-    }
-    
-    public void setElectricPowerQualitySummaries(Object electricPowerQualitySummaries) {
-        this.electricPowerQualitySummaries = electricPowerQualitySummaries;
-    }
-    
+    @XmlTransient
+    Object electricPowerQualitySummaries // List<ElectricPowerQualitySummaryDto> - temporarily Object for compilation
+
+) {
+
     /**
      * Default constructor for JAXB.
      */
     public UsagePointDto() {
-        // Default constructor - fields will be initialized to null/default values
+        this(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
     }
-    
-    /**
-     * Full constructor.
-     */
-    public UsagePointDto(String uuid, String description, byte[] roleFlags, ServiceCategory serviceCategory, 
-                        Short status, SummaryMeasurementDto estimatedLoad, SummaryMeasurementDto nominalServiceVoltage, 
-                        SummaryMeasurementDto ratedCurrent, SummaryMeasurementDto ratedPower,
-                        ServiceDeliveryPointDto serviceDeliveryPoint, PnodeRefsDto pnodeRefs, 
-                        AggregatedNodeRefsDto aggregatedNodeRefs, Object meterReadings, 
-                        Object usageSummaries, Object electricPowerQualitySummaries) {
-        this.uuid = uuid;
-        this.description = description;
-        this.roleFlags = roleFlags;
-        this.serviceCategory = serviceCategory;
-        this.status = status;
-        this.estimatedLoad = estimatedLoad;
-        this.nominalServiceVoltage = nominalServiceVoltage;
-        this.ratedCurrent = ratedCurrent;
-        this.ratedPower = ratedPower;
-        this.serviceDeliveryPoint = serviceDeliveryPoint;
-        this.pnodeRefs = pnodeRefs;
-        this.aggregatedNodeRefs = aggregatedNodeRefs;
-        this.meterReadings = meterReadings;
-        this.usageSummaries = usageSummaries;
-        this.electricPowerQualitySummaries = electricPowerQualitySummaries;
-    }
-    
+
     /**
      * Minimal constructor for basic usage point data.
+     *
+     * @param uuid the resource identifier
+     * @param serviceCategory the service category
      */
     public UsagePointDto(String uuid, ServiceCategory serviceCategory) {
-        this.uuid = uuid;
-        this.serviceCategory = serviceCategory;
+        this(uuid, null, null, serviceCategory, null, null, null, null, null, null, null, null, null, null, null);
     }
-    
+
     /**
      * Constructor with core ESPI elements.
+     *
+     * @param uuid the resource identifier
+     * @param description human-readable description
+     * @param serviceCategory the service category
+     * @param estimatedLoad estimated load measurement
+     * @param nominalServiceVoltage nominal voltage measurement
+     * @param ratedCurrent rated current measurement
+     * @param ratedPower rated power measurement
+     * @param serviceDeliveryPoint service delivery point details
      */
-    public UsagePointDto(String uuid, String description, ServiceCategory serviceCategory, 
-                        SummaryMeasurementDto estimatedLoad, SummaryMeasurementDto nominalServiceVoltage, 
+    public UsagePointDto(String uuid, String description, ServiceCategory serviceCategory,
+                        SummaryMeasurementDto estimatedLoad, SummaryMeasurementDto nominalServiceVoltage,
                         SummaryMeasurementDto ratedCurrent, SummaryMeasurementDto ratedPower,
                         ServiceDeliveryPointDto serviceDeliveryPoint) {
-        this.uuid = uuid;
-        this.description = description;
-        this.serviceCategory = serviceCategory;
-        this.estimatedLoad = estimatedLoad;
-        this.nominalServiceVoltage = nominalServiceVoltage;
-        this.ratedCurrent = ratedCurrent;
-        this.ratedPower = ratedPower;
-        this.serviceDeliveryPoint = serviceDeliveryPoint;
+        this(uuid, description, null, serviceCategory, null, estimatedLoad, nominalServiceVoltage,
+             ratedCurrent, ratedPower, serviceDeliveryPoint, null, null, null, null, null);
     }
-    
+
+    /**
+     * Override roleFlags getter to return cloned array for defensive copying.
+     *
+     * @return cloned byte array or null
+     */
+    @Override
+    public byte[] roleFlags() {
+        return roleFlags != null ? roleFlags.clone() : null;
+    }
+
+    // Utility methods (no @XmlTransient needed with FIELD access)
+
     /**
      * Generates the default self href for a usage point.
      *
      * @return default self href
      */
-    @XmlTransient
     public String generateSelfHref() {
         return uuid != null ? "/espi/1_1/resource/UsagePoint/" + uuid : null;
     }
@@ -300,17 +171,15 @@ public class UsagePointDto {
      *
      * @return default up href
      */
-    @XmlTransient
     public String generateUpHref() {
         return "/espi/1_1/resource/UsagePoint";
     }
-    
+
     /**
      * Gets the total number of meter readings.
      *
      * @return meter reading count
      */
-    @XmlTransient
     public int getMeterReadingCount() {
         return 0; // Temporarily disabled for compilation
     }
@@ -320,7 +189,6 @@ public class UsagePointDto {
      *
      * @return usage summary count
      */
-    @XmlTransient
     public int getUsageSummaryCount() {
         return 0; // Temporarily disabled for compilation
     }

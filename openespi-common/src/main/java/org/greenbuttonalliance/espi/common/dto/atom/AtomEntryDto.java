@@ -23,9 +23,8 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import jakarta.xml.bind.annotation.*;
-import org.greenbuttonalliance.espi.common.dto.usage.MeterReadingDto;
-import org.greenbuttonalliance.espi.common.dto.usage.ReadingTypeDto;
-import org.greenbuttonalliance.espi.common.dto.usage.UsagePointDto;
+import org.greenbuttonalliance.espi.common.dto.customer.*;
+import org.greenbuttonalliance.espi.common.dto.usage.*;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -44,19 +43,19 @@ import java.util.List;
     "id", "title", "published", "updated", "links", "content"
 })
 public record AtomEntryDto(
-    
+
     @XmlElement(name = "id", namespace = "http://www.w3.org/2005/Atom")
     String id,
-    
+
     @XmlElement(name = "title", namespace = "http://www.w3.org/2005/Atom")
     String title,
 
     @XmlElement(name = "published", namespace = "http://www.w3.org/2005/Atom")
     OffsetDateTime published,
-    
+
     @XmlElement(name = "updated", namespace = "http://www.w3.org/2005/Atom")
     OffsetDateTime updated,
-    
+
     @XmlElement(name = "link", namespace = "http://www.w3.org/2005/Atom")
     List<LinkDto> links,
 
@@ -64,33 +63,73 @@ public record AtomEntryDto(
             include = JsonTypeInfo.As.WRAPPER_OBJECT,
             property = "type")
     @JsonSubTypes({
-            @JsonSubTypes.Type(value = UsagePointDto.class, name = "espi:UsagePoint"),
+            // ESPI Usage resources (espi: namespace - top-level IdentifiedObject-based)
+            @JsonSubTypes.Type(value = ApplicationInformationDto.class, name = "espi:ApplicationInformation"),
+            @JsonSubTypes.Type(value = AuthorizationDto.class, name = "espi:Authorization"),
+            @JsonSubTypes.Type(value = ElectricPowerQualitySummaryDto.class, name = "espi:ElectricPowerQualitySummary"),
+            @JsonSubTypes.Type(value = IntervalBlockDto.class, name = "espi:IntervalBlock"),
             @JsonSubTypes.Type(value = MeterReadingDto.class, name = "espi:MeterReading"),
-            @JsonSubTypes.Type(value = ReadingTypeDto.class, name = "espi:ReadingType")
+            @JsonSubTypes.Type(value = ReadingTypeDto.class, name = "espi:ReadingType"),
+            @JsonSubTypes.Type(value = TimeConfigurationDto.class, name = "espi:TimeConfiguration"),
+            @JsonSubTypes.Type(value = UsagePointDto.class, name = "espi:UsagePoint"),
+            @JsonSubTypes.Type(value = UsageSummaryDto.class, name = "espi:UsageSummary"),
+            // ESPI Customer resources (cust: namespace - top-level IdentifiedObject-based)
+            @JsonSubTypes.Type(value = CustomerDto.class, name = "cust:Customer"),
+            @JsonSubTypes.Type(value = CustomerAccountDto.class, name = "cust:CustomerAccount"),
+            @JsonSubTypes.Type(value = CustomerAgreementDto.class, name = "cust:CustomerAgreement"),
+            @JsonSubTypes.Type(value = EndDeviceDto.class, name = "cust:EndDevice"),
+            @JsonSubTypes.Type(value = MeterDto.class, name = "cust:Meter"),
+            @JsonSubTypes.Type(value = ProgramDateIdMappingsDto.class, name = "cust:ProgramDateIdMappings"),
+            // Note: TimeConfigurationDto supports BOTH espi: and cust: namespaces (same type in both schemas)
+            @JsonSubTypes.Type(value = TimeConfigurationDto.class, name = "cust:TimeConfiguration"),
+            @JsonSubTypes.Type(value = ServiceLocationDto.class, name = "cust:ServiceLocation"),
+            @JsonSubTypes.Type(value = StatementDto.class, name = "cust:Statement")
+            // TODO: Add when ServiceSupplierDto is implemented:
+            // @JsonSubTypes.Type(value = ServiceSupplierDto.class, name = "cust:ServiceSupplier")
     })
     @XmlAnyElement(lax = true)
     @XmlElement(name = "content", namespace = "http://www.w3.org/2005/Atom")
-    Object content
+    Object content,
+
+    @XmlAttribute(name = "xmlns:espi")
+    String espiNamespace,
+
+    @XmlAttribute(name = "xmlns:cust")
+    String custNamespace
 ) {
-    
+
     /**
-     * Default constructor for JAXB.
+     * Compact constructor that auto-computes namespace attributes based on content type.
      */
-    public AtomEntryDto() {
-        this(null, null, null, null, null, null);
+    public AtomEntryDto {
+        // Auto-compute namespaces if not provided
+        if (content != null && espiNamespace == null && custNamespace == null) {
+            String packageName = content.getClass().getPackageName();
+            if (packageName.contains("dto.usage")) {
+                espiNamespace = "http://naesb.org/espi";
+            } else if (packageName.contains("dto.customer")) {
+                custNamespace = "http://naesb.org/espi/customer";
+            }
+        }
     }
-    
+
     /**
-     * Constructor for basic entry data.
+     * Constructor for basic entry data without namespace (auto-computed).
+     */
+    public AtomEntryDto(String id, String title, OffsetDateTime published,
+                       OffsetDateTime updated, List<LinkDto> links, Object content) {
+        this(id, title, published, updated, links, content, null, null);
+    }
+
+    /**
+     * Constructor for basic entry data with auto-generated timestamps.
      */
     public AtomEntryDto(String id, String title, Object resource) {
-
-        //get date in UTC and truncate to seconds for proper ESPI date format
         LocalDateTime localDateTime = LocalDateTime.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS);
         OffsetDateTime now = localDateTime.atOffset(ZoneOffset.UTC).toZonedDateTime().toOffsetDateTime();
 
         this(id, title, now, now, null,
-             new AtomContentDto("application/xml", resource));
+             new AtomContentDto("application/xml", resource), null, null);
     }
     
     /**
