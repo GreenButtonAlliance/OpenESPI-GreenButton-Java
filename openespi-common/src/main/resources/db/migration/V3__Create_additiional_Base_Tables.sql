@@ -117,18 +117,6 @@ CREATE INDEX idx_interval_reading_value ON interval_readings (reading_value);
 CREATE INDEX idx_interval_reading_created ON interval_readings (created);
 CREATE INDEX idx_interval_reading_updated ON interval_readings (updated);
 
-
--- Related Links Table for Interval Readings
-CREATE TABLE interval_reading_related_links
-(
-    interval_reading_id CHAR(36) NOT NULL,
-    related_links       VARCHAR(1024),
-    FOREIGN KEY (interval_reading_id) REFERENCES interval_readings (id) ON DELETE CASCADE
-);
-
--- Indexes for interval_reading_related_links table
-CREATE INDEX idx_interval_reading_related_links ON interval_reading_related_links (interval_reading_id);
-
 -- Reading Quality Table
 CREATE TABLE reading_qualities
 (
@@ -158,17 +146,6 @@ CREATE INDEX idx_reading_quality_interval_reading_id ON reading_qualities (inter
 CREATE INDEX idx_reading_quality_quality ON reading_qualities (quality);
 CREATE INDEX idx_reading_quality_created ON reading_qualities (created);
 CREATE INDEX idx_reading_quality_updated ON reading_qualities (updated);
-
--- Related Links Table for Reading Qualities
-CREATE TABLE reading_quality_related_links
-(
-    reading_quality_id CHAR(36) NOT NULL,
-    related_links      VARCHAR(1024),
-    FOREIGN KEY (reading_quality_id) REFERENCES reading_qualities (id) ON DELETE CASCADE
-);
-
--- Indexes for reading_quality_related_links table
-CREATE INDEX idx_reading_quality_related_links ON reading_quality_related_links (reading_quality_id);
 
 -- Usage Summary Table
 CREATE TABLE usage_summaries
@@ -351,17 +328,6 @@ CREATE INDEX idx_pnode_ref_usage_point_id ON pnode_refs (usage_point_id);
 CREATE INDEX idx_pnode_ref_created ON pnode_refs (created);
 CREATE INDEX idx_pnode_ref_updated ON pnode_refs (updated);
 
--- Related Links Table for PnodeRefs
-CREATE TABLE pnode_ref_related_links
-(
-    pnode_ref_id  CHAR(36) NOT NULL,
-    related_links VARCHAR(1024),
-    FOREIGN KEY (pnode_ref_id) REFERENCES pnode_refs (id) ON DELETE CASCADE
-);
-
--- Indexes for pnode_ref_related_links table
-CREATE INDEX idx_pnode_ref_related_links ON pnode_ref_related_links (pnode_ref_id);
-
 -- AggregatedNodeRef Table (from V1_9 migration)
 CREATE TABLE aggregated_node_refs
 (
@@ -398,17 +364,6 @@ CREATE INDEX idx_aggregated_node_ref_pnode_ref_id ON aggregated_node_refs (pnode
 CREATE INDEX idx_aggregated_node_ref_usage_point_id ON aggregated_node_refs (usage_point_id);
 CREATE INDEX idx_aggregated_node_ref_created ON aggregated_node_refs (created);
 CREATE INDEX idx_aggregated_node_ref_updated ON aggregated_node_refs (updated);
-
--- Related Links Table for AggregatedNodeRefs
-CREATE TABLE aggregated_node_ref_related_links
-(
-    aggregated_node_ref_id CHAR(36) NOT NULL,
-    related_links          VARCHAR(1024),
-    FOREIGN KEY (aggregated_node_ref_id) REFERENCES aggregated_node_refs (id) ON DELETE CASCADE
-);
-
--- Indexes for aggregated_node_ref_related_links table
-CREATE INDEX idx_aggregated_node_ref_related_links ON aggregated_node_ref_related_links (aggregated_node_ref_id);
 
 -- Customer Table
 CREATE TABLE customers
@@ -771,16 +726,6 @@ CREATE INDEX idx_line_item_amount ON line_items (amount);
 CREATE INDEX idx_line_item_created ON line_items (created);
 CREATE INDEX idx_line_item_updated ON line_items (updated);
 
--- Related Links Table for Line Items
-CREATE TABLE line_item_related_links
-(
-    line_item_id  CHAR(36) NOT NULL,
-    related_links VARCHAR(1024),
-    FOREIGN KEY (line_item_id) REFERENCES line_items (id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_line_item_related_links ON line_item_related_links (line_item_id);
-
 -- Meter Entity Table (Joined inheritance from EndDevice)
 CREATE TABLE meters
 (
@@ -836,18 +781,6 @@ CREATE TABLE phone_numbers
 CREATE INDEX idx_phone_number_itu_phone ON phone_numbers (itu_phone);
 CREATE INDEX idx_phone_number_created ON phone_numbers (created);
 CREATE INDEX idx_phone_number_updated ON phone_numbers (updated);
-
-
-
--- Related Links Table for Phone Numbers
-CREATE TABLE phone_number_related_links
-(
-    phone_number_id CHAR(36) NOT NULL,
-    related_links   VARCHAR(1024),
-    FOREIGN KEY (phone_number_id) REFERENCES phone_numbers (id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_phone_number_related_links ON phone_number_related_links (phone_number_id);
 
 -- Program Date ID Mappings Table
 CREATE TABLE program_date_id_mappings
@@ -1076,13 +1009,3 @@ CREATE TABLE statement_refs
 CREATE INDEX idx_statement_ref_statement_id ON statement_refs (statement_id);
 CREATE INDEX idx_statement_ref_created ON statement_refs (created);
 CREATE INDEX idx_statement_ref_updated ON statement_refs (updated);
-
--- Related Links Table for Statement Refs
-CREATE TABLE statement_ref_related_links
-(
-    statement_ref_id CHAR(36) NOT NULL,
-    related_links    VARCHAR(1024),
-    FOREIGN KEY (statement_ref_id) REFERENCES statement_refs (id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_statement_ref_related_links ON statement_ref_related_links (statement_ref_id);
