@@ -300,7 +300,7 @@ CREATE TABLE reading_types
     self_link_href          VARCHAR(1024),
     self_link_type          VARCHAR(255),
 
-    -- Reading type specific fields
+    -- Reading type specific fields (in ESPI 4.0 XSD sequence order)
     accumulation_behaviour  VARCHAR(50),
     commodity               VARCHAR(50),
     consumption_tier        VARCHAR(50),
@@ -313,14 +313,14 @@ CREATE TABLE reading_types
     phase                   VARCHAR(50),
     power_of_ten_multiplier VARCHAR(50),
     time_attribute          VARCHAR(50),
+    tou                     VARCHAR(50),
     uom                     VARCHAR(50),
     cpp                     VARCHAR(50),
-    measuring_period        VARCHAR(50),
-    tou                     VARCHAR(50),
-    argument_numerator      DECIMAL(38,0),
-    argument_denominator    DECIMAL(38,0),
     interharmonic_numerator BIGINT,
-    interharmonic_denominator BIGINT
+    interharmonic_denominator BIGINT,
+    measuring_period        VARCHAR(50),
+    argument_numerator      DECIMAL(38,0),
+    argument_denominator    DECIMAL(38,0)
 );
 
 CREATE INDEX idx_reading_type_kind ON reading_types (kind);

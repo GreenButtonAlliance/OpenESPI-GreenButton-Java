@@ -133,6 +133,13 @@ public class ReadingTypeEntity extends IdentifiedObject {
     private String timeAttribute;
 
     /**
+     * Time-of-use indicator.
+     * Used for time-based pricing structures.
+     */
+    @Column(name = "tou", length = 50)
+    private String tou;
+
+    /**
      * Unit of measure for the readings.
      * Values: WH (watt-hours), W (watts), V (volts), A (amperes), etc.
      */
@@ -147,18 +154,22 @@ public class ReadingTypeEntity extends IdentifiedObject {
     private String cpp;
 
     /**
+     * Interharmonic information for power quality measurements.
+     * Contains details about harmonic distortion.
+     */
+    @Embedded
+    @AttributeOverrides({
+        @AttributeOverride(name = "numerator", column = @Column(name = "interharmonic_numerator")),
+        @AttributeOverride(name = "denominator", column = @Column(name = "interharmonic_denominator"))
+    })
+    private ReadingInterharmonic interharmonic;
+
+    /**
      * Measuring period for the readings.
      * Describes the measurement timing characteristics.
      */
     @Column(name = "measuring_period", length = 50)
     private String measuringPeriod;
-
-    /**
-     * Time-of-use indicator.
-     * Used for time-based pricing structures.
-     */
-    @Column(name = "tou", length = 50)
-    private String tou;
 
     /**
      * Rational number argument for complex calculations.
@@ -170,17 +181,6 @@ public class ReadingTypeEntity extends IdentifiedObject {
         @AttributeOverride(name = "denominator", column = @Column(name = "argument_denominator"))
     })
     private RationalNumber argument;
-
-    /**
-     * Interharmonic information for power quality measurements.
-     * Contains details about harmonic distortion.
-     */
-    @Embedded
-    @AttributeOverrides({
-        @AttributeOverride(name = "numerator", column = @Column(name = "interharmonic_numerator")),
-        @AttributeOverride(name = "denominator", column = @Column(name = "interharmonic_denominator"))
-    })
-    private ReadingInterharmonic interharmonic;
 
     /**
      * Meter readings that use this reading type.
@@ -253,7 +253,7 @@ public class ReadingTypeEntity extends IdentifiedObject {
         if (other != null) {
             super.merge(other);
             
-            // Update all reading type characteristics
+            // Update all reading type characteristics (in XSD sequence order)
             this.accumulationBehaviour = other.accumulationBehaviour;
             this.commodity = other.commodity;
             this.consumptionTier = other.consumptionTier;
@@ -266,14 +266,12 @@ public class ReadingTypeEntity extends IdentifiedObject {
             this.phase = other.phase;
             this.powerOfTenMultiplier = other.powerOfTenMultiplier;
             this.timeAttribute = other.timeAttribute;
+            this.tou = other.tou;
             this.uom = other.uom;
             this.cpp = other.cpp;
-            this.measuringPeriod = other.measuringPeriod;
-            this.tou = other.tou;
-            
-            // Update embedded values
-            this.argument = other.argument;
             this.interharmonic = other.interharmonic;
+            this.measuringPeriod = other.measuringPeriod;
+            this.argument = other.argument;
             
             // Note: meterReadings collection is not merged to preserve existing relationships
         }
@@ -437,12 +435,12 @@ public class ReadingTypeEntity extends IdentifiedObject {
                 "phase = " + getPhase() + ", " +
                 "powerOfTenMultiplier = " + getPowerOfTenMultiplier() + ", " +
                 "timeAttribute = " + getTimeAttribute() + ", " +
+                "tou = " + getTou() + ", " +
                 "uom = " + getUom() + ", " +
                 "cpp = " + getCpp() + ", " +
-                "measuringPeriod = " + getMeasuringPeriod() + ", " +
-                "tou = " + getTou() + ", " +
-                "argument = " + getArgument() + ", " +
                 "interharmonic = " + getInterharmonic() + ", " +
+                "measuringPeriod = " + getMeasuringPeriod() + ", " +
+                "argument = " + getArgument() + ", " +
                 "description = " + getDescription() + ", " +
                 "created = " + getCreated() + ", " +
                 "updated = " + getUpdated() + ", " +

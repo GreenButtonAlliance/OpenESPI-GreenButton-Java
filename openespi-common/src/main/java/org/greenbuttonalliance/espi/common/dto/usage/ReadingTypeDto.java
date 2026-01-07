@@ -37,10 +37,10 @@ import org.greenbuttonalliance.espi.common.dto.ReadingInterharmonicDto;
 @XmlRootElement(name = "ReadingType", namespace = "http://naesb.org/espi")
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "ReadingType", namespace = "http://naesb.org/espi", propOrder = {
-    "description", "accumulationBehaviour", "commodity", "consumptionTier", "currency", 
-    "dataQualifier", "defaultQuality", "flowDirection", "intervalLength", "kind", 
-    "phase", "powerOfTenMultiplier", "timeAttribute", "uom", "cpp", "measuringPeriod", 
-    "tou", "argument", "interharmonic"
+    "accumulationBehaviour", "commodity", "consumptionTier", "currency", "dataQualifier",
+    "defaultQuality", "flowDirection", "intervalLength", "kind", "phase",
+    "powerOfTenMultiplier", "timeAttribute", "tou", "uom", "cpp", "interharmonic",
+    "measuringPeriod", "argument"
 })
 public record ReadingTypeDto(
     
@@ -204,7 +204,7 @@ public record ReadingTypeDto(
     
     /**
      * Time attribute describing the time period of interest.
-     * 
+     *
      * ESPI values:
      * - NONE: No specific time context
      * - BILLING_PERIOD: Within billing cycle
@@ -217,10 +217,23 @@ public record ReadingTypeDto(
      */
     @XmlElement(name = "timeAttribute")
     String timeAttribute,
-    
+
+    /**
+     * Time-of-use indicator.
+     * Used for time-based pricing structures and rate schedules.
+     *
+     * Typical utility TOU periods:
+     * - 1: Peak hours (highest rates)
+     * - 2: Partial-peak hours (medium rates)
+     * - 3: Off-peak hours (lowest rates)
+     * - 0: No TOU pricing
+     */
+    @XmlElement(name = "tou")
+    String tou,
+
     /**
      * Unit of measure for the readings.
-     * 
+     *
      * ESPI electrical units:
      * - WH: Watt-hours (energy)
      * - W: Watts (power)
@@ -239,11 +252,11 @@ public record ReadingTypeDto(
      */
     @XmlElement(name = "uom")
     String uom,
-    
+
     /**
      * Critical peak pricing indicator.
      * Used for demand response programs and peak pricing events.
-     * 
+     *
      * Values typically:
      * - 0: Normal pricing
      * - 1: Critical peak pricing active
@@ -251,11 +264,24 @@ public record ReadingTypeDto(
      */
     @XmlElement(name = "cpp")
     String cpp,
-    
+
+    /**
+     * Interharmonic information for power quality measurements.
+     * Contains details about harmonic distortion and frequency analysis.
+     *
+     * Used for:
+     * - Total harmonic distortion (THD) measurements
+     * - Individual harmonic analysis
+     * - Power quality monitoring
+     * - Frequency domain analysis
+     */
+    @XmlElement(name = "interharmonic")
+    ReadingInterharmonicDto interharmonic,
+
     /**
      * Measuring period for the readings.
      * Describes the measurement timing characteristics and sampling.
-     * 
+     *
      * Values describe how measurements are taken:
      * - CONTINUOUS: Continuous monitoring
      * - INTERVAL: Fixed interval sampling
@@ -264,44 +290,18 @@ public record ReadingTypeDto(
      */
     @XmlElement(name = "measuringPeriod")
     String measuringPeriod,
-    
-    /**
-     * Time-of-use indicator.
-     * Used for time-based pricing structures and rate schedules.
-     * 
-     * Typical utility TOU periods:
-     * - 1: Peak hours (highest rates)
-     * - 2: Partial-peak hours (medium rates) 
-     * - 3: Off-peak hours (lowest rates)
-     * - 0: No TOU pricing
-     */
-    @XmlElement(name = "tou")
-    String tou,
-    
+
     /**
      * Rational number argument for complex calculations.
      * Used for mathematical transformations and scaling of readings.
-     * 
+     *
      * Common uses:
      * - CT/PT ratio transformations
      * - Unit conversions
      * - Scaling factors for display
      */
     @XmlElement(name = "argument")
-    RationalNumberDto argument,
-    
-    /**
-     * Interharmonic information for power quality measurements.
-     * Contains details about harmonic distortion and frequency analysis.
-     * 
-     * Used for:
-     * - Total harmonic distortion (THD) measurements
-     * - Individual harmonic analysis
-     * - Power quality monitoring
-     * - Frequency domain analysis
-     */
-    @XmlElement(name = "interharmonic")
-    ReadingInterharmonicDto interharmonic
+    RationalNumberDto argument
     
 ) {
     
