@@ -294,39 +294,9 @@ ALTER TABLE authorizations ADD CONSTRAINT fk_authorization_subscription
 ALTER TABLE usage_points ADD CONSTRAINT fk_usage_point_subscription
     FOREIGN KEY (subscription_id) REFERENCES subscriptions (id) ON DELETE SET NULL;
 
--- PnodeRef Table
-CREATE TABLE pnode_refs
-(
-    id             CHAR(36) PRIMARY KEY ,
-    description    VARCHAR(255),
-    created        TIMESTAMP NOT NULL,
-    updated        TIMESTAMP NOT NULL,
-    published      TIMESTAMP,
-    up_link_rel    VARCHAR(255),
-    up_link_href   VARCHAR(1024),
-    up_link_type   VARCHAR(255),
-    self_link_rel  VARCHAR(255),
-    self_link_href VARCHAR(1024),
-    self_link_type VARCHAR(255),
-
-    -- PnodeRef specific fields
-    apnode_type          VARCHAR(64),
-    ref                  VARCHAR(256) NOT NULL,
-    start_effective_date BIGINT,
-    end_effective_date   BIGINT,
-
-    -- Foreign key relationships
-    usage_point_id       CHAR(36) NOT NULL,
-
-    FOREIGN KEY (usage_point_id) REFERENCES usage_points (id) ON DELETE CASCADE
-);
-
--- Indexes for pnode_refs table
-CREATE INDEX idx_pnode_ref_apnode_type ON pnode_refs (apnode_type);
-CREATE INDEX idx_pnode_ref_ref ON pnode_refs (ref);
-CREATE INDEX idx_pnode_ref_usage_point_id ON pnode_refs (usage_point_id);
-CREATE INDEX idx_pnode_ref_created ON pnode_refs (created);
-CREATE INDEX idx_pnode_ref_updated ON pnode_refs (updated);
+-- PnodeRef Table - Moved to vendor-specific V2 migration files
+-- PnodeRef extends Object (not IdentifiedObject) per ESPI 4.0 XSD (espi.xsd:1539)
+-- Table creation moved to V2 vendor files due to auto-increment syntax differences
 
 -- AggregatedNodeRef Table (from V1_9 migration)
 CREATE TABLE aggregated_node_refs
@@ -350,7 +320,7 @@ CREATE TABLE aggregated_node_refs
     end_effective_date   BIGINT,
 
     -- Foreign key relationships
-    pnode_ref_id         CHAR(36) ,
+    pnode_ref_id         BIGINT,
     usage_point_id       CHAR(36)      NOT NULL,
 
     FOREIGN KEY (pnode_ref_id) REFERENCES pnode_refs (id) ON DELETE SET NULL,

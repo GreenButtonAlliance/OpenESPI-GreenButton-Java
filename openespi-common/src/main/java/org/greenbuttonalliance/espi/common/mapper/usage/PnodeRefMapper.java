@@ -21,20 +21,22 @@ package org.greenbuttonalliance.espi.common.mapper.usage;
 
 import org.greenbuttonalliance.espi.common.domain.usage.PnodeRefEntity;
 import org.greenbuttonalliance.espi.common.dto.usage.PnodeRefDto;
-import org.greenbuttonalliance.espi.common.mapper.BaseIdentifiedObjectMapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
 /**
  * MapStruct mapper for converting between PnodeRefEntity and PnodeRefDto.
+ * <p>
+ * PnodeRef extends Object (not IdentifiedObject) in ESPI 4.0, so it does not
+ * have Atom links or timestamps - only business data fields.
  */
 @Mapper(componentModel = "spring")
-public interface PnodeRefMapper extends BaseIdentifiedObjectMapper {
+public interface PnodeRefMapper {
 
     /**
      * Converts a PnodeRefEntity to a PnodeRefDto.
-     * 
+     *
      * @param entity the pricing node reference entity
      * @return the pricing node reference DTO
      */

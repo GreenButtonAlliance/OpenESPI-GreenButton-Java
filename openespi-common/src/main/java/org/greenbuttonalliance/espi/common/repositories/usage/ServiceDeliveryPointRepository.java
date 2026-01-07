@@ -28,20 +28,19 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.UUID;
 
 @Repository
-public interface ServiceDeliveryPointRepository extends JpaRepository<ServiceDeliveryPointEntity, UUID> {
+public interface ServiceDeliveryPointRepository extends JpaRepository<ServiceDeliveryPointEntity, Long> {
 
 	// JpaRepository provides: save(), findById(), findAll(), deleteById(), etc.
 
 	@Modifying
 	@Transactional
 	@Query("DELETE FROM ServiceDeliveryPointEntity s WHERE s.id = :id")
-	void deleteById(@Param("id") UUID id);
+	void deleteById(@Param("id") Long id);
 
 	@Query("SELECT s.id FROM ServiceDeliveryPointEntity s")
-	List<UUID> findAllIds();
+	List<Long> findAllIds();
 
 	@Query("SELECT s FROM ServiceDeliveryPointEntity s WHERE s.name = :name")
 	List<ServiceDeliveryPointEntity> findByName(@Param("name") String name);

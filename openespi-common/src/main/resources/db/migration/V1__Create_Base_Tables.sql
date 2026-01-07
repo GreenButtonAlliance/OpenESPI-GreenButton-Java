@@ -171,33 +171,9 @@ CREATE INDEX idx_retail_customer_username ON retail_customers (username);
 CREATE INDEX idx_retail_customer_created ON retail_customers (created);
 CREATE INDEX idx_retail_customer_updated ON retail_customers (updated);
 
--- Service Delivery Point Table
-CREATE TABLE service_delivery_points
-(
-    id                 CHAR(36) PRIMARY KEY ,
-    description        VARCHAR(255),
-    created            TIMESTAMP NOT NULL,
-    updated            TIMESTAMP NOT NULL,
-    published          TIMESTAMP,
-    up_link_rel        VARCHAR(255),
-    up_link_href       VARCHAR(1024),
-    up_link_type       VARCHAR(255),
-    self_link_rel      VARCHAR(255),
-    self_link_href     VARCHAR(1024),
-    self_link_type     VARCHAR(255),
-
-    -- Service delivery point specific fields
-    sdp_mrid           VARCHAR(64),
-    sdp_name           VARCHAR(256),
-    sdp_tariff_profile VARCHAR(256),
-    sdp_customer_agreement VARCHAR(256)
-);
-
-CREATE INDEX idx_sdp_name ON service_delivery_points (sdp_name);
-CREATE INDEX idx_sdp_tariff_profile ON service_delivery_points (sdp_tariff_profile);
-CREATE INDEX idx_sdp_customer_agreement ON service_delivery_points (sdp_customer_agreement);
-CREATE INDEX idx_sdp_created ON service_delivery_points (created);
-CREATE INDEX idx_sdp_updated ON service_delivery_points (updated);
+-- Service Delivery Point Table - Moved to vendor-specific V2 migration files
+-- ServiceDeliveryPoint extends Object (not IdentifiedObject) per ESPI 4.0 XSD (espi.xsd:1161)
+-- Table creation moved to V2 vendor files due to auto-increment syntax differences
 
 -- Authorization Table
 CREATE TABLE authorizations

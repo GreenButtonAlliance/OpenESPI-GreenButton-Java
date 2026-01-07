@@ -21,7 +21,6 @@ package org.greenbuttonalliance.espi.common.domain.usage;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
 import org.hibernate.proxy.HibernateProxy;
 
 import java.util.Objects;
@@ -31,13 +30,24 @@ import java.util.Objects;
  * <p>
  * Represents a reference to a pricing node in the electrical grid used within UsagePoint.
  * Each UsagePoint can have multiple pricing node references for different time periods.
+ * <p>
+ * PnodeRef extends Object (not IdentifiedObject) in ESPI 4.0 XSD (espi.xsd:1539),
+ * so it does NOT have Atom links, timestamps, or related_links table.
  */
 @Entity
 @Table(name = "pnode_refs")
 @Getter
 @Setter
 @NoArgsConstructor
-public class PnodeRefEntity extends IdentifiedObject {
+public class PnodeRefEntity {
+
+    /**
+     * Primary key identifier (48+ bits as per ESPI requirement).
+     */
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private Long id;
 
     /**
      * Type of the aggregated pricing node.
@@ -139,10 +149,6 @@ public class PnodeRefEntity extends IdentifiedObject {
                 "apnodeType = " + getApnodeType() + ", " +
                 "ref = " + getRef() + ", " +
                 "startEffectiveDate = " + getStartEffectiveDate() + ", " +
-                "endEffectiveDate = " + getEndEffectiveDate() + ", " +
-                "description = " + getDescription() + ", " +
-                "created = " + getCreated() + ", " +
-                "updated = " + getUpdated() + ", " +
-                "published = " + getPublished() + ")";
+                "endEffectiveDate = " + getEndEffectiveDate() + ")";
     }
 }

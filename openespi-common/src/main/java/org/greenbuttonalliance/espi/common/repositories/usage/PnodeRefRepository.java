@@ -31,15 +31,18 @@ import java.util.UUID;
 
 /**
  * Spring Data JPA repository for PnodeRefEntity.
- * 
+ * <p>
+ * PnodeRef extends Object (not IdentifiedObject) in ESPI 4.0 XSD,
+ * so it uses Long ID (not UUID).
+ * <p>
  * Provides CRUD operations and custom queries for pricing node references.
  */
 @Repository
-public interface PnodeRefRepository extends JpaRepository<PnodeRefEntity, UUID> {
+public interface PnodeRefRepository extends JpaRepository<PnodeRefEntity, Long> {
 
     /**
      * Find all pricing node references for a specific usage point.
-     * 
+     *
      * @param usagePoint the usage point
      * @return list of pricing node references
      */
@@ -47,8 +50,8 @@ public interface PnodeRefRepository extends JpaRepository<PnodeRefEntity, UUID> 
 
     /**
      * Find pricing node references by usage point ID.
-     * 
-     * @param usagePointId the usage point ID
+     *
+     * @param usagePointId the usage point ID (UUID for UsagePoint which extends IdentifiedObject)
      * @return list of pricing node references
      */
     List<PnodeRefEntity> findByUsagePointId(UUID usagePointId);
