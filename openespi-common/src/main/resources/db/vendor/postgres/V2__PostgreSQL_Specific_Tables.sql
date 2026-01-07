@@ -17,10 +17,8 @@
  * - meter_reading_related_links (FK dependency)
  * - interval_blocks (FK dependency on meter_readings)
  * - interval_block_related_links (FK dependency)
- * - interval_readings (FK dependency on interval_blocks)
- * - interval_reading_related_links (FK dependency)
- * - reading_qualities (FK dependency on interval_readings)
- * - reading_quality_related_links (FK dependency)
+ * - interval_readings (FK dependency on interval_blocks - no related_links, extends Object)
+ * - reading_qualities (FK dependency on interval_readings - no related_links, extends Object)
  * - usage_summaries (FK dependency on usage_points)
  * - usage_summary_related_links (FK dependency)
  * - subscription_usage_points (join table)
@@ -29,6 +27,21 @@
  * Total tables in this migration: 25+
  * Compatible with: PostgreSQL 12+
  */
+
+-- Service Delivery Point Table (Object-based entity, no IdentifiedObject)
+-- Must be created before usage_points which references it
+-- ServiceDeliveryPoint extends Object per ESPI 4.0 XSD (espi.xsd:1161)
+CREATE TABLE service_delivery_points
+(
+    id                 BIGSERIAL PRIMARY KEY,
+    sdp_name           VARCHAR(256),
+    sdp_tariff_profile VARCHAR(256),
+    sdp_customer_agreement VARCHAR(256)
+);
+
+CREATE INDEX idx_sdp_name ON service_delivery_points (sdp_name);
+CREATE INDEX idx_sdp_tariff_profile ON service_delivery_points (sdp_tariff_profile);
+CREATE INDEX idx_sdp_customer_agreement ON service_delivery_points (sdp_customer_agreement);
 
 -- Time Configuration Table (PostgreSQL with BYTEA columns)
 CREATE TABLE time_configurations
@@ -118,7 +131,7 @@ CREATE TABLE usage_points
 
     -- Foreign key relationships
     retail_customer_id        CHAR(36),
-    service_delivery_point_id CHAR(36),
+    service_delivery_point_id BIGINT,
     local_time_parameters_id  CHAR(36),
     subscription_id           CHAR(36),
 
@@ -145,3 +158,21 @@ CREATE TABLE usage_point_related_links
 
 CREATE INDEX idx_usage_point_related_links ON usage_point_related_links (usage_point_id);
 
+
+-- PnodeRef Table (Object-based entity, no IdentifiedObject)
+-- Must be created after usage_points which it references
+-- PnodeRef extends Object per ESPI 4.0 XSD (espi.xsd:1539)
+CREATE TABLE pnode_refs
+(
+    id             BIGSERIAL PRIMARY KEY,
+    apnode_type          VARCHAR(64),
+    ref                  VARCHAR(256) NOT NULL,
+    start_effective_date BIGINT,
+    end_effective_date   BIGINT,
+    usage_point_id       CHAR(36) NOT NULL,
+    FOREIGN KEY (usage_point_id) REFERENCES usage_points (id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_pnode_ref_apnode_type ON pnode_refs (apnode_type);
+CREATE INDEX idx_pnode_ref_ref ON pnode_refs (ref);
+CREATE INDEX idx_pnode_ref_usage_point_id ON pnode_refs (usage_point_id);

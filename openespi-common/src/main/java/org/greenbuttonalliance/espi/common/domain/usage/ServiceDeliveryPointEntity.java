@@ -19,14 +19,11 @@
 
 package org.greenbuttonalliance.espi.common.domain.usage;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
 import org.hibernate.proxy.HibernateProxy;
 
 import java.util.Objects;
@@ -38,27 +35,27 @@ import java.util.Objects;
  * This is typically associated with a physical address and represents the endpoint
  * of the utility's distribution system where energy is consumed.
  * <p>
- * ServiceDeliveryPoint is now a standalone ESPI resource that extends IdentifiedObject.
+ * ServiceDeliveryPoint extends Object (not IdentifiedObject) in ESPI 4.0 XSD (espi.xsd:1161),
+ * so it does NOT have Atom links, timestamps, or related_links table.
  */
 @Entity
 @Table(name = "service_delivery_points")
 @Getter
 @Setter
 @NoArgsConstructor
-public class ServiceDeliveryPointEntity extends IdentifiedObject {
-    
+public class ServiceDeliveryPointEntity {
+
     /**
-     * ServiceDeliveryPoint mRID - identifier for the service delivery point.
-     * This is embedded within the UsagePoint but has its own identifier.
+     * Primary key identifier (48+ bits as per ESPI requirement).
      */
-    @Column(name = "sdp_mrid", length = 64)
-    @Size(max = 64, message = "ServiceDeliveryPoint mRID cannot exceed 64 characters")
-    private String mrid;
-    
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private Long id;
 
     /**
      * Human-readable name for this service delivery point.
-     * Often corresponds to a physical address or location identifier.
+     * The name is any free human readable and possibly non unique text naming the object.
      */
     @Column(name = "sdp_name", length = 256)
     @Size(max = 256, message = "Service delivery point name cannot exceed 256 characters")
@@ -81,29 +78,22 @@ public class ServiceDeliveryPointEntity extends IdentifiedObject {
     private String customerAgreement;
 
     /**
-     * Constructor with mRID and basic information.
-     * 
-     * @param mrid the mRID identifier for the service delivery point
+     * Constructor with basic information.
+     *
      * @param name the name of the service delivery point
      */
-    public ServiceDeliveryPointEntity(String mrid, String name) {
-        this.mrid = mrid;
+    public ServiceDeliveryPointEntity(String name) {
         this.name = name;
     }
 
     /**
-     * Constructor with mRID and full service delivery point information.
-     * 
-     * @param mrid the mRID identifier
-     * @param description human-readable description
+     * Constructor with full service delivery point information.
+     *
      * @param name the name of the service delivery point
      * @param tariffProfile the tariff profile identifier
      * @param customerAgreement the customer agreement identifier
      */
-    public ServiceDeliveryPointEntity(String mrid, String description, String name, 
-                                    String tariffProfile, String customerAgreement) {
-        this.mrid = mrid;
-        setDescription(description);
+    public ServiceDeliveryPointEntity(String name, String tariffProfile, String customerAgreement) {
         this.name = name;
         this.tariffProfile = tariffProfile;
         this.customerAgreement = customerAgreement;
@@ -112,14 +102,14 @@ public class ServiceDeliveryPointEntity extends IdentifiedObject {
     /**
      * Gets a display name for this service delivery point.
      * Uses the name if available, otherwise creates a default display name.
-     * 
+     *
      * @return display name string
      */
     public String getDisplayName() {
         if (name != null && !name.trim().isEmpty()) {
             return name.trim();
         }
-        return "Service Delivery Point " + (mrid != null ? mrid : "Unknown");
+        return "Service Delivery Point " + (id != null ? id : "Unknown");
     }
 
     /**
@@ -142,13 +132,12 @@ public class ServiceDeliveryPointEntity extends IdentifiedObject {
 
     /**
      * Validates the service delivery point configuration.
-     * 
+     *
      * @return true if valid, false otherwise
      */
     public boolean isValid() {
-        // A service delivery point is considered valid if it has at least a name or mRID
-        return (name != null && !name.trim().isEmpty()) || 
-               (mrid != null && !mrid.trim().isEmpty());
+        // A service delivery point is considered valid if it has a name
+        return name != null && !name.trim().isEmpty();
     }
 
     @Override
@@ -171,13 +160,8 @@ public class ServiceDeliveryPointEntity extends IdentifiedObject {
     public String toString() {
         return getClass().getSimpleName() + "(" +
                 "id = " + getId() + ", " +
-                "mrid = " + getMrid() + ", " +
                 "name = " + getName() + ", " +
                 "tariffProfile = " + getTariffProfile() + ", " +
-                "customerAgreement = " + getCustomerAgreement() + ", " +
-                "description = " + getDescription() + ", " +
-                "created = " + getCreated() + ", " +
-                "updated = " + getUpdated() + ", " +
-                "published = " + getPublished() + ")";
+                "customerAgreement = " + getCustomerAgreement() + ")";
     }
 }

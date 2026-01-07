@@ -171,53 +171,9 @@ CREATE INDEX idx_retail_customer_username ON retail_customers (username);
 CREATE INDEX idx_retail_customer_created ON retail_customers (created);
 CREATE INDEX idx_retail_customer_updated ON retail_customers (updated);
 
--- Related Links Table for Retail Customers
-CREATE TABLE retail_customer_related_links
-(
-    retail_customer_id CHAR(36) NOT NULL,
-    related_links      VARCHAR(1024),
-    FOREIGN KEY (retail_customer_id) REFERENCES retail_customers (id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_retail_customer_related_links ON retail_customer_related_links (retail_customer_id);
-
--- Service Delivery Point Table
-CREATE TABLE service_delivery_points
-(
-    id                 CHAR(36) PRIMARY KEY ,
-    description        VARCHAR(255),
-    created            TIMESTAMP NOT NULL,
-    updated            TIMESTAMP NOT NULL,
-    published          TIMESTAMP,
-    up_link_rel        VARCHAR(255),
-    up_link_href       VARCHAR(1024),
-    up_link_type       VARCHAR(255),
-    self_link_rel      VARCHAR(255),
-    self_link_href     VARCHAR(1024),
-    self_link_type     VARCHAR(255),
-
-    -- Service delivery point specific fields
-    sdp_mrid           VARCHAR(64),
-    sdp_name           VARCHAR(256),
-    sdp_tariff_profile VARCHAR(256),
-    sdp_customer_agreement VARCHAR(256)
-);
-
-CREATE INDEX idx_sdp_name ON service_delivery_points (sdp_name);
-CREATE INDEX idx_sdp_tariff_profile ON service_delivery_points (sdp_tariff_profile);
-CREATE INDEX idx_sdp_customer_agreement ON service_delivery_points (sdp_customer_agreement);
-CREATE INDEX idx_sdp_created ON service_delivery_points (created);
-CREATE INDEX idx_sdp_updated ON service_delivery_points (updated);
-
--- Related Links Table for Service Delivery Points
-CREATE TABLE service_delivery_point_related_links
-(
-    service_delivery_point_id CHAR(36) NOT NULL,
-    related_links             VARCHAR(1024),
-    FOREIGN KEY (service_delivery_point_id) REFERENCES service_delivery_points (id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_sdp_related_links ON service_delivery_point_related_links (service_delivery_point_id);
+-- Service Delivery Point Table - Moved to vendor-specific V2 migration files
+-- ServiceDeliveryPoint extends Object (not IdentifiedObject) per ESPI 4.0 XSD (espi.xsd:1161)
+-- Table creation moved to V2 vendor files due to auto-increment syntax differences
 
 -- Authorization Table
 CREATE TABLE authorizations
@@ -374,16 +330,6 @@ CREATE INDEX idx_subscription_last_update ON subscriptions (last_update);
 CREATE INDEX idx_subscription_created ON subscriptions (created);
 CREATE INDEX idx_subscription_updated ON subscriptions (updated);
 
--- Related Links Table for Subscriptions
-CREATE TABLE subscription_related_links
-(
-    subscription_id CHAR(36) NOT NULL,
-    related_links   VARCHAR(1024),
-    FOREIGN KEY (subscription_id) REFERENCES subscriptions (id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_subscription_related_links ON subscription_related_links (subscription_id);
-
 -- Batch List Table (Independent - no foreign key dependencies)
 CREATE TABLE batch_lists
 (
@@ -406,16 +352,6 @@ CREATE TABLE batch_lists
 CREATE INDEX idx_batch_list_created ON batch_lists (created);
 CREATE INDEX idx_batch_list_resource_count ON batch_lists (resource_count);
 CREATE INDEX idx_batch_list_updated ON batch_lists (updated);
-
--- Related Links Table for Batch Lists
-CREATE TABLE batch_list_related_links
-(
-    batch_list_id CHAR(36) NOT NULL,
-    related_links VARCHAR(1024),
-    FOREIGN KEY (batch_list_id) REFERENCES batch_lists (id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_batch_list_related_links ON batch_list_related_links (batch_list_id);
 
 -- Batch List Resources Collection Table
 CREATE TABLE batch_list_resources

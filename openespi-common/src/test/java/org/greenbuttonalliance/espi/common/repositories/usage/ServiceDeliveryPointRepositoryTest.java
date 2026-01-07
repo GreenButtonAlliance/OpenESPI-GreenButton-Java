@@ -29,15 +29,17 @@ import jakarta.validation.ConstraintViolation;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
 
 /**
  * Comprehensive test suite for ServiceDeliveryPointRepository.
- * 
- * Tests all CRUD operations, 5 custom query methods, service delivery location testing,
- * validation constraints, business logic methods, and IdentifiedObject base functionality.
+ * <p>
+ * ServiceDeliveryPoint extends Object (not IdentifiedObject) in ESPI 4.0 XSD,
+ * so tests focus on business data fields only (no Atom links or timestamps).
+ *
+ * Tests all CRUD operations, custom query methods, validation constraints,
+ * and business logic methods.
  */
 @DisplayName("ServiceDeliveryPoint Repository Tests")
 class ServiceDeliveryPointRepositoryTest extends BaseRepositoryTest {
@@ -50,8 +52,6 @@ class ServiceDeliveryPointRepositoryTest extends BaseRepositoryTest {
      */
     private ServiceDeliveryPointEntity createValidServiceDeliveryPoint() {
         ServiceDeliveryPointEntity sdp = new ServiceDeliveryPointEntity();
-        sdp.setDescription("Test Service Delivery Point - " + faker.lorem().sentence(3));
-        sdp.setMrid("SDP-" + faker.number().digits(8));
         sdp.setName(faker.address().fullAddress());
         sdp.setTariffProfile("TARIFF-" + faker.number().digits(6));
         sdp.setCustomerAgreement("AGREEMENT-" + faker.number().digits(8));
@@ -63,7 +63,6 @@ class ServiceDeliveryPointRepositoryTest extends BaseRepositoryTest {
      */
     private ServiceDeliveryPointEntity createMinimalServiceDeliveryPoint() {
         ServiceDeliveryPointEntity sdp = new ServiceDeliveryPointEntity();
-        sdp.setDescription("Minimal Service Delivery Point");
         sdp.setName("Basic Location");
         return sdp;
     }
@@ -77,7 +76,6 @@ class ServiceDeliveryPointRepositoryTest extends BaseRepositoryTest {
         void shouldSaveAndRetrieveServiceDeliveryPointSuccessfully() {
             // Arrange
             ServiceDeliveryPointEntity sdp = createValidServiceDeliveryPoint();
-            sdp.setDescription("Test Service Delivery Point for CRUD");
             sdp.setName("123 Main Street, Anytown, USA");
 
             // Act
@@ -89,9 +87,7 @@ class ServiceDeliveryPointRepositoryTest extends BaseRepositoryTest {
             assertThat(saved).isNotNull();
             assertThat(saved.getId()).isNotNull();
             assertThat(retrieved).isPresent();
-            assertThat(retrieved.get().getDescription()).isEqualTo("Test Service Delivery Point for CRUD");
             assertThat(retrieved.get().getName()).isEqualTo("123 Main Street, Anytown, USA");
-            assertThat(retrieved.get().getMrid()).isNotNull();
         }
 
         @Test
@@ -102,7 +98,6 @@ class ServiceDeliveryPointRepositoryTest extends BaseRepositoryTest {
             ServiceDeliveryPointEntity saved = persistAndFlush(sdp);
 
             // Act
-            saved.setDescription("Updated Service Delivery Point Description");
             saved.setName("456 Updated Street, New City, USA");
             saved.setTariffProfile("UPDATED-TARIFF-123456");
             ServiceDeliveryPointEntity updated = serviceDeliveryPointRepository.save(saved);
@@ -111,7 +106,6 @@ class ServiceDeliveryPointRepositoryTest extends BaseRepositoryTest {
             // Assert
             Optional<ServiceDeliveryPointEntity> retrieved = serviceDeliveryPointRepository.findById(updated.getId());
             assertThat(retrieved).isPresent();
-            assertThat(retrieved.get().getDescription()).isEqualTo("Updated Service Delivery Point Description");
             assertThat(retrieved.get().getName()).isEqualTo("456 Updated Street, New City, USA");
             assertThat(retrieved.get().getTariffProfile()).isEqualTo("UPDATED-TARIFF-123456");
         }
@@ -122,7 +116,7 @@ class ServiceDeliveryPointRepositoryTest extends BaseRepositoryTest {
             // Arrange
             ServiceDeliveryPointEntity sdp = createValidServiceDeliveryPoint();
             ServiceDeliveryPointEntity saved = persistAndFlush(sdp);
-            UUID savedId = saved.getId();
+            Long savedId = saved.getId();
 
             // Act
             serviceDeliveryPointRepository.deleteById(savedId);
@@ -141,7 +135,7 @@ class ServiceDeliveryPointRepositoryTest extends BaseRepositoryTest {
             sdp1.setName("First Location");
             ServiceDeliveryPointEntity sdp2 = createValidServiceDeliveryPoint();
             sdp2.setName("Second Location");
-            
+
             persistAndFlush(sdp1);
             persistAndFlush(sdp2);
 
@@ -162,7 +156,7 @@ class ServiceDeliveryPointRepositoryTest extends BaseRepositoryTest {
             long initialCount = serviceDeliveryPointRepository.count();
             ServiceDeliveryPointEntity sdp1 = createValidServiceDeliveryPoint();
             ServiceDeliveryPointEntity sdp2 = createValidServiceDeliveryPoint();
-            
+
             persistAndFlush(sdp1);
             persistAndFlush(sdp2);
 
@@ -188,7 +182,7 @@ class ServiceDeliveryPointRepositoryTest extends BaseRepositoryTest {
             sdp2.setName("Unique Location Name"); // Same name
             ServiceDeliveryPointEntity sdp3 = createValidServiceDeliveryPoint();
             sdp3.setName("Different Location Name");
-            
+
             persistAndFlush(sdp1);
             persistAndFlush(sdp2);
             persistAndFlush(sdp3);
@@ -212,7 +206,7 @@ class ServiceDeliveryPointRepositoryTest extends BaseRepositoryTest {
             sdp2.setTariffProfile("RESIDENTIAL-STANDARD"); // Same tariff
             ServiceDeliveryPointEntity sdp3 = createValidServiceDeliveryPoint();
             sdp3.setTariffProfile("COMMERCIAL-BASIC");
-            
+
             persistAndFlush(sdp1);
             persistAndFlush(sdp2);
             persistAndFlush(sdp3);
@@ -236,7 +230,7 @@ class ServiceDeliveryPointRepositoryTest extends BaseRepositoryTest {
             sdp2.setCustomerAgreement("AGREEMENT-12345"); // Same agreement
             ServiceDeliveryPointEntity sdp3 = createValidServiceDeliveryPoint();
             sdp3.setCustomerAgreement("AGREEMENT-67890");
-            
+
             persistAndFlush(sdp1);
             persistAndFlush(sdp2);
             persistAndFlush(sdp3);
@@ -260,7 +254,7 @@ class ServiceDeliveryPointRepositoryTest extends BaseRepositoryTest {
             sdp2.setName("Oak Street Residential");
             ServiceDeliveryPointEntity sdp3 = createValidServiceDeliveryPoint();
             sdp3.setName("Pine Avenue Commercial");
-            
+
             persistAndFlush(sdp1);
             persistAndFlush(sdp2);
             persistAndFlush(sdp3);
@@ -286,7 +280,7 @@ class ServiceDeliveryPointRepositoryTest extends BaseRepositoryTest {
             sdp3.setTariffProfile("COMMERCIAL-PREMIUM");
             ServiceDeliveryPointEntity sdp4 = createValidServiceDeliveryPoint();
             sdp4.setTariffProfile("RESIDENTIAL-BASIC");
-            
+
             persistAndFlush(sdp1);
             persistAndFlush(sdp2);
             persistAndFlush(sdp3);
@@ -305,12 +299,12 @@ class ServiceDeliveryPointRepositoryTest extends BaseRepositoryTest {
             // Arrange
             ServiceDeliveryPointEntity sdp1 = createValidServiceDeliveryPoint();
             ServiceDeliveryPointEntity sdp2 = createValidServiceDeliveryPoint();
-            
+
             ServiceDeliveryPointEntity saved1 = persistAndFlush(sdp1);
             ServiceDeliveryPointEntity saved2 = persistAndFlush(sdp2);
 
             // Act
-            List<UUID> allIds = serviceDeliveryPointRepository.findAllIds();
+            List<Long> allIds = serviceDeliveryPointRepository.findAllIds();
 
             // Assert
             assertThat(allIds).contains(saved1.getId(), saved2.getId());
@@ -320,23 +314,6 @@ class ServiceDeliveryPointRepositoryTest extends BaseRepositoryTest {
     @Nested
     @DisplayName("Validation Testing")
     class ValidationTest {
-
-        @Test
-        @DisplayName("Should validate mRID length constraint")
-        void shouldValidateMridLengthConstraint() {
-            // Arrange
-            ServiceDeliveryPointEntity sdp = createValidServiceDeliveryPoint();
-            sdp.setMrid("x".repeat(65)); // Exceeds 64 character limit
-
-            // Act
-            Set<ConstraintViolation<ServiceDeliveryPointEntity>> violations = validator.validate(sdp);
-
-            // Assert
-            assertThat(violations).isNotEmpty();
-            assertThat(violations)
-                .extracting(ConstraintViolation::getMessage)
-                .contains("ServiceDeliveryPoint mRID cannot exceed 64 characters");
-        }
 
         @Test
         @DisplayName("Should validate name length constraint")
@@ -394,7 +371,6 @@ class ServiceDeliveryPointRepositoryTest extends BaseRepositoryTest {
         void shouldAcceptValidFieldLengths() {
             // Arrange
             ServiceDeliveryPointEntity sdp = createValidServiceDeliveryPoint();
-            sdp.setMrid("x".repeat(64)); // Exactly 64 characters
             sdp.setName("x".repeat(256)); // Exactly 256 characters
             sdp.setTariffProfile("x".repeat(256)); // Exactly 256 characters
             sdp.setCustomerAgreement("x".repeat(256)); // Exactly 256 characters
@@ -411,8 +387,6 @@ class ServiceDeliveryPointRepositoryTest extends BaseRepositoryTest {
         void shouldAcceptNullOptionalFields() {
             // Arrange
             ServiceDeliveryPointEntity sdp = new ServiceDeliveryPointEntity();
-            sdp.setDescription("Test SDP with null fields");
-            sdp.setMrid(null);
             sdp.setName("Valid Name");
             sdp.setTariffProfile(null);
             sdp.setCustomerAgreement(null);
@@ -435,7 +409,6 @@ class ServiceDeliveryPointRepositoryTest extends BaseRepositoryTest {
             // Arrange
             ServiceDeliveryPointEntity sdp = createValidServiceDeliveryPoint();
             sdp.setName("  123 Main Street  ");
-            sdp.setMrid("SDP-12345");
 
             // Act
             String displayName = sdp.getDisplayName();
@@ -445,48 +418,33 @@ class ServiceDeliveryPointRepositoryTest extends BaseRepositoryTest {
         }
 
         @Test
-        @DisplayName("Should generate display name with mRID when name is null")
-        void shouldGenerateDisplayNameWithMridWhenNameIsNull() {
+        @DisplayName("Should generate display name with ID when name is null")
+        void shouldGenerateDisplayNameWithIdWhenNameIsNull() {
             // Arrange
             ServiceDeliveryPointEntity sdp = createValidServiceDeliveryPoint();
             sdp.setName(null);
-            sdp.setMrid("SDP-67890");
+            ServiceDeliveryPointEntity saved = persistAndFlush(sdp);
 
             // Act
-            String displayName = sdp.getDisplayName();
+            String displayName = saved.getDisplayName();
 
             // Assert
-            assertThat(displayName).isEqualTo("Service Delivery Point SDP-67890");
+            assertThat(displayName).isEqualTo("Service Delivery Point " + saved.getId());
         }
 
         @Test
-        @DisplayName("Should generate display name with mRID when name is empty")
-        void shouldGenerateDisplayNameWithMridWhenNameIsEmpty() {
+        @DisplayName("Should generate display name with ID when name is empty")
+        void shouldGenerateDisplayNameWithIdWhenNameIsEmpty() {
             // Arrange
             ServiceDeliveryPointEntity sdp = createValidServiceDeliveryPoint();
             sdp.setName("   ");
-            sdp.setMrid("SDP-11111");
+            ServiceDeliveryPointEntity saved = persistAndFlush(sdp);
 
             // Act
-            String displayName = sdp.getDisplayName();
+            String displayName = saved.getDisplayName();
 
             // Assert
-            assertThat(displayName).isEqualTo("Service Delivery Point SDP-11111");
-        }
-
-        @Test
-        @DisplayName("Should generate default display name when both name and mRID are null")
-        void shouldGenerateDefaultDisplayNameWhenBothNameAndMridAreNull() {
-            // Arrange
-            ServiceDeliveryPointEntity sdp = createValidServiceDeliveryPoint();
-            sdp.setName(null);
-            sdp.setMrid(null);
-
-            // Act
-            String displayName = sdp.getDisplayName();
-
-            // Assert
-            assertThat(displayName).isEqualTo("Service Delivery Point Unknown");
+            assertThat(displayName).contains("Service Delivery Point");
         }
 
         @Test
@@ -495,10 +453,10 @@ class ServiceDeliveryPointRepositoryTest extends BaseRepositoryTest {
             // Arrange
             ServiceDeliveryPointEntity sdp1 = createValidServiceDeliveryPoint();
             sdp1.setTariffProfile("RESIDENTIAL-STANDARD");
-            
+
             ServiceDeliveryPointEntity sdp2 = createValidServiceDeliveryPoint();
             sdp2.setTariffProfile(null);
-            
+
             ServiceDeliveryPointEntity sdp3 = createValidServiceDeliveryPoint();
             sdp3.setTariffProfile("   ");
 
@@ -514,10 +472,10 @@ class ServiceDeliveryPointRepositoryTest extends BaseRepositoryTest {
             // Arrange
             ServiceDeliveryPointEntity sdp1 = createValidServiceDeliveryPoint();
             sdp1.setCustomerAgreement("AGREEMENT-12345");
-            
+
             ServiceDeliveryPointEntity sdp2 = createValidServiceDeliveryPoint();
             sdp2.setCustomerAgreement(null);
-            
+
             ServiceDeliveryPointEntity sdp3 = createValidServiceDeliveryPoint();
             sdp3.setCustomerAgreement("   ");
 
@@ -533,7 +491,6 @@ class ServiceDeliveryPointRepositoryTest extends BaseRepositoryTest {
             // Arrange
             ServiceDeliveryPointEntity sdp = createValidServiceDeliveryPoint();
             sdp.setName("Valid Location");
-            sdp.setMrid(null);
 
             // Act
             boolean isValid = sdp.isValid();
@@ -543,27 +500,11 @@ class ServiceDeliveryPointRepositoryTest extends BaseRepositoryTest {
         }
 
         @Test
-        @DisplayName("Should validate service delivery point with mRID")
-        void shouldValidateServiceDeliveryPointWithMrid() {
+        @DisplayName("Should invalidate service delivery point without name")
+        void shouldInvalidateServiceDeliveryPointWithoutName() {
             // Arrange
             ServiceDeliveryPointEntity sdp = createValidServiceDeliveryPoint();
             sdp.setName(null);
-            sdp.setMrid("SDP-12345");
-
-            // Act
-            boolean isValid = sdp.isValid();
-
-            // Assert
-            assertThat(isValid).isTrue();
-        }
-
-        @Test
-        @DisplayName("Should invalidate service delivery point without name or mRID")
-        void shouldInvalidateServiceDeliveryPointWithoutNameOrMrid() {
-            // Arrange
-            ServiceDeliveryPointEntity sdp = createValidServiceDeliveryPoint();
-            sdp.setName(null);
-            sdp.setMrid(null);
 
             // Act
             boolean isValid = sdp.isValid();
@@ -573,12 +514,11 @@ class ServiceDeliveryPointRepositoryTest extends BaseRepositoryTest {
         }
 
         @Test
-        @DisplayName("Should invalidate service delivery point with empty name and mRID")
-        void shouldInvalidateServiceDeliveryPointWithEmptyNameAndMrid() {
+        @DisplayName("Should invalidate service delivery point with empty name")
+        void shouldInvalidateServiceDeliveryPointWithEmptyName() {
             // Arrange
             ServiceDeliveryPointEntity sdp = createValidServiceDeliveryPoint();
             sdp.setName("   ");
-            sdp.setMrid("   ");
 
             // Act
             boolean isValid = sdp.isValid();
@@ -589,12 +529,12 @@ class ServiceDeliveryPointRepositoryTest extends BaseRepositoryTest {
     }
 
     @Nested
-    @DisplayName("Base Class Functionality")
-    class BaseClassTest {
+    @DisplayName("Entity Persistence")
+    class EntityPersistenceTest {
 
         @Test
-        @DisplayName("Should inherit IdentifiedObject functionality")
-        void shouldInheritIdentifiedObjectFunctionality() {
+        @DisplayName("Should persist and retrieve by ID")
+        void shouldPersistAndRetrieveById() {
             // Arrange
             ServiceDeliveryPointEntity sdp = createValidServiceDeliveryPoint();
 
@@ -605,37 +545,10 @@ class ServiceDeliveryPointRepositoryTest extends BaseRepositoryTest {
             // Assert
             Optional<ServiceDeliveryPointEntity> retrieved = serviceDeliveryPointRepository.findById(saved.getId());
             assertThat(retrieved).isPresent();
-            
+
             ServiceDeliveryPointEntity entity = retrieved.get();
             assertThat(entity.getId()).isNotNull();
-            assertThat(entity.getCreated()).isNotNull();
-            assertThat(entity.getUpdated()).isNotNull();
-            assertThat(entity.getDescription()).isNotNull();
-        }
-
-        @Test
-        @DisplayName("Should update timestamps on modification")
-        void shouldUpdateTimestampsOnModification() {
-            // Arrange
-            ServiceDeliveryPointEntity sdp = createValidServiceDeliveryPoint();
-            ServiceDeliveryPointEntity saved = persistAndFlush(sdp);
-            
-            // Wait a moment to ensure timestamp difference
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-
-            // Act
-            saved.setDescription("Updated Description");
-            ServiceDeliveryPointEntity updated = serviceDeliveryPointRepository.save(saved);
-            flushAndClear();
-
-            // Assert
-            Optional<ServiceDeliveryPointEntity> retrieved = serviceDeliveryPointRepository.findById(updated.getId());
-            assertThat(retrieved).isPresent();
-            assertThat(retrieved.get().getUpdated()).isAfter(retrieved.get().getCreated());
+            assertThat(entity.getName()).isNotNull();
         }
 
         @Test
@@ -662,19 +575,17 @@ class ServiceDeliveryPointRepositoryTest extends BaseRepositoryTest {
             // Arrange
             ServiceDeliveryPointEntity sdp1 = createValidServiceDeliveryPoint();
             ServiceDeliveryPointEntity sdp2 = createValidServiceDeliveryPoint();
-            
+
             ServiceDeliveryPointEntity saved1 = persistAndFlush(sdp1);
             ServiceDeliveryPointEntity saved2 = persistAndFlush(sdp2);
 
             // Act & Assert
             assertThat(saved1).isNotEqualTo(saved2);
-            // Note: Hibernate proxy-aware hashCode implementation returns class hashCode for different entities
-            // This is expected behavior for entities with different IDs
-            
+
             // Same entity should be equal to itself
             assertThat(saved1).isEqualTo(saved1);
             assertThat(saved1.hashCode()).isEqualTo(saved1.hashCode());
-            
+
             // Different entities with different IDs should not be equal
             assertThat(saved1.getId()).isNotEqualTo(saved2.getId());
         }
@@ -684,7 +595,6 @@ class ServiceDeliveryPointRepositoryTest extends BaseRepositoryTest {
         void shouldGenerateMeaningfulToStringRepresentation() {
             // Arrange
             ServiceDeliveryPointEntity sdp = createValidServiceDeliveryPoint();
-            sdp.setMrid("SDP-12345");
             sdp.setName("Test Location");
             ServiceDeliveryPointEntity saved = persistAndFlush(sdp);
 
@@ -694,7 +604,6 @@ class ServiceDeliveryPointRepositoryTest extends BaseRepositoryTest {
             // Assert
             assertThat(toString).contains("ServiceDeliveryPointEntity");
             assertThat(toString).contains("id = " + saved.getId());
-            assertThat(toString).contains("mrid = SDP-12345");
             assertThat(toString).contains("name = Test Location");
         }
     }

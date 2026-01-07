@@ -410,26 +410,29 @@ class PnodeRefRepositoryTest extends BaseRepositoryTest {
     }
 
     @Nested
-    @DisplayName("Base Class Functionality")
-    class BaseClassTest {
+    @DisplayName("Entity Persistence")
+    class EntityPersistenceTest {
 
         @Test
-        @DisplayName("Should inherit IdentifiedObject functionality")
-        void shouldInheritIdentifiedObjectFunctionality() {
+        @DisplayName("Should persist and retrieve pricing node reference")
+        void shouldPersistAndRetrievePnodeRef() {
             // Arrange
             UsagePointEntity usagePoint = TestDataBuilders.createValidUsagePoint();
             UsagePointEntity savedUsagePoint = usagePointRepository.save(usagePoint);
-            
-            PnodeRefEntity pnodeRef = new PnodeRefEntity("HUB", "BASE_CLASS_TEST", savedUsagePoint);
+
+            PnodeRefEntity pnodeRef = new PnodeRefEntity("HUB", "PERSISTENCE_TEST", savedUsagePoint);
 
             // Act
             PnodeRefEntity saved = pnodeRefRepository.save(pnodeRef);
             flushAndClear();
 
             // Assert
+            // PnodeRef extends Object (not IdentifiedObject) in ESPI 4.0 XSD,
+            // so it has Long ID but no Atom links or timestamps
             assertThat(saved.getId()).isNotNull();
-            assertThat(saved.getCreated()).isNotNull();
-            assertThat(saved.getUpdated()).isNotNull();
+            assertThat(saved.getApnodeType()).isEqualTo("HUB");
+            assertThat(saved.getRef()).isEqualTo("PERSISTENCE_TEST");
+            assertThat(saved.getUsagePoint().getId()).isEqualTo(savedUsagePoint.getId());
         }
     }
 }
