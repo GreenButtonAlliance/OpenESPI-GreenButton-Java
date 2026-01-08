@@ -1,121 +1,57 @@
--- Meter Reading Table
-CREATE TABLE meter_readings
-(
-    id              CHAR(36) PRIMARY KEY ,
-    description     VARCHAR(255),
-    created         TIMESTAMP NOT NULL,
-    updated         TIMESTAMP NOT NULL,
-    published       TIMESTAMP,
-    up_link_rel     VARCHAR(255),
-    up_link_href    VARCHAR(1024),
-    up_link_type    VARCHAR(255),
-    self_link_rel   VARCHAR(255),
-    self_link_href  VARCHAR(1024),
-    self_link_type  VARCHAR(255),
+/*
+ * OpenESPI Additional Base Tables Migration
+ *
+ * Copyright (c) 2018-2025 Green Button Alliance, Inc.
+ * Licensed under the Apache License, Version 2.0
+ *
+ * This migration creates additional vendor-neutral tables that depend on both
+ * V1 (base tables) and V2 (vendor-specific tables) to already exist.
+ *
+ * IMPORTANT: The following tables were moved to V2 vendor-specific files
+ * because they require vendor-specific syntax OR are part of dependency chains
+ * that include vendor-specific tables:
+ *
+ * Moved to V2:
+ * - meter_readings (depends on usage_points from V2)
+ * - meter_reading_related_links (FK dependency)
+ * - interval_blocks (depends on meter_readings)
+ * - interval_block_related_links (FK dependency)
+ * - interval_readings (extends Object, requires vendor-specific auto-increment, depends on interval_blocks)
+ *
+ * Reason: IntervalReading extends Object (not IdentifiedObject) per ESPI 4.0 XSD (espi.xsd:1016),
+ * requiring Long ID with vendor-specific auto-increment syntax (BIGINT AUTO_INCREMENT for MySQL/H2,
+ * BIGSERIAL for PostgreSQL). To keep the dependency chain together (meter_readings → interval_blocks
+ * → interval_readings), all three were moved to V2 vendor files.
+ *
+ * Tables in this migration:
+ * - reading_qualities (depends on interval_readings from V2)
+ * - usage_summaries (depends on usage_points from V2)
+ * - usage_summary_related_links (FK dependency)
+ * - subscription_usage_points (join table)
+ * - aggregated_node_refs (depends on pnode_refs from V2)
+ * - customer schema tables
+ * - end_device schema tables
+ * - service location/supplier tables
+ * - statement tables
+ *
+ * Compatible with: H2, MySQL, PostgreSQL
+ */
 
-    -- Foreign key relationships
-    usage_point_id  CHAR(36),
-    reading_type_id CHAR(36),
-
-    FOREIGN KEY (usage_point_id) REFERENCES usage_points (id) ON DELETE CASCADE,
-    FOREIGN KEY (reading_type_id) REFERENCES reading_types (id) ON DELETE SET NULL
-);
-
--- Indexes for meter_readings table
-CREATE INDEX idx_meter_reading_usage_point_id ON meter_readings (usage_point_id);
-CREATE INDEX idx_meter_reading_reading_type_id ON meter_readings (reading_type_id);
-CREATE INDEX idx_meter_reading_created ON meter_readings (created);
-CREATE INDEX idx_meter_reading_updated ON meter_readings (updated);
-
--- Related Links Table for Meter Readings
-CREATE TABLE meter_reading_related_links
-(
-    meter_reading_id CHAR(36) NOT NULL,
-    related_links    VARCHAR(1024),
-    FOREIGN KEY (meter_reading_id) REFERENCES meter_readings (id) ON DELETE CASCADE
-);
-
--- Indexes for meter_reading_related_links table
-CREATE INDEX idx_meter_reading_related_links ON meter_reading_related_links (meter_reading_id);
-
--- Interval Block Table
-CREATE TABLE interval_blocks
-(
-    id                CHAR(36) PRIMARY KEY ,
-    description       VARCHAR(255),
-    created           TIMESTAMP NOT NULL,
-    updated           TIMESTAMP NOT NULL,
-    published         TIMESTAMP,
-    up_link_rel       VARCHAR(255),
-    up_link_href      VARCHAR(1024),
-    up_link_type      VARCHAR(255),
-    self_link_rel     VARCHAR(255),
-    self_link_href    VARCHAR(1024),
-    self_link_type    VARCHAR(255),
-
-    -- Interval block specific fields
-    interval_duration BIGINT,
-    interval_start    BIGINT,
-
-    -- Foreign key relationships
-    meter_reading_id  CHAR(36),
-
-    FOREIGN KEY (meter_reading_id) REFERENCES meter_readings (id) ON DELETE CASCADE
-);
-
--- Indexes for interval_blocks table
-CREATE INDEX idx_interval_block_meter_reading_id ON interval_blocks (meter_reading_id);
-CREATE INDEX idx_interval_block_start ON interval_blocks (interval_start);
-CREATE INDEX idx_interval_block_created ON interval_blocks (created);
-CREATE INDEX idx_interval_block_updated ON interval_blocks (updated);
-
--- Related Links Table for Interval Blocks
-CREATE TABLE interval_block_related_links
-(
-    interval_block_id CHAR(36) NOT NULL,
-    related_links     VARCHAR(1024),
-    FOREIGN KEY (interval_block_id) REFERENCES interval_blocks (id) ON DELETE CASCADE
-);
-
--- Indexes for interval_block_related_links table
-CREATE INDEX idx_interval_block_related_links ON interval_block_related_links (interval_block_id);
-
--- Interval Reading Table
-CREATE TABLE interval_readings
-(
-    id                   CHAR(36) PRIMARY KEY ,
-    description          VARCHAR(255),
-    created              TIMESTAMP,
-    updated              TIMESTAMP,
-    published            TIMESTAMP,
-    up_link_rel          VARCHAR(255),
-    up_link_href         VARCHAR(1024),
-    up_link_type         VARCHAR(255),
-    self_link_rel        VARCHAR(255),
-    self_link_href       VARCHAR(1024),
-    self_link_type       VARCHAR(255),
-
-    -- Interval reading specific fields
-    cost                 BIGINT,
-    reading_value        BIGINT,
-    time_period_start    BIGINT,
-    time_period_duration BIGINT,
-    consumption_tier     BIGINT,
-    tou                  BIGINT,
-    cpp                  BIGINT,
-
-    -- Foreign key relationships
-    interval_block_id    CHAR(36),
-
-    FOREIGN KEY (interval_block_id) REFERENCES interval_blocks (id) ON DELETE CASCADE
-);
-
--- Indexes for interval_readings table
-CREATE INDEX idx_interval_reading_interval_block_id ON interval_readings (interval_block_id);
-CREATE INDEX idx_interval_reading_time_period_start ON interval_readings (time_period_start);
-CREATE INDEX idx_interval_reading_value ON interval_readings (reading_value);
-CREATE INDEX idx_interval_reading_created ON interval_readings (created);
-CREATE INDEX idx_interval_reading_updated ON interval_readings (updated);
+-- ==================================================================================
+-- TABLES MOVED TO V2 VENDOR-SPECIFIC MIGRATION FILES
+-- ==================================================================================
+-- The following tables have been moved to V2 vendor-specific files:
+--   - db/vendor/mysql/V2__MySQL_Specific_Tables.sql
+--   - db/vendor/postgres/V2__PostgreSQL_Specific_Tables.sql
+--   - db/vendor/h2/V2__H2_Specific_Tables.sql
+--
+-- Tables moved:
+--   1. meter_readings + meter_reading_related_links
+--   2. interval_blocks + interval_block_related_links
+--   3. interval_readings (no related_links - extends Object, not IdentifiedObject)
+--
+-- See file header for detailed explanation.
+-- ==================================================================================
 
 -- Reading Quality Table
 CREATE TABLE reading_qualities
@@ -136,7 +72,8 @@ CREATE TABLE reading_qualities
     quality             VARCHAR(50),
 
     -- Foreign key relationships
-    interval_reading_id CHAR(36),
+    -- IntervalReading uses Long ID (BIGINT/BIGSERIAL) as it extends Object, not IdentifiedObject
+    interval_reading_id BIGINT,
 
     FOREIGN KEY (interval_reading_id) REFERENCES interval_readings (id) ON DELETE CASCADE
 );

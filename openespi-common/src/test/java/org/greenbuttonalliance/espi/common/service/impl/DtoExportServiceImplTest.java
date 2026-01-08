@@ -270,12 +270,14 @@ class DtoExportServiceImplTest {
 
     private static @NonNull AtomEntryDto getIntervlBlockEntryDto(OffsetDateTime now) {
         List<IntervalReadingDto> intervalReadings = new ArrayList<>();
-        intervalReadings.add(new IntervalReadingDto( 974L, null, 282L, new DateTimeIntervalDto(1330578000L, 900L), new ArrayList<>(List.of(new ReadingQualityDto( "8"))), null, null, null));
+        // New constructor: cost, readingQualities, timePeriod, value, consumptionTier, tou, cpp
+        intervalReadings.add(new IntervalReadingDto(974L, new ArrayList<>(List.of(new ReadingQualityDto("8"))), new DateTimeIntervalDto(1330578000L, 900L), 282L, null, null, null));
 
-        intervalReadings.add(new IntervalReadingDto( 965L, null, 323L, new DateTimeIntervalDto(1330578900L, 900L), new ArrayList<>(List.of(new ReadingQualityDto( "7"))), null, null, null));
+        intervalReadings.add(new IntervalReadingDto(965L, new ArrayList<>(List.of(new ReadingQualityDto("7"))), new DateTimeIntervalDto(1330578900L, 900L), 323L, null, null, null));
 
-        intervalReadings.add(new IntervalReadingDto(294L, 884L, null, new DateTimeIntervalDto(1330579800L, 900L)));
-        intervalReadings.add(new IntervalReadingDto(331L, 995L, null, new DateTimeIntervalDto(1330580700L, 900L)));
+        // Using convenience constructor: value, cost, timePeriod
+        intervalReadings.add(new IntervalReadingDto(294L, 884L, new DateTimeIntervalDto(1330579800L, 900L)));
+        intervalReadings.add(new IntervalReadingDto(331L, 995L, new DateTimeIntervalDto(1330580700L, 900L)));
 
         IntervalBlockDto intervalBlockDto = new IntervalBlockDto("urn:uuid:FE9A61BB-6913-52D4-88BE-9634A218EF53",
                 new DateTimeIntervalDto(1330578000L, 86400L), intervalReadings);

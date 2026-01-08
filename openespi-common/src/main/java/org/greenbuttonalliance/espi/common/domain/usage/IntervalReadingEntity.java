@@ -25,14 +25,11 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.greenbuttonalliance.espi.common.domain.common.DateTimeInterval;
 import org.hibernate.annotations.BatchSize;
-import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.proxy.HibernateProxy;
-import org.hibernate.type.SqlTypes;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
 
 /**
  * Pure JPA/Hibernate entity for IntervalReading without JAXB concerns.
@@ -52,13 +49,13 @@ import java.util.UUID;
 public class IntervalReadingEntity {
 
     /**
-     * Primary key identifier.
+     * Primary key identifier (48+ bits as per ESPI requirement).
+     * IntervalReading extends Object (not IdentifiedObject) per ESPI 4.0 XSD.
      */
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @JdbcTypeCode(SqlTypes.CHAR)
-    @Column(length = 36, columnDefinition = "char(36)", updatable = false, nullable = false)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private Long id;
 
     /**
      * Cost associated with this interval reading.
@@ -66,6 +63,29 @@ public class IntervalReadingEntity {
      */
     @Column(name = "cost")
     private Long cost;
+
+    /**
+     * Reading quality indicators for this interval reading.
+     * One-to-many relationship with cascade and orphan removal.
+     * -- GETTER --
+     *  Gets the reading qualities collection.
+     *  Lombok @Data should generate this, but added manually for compilation.
+     *
+     * @return the list of reading qualities
+
+     */
+    @OneToMany(mappedBy = "intervalReading", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @BatchSize(size = 10)
+    private List<ReadingQualityEntity> readingQualities = new ArrayList<>();
+
+    /**
+     * Time period for this interval reading.
+     * Embedded value object containing start time and duration.
+     */
+    @Embedded
+    @AttributeOverride(name = "start", column = @Column(name = "time_period_start"))
+    @AttributeOverride(name = "duration", column = @Column(name = "time_period_duration"))
+    private DateTimeInterval timePeriod;
 
     /**
      * The actual measured value for this interval.
@@ -96,35 +116,12 @@ public class IntervalReadingEntity {
     private Long cpp;
 
     /**
-     * Time period for this interval reading.
-     * Embedded value object containing start time and duration.
-     */
-    @Embedded
-    @AttributeOverride(name = "start", column = @Column(name = "time_period_start"))
-    @AttributeOverride(name = "duration", column = @Column(name = "time_period_duration"))
-    private DateTimeInterval timePeriod;
-
-    /**
      * Interval block that contains this reading.
      * Many interval readings belong to one interval block.
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "interval_block_id")
     private IntervalBlockEntity intervalBlock;
-
-    /**
-     * Reading quality indicators for this interval reading.
-     * One-to-many relationship with cascade and orphan removal.
-     * -- GETTER --
-     *  Gets the reading qualities collection.
-     *  Lombok @Data should generate this, but added manually for compilation.
-     *
-     * @return the list of reading qualities
-
-     */
-    @OneToMany(mappedBy = "intervalReading", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @BatchSize(size = 10)
-    private List<ReadingQualityEntity> readingQualities = new ArrayList<>();
 
     /**
      * Constructor with core reading data.
@@ -333,10 +330,10 @@ public class IntervalReadingEntity {
         return getClass().getSimpleName() + "(" +
                 "id = " + getId() + ", " +
                 "cost = " + getCost() + ", " +
+                "timePeriod = " + getTimePeriod() + ", " +
                 "value = " + getValue() + ", " +
                 "consumptionTier = " + getConsumptionTier() + ", " +
                 "tou = " + getTou() + ", " +
-                "cpp = " + getCpp() + ", " +
-                "timePeriod = " + getTimePeriod() + ")";
+                "cpp = " + getCpp() + ")";
     }
 }

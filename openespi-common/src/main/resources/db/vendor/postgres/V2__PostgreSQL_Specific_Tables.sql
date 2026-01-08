@@ -176,3 +176,110 @@ CREATE TABLE pnode_refs
 CREATE INDEX idx_pnode_ref_apnode_type ON pnode_refs (apnode_type);
 CREATE INDEX idx_pnode_ref_ref ON pnode_refs (ref);
 CREATE INDEX idx_pnode_ref_usage_point_id ON pnode_refs (usage_point_id);
+
+-- Meter Reading Table
+CREATE TABLE meter_readings
+(
+    id              CHAR(36) PRIMARY KEY ,
+    description     VARCHAR(255),
+    created         TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated         TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    published       TIMESTAMP(6),
+    up_link_rel     VARCHAR(255),
+    up_link_href    VARCHAR(1024),
+    up_link_type    VARCHAR(255),
+    self_link_rel   VARCHAR(255),
+    self_link_href  VARCHAR(1024),
+    self_link_type  VARCHAR(255),
+
+    -- Foreign key relationships
+    usage_point_id  CHAR(36),
+    reading_type_id CHAR(36),
+
+    FOREIGN KEY (usage_point_id) REFERENCES usage_points (id) ON DELETE CASCADE,
+    FOREIGN KEY (reading_type_id) REFERENCES reading_types (id) ON DELETE SET NULL
+);
+
+CREATE INDEX idx_meter_reading_usage_point_id ON meter_readings (usage_point_id);
+CREATE INDEX idx_meter_reading_reading_type_id ON meter_readings (reading_type_id);
+CREATE INDEX idx_meter_reading_created ON meter_readings (created);
+CREATE INDEX idx_meter_reading_updated ON meter_readings (updated);
+
+-- Related Links Table for Meter Readings
+CREATE TABLE meter_reading_related_links
+(
+    meter_reading_id CHAR(36) NOT NULL,
+    related_links    VARCHAR(1024),
+    FOREIGN KEY (meter_reading_id) REFERENCES meter_readings (id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_meter_reading_related_links ON meter_reading_related_links (meter_reading_id);
+
+-- Interval Block Table
+CREATE TABLE interval_blocks
+(
+    id                CHAR(36) PRIMARY KEY ,
+    description       VARCHAR(255),
+    created           TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated           TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    published         TIMESTAMP(6),
+    up_link_rel       VARCHAR(255),
+    up_link_href      VARCHAR(1024),
+    up_link_type      VARCHAR(255),
+    self_link_rel     VARCHAR(255),
+    self_link_href    VARCHAR(1024),
+    self_link_type    VARCHAR(255),
+
+    -- Interval block specific fields
+    interval_duration BIGINT,
+    interval_start    BIGINT,
+
+    -- Foreign key relationships
+    meter_reading_id  CHAR(36),
+
+    FOREIGN KEY (meter_reading_id) REFERENCES meter_readings (id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_interval_block_meter_reading_id ON interval_blocks (meter_reading_id);
+CREATE INDEX idx_interval_block_start ON interval_blocks (interval_start);
+CREATE INDEX idx_interval_block_created ON interval_blocks (created);
+CREATE INDEX idx_interval_block_updated ON interval_blocks (updated);
+
+-- Related Links Table for Interval Blocks
+CREATE TABLE interval_block_related_links
+(
+    interval_block_id CHAR(36) NOT NULL,
+    related_links     VARCHAR(1024),
+    FOREIGN KEY (interval_block_id) REFERENCES interval_blocks (id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_interval_block_related_links ON interval_block_related_links (interval_block_id);
+
+-- Interval Reading Table (Object-based entity, no IdentifiedObject)
+-- IntervalReading extends Object per ESPI 4.0 XSD (espi.xsd:1016)
+-- XSD sequence: cost → ReadingQuality → timePeriod → value → consumptionTier → tou → cpp
+CREATE TABLE interval_readings
+(
+    id                   BIGSERIAL PRIMARY KEY,
+
+    -- ESPI 4.0 fields in XSD sequence order
+    cost                 BIGINT,
+
+    -- timePeriod (embedded DateTimeInterval)
+    time_period_start    BIGINT,
+    time_period_duration BIGINT,
+
+    reading_value        BIGINT,
+    consumption_tier     BIGINT,
+    tou                  BIGINT,
+    cpp                  BIGINT,
+
+    -- Foreign key relationship (parent: IntervalBlock)
+    interval_block_id    CHAR(36),
+
+    FOREIGN KEY (interval_block_id) REFERENCES interval_blocks (id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_interval_reading_block_id ON interval_readings (interval_block_id);
+CREATE INDEX idx_interval_reading_time_start ON interval_readings (time_period_start);
+CREATE INDEX idx_interval_reading_value ON interval_readings (reading_value);

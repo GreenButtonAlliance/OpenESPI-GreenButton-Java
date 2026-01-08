@@ -35,26 +35,21 @@ import java.util.List;
 @XmlRootElement(name = "IntervalReading", namespace = "http://naesb.org/espi")
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "IntervalReading", namespace = "http://naesb.org/espi", propOrder = {
-    "cost", "currency", "value", "timePeriod", "readingQualities",
-    "consumptionTier", "tou", "cpp"
+    "cost", "readingQualities", "timePeriod", "value", "consumptionTier", "tou", "cpp"
 })
 public record IntervalReadingDto(
 
     @XmlElement(name = "cost")
     Long cost,
 
-    @XmlElement(name = "currency")
-    Integer currency,
-
-    @XmlElement(name = "value")
-    Long value,
+    @XmlElement(name = "ReadingQuality")
+    List<ReadingQualityDto> readingQualities,
 
     @XmlElement(name = "timePeriod")
     DateTimeIntervalDto timePeriod,
 
-    @XmlElement(name = "ReadingQuality")
-    //@XmlElementWrapper(name = "ReadingQualities")
-    List<ReadingQualityDto> readingQualities,
+    @XmlElement(name = "value")
+    Long value,
 
     @XmlElement(name = "consumptionTier")
     Integer consumptionTier,
@@ -70,20 +65,20 @@ public record IntervalReadingDto(
      * Default constructor for JAXB.
      */
     public IntervalReadingDto() {
-        this(null, null, null, null, null, null, null, null);
+        this(null, null, null, null, null, null, null);
     }
 
     /**
      * Minimal constructor for basic interval reading data.
      */
     public IntervalReadingDto(Long value, DateTimeIntervalDto timePeriod) {
-        this(null, null, value, timePeriod, null, null, null, null);
+        this(null, null, timePeriod, value, null, null, null);
     }
 
     /**
      * Constructor for interval reading with cost information.
      */
-    public IntervalReadingDto(Long value, Long cost, Integer currency, DateTimeIntervalDto timePeriod) {
-        this(cost, currency, value, timePeriod, null, null, null, null);
+    public IntervalReadingDto(Long value, Long cost, DateTimeIntervalDto timePeriod) {
+        this(cost, null, timePeriod, value, null, null, null);
     }
 }
