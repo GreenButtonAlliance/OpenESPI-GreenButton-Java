@@ -295,3 +295,22 @@ CREATE TABLE interval_readings
     INDEX idx_interval_reading_time_start (time_period_start),
     INDEX idx_interval_reading_value (reading_value)
 );
+
+-- Reading Quality Table (Object-based entity, no IdentifiedObject)
+-- ReadingQuality extends Object per ESPI 4.0 XSD (espi.xsd:1062)
+-- XSD sequence: quality
+CREATE TABLE reading_qualities
+(
+    id                   BIGINT AUTO_INCREMENT PRIMARY KEY,
+
+    -- ESPI 4.0 field
+    quality              VARCHAR(50) NOT NULL,
+
+    -- Foreign key relationship (parent: IntervalReading)
+    interval_reading_id  BIGINT,
+
+    FOREIGN KEY (interval_reading_id) REFERENCES interval_readings (id) ON DELETE CASCADE,
+
+    INDEX idx_reading_quality_interval_reading_id (interval_reading_id),
+    INDEX idx_reading_quality_quality (quality)
+);

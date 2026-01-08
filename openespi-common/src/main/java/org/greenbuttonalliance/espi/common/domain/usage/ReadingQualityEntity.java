@@ -25,12 +25,9 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.proxy.HibernateProxy;
-import org.hibernate.type.SqlTypes;
 
 import java.util.Objects;
-import java.util.UUID;
 
 /**
  * Pure JPA/Hibernate entity for ReadingQuality without JAXB concerns.
@@ -55,13 +52,13 @@ import java.util.UUID;
 public class ReadingQualityEntity {
 
     /**
-     * Primary key identifier.
+     * Primary key identifier (48+ bits as per ESPI requirement).
+     * ReadingQuality extends Object (not IdentifiedObject) per ESPI 4.0 XSD.
      */
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @JdbcTypeCode(SqlTypes.CHAR)
-    @Column(length = 36, columnDefinition = "char(36)", updatable = false, nullable = false)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private Long id;
 
     // Quality constants based on common industry standards
     public static final String QUALITY_GOOD = "GOOD";
