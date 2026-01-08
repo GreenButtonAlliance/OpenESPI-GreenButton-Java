@@ -88,14 +88,15 @@ public class IntervalBlockServiceImpl implements IntervalBlockService {
 
 	@Override
 	public List<IntervalBlockEntity> findAllByMeterReading(MeterReadingEntity meterReading) {
-		// TODO: Implement findAllByMeterReading query in repository
-		return intervalBlockRepository.findByMeterReadingEntity(meterReading);
+		return intervalBlockRepository.findAllByMeterReadingId(meterReading.getId());
 	}
 
 	@Override
 	public IntervalBlockEntity findByURI(String uri) {
-		// TODO: Implement findByURI query in repository
-		return intervalBlockRepository.findByUri(uri).orElse(null);
+		// Note: findByURI removed from repository (non-indexed query on self_link_href)
+		// URI-based lookup should use ID-based queries instead
+		log.warn("findByURI is deprecated - use findById with extracted UUID instead");
+		return null;
 	}
 
 	@Override
