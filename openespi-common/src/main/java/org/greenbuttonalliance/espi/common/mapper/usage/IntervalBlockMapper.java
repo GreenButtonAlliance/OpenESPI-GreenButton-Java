@@ -26,7 +26,6 @@ import org.greenbuttonalliance.espi.common.mapper.BaseMapperUtils;
 import org.greenbuttonalliance.espi.common.mapper.DateTimeMapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
 
 /**
  * MapStruct mapper for converting between IntervalBlockEntity and IntervalBlockDto.
@@ -45,18 +44,12 @@ public interface IntervalBlockMapper {
     /**
      * Converts an IntervalBlockEntity to an IntervalBlockDto.
      * Maps all related entities to their corresponding DTOs.
-     * 
+     *
      * @param entity the interval block entity
      * @return the interval block DTO
      */
-    @Mapping(target = "id", ignore = true) // DTO id field not used
+    @Mapping(target = "id", ignore = true) // DTO id field not used (legacy field)
     @Mapping(target = "uuid", source = "id", qualifiedByName = "uuidToString")
-    @Mapping(target = "published", source = "published", qualifiedByName = "localToOffset")
-    @Mapping(target = "updated", source = "updated", qualifiedByName = "localToOffset")
-    @Mapping(target = "relatedLinks", ignore = true) // Links handled separately
-    @Mapping(target = "selfLink", ignore = true)
-    @Mapping(target = "upLink", ignore = true)
-    @Mapping(target = "description", source = "description")
     @Mapping(target = "interval", source = "interval")
     @Mapping(target = "intervalReadings", source = "intervalReadings")
     IntervalBlockDto toDto(IntervalBlockEntity entity);
@@ -64,37 +57,20 @@ public interface IntervalBlockMapper {
     /**
      * Converts an IntervalBlockDto to an IntervalBlockEntity.
      * Maps all related DTOs to their corresponding entities.
-     * 
+     *
      * @param dto the interval block DTO
      * @return the interval block entity
      */
     @Mapping(target = "id", source = "uuid", qualifiedByName = "stringToUuid")
     @Mapping(target = "created", ignore = true)
     @Mapping(target = "updated", ignore = true)
-    @Mapping(target = "published", source = "published", qualifiedByName = "offsetToLocal")
+    @Mapping(target = "published", ignore = true)
     @Mapping(target = "upLink", ignore = true)
     @Mapping(target = "selfLink", ignore = true)
     @Mapping(target = "relatedLinks", ignore = true)
-    @Mapping(target = "description", source = "description")
+    @Mapping(target = "description", ignore = true)
     @Mapping(target = "interval", source = "interval")
     @Mapping(target = "intervalReadings", source = "intervalReadings")
     @Mapping(target = "meterReading", ignore = true) // Relationships handled separately
     IntervalBlockEntity toEntity(IntervalBlockDto dto);
-
-    /**
-     * Updates an existing IntervalBlockEntity with data from an IntervalBlockDto.
-     * Useful for merge operations where the entity ID should be preserved.
-     * 
-     * @param dto the source DTO
-     * @param entity the target entity to update
-     */
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "created", ignore = true)
-    @Mapping(target = "updated", ignore = true)
-    @Mapping(target = "published", source = "published", qualifiedByName = "offsetToLocal")
-    @Mapping(target = "upLink", ignore = true)
-    @Mapping(target = "selfLink", ignore = true)
-    @Mapping(target = "relatedLinks", ignore = true)
-    @Mapping(target = "meterReading", ignore = true) // Relationships handled separately
-    void updateEntity(IntervalBlockDto dto, @MappingTarget IntervalBlockEntity entity);
 }

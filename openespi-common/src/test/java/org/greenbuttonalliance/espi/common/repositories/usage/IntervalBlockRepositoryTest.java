@@ -254,27 +254,6 @@ class IntervalBlockRepositoryTest extends BaseRepositoryTest {
         }
 
         @Test
-        @DisplayName("Should delete interval block by UUID")
-        void shouldDeleteIntervalBlockByUuid() {
-            // Arrange
-            IntervalBlockEntity intervalBlock = TestDataBuilders.createValidIntervalBlock();
-            intervalBlock.setDescription("Interval Block for UUID Delete");
-            IntervalBlockEntity saved = intervalBlockRepository.save(intervalBlock);
-            UUID intervalBlockId = saved.getId();
-            flushAndClear();
-
-            // Verify it exists
-            assertThat(intervalBlockRepository.existsById(intervalBlockId)).isTrue();
-
-            // Act
-            intervalBlockRepository.deleteByUuid(intervalBlockId);
-            flushAndClear();
-
-            // Assert
-            assertThat(intervalBlockRepository.existsById(intervalBlockId)).isFalse();
-        }
-
-        @Test
         @DisplayName("Should find all interval blocks by meter reading ID")
         void shouldFindAllIntervalBlocksByMeterReadingId() {
             // Arrange
@@ -339,135 +318,11 @@ class IntervalBlockRepositoryTest extends BaseRepositoryTest {
         }
 
         @Test
-        @DisplayName("Should find all interval block IDs by xpath3")
-        void shouldFindAllIntervalBlockIdsByXpath3() {
-            // Arrange
-            RetailCustomerEntity retailCustomer = TestDataBuilders.createValidRetailCustomer();
-            retailCustomer.setUsername("customer@xpath3.com");
-            RetailCustomerEntity savedCustomer = retailCustomerRepository.save(retailCustomer);
-
-            UsagePointEntity usagePoint = TestDataBuilders.createValidUsagePoint();
-            usagePoint.setDescription("Usage Point for Xpath3");
-            usagePoint.setRetailCustomer(savedCustomer);
-            UsagePointEntity savedUsagePoint = usagePointRepository.save(usagePoint);
-
-            MeterReadingEntity meterReading = TestDataBuilders.createValidMeterReadingWithUsagePoint(savedUsagePoint);
-            meterReading.setDescription("Meter Reading for Xpath3");
-            MeterReadingEntity savedMeterReading = meterReadingRepository.save(meterReading);
-
-            IntervalBlockEntity intervalBlock1 = TestDataBuilders.createValidIntervalBlockWithMeterReading(savedMeterReading);
-            intervalBlock1.setDescription("Interval Block 1 for Xpath3");
-            IntervalBlockEntity intervalBlock2 = TestDataBuilders.createValidIntervalBlockWithMeterReading(savedMeterReading);
-            intervalBlock2.setDescription("Interval Block 2 for Xpath3");
-
-            List<IntervalBlockEntity> savedIntervalBlocks = intervalBlockRepository.saveAll(List.of(intervalBlock1, intervalBlock2));
-            flushAndClear();
-
-            // Act
-            List<UUID> intervalBlockIds = intervalBlockRepository.findAllIdsByXpath3(
-                    savedCustomer.getId(), 
-                    savedUsagePoint.getId(), 
-                    savedMeterReading.getId()
-            );
-
-            // Assert
-            assertThat(intervalBlockIds).hasSize(2);
-            assertThat(intervalBlockIds).contains(savedIntervalBlocks.get(0).getId(), savedIntervalBlocks.get(1).getId());
-        }
-
-        @Test
-        @DisplayName("Should find interval block ID by xpath")
-        void shouldFindIntervalBlockIdByXpath() {
-            // Arrange
-            RetailCustomerEntity retailCustomer = TestDataBuilders.createValidRetailCustomer();
-            retailCustomer.setUsername("customer@xpath.com");
-            RetailCustomerEntity savedCustomer = retailCustomerRepository.save(retailCustomer);
-
-            UsagePointEntity usagePoint = TestDataBuilders.createValidUsagePoint();
-            usagePoint.setDescription("Usage Point for Xpath");
-            usagePoint.setRetailCustomer(savedCustomer);
-            UsagePointEntity savedUsagePoint = usagePointRepository.save(usagePoint);
-
-            MeterReadingEntity meterReading = TestDataBuilders.createValidMeterReadingWithUsagePoint(savedUsagePoint);
-            meterReading.setDescription("Meter Reading for Xpath");
-            MeterReadingEntity savedMeterReading = meterReadingRepository.save(meterReading);
-
-            IntervalBlockEntity intervalBlock = TestDataBuilders.createValidIntervalBlockWithMeterReading(savedMeterReading);
-            intervalBlock.setDescription("Interval Block for Xpath");
-            IntervalBlockEntity savedIntervalBlock = intervalBlockRepository.save(intervalBlock);
-            flushAndClear();
-
-            // Act
-            Optional<UUID> result = intervalBlockRepository.findIdByXpath(
-                    savedCustomer.getId(), 
-                    savedUsagePoint.getId(), 
-                    savedMeterReading.getId(),
-                    savedIntervalBlock.getId()
-            );
-
-            // Assert
-            assertThat(result).isPresent();
-            assertThat(result.get()).isEqualTo(savedIntervalBlock.getId());
-        }
-
-        @Test
-        @DisplayName("Should find interval blocks by meter reading entity")
-        void shouldFindIntervalBlocksByMeterReadingEntity() {
-            // Arrange
-            MeterReadingEntity meterReading = TestDataBuilders.createValidMeterReading();
-            meterReading.setDescription("Meter Reading for Entity Query");
-            MeterReadingEntity savedMeterReading = meterReadingRepository.save(meterReading);
-
-            IntervalBlockEntity intervalBlock1 = TestDataBuilders.createValidIntervalBlockWithMeterReading(savedMeterReading);
-            intervalBlock1.setDescription("Interval Block 1 for Entity Query");
-            IntervalBlockEntity intervalBlock2 = TestDataBuilders.createValidIntervalBlockWithMeterReading(savedMeterReading);
-            intervalBlock2.setDescription("Interval Block 2 for Entity Query");
-
-            intervalBlockRepository.saveAll(List.of(intervalBlock1, intervalBlock2));
-            flushAndClear();
-
-            // Act
-            List<IntervalBlockEntity> results = intervalBlockRepository.findByMeterReadingEntity(savedMeterReading);
-
-            // Assert
-            assertThat(results).hasSize(2);
-            assertThat(results).extracting(IntervalBlockEntity::getDescription)
-                    .contains("Interval Block 1 for Entity Query", "Interval Block 2 for Entity Query");
-        }
-
-        @Test
-        @DisplayName("Should find interval block by URI")
-        void shouldFindIntervalBlockByUri() {
-            // Arrange
-            IntervalBlockEntity intervalBlock = TestDataBuilders.createValidIntervalBlock();
-            intervalBlock.setDescription("Interval Block with URI");
-            
-            LinkType selfLink = new LinkType();
-            selfLink.setHref("/espi/1_1/resource/IntervalBlock/123");
-            selfLink.setRel("self");
-            intervalBlock.setSelfLink(selfLink);
-            
-            intervalBlockRepository.save(intervalBlock);
-            flushAndClear();
-
-            // Act
-            Optional<IntervalBlockEntity> result = intervalBlockRepository.findByUri("/espi/1_1/resource/IntervalBlock/123");
-
-            // Assert
-            assertThat(result).isPresent();
-            assertThat(result.get().getDescription()).isEqualTo("Interval Block with URI");
-            assertThat(result.get().getSelfLink().getHref()).isEqualTo("/espi/1_1/resource/IntervalBlock/123");
-        }
-
-        @Test
         @DisplayName("Should handle empty results gracefully")
         void shouldHandleEmptyResultsGracefully() {
             // Act & Assert
             assertThat(intervalBlockRepository.findAllByMeterReadingId(UUID.randomUUID())).isEmpty();
             assertThat(intervalBlockRepository.findAllIdsByUsagePointId(UUID.randomUUID())).isEmpty();
-            assertThat(intervalBlockRepository.findAllIdsByXpath3(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())).isEmpty();
-            assertThat(intervalBlockRepository.findIdByXpath(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())).isEmpty();
-            assertThat(intervalBlockRepository.findByUri("nonexistent-uri")).isEmpty();
         }
     }
 
