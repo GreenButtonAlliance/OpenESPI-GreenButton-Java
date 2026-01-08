@@ -19,17 +19,19 @@
 
 package org.greenbuttonalliance.espi.common.dto.usage;
 
-import org.greenbuttonalliance.espi.common.dto.atom.LinkDto;
-
 import jakarta.xml.bind.annotation.*;
-import java.time.OffsetDateTime;
-import java.util.List;
 
 /**
  * MeterReading DTO record for JAXB XML marshalling/unmarshalling.
- * 
- * Represents a meter reading containing interval blocks and reading types.
- * Supports Atom protocol XML wrapping.
+ *
+ * Represents a meter reading - a set of values obtained from the meter.
+ * Per ESPI 4.0 specification, MeterReading extends IdentifiedObject but
+ * contains NO child elements. Relationships to ReadingType and IntervalBlock
+ * are expressed via Atom links, not embedded XML elements.
+ *
+ * Complies with espi.xsd MeterReading complexType definition.
+ *
+ * @see <a href="https://www.naesb.org/ESPI_Standards.asp">NAESB ESPI 4.0</a>
  */
 @XmlRootElement(name = "MeterReading", namespace = "http://naesb.org/espi")
 @XmlAccessorType(XmlAccessType.FIELD)

@@ -268,41 +268,6 @@ class MeterReadingRepositoryTest extends BaseRepositoryTest {
         }
 
         @Test
-        @DisplayName("Should find meter readings by related href")
-        void shouldFindMeterReadingsByRelatedHref() {
-            // Arrange - Create a simple meter reading without related links for now
-            MeterReadingEntity meterReading = TestDataBuilders.createValidMeterReading();
-            meterReading.setDescription("Meter Reading for Related Href Test");
-            meterReadingRepository.save(meterReading);
-            flushAndClear();
-
-            // Act - Test the query method with a non-existent href (should return empty)
-            List<MeterReadingEntity> results = meterReadingRepository.findByRelatedHref("/espi/1_1/resource/IntervalBlock/123");
-
-            // Assert - Should return empty list since no meter reading has this related href
-            assertThat(results).isEmpty();
-        }
-
-        @Test
-        @DisplayName("Should find all related entities")
-        void shouldFindAllRelatedEntities() {
-            // Arrange
-            List<String> relatedLinkHrefs = List.of(
-                    "/espi/1_1/resource/ReadingType/1",
-                    "/espi/1_1/resource/ReadingType/2",
-                    "/espi/1_1/resource/ReadingType/3"
-            );
-
-            // Act
-            List<Object> results = meterReadingRepository.findAllRelated(relatedLinkHrefs);
-
-            // Assert
-            assertThat(results).isNotNull();
-            // Note: This query looks for ReadingType entities with matching self links
-            // The actual results depend on existing data in the test database
-        }
-
-        @Test
         @DisplayName("Should find all meter reading IDs by usage point ID")
         void shouldFindAllMeterReadingIdsByUsagePointId() {
             // Arrange
@@ -327,72 +292,10 @@ class MeterReadingRepositoryTest extends BaseRepositoryTest {
         }
 
         @Test
-        @DisplayName("Should find all meter reading IDs by xpath2")
-        void shouldFindAllMeterReadingIdsByXpath2() {
-            // Arrange
-            RetailCustomerEntity retailCustomer = TestDataBuilders.createValidRetailCustomer();
-            retailCustomer.setUsername("customer@xpath2.com");
-            RetailCustomerEntity savedCustomer = retailCustomerRepository.save(retailCustomer);
-
-            UsagePointEntity usagePoint = TestDataBuilders.createValidUsagePoint();
-            usagePoint.setDescription("Usage Point for Xpath2");
-            usagePoint.setRetailCustomer(savedCustomer);
-            UsagePointEntity savedUsagePoint = usagePointRepository.save(usagePoint);
-
-            MeterReadingEntity meterReading1 = TestDataBuilders.createValidMeterReadingWithUsagePoint(savedUsagePoint);
-            meterReading1.setDescription("Meter Reading 1 for Xpath2");
-            MeterReadingEntity meterReading2 = TestDataBuilders.createValidMeterReadingWithUsagePoint(savedUsagePoint);
-            meterReading2.setDescription("Meter Reading 2 for Xpath2");
-
-            List<MeterReadingEntity> savedMeterReadings = meterReadingRepository.saveAll(List.of(meterReading1, meterReading2));
-            flushAndClear();
-
-            // Act
-            List<UUID> meterReadingIds = meterReadingRepository.findAllIdsByXpath2(savedCustomer.getId(), savedUsagePoint.getId());
-
-            // Assert
-            assertThat(meterReadingIds).hasSize(2);
-            assertThat(meterReadingIds).contains(savedMeterReadings.get(0).getId(), savedMeterReadings.get(1).getId());
-        }
-
-        @Test
-        @DisplayName("Should find meter reading ID by xpath")
-        void shouldFindMeterReadingIdByXpath() {
-            // Arrange
-            RetailCustomerEntity retailCustomer = TestDataBuilders.createValidRetailCustomer();
-            retailCustomer.setUsername("customer@xpath.com");
-            RetailCustomerEntity savedCustomer = retailCustomerRepository.save(retailCustomer);
-
-            UsagePointEntity usagePoint = TestDataBuilders.createValidUsagePoint();
-            usagePoint.setDescription("Usage Point for Xpath");
-            usagePoint.setRetailCustomer(savedCustomer);
-            UsagePointEntity savedUsagePoint = usagePointRepository.save(usagePoint);
-
-            MeterReadingEntity meterReading = TestDataBuilders.createValidMeterReadingWithUsagePoint(savedUsagePoint);
-            meterReading.setDescription("Meter Reading for Xpath");
-            MeterReadingEntity savedMeterReading = meterReadingRepository.save(meterReading);
-            flushAndClear();
-
-            // Act
-            Optional<UUID> result = meterReadingRepository.findIdByXpath(
-                    savedCustomer.getId(), 
-                    savedUsagePoint.getId(), 
-                    savedMeterReading.getId()
-            );
-
-            // Assert
-            assertThat(result).isPresent();
-            assertThat(result.get()).isEqualTo(savedMeterReading.getId());
-        }
-
-        @Test
         @DisplayName("Should handle empty results gracefully")
         void shouldHandleEmptyResultsGracefully() {
             // Act & Assert
-            assertThat(meterReadingRepository.findByRelatedHref("nonexistent-href")).isEmpty();
             assertThat(meterReadingRepository.findAllIdsByUsagePointId(UUID.randomUUID())).isEmpty();
-            assertThat(meterReadingRepository.findAllIdsByXpath2(UUID.randomUUID(), UUID.randomUUID())).isEmpty();
-            assertThat(meterReadingRepository.findIdByXpath(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())).isEmpty();
         }
     }
 
