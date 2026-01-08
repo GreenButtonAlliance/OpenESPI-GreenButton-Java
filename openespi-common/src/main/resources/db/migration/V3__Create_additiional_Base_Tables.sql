@@ -17,14 +17,14 @@
  * - interval_blocks (depends on meter_readings)
  * - interval_block_related_links (FK dependency)
  * - interval_readings (extends Object, requires vendor-specific auto-increment, depends on interval_blocks)
+ * - reading_qualities (extends Object, requires vendor-specific auto-increment, depends on interval_readings)
  *
- * Reason: IntervalReading extends Object (not IdentifiedObject) per ESPI 4.0 XSD (espi.xsd:1016),
- * requiring Long ID with vendor-specific auto-increment syntax (BIGINT AUTO_INCREMENT for MySQL/H2,
- * BIGSERIAL for PostgreSQL). To keep the dependency chain together (meter_readings → interval_blocks
- * → interval_readings), all three were moved to V2 vendor files.
+ * Reason: IntervalReading and ReadingQuality both extend Object (not IdentifiedObject) per ESPI 4.0 XSD
+ * (espi.xsd:1016 and espi.xsd:1062), requiring Long ID with vendor-specific auto-increment syntax
+ * (BIGINT AUTO_INCREMENT for MySQL/H2, BIGSERIAL for PostgreSQL). To keep the dependency chain together
+ * (meter_readings → interval_blocks → interval_readings → reading_qualities), all were moved to V2 vendor files.
  *
  * Tables in this migration:
- * - reading_qualities (depends on interval_readings from V2)
  * - usage_summaries (depends on usage_points from V2)
  * - usage_summary_related_links (FK dependency)
  * - subscription_usage_points (join table)
@@ -49,40 +49,17 @@
 --   1. meter_readings + meter_reading_related_links
 --   2. interval_blocks + interval_block_related_links
 --   3. interval_readings (no related_links - extends Object, not IdentifiedObject)
+--   4. reading_qualities (no related_links - extends Object, not IdentifiedObject)
 --
 -- See file header for detailed explanation.
 -- ==================================================================================
 
--- Reading Quality Table
-CREATE TABLE reading_qualities
-(
-    id                  CHAR(36) PRIMARY KEY ,
-    description         VARCHAR(255),
-    created             TIMESTAMP NOT NULL,
-    updated             TIMESTAMP NOT NULL,
-    published           TIMESTAMP,
-    up_link_rel         VARCHAR(255),
-    up_link_href        VARCHAR(1024),
-    up_link_type        VARCHAR(255),
-    self_link_rel       VARCHAR(255),
-    self_link_href      VARCHAR(1024),
-    self_link_type      VARCHAR(255),
-
-    -- Reading quality specific fields
-    quality             VARCHAR(50),
-
-    -- Foreign key relationships
-    -- IntervalReading uses Long ID (BIGINT/BIGSERIAL) as it extends Object, not IdentifiedObject
-    interval_reading_id BIGINT,
-
-    FOREIGN KEY (interval_reading_id) REFERENCES interval_readings (id) ON DELETE CASCADE
-);
-
--- Indexes for reading_qualities table
-CREATE INDEX idx_reading_quality_interval_reading_id ON reading_qualities (interval_reading_id);
-CREATE INDEX idx_reading_quality_quality ON reading_qualities (quality);
-CREATE INDEX idx_reading_quality_created ON reading_qualities (created);
-CREATE INDEX idx_reading_quality_updated ON reading_qualities (updated);
+-- Reading Quality Table - Moved to vendor-specific V2 migration files
+-- ReadingQuality extends Object (not IdentifiedObject) per ESPI 4.0 XSD (espi.xsd:1062)
+-- Table creation moved to V2 vendor files due to auto-increment syntax differences
+-- See: db/vendor/mysql/V2__MySQL_Specific_Tables.sql
+--      db/vendor/postgres/V2__PostgreSQL_Specific_Tables.sql
+--      db/vendor/h2/V2__H2_Specific_Tables.sql
 
 -- Usage Summary Table
 CREATE TABLE usage_summaries
