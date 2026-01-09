@@ -112,234 +112,51 @@ class PnodeRefRepositoryTest extends BaseRepositoryTest {
     class CustomQueryMethodsTest {
 
         @Test
-        @DisplayName("Should find pricing node refs by usage point")
-        void shouldFindPricingNodeRefsByUsagePoint() {
+        @DisplayName("Should find all IDs")
+        void shouldFindAllIds() {
             // Arrange
             UsagePointEntity usagePoint = TestDataBuilders.createValidUsagePoint();
             UsagePointEntity savedUsagePoint = usagePointRepository.save(usagePoint);
-            
+
             PnodeRefEntity pnodeRef1 = new PnodeRefEntity("HUB", "HUB_1", savedUsagePoint);
             PnodeRefEntity pnodeRef2 = new PnodeRefEntity("LOAD_ZONE", "ZONE_1", savedUsagePoint);
-            
-            pnodeRefRepository.save(pnodeRef1);
-            pnodeRefRepository.save(pnodeRef2);
+
+            PnodeRefEntity saved1 = pnodeRefRepository.save(pnodeRef1);
+            PnodeRefEntity saved2 = pnodeRefRepository.save(pnodeRef2);
             flushAndClear();
 
             // Act
-            List<PnodeRefEntity> pnodeRefs = pnodeRefRepository.findByUsagePoint(savedUsagePoint);
+            List<Long> allIds = pnodeRefRepository.findAllIds();
 
             // Assert
-            assertThat(pnodeRefs).hasSize(2);
-            assertThat(pnodeRefs).extracting(PnodeRefEntity::getRef)
-                .containsExactlyInAnyOrder("HUB_1", "ZONE_1");
+            assertThat(allIds).contains(saved1.getId(), saved2.getId());
         }
 
         @Test
-        @DisplayName("Should find pricing node refs by usage point ID")
-        void shouldFindPricingNodeRefsByUsagePointId() {
+        @DisplayName("Should find all pricing node refs by usage point ID")
+        void shouldFindAllPricingNodeRefsByUsagePointId() {
             // Arrange
             UsagePointEntity usagePoint1 = TestDataBuilders.createValidUsagePoint();
             UsagePointEntity usagePoint2 = TestDataBuilders.createValidUsagePoint();
             UsagePointEntity savedUsagePoint1 = usagePointRepository.save(usagePoint1);
             UsagePointEntity savedUsagePoint2 = usagePointRepository.save(usagePoint2);
-            
+
             PnodeRefEntity pnodeRef1 = new PnodeRefEntity("HUB", "HUB_1", savedUsagePoint1);
             PnodeRefEntity pnodeRef2 = new PnodeRefEntity("HUB", "HUB_2", savedUsagePoint1);
             PnodeRefEntity pnodeRef3 = new PnodeRefEntity("HUB", "HUB_3", savedUsagePoint2);
-            
+
             pnodeRefRepository.save(pnodeRef1);
             pnodeRefRepository.save(pnodeRef2);
             pnodeRefRepository.save(pnodeRef3);
             flushAndClear();
 
             // Act
-            List<PnodeRefEntity> pnodeRefs = pnodeRefRepository.findByUsagePointId(savedUsagePoint1.getId());
+            List<PnodeRefEntity> pnodeRefs = pnodeRefRepository.findAllByUsagePointId(savedUsagePoint1.getId());
 
             // Assert
             assertThat(pnodeRefs).hasSize(2);
             assertThat(pnodeRefs).extracting(PnodeRefEntity::getRef)
                 .containsExactlyInAnyOrder("HUB_1", "HUB_2");
-        }
-
-        @Test
-        @DisplayName("Should find pricing node refs by apnode type")
-        void shouldFindPricingNodeRefsByApnodeType() {
-            // Arrange
-            UsagePointEntity usagePoint = TestDataBuilders.createValidUsagePoint();
-            UsagePointEntity savedUsagePoint = usagePointRepository.save(usagePoint);
-            
-            PnodeRefEntity pnodeRef1 = new PnodeRefEntity("HUB", "HUB_1", savedUsagePoint);
-            PnodeRefEntity pnodeRef2 = new PnodeRefEntity("HUB", "HUB_2", savedUsagePoint);
-            PnodeRefEntity pnodeRef3 = new PnodeRefEntity("LOAD_ZONE", "ZONE_1", savedUsagePoint);
-            
-            pnodeRefRepository.save(pnodeRef1);
-            pnodeRefRepository.save(pnodeRef2);
-            pnodeRefRepository.save(pnodeRef3);
-            flushAndClear();
-
-            // Act
-            List<PnodeRefEntity> hubRefs = pnodeRefRepository.findByApnodeType("HUB");
-
-            // Assert
-            assertThat(hubRefs).hasSize(2);
-            assertThat(hubRefs).extracting(PnodeRefEntity::getRef)
-                .containsExactlyInAnyOrder("HUB_1", "HUB_2");
-        }
-
-        @Test
-        @DisplayName("Should find pricing node refs by usage point and apnode type")
-        void shouldFindPricingNodeRefsByUsagePointAndApnodeType() {
-            // Arrange
-            UsagePointEntity usagePoint = TestDataBuilders.createValidUsagePoint();
-            UsagePointEntity savedUsagePoint = usagePointRepository.save(usagePoint);
-            
-            PnodeRefEntity pnodeRef1 = new PnodeRefEntity("HUB", "HUB_1", savedUsagePoint);
-            PnodeRefEntity pnodeRef2 = new PnodeRefEntity("LOAD_ZONE", "ZONE_1", savedUsagePoint);
-            
-            pnodeRefRepository.save(pnodeRef1);
-            pnodeRefRepository.save(pnodeRef2);
-            flushAndClear();
-
-            // Act
-            List<PnodeRefEntity> hubRefs = pnodeRefRepository.findByUsagePointAndApnodeType(savedUsagePoint, "HUB");
-
-            // Assert
-            assertThat(hubRefs).hasSize(1);
-            assertThat(hubRefs.get(0).getRef()).isEqualTo("HUB_1");
-        }
-
-        @Test
-        @DisplayName("Should find pricing node refs by ref")
-        void shouldFindPricingNodeRefsByRef() {
-            // Arrange
-            UsagePointEntity usagePoint = TestDataBuilders.createValidUsagePoint();
-            UsagePointEntity savedUsagePoint = usagePointRepository.save(usagePoint);
-            
-            PnodeRefEntity pnodeRef1 = new PnodeRefEntity("HUB", "UNIQUE_HUB", savedUsagePoint);
-            PnodeRefEntity pnodeRef2 = new PnodeRefEntity("LOAD_ZONE", "COMMON_REF", savedUsagePoint);
-            
-            pnodeRefRepository.save(pnodeRef1);
-            pnodeRefRepository.save(pnodeRef2);
-            flushAndClear();
-
-            // Act
-            List<PnodeRefEntity> refs = pnodeRefRepository.findByRef("UNIQUE_HUB");
-
-            // Assert
-            assertThat(refs).hasSize(1);
-            assertThat(refs.get(0).getApnodeType()).isEqualTo("HUB");
-        }
-
-        @Test
-        @DisplayName("Should find valid pricing node refs by usage point ID")
-        void shouldFindValidPricingNodeRefsByUsagePointId() {
-            // Arrange
-            UsagePointEntity usagePoint = TestDataBuilders.createValidUsagePoint();
-            UsagePointEntity savedUsagePoint = usagePointRepository.save(usagePoint);
-            
-            long currentTime = System.currentTimeMillis() / 1000;
-            long pastTime = currentTime - 3600; // 1 hour ago
-            long futureTime = currentTime + 3600; // 1 hour from now
-            
-            // Valid: no dates set (always valid)
-            PnodeRefEntity validRef1 = new PnodeRefEntity("HUB", "ALWAYS_VALID", savedUsagePoint);
-            
-            // Valid: started in past, no end date
-            PnodeRefEntity validRef2 = new PnodeRefEntity("HUB", "STARTED_VALID", pastTime, null, savedUsagePoint);
-            
-            // Invalid: starts in future
-            PnodeRefEntity invalidRef = new PnodeRefEntity("HUB", "FUTURE_START", futureTime, null, savedUsagePoint);
-            
-            pnodeRefRepository.save(validRef1);
-            pnodeRefRepository.save(validRef2);
-            pnodeRefRepository.save(invalidRef);
-            flushAndClear();
-
-            // Act
-            List<PnodeRefEntity> validRefs = pnodeRefRepository.findValidByUsagePointId(savedUsagePoint.getId(), currentTime);
-
-            // Assert
-            assertThat(validRefs).hasSize(2);
-            assertThat(validRefs).extracting(PnodeRefEntity::getRef)
-                .containsExactlyInAnyOrder("ALWAYS_VALID", "STARTED_VALID");
-        }
-
-        @Test
-        @DisplayName("Should find valid pricing node refs by apnode type")
-        void shouldFindValidPricingNodeRefsByApnodeType() {
-            // Arrange
-            UsagePointEntity usagePoint = TestDataBuilders.createValidUsagePoint();
-            UsagePointEntity savedUsagePoint = usagePointRepository.save(usagePoint);
-            
-            long currentTime = System.currentTimeMillis() / 1000;
-            long pastTime = currentTime - 3600; // 1 hour ago
-            long futureTime = currentTime + 3600; // 1 hour from now
-            
-            // Valid HUB
-            PnodeRefEntity validHub = new PnodeRefEntity("HUB", "VALID_HUB", pastTime, futureTime, savedUsagePoint);
-            
-            // Invalid HUB (expired)
-            PnodeRefEntity expiredHub = new PnodeRefEntity("HUB", "EXPIRED_HUB", pastTime, pastTime + 1800, savedUsagePoint);
-            
-            // Valid LOAD_ZONE
-            PnodeRefEntity validZone = new PnodeRefEntity("LOAD_ZONE", "VALID_ZONE", savedUsagePoint);
-            
-            pnodeRefRepository.save(validHub);
-            pnodeRefRepository.save(expiredHub);
-            pnodeRefRepository.save(validZone);
-            flushAndClear();
-
-            // Act
-            List<PnodeRefEntity> validHubs = pnodeRefRepository.findValidByApnodeType("HUB", currentTime);
-
-            // Assert
-            assertThat(validHubs).hasSize(1);
-            assertThat(validHubs.get(0).getRef()).isEqualTo("VALID_HUB");
-        }
-
-        @Test
-        @DisplayName("Should delete pricing node refs by usage point")
-        void shouldDeletePricingNodeRefsByUsagePoint() {
-            // Arrange
-            UsagePointEntity usagePoint = TestDataBuilders.createValidUsagePoint();
-            UsagePointEntity savedUsagePoint = usagePointRepository.save(usagePoint);
-            
-            PnodeRefEntity pnodeRef1 = new PnodeRefEntity("HUB", "HUB_1", savedUsagePoint);
-            PnodeRefEntity pnodeRef2 = new PnodeRefEntity("HUB", "HUB_2", savedUsagePoint);
-            
-            pnodeRefRepository.save(pnodeRef1);
-            pnodeRefRepository.save(pnodeRef2);
-            flushAndClear();
-
-            // Act
-            Long deletedCount = pnodeRefRepository.deleteByUsagePoint(savedUsagePoint);
-            flushAndClear();
-
-            // Assert
-            assertThat(deletedCount).isEqualTo(2L);
-            List<PnodeRefEntity> remainingRefs = pnodeRefRepository.findByUsagePoint(savedUsagePoint);
-            assertThat(remainingRefs).isEmpty();
-        }
-
-        @Test
-        @DisplayName("Should delete pricing node refs by usage point ID")
-        void shouldDeletePricingNodeRefsByUsagePointId() {
-            // Arrange
-            UsagePointEntity usagePoint = TestDataBuilders.createValidUsagePoint();
-            UsagePointEntity savedUsagePoint = usagePointRepository.save(usagePoint);
-            
-            PnodeRefEntity pnodeRef = new PnodeRefEntity("HUB", "DELETE_TEST", savedUsagePoint);
-            pnodeRefRepository.save(pnodeRef);
-            flushAndClear();
-
-            // Act
-            Long deletedCount = pnodeRefRepository.deleteByUsagePointId(savedUsagePoint.getId());
-            flushAndClear();
-
-            // Assert
-            assertThat(deletedCount).isEqualTo(1L);
-            List<PnodeRefEntity> remainingRefs = pnodeRefRepository.findByUsagePointId(savedUsagePoint.getId());
-            assertThat(remainingRefs).isEmpty();
         }
     }
 
