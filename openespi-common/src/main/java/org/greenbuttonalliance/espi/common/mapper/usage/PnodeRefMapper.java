@@ -23,7 +23,6 @@ import org.greenbuttonalliance.espi.common.domain.usage.PnodeRefEntity;
 import org.greenbuttonalliance.espi.common.dto.usage.PnodeRefDto;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
 
 /**
  * MapStruct mapper for converting between PnodeRefEntity and PnodeRefDto.
@@ -60,13 +59,4 @@ public interface PnodeRefMapper {
     @Mapping(target = "endEffectiveDate", source = "endEffectiveDate")
     PnodeRefEntity toEntity(PnodeRefDto dto);
 
-    /**
-     * Updates an existing PnodeRefEntity with data from a PnodeRefDto.
-     * 
-     * @param dto the source DTO
-     * @param entity the target entity to update
-     */
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "usagePoint", ignore = true)
-    void updateEntity(PnodeRefDto dto, @MappingTarget PnodeRefEntity entity);
 }
