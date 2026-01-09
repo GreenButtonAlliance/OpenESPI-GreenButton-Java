@@ -23,7 +23,6 @@ import org.greenbuttonalliance.espi.common.domain.usage.ServiceDeliveryPointEnti
 import org.greenbuttonalliance.espi.common.dto.usage.ServiceDeliveryPointDto;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
 
 /**
  * MapStruct mapper for converting between ServiceDeliveryPointEntity and ServiceDeliveryPointDto.
@@ -39,15 +38,15 @@ public interface ServiceDeliveryPointMapper {
 
     /**
      * Converts a ServiceDeliveryPointEntity to a ServiceDeliveryPointDto.
-     * Maps service delivery point attributes per ESPI 4.0 XSD.
+     * Maps service delivery point attributes per ESPI 4.0 XSD element sequence.
      *
      * @param entity the service delivery point entity
      * @return the service delivery point DTO
      */
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "uuid", ignore = true) // No mRID in entity or XSD
-    @Mapping(target = "description", ignore = true) // Not in XSD for ServiceDeliveryPoint
-    @Mapping(target = "tariffRiderRefs", ignore = true) // Relationship handled separately
+    @Mapping(target = "name", source = "name")
+    @Mapping(target = "tariffProfile", source = "tariffProfile")
+    @Mapping(target = "customerAgreement", source = "customerAgreement")
+    @Mapping(target = "tariffRiderRefs", ignore = true) // XML-only field, not persisted in entity
     ServiceDeliveryPointDto toDto(ServiceDeliveryPointEntity entity);
 
     /**
@@ -57,16 +56,9 @@ public interface ServiceDeliveryPointMapper {
      * @param dto the service delivery point DTO
      * @return the service delivery point entity
      */
-    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "id", ignore = true) // Auto-generated primary key
+    @Mapping(target = "name", source = "name")
+    @Mapping(target = "tariffProfile", source = "tariffProfile")
+    @Mapping(target = "customerAgreement", source = "customerAgreement")
     ServiceDeliveryPointEntity toEntity(ServiceDeliveryPointDto dto);
-
-    /**
-     * Updates an existing ServiceDeliveryPointEntity with data from a ServiceDeliveryPointDto.
-     * Useful for merge operations where entity values need to be updated.
-     *
-     * @param dto the source DTO
-     * @param entity the target entity to update
-     */
-    @Mapping(target = "id", ignore = true)
-    void updateEntity(ServiceDeliveryPointDto dto, @MappingTarget ServiceDeliveryPointEntity entity);
 }
