@@ -34,40 +34,18 @@ import jakarta.xml.bind.annotation.*;
 @XmlRootElement(name = "ServiceDeliveryPoint", namespace = "http://naesb.org/espi")
 @XmlAccessorType(XmlAccessType.PROPERTY)
 @XmlType(name = "ServiceDeliveryPoint", namespace = "http://naesb.org/espi", propOrder = {
-    "description", "name", "tariffProfile", "customerAgreement", "tariffRiderRefs"
+    "name", "tariffProfile", "customerAgreement", "tariffRiderRefs"
 })
 public record ServiceDeliveryPointDto(
-    
-    Long id,
-    String uuid,
-    String description,
+
     String name,
     String tariffProfile,
     String customerAgreement,
     TariffRiderRefsDto tariffRiderRefs
 ) {
-    
-    @XmlTransient
-    public Long getId() {
-        return id;
-    }
-    
-    @XmlAttribute(name = "mRID")
-    public String getUuid() {
-        return uuid;
-    }
-    
+
     /**
-     * Human-readable description of the service delivery point.
-     * Typically describes the location or purpose of the delivery point.
-     */
-    @XmlElement(name = "description")
-    public String getDescription() {
-        return description;
-    }
-    
-    /**
-     * The name is any free human readable and possibly non unique text 
+     * The name is any free human readable and possibly non unique text
      * naming the service delivery point object.
      */
     @XmlElement(name = "name")
@@ -106,35 +84,27 @@ public record ServiceDeliveryPointDto(
      * Default constructor for JAXB.
      */
     public ServiceDeliveryPointDto() {
-        this(null, null, null, null, null, null, null);
+        this(null, null, null, null);
     }
-    
+
     /**
      * Minimal constructor for basic service delivery point data.
      */
-    public ServiceDeliveryPointDto(String uuid, String name) {
-        this(null, uuid, null, name, null, null, null);
+    public ServiceDeliveryPointDto(String name) {
+        this(name, null, null, null);
     }
-    
-    /**
-     * Constructor with full service delivery point information.
-     */
-    public ServiceDeliveryPointDto(String uuid, String name, String tariffProfile, 
-                                 String customerAgreement, TariffRiderRefsDto tariffRiderRefs) {
-        this(null, uuid, null, name, tariffProfile, customerAgreement, tariffRiderRefs);
-    }
-    
+
     /**
      * Gets a display name for this service delivery point.
      * Uses the name if available, otherwise creates a default display name.
-     * 
+     *
      * @return display name string
      */
     public String getDisplayName() {
         if (name != null && !name.trim().isEmpty()) {
             return name.trim();
         }
-        return "Service Delivery Point " + (uuid != null ? uuid : "Unknown");
+        return "Service Delivery Point (Unknown)";
     }
     
     /**
@@ -196,17 +166,13 @@ public record ServiceDeliveryPointDto(
     
     /**
      * Creates a residential service delivery point with common settings.
-     * 
-     * @param uuid unique identifier
+     *
      * @param name display name
      * @param customerAgreement customer agreement reference
      * @return ServiceDeliveryPoint with residential configuration
      */
-    public static ServiceDeliveryPointDto createResidential(String uuid, String name, String customerAgreement) {
+    public static ServiceDeliveryPointDto createResidential(String name, String customerAgreement) {
         return new ServiceDeliveryPointDto(
-            null,
-            uuid,
-            "Residential electric service delivery point",
             name,
             "RESIDENTIAL_TOU",
             customerAgreement,

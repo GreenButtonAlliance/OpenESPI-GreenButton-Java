@@ -21,41 +21,15 @@ package org.greenbuttonalliance.espi.common.repositories.usage;
 
 import org.greenbuttonalliance.espi.common.domain.usage.ServiceDeliveryPointEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Repository
 public interface ServiceDeliveryPointRepository extends JpaRepository<ServiceDeliveryPointEntity, Long> {
 
-	// JpaRepository provides: save(), findById(), findAll(), deleteById(), etc.
-
-	@Modifying
-	@Transactional
-	@Query("DELETE FROM ServiceDeliveryPointEntity s WHERE s.id = :id")
-	void deleteById(@Param("id") Long id);
-
 	@Query("SELECT s.id FROM ServiceDeliveryPointEntity s")
 	List<Long> findAllIds();
-
-	@Query("SELECT s FROM ServiceDeliveryPointEntity s WHERE s.name = :name")
-	List<ServiceDeliveryPointEntity> findByName(@Param("name") String name);
-
-	@Query("SELECT s FROM ServiceDeliveryPointEntity s WHERE s.tariffProfile = :tariffProfile")
-	List<ServiceDeliveryPointEntity> findByTariffProfile(@Param("tariffProfile") String tariffProfile);
-
-	@Query("SELECT s FROM ServiceDeliveryPointEntity s WHERE s.customerAgreement = :customerAgreement")
-	List<ServiceDeliveryPointEntity> findByCustomerAgreement(@Param("customerAgreement") String customerAgreement);
-
-	@Query("SELECT s FROM ServiceDeliveryPointEntity s WHERE LOWER(s.name) LIKE LOWER(CONCAT('%', :searchText, '%'))")
-	List<ServiceDeliveryPointEntity> findByNameContaining(@Param("searchText") String searchText);
-
-	// Additional utility methods
-	@Query("SELECT COUNT(s) FROM ServiceDeliveryPointEntity s WHERE s.tariffProfile = :tariffProfile")
-	Long countByTariffProfile(@Param("tariffProfile") String tariffProfile);
 
 }
