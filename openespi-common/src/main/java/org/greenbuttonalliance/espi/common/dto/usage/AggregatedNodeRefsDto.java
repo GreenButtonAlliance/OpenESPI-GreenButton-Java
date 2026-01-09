@@ -147,10 +147,10 @@ public record AggregatedNodeRefsDto(
         // Create pricing node references for the load zones
         PnodeRefDto northPnode = PnodeRefDto.createCurrent("HUB", "NORTH_HUB_PNODE");
         PnodeRefDto southPnode = PnodeRefDto.createCurrent("HUB", "SOUTH_HUB_PNODE");
-        
+
         return new AggregatedNodeRefsDto(
-            AggregatedNodeRefDto.createCurrent("LOAD_ZONE", "LOAD_ZONE_NORTH", northPnode),
-            AggregatedNodeRefDto.createCurrent("LOAD_ZONE", "LOAD_ZONE_SOUTH", southPnode)
+            AggregatedNodeRefDto.createCurrent("LOAD_ZONE", "LOAD_ZONE_NORTH", List.of(northPnode)),
+            AggregatedNodeRefDto.createCurrent("LOAD_ZONE", "LOAD_ZONE_SOUTH", List.of(southPnode))
         );
     }
 }

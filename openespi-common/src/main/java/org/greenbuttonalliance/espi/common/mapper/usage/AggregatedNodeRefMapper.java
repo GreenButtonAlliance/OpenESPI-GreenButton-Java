@@ -23,7 +23,6 @@ import org.greenbuttonalliance.espi.common.domain.usage.AggregatedNodeRefEntity;
 import org.greenbuttonalliance.espi.common.dto.usage.AggregatedNodeRefDto;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
 
 /**
  * MapStruct mapper for converting between AggregatedNodeRefEntity and AggregatedNodeRefDto.
@@ -41,7 +40,7 @@ public interface AggregatedNodeRefMapper {
     @Mapping(target = "ref", source = "ref")
     @Mapping(target = "startEffectiveDate", source = "startEffectiveDate")
     @Mapping(target = "endEffectiveDate", source = "endEffectiveDate")
-    @Mapping(target = "pnodeRef", source = "pnodeRef")
+    @Mapping(target = "pnodeRef", source = "pnodeRefs")
     AggregatedNodeRefDto toDto(AggregatedNodeRefEntity entity);
 
     /**
@@ -56,16 +55,7 @@ public interface AggregatedNodeRefMapper {
     @Mapping(target = "ref", source = "ref")
     @Mapping(target = "startEffectiveDate", source = "startEffectiveDate")
     @Mapping(target = "endEffectiveDate", source = "endEffectiveDate")
-    @Mapping(target = "pnodeRef", source = "pnodeRef")
+    @Mapping(target = "pnodeRefs", source = "pnodeRef")
     AggregatedNodeRefEntity toEntity(AggregatedNodeRefDto dto);
 
-    /**
-     * Updates an existing AggregatedNodeRefEntity with data from an AggregatedNodeRefDto.
-     *
-     * @param dto the source DTO
-     * @param entity the target entity to update
-     */
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "usagePoint", ignore = true)
-    void updateEntity(AggregatedNodeRefDto dto, @MappingTarget AggregatedNodeRefEntity entity);
 }
