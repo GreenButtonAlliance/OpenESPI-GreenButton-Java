@@ -22,24 +22,20 @@ package org.greenbuttonalliance.espi.common.mapper.usage;
 import org.greenbuttonalliance.espi.common.domain.usage.MeterReadingEntity;
 import org.greenbuttonalliance.espi.common.dto.usage.MeterReadingDto;
 import org.greenbuttonalliance.espi.common.mapper.BaseIdentifiedObjectMapper;
-import org.greenbuttonalliance.espi.common.mapper.BaseMapperUtils;
 import org.greenbuttonalliance.espi.common.mapper.DateTimeMapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
 
 /**
  * MapStruct mapper for converting between MeterReadingEntity and MeterReadingDto.
- * 
- * Handles the conversion between the JPA entity used for persistence and the DTO 
+ *
+ * Per ESPI 4.0 specification, MeterReading has NO child elements - only relationships
+ * expressed via Atom links. The DTO contains NO fields beyond id/uuid.
+ *
+ * Handles the conversion between the JPA entity used for persistence and the DTO
  * used for JAXB XML marshalling in the Green Button API.
  */
-@Mapper(componentModel = "spring", uses = {
-    DateTimeMapper.class,
-    BaseMapperUtils.class,
-    IntervalBlockMapper.class,
-    ReadingTypeMapper.class
-})
+@Mapper(componentModel = "spring", uses = {DateTimeMapper.class})
 public interface MeterReadingMapper {
 
     /**
@@ -55,33 +51,21 @@ public interface MeterReadingMapper {
 
     /**
      * Converts a MeterReadingDto to a MeterReadingEntity.
-     * Maps all related DTOs to their corresponding entities.
-     * 
+     * Since MeterReading has no child elements, only audit and relationship fields are managed.
+     *
      * @param dto the meter reading DTO
      * @return the meter reading entity
      */
     @Mapping(target = "id", source = "uuid", qualifiedByName = "stringToUuid")
-    @Mapping(target = "usagePoint", ignore = true)
-    @Mapping(target = "readingType", ignore = true)
-    @Mapping(target = "intervalBlocks", ignore = true)
-    @Mapping(target = "relatedLinks", ignore = true)
-    @Mapping(target = "selfLink", ignore = true)
-    @Mapping(target = "upLink", ignore = true)
+    @Mapping(target = "created", ignore = true) // Audit field managed by persistence
+    @Mapping(target = "updated", ignore = true) // Audit field managed by persistence
+    @Mapping(target = "published", ignore = true) // Audit field managed by persistence
+    @Mapping(target = "description", ignore = true) // Managed separately
+    @Mapping(target = "selfLink", ignore = true) // Link managed separately
+    @Mapping(target = "upLink", ignore = true) // Link managed separately
+    @Mapping(target = "relatedLinks", ignore = true) // Links managed separately
+    @Mapping(target = "usagePoint", ignore = true) // Relationship managed separately
+    @Mapping(target = "readingType", ignore = true) // Relationship managed separately
+    @Mapping(target = "intervalBlocks", ignore = true) // Relationship managed separately
     MeterReadingEntity toEntity(MeterReadingDto dto);
-
-    /**
-     * Updates an existing MeterReadingEntity with data from a MeterReadingDto.
-     * Useful for merge operations where the entity ID should be preserved.
-     * 
-     * @param dto the source DTO
-     * @param entity the target entity to update
-     */
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "usagePoint", ignore = true)
-    @Mapping(target = "readingType", ignore = true)
-    @Mapping(target = "intervalBlocks", ignore = true)
-    @Mapping(target = "relatedLinks", ignore = true)
-    @Mapping(target = "selfLink", ignore = true)
-    @Mapping(target = "upLink", ignore = true)
-    void updateEntity(MeterReadingDto dto, @MappingTarget MeterReadingEntity entity);
 }
