@@ -191,6 +191,38 @@ CREATE INDEX idx_pnode_ref_apnode_type ON pnode_refs (apnode_type);
 CREATE INDEX idx_pnode_ref_ref ON pnode_refs (ref);
 CREATE INDEX idx_pnode_ref_usage_point_id ON pnode_refs (usage_point_id);
 
+-- AggregatedNodeRef Table (Object-based entity, no IdentifiedObject)
+-- Must be created after usage_points which it references
+-- AggregatedNodeRef extends Object per ESPI 4.0 XSD (espi.xsd:1570)
+CREATE TABLE aggregated_node_refs
+(
+    id                   BIGINT AUTO_INCREMENT PRIMARY KEY,
+    anode_type           VARCHAR(64),
+    ref                  VARCHAR(256) NOT NULL,
+    start_effective_date BIGINT,
+    end_effective_date   BIGINT,
+    usage_point_id       CHAR(36) NOT NULL,
+    FOREIGN KEY (usage_point_id) REFERENCES usage_points (id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_aggregated_node_ref_anode_type ON aggregated_node_refs (anode_type);
+CREATE INDEX idx_aggregated_node_ref_ref ON aggregated_node_refs (ref);
+CREATE INDEX idx_aggregated_node_ref_usage_point_id ON aggregated_node_refs (usage_point_id);
+
+-- AggregatedNodeRef to PnodeRef Join Table (Many-to-Many)
+-- Per ESPI 4.0 XSD (espi.xsd:1597), pnodeRef has minOccurs="0" maxOccurs="unbounded"
+CREATE TABLE aggregated_node_ref_pnode_refs
+(
+    aggregated_node_ref_id BIGINT NOT NULL,
+    pnode_ref_id           BIGINT NOT NULL,
+    PRIMARY KEY (aggregated_node_ref_id, pnode_ref_id),
+    FOREIGN KEY (aggregated_node_ref_id) REFERENCES aggregated_node_refs (id) ON DELETE CASCADE,
+    FOREIGN KEY (pnode_ref_id) REFERENCES pnode_refs (id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_agg_node_ref_pnode_refs_agg ON aggregated_node_ref_pnode_refs (aggregated_node_ref_id);
+CREATE INDEX idx_agg_node_ref_pnode_refs_pnode ON aggregated_node_ref_pnode_refs (pnode_ref_id);
+
 -- Meter Reading Table
 CREATE TABLE meter_readings
 (

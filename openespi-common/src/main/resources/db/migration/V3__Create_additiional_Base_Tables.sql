@@ -212,42 +212,12 @@ ALTER TABLE usage_points ADD CONSTRAINT fk_usage_point_subscription
 -- PnodeRef extends Object (not IdentifiedObject) per ESPI 4.0 XSD (espi.xsd:1539)
 -- Table creation moved to V2 vendor files due to auto-increment syntax differences
 
--- AggregatedNodeRef Table (from V1_9 migration)
-CREATE TABLE aggregated_node_refs
-(
-    id                   CHAR(36)  PRIMARY KEY ,
-    description          VARCHAR(255),
-    created              TIMESTAMP,
-    updated              TIMESTAMP,
-    published            TIMESTAMP,
-    up_link_rel          VARCHAR(255),
-    up_link_href         VARCHAR(1024),
-    up_link_type         VARCHAR(255),
-    self_link_rel        VARCHAR(255),
-    self_link_href       VARCHAR(1024),
-    self_link_type       VARCHAR(255),
-
-    -- AggregatedNodeRef specific fields
-    anode_type           VARCHAR(64),
-    ref                  VARCHAR(256) NOT NULL,
-    start_effective_date BIGINT,
-    end_effective_date   BIGINT,
-
-    -- Foreign key relationships
-    pnode_ref_id         BIGINT,
-    usage_point_id       CHAR(36)      NOT NULL,
-
-    FOREIGN KEY (pnode_ref_id) REFERENCES pnode_refs (id) ON DELETE SET NULL,
-    FOREIGN KEY (usage_point_id) REFERENCES usage_points (id) ON DELETE CASCADE
-);
-
--- Indexes for aggregated_node_refs table
-CREATE INDEX idx_aggregated_node_ref_anode_type ON aggregated_node_refs (anode_type);
-CREATE INDEX idx_aggregated_node_ref_ref ON aggregated_node_refs (ref);
-CREATE INDEX idx_aggregated_node_ref_pnode_ref_id ON aggregated_node_refs (pnode_ref_id);
-CREATE INDEX idx_aggregated_node_ref_usage_point_id ON aggregated_node_refs (usage_point_id);
-CREATE INDEX idx_aggregated_node_ref_created ON aggregated_node_refs (created);
-CREATE INDEX idx_aggregated_node_ref_updated ON aggregated_node_refs (updated);
+-- AggregatedNodeRef Table - Moved to vendor-specific V2 migration files
+-- AggregatedNodeRef extends Object (not IdentifiedObject) per ESPI 4.0 XSD (espi.xsd:1570)
+-- Table creation moved to V2 vendor files due to auto-increment syntax differences
+-- See: db/vendor/mysql/V2__MySQL_Specific_Tables.sql
+--      db/vendor/postgres/V2__PostgreSQL_Specific_Tables.sql
+--      db/vendor/h2/V2__H2_Specific_Tables.sql
 
 -- Customer Table
 CREATE TABLE customers

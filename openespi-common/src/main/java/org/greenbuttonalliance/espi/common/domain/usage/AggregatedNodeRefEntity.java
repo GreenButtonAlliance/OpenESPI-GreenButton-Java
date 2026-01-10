@@ -23,12 +23,11 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.proxy.HibernateProxy;
-import org.hibernate.type.SqlTypes;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
 
 /**
  * JPA entity for AggregatedNodeRef (Aggregated Node Reference).
@@ -48,12 +47,12 @@ public class AggregatedNodeRefEntity {
 
     /**
      * Primary key identifier.
+     * AggregatedNodeRef extends Object (not IdentifiedObject), so uses Long ID.
      */
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @JdbcTypeCode(SqlTypes.CHAR)
-    @Column(length = 36, columnDefinition = "char(36)", updatable = false, nullable = false)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(updatable = false, nullable = false)
+    private Long id;
 
     /**
      * Type of the aggregated node.
@@ -84,12 +83,16 @@ public class AggregatedNodeRefEntity {
     private Long endEffectiveDate;
 
     /**
-     * Associated pricing node reference for this aggregated node.
-     * Each aggregated node references an underlying pricing node.
+     * Associated pricing node references for this aggregated node.
+     * Per ESPI 4.0 XSD (espi.xsd:1597), each aggregated node can reference 0 to many pricing nodes.
      */
-    @ManyToOne(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
-    @JoinColumn(name = "pnode_ref_id")
-    private PnodeRefEntity pnodeRef;
+    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(
+        name = "aggregated_node_ref_pnode_refs",
+        joinColumns = @JoinColumn(name = "aggregated_node_ref_id"),
+        inverseJoinColumns = @JoinColumn(name = "pnode_ref_id")
+    )
+    private List<PnodeRefEntity> pnodeRefs = new ArrayList<>();
 
     /**
      * Usage point that owns this aggregated node reference.
@@ -102,21 +105,21 @@ public class AggregatedNodeRefEntity {
     /**
      * Constructor with all fields.
      */
-    public AggregatedNodeRefEntity(String anodeType, String ref, Long startEffectiveDate, Long endEffectiveDate, 
-                                 PnodeRefEntity pnodeRef, UsagePointEntity usagePoint) {
+    public AggregatedNodeRefEntity(String anodeType, String ref, Long startEffectiveDate, Long endEffectiveDate,
+                                 List<PnodeRefEntity> pnodeRefs, UsagePointEntity usagePoint) {
         this.anodeType = anodeType;
         this.ref = ref;
         this.startEffectiveDate = startEffectiveDate;
         this.endEffectiveDate = endEffectiveDate;
-        this.pnodeRef = pnodeRef;
+        this.pnodeRefs = pnodeRefs != null ? pnodeRefs : new ArrayList<>();
         this.usagePoint = usagePoint;
     }
 
     /**
      * Constructor with basic fields.
      */
-    public AggregatedNodeRefEntity(String anodeType, String ref, PnodeRefEntity pnodeRef, UsagePointEntity usagePoint) {
-        this(anodeType, ref, null, null, pnodeRef, usagePoint);
+    public AggregatedNodeRefEntity(String anodeType, String ref, List<PnodeRefEntity> pnodeRefs, UsagePointEntity usagePoint) {
+        this(anodeType, ref, null, null, pnodeRefs, usagePoint);
     }
 
     /**
@@ -143,14 +146,18 @@ public class AggregatedNodeRefEntity {
     }
 
     /**
-     * Gets display name including the associated pricing node.
-     * 
-     * @return formatted display name with pricing node
+     * Gets display name including the associated pricing nodes.
+     *
+     * @return formatted display name with pricing nodes
      */
     public String getFullDisplayName() {
         String aggregatedDisplay = getDisplayName();
-        if (pnodeRef != null) {
-            return aggregatedDisplay + " -> " + pnodeRef.getDisplayName();
+        if (pnodeRefs != null && !pnodeRefs.isEmpty()) {
+            String pnodeNames = pnodeRefs.stream()
+                .map(PnodeRefEntity::getDisplayName)
+                .reduce((a, b) -> a + ", " + b)
+                .orElse("");
+            return aggregatedDisplay + " -> [" + pnodeNames + "]";
         }
         return aggregatedDisplay;
     }

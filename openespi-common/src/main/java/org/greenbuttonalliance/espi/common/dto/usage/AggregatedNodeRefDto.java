@@ -21,12 +21,17 @@ package org.greenbuttonalliance.espi.common.dto.usage;
 
 import jakarta.xml.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * AggregatedNodeRef DTO record for JAXB XML marshalling/unmarshalling.
- * 
+ *
  * Represents a reference to an aggregated node in the electrical grid.
  * Used within UsagePoint to specify aggregated pricing/load zones.
- * 
+ *
+ * Per ESPI 4.0 XSD (espi.xsd:1597), pnodeRef has minOccurs="0" maxOccurs="unbounded"
+ *
  * Part of the NAESB ESPI UsagePoint structure for aggregated node references.
  */
 @XmlAccessorType(XmlAccessType.PROPERTY)
@@ -34,12 +39,12 @@ import jakarta.xml.bind.annotation.*;
     "anodeType", "ref", "startEffectiveDate", "endEffectiveDate", "pnodeRef"
 })
 public record AggregatedNodeRefDto(
-    
+
     String anodeType,
     String ref,
     Long startEffectiveDate,
     Long endEffectiveDate,
-    PnodeRefDto pnodeRef
+    List<PnodeRefDto> pnodeRef
 ) {
     
     /**
@@ -78,32 +83,33 @@ public record AggregatedNodeRefDto(
     }
     
     /**
-     * Pricing node reference associated with this aggregated node.
-     * Contains the underlying pricing node that contributes to the aggregated node.
+     * Pricing node references associated with this aggregated node.
+     * Contains the underlying pricing nodes that contribute to the aggregated node.
+     * Per ESPI 4.0 XSD (espi.xsd:1597), supports 0 to many pricing node references.
      */
     @XmlElement(name = "pnodeRef")
-    public PnodeRefDto getPnodeRef() {
-        return pnodeRef;
+    public List<PnodeRefDto> getPnodeRef() {
+        return pnodeRef != null ? pnodeRef : new ArrayList<>();
     }
-    
+
     /**
      * Default constructor for JAXB.
      */
     public AggregatedNodeRefDto() {
-        this(null, null, null, null, null);
+        this(null, null, null, null, new ArrayList<>());
     }
-    
+
     /**
      * Constructor with aggregated node reference and type.
      */
     public AggregatedNodeRefDto(String anodeType, String ref) {
-        this(anodeType, ref, null, null, null);
+        this(anodeType, ref, null, null, new ArrayList<>());
     }
-    
+
     /**
-     * Constructor with aggregated node reference, type, and pricing node.
+     * Constructor with aggregated node reference, type, and pricing nodes.
      */
-    public AggregatedNodeRefDto(String anodeType, String ref, PnodeRefDto pnodeRef) {
+    public AggregatedNodeRefDto(String anodeType, String ref, List<PnodeRefDto> pnodeRef) {
         this(anodeType, ref, null, null, pnodeRef);
     }
     
@@ -120,40 +126,40 @@ public record AggregatedNodeRefDto(
     
     /**
      * Creates an AggregatedNodeRef with current validity period.
-     * 
+     *
      * @param anodeType the type of aggregated node
      * @param ref aggregated node reference
      * @return AggregatedNodeRef valid from now
      */
     public static AggregatedNodeRefDto createCurrent(String anodeType, String ref) {
         long currentTime = System.currentTimeMillis() / 1000;
-        return new AggregatedNodeRefDto(anodeType, ref, currentTime, null, null);
+        return new AggregatedNodeRefDto(anodeType, ref, currentTime, null, new ArrayList<>());
     }
-    
+
     /**
-     * Creates an AggregatedNodeRef with current validity period and pricing node reference.
-     * 
+     * Creates an AggregatedNodeRef with current validity period and pricing node references.
+     *
      * @param anodeType the type of aggregated node
      * @param ref aggregated node reference
-     * @param pnodeRef associated pricing node reference
+     * @param pnodeRef associated pricing node references
      * @return AggregatedNodeRef valid from now
      */
-    public static AggregatedNodeRefDto createCurrent(String anodeType, String ref, PnodeRefDto pnodeRef) {
+    public static AggregatedNodeRefDto createCurrent(String anodeType, String ref, List<PnodeRefDto> pnodeRef) {
         long currentTime = System.currentTimeMillis() / 1000;
         return new AggregatedNodeRefDto(anodeType, ref, currentTime, null, pnodeRef);
     }
-    
+
     /**
      * Creates an AggregatedNodeRef with specified validity period.
-     * 
+     *
      * @param anodeType the type of aggregated node
      * @param ref aggregated node reference
      * @param startEffectiveDate start of validity period (epoch seconds)
      * @param endEffectiveDate end of validity period (epoch seconds, null for indefinite)
-     * @param pnodeRef associated pricing node reference
+     * @param pnodeRef associated pricing node references
      * @return AggregatedNodeRef with specified validity
      */
-    public static AggregatedNodeRefDto create(String anodeType, String ref, Long startEffectiveDate, Long endEffectiveDate, PnodeRefDto pnodeRef) {
+    public static AggregatedNodeRefDto create(String anodeType, String ref, Long startEffectiveDate, Long endEffectiveDate, List<PnodeRefDto> pnodeRef) {
         return new AggregatedNodeRefDto(anodeType, ref, startEffectiveDate, endEffectiveDate, pnodeRef);
     }
 }
