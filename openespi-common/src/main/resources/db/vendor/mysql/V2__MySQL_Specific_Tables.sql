@@ -452,6 +452,14 @@ CREATE TABLE usage_summaries
     ratchet_demand_value BIGINT,
     ratchet_demand_reading_type_ref VARCHAR(512),
 
+    -- ESPI 4.0 extension fields (Phase 11)
+    commodity                   INTEGER,
+    tariff_profile              VARCHAR(256),
+    read_cycle                  VARCHAR(256),
+
+    -- Embedded BillingChargeSource: billingChargeSource
+    billing_charge_source_agency_name VARCHAR(256),
+
     -- Foreign key relationships
     usage_point_id              CHAR(36),
 
@@ -460,7 +468,10 @@ CREATE TABLE usage_summaries
     INDEX idx_usage_summary_usage_point_id (usage_point_id),
     INDEX idx_usage_summary_billing_period_start (billing_period_start),
     INDEX idx_usage_summary_created (created),
-    INDEX idx_usage_summary_updated (updated)
+    INDEX idx_usage_summary_updated (updated),
+    INDEX idx_usage_summary_commodity (commodity),
+    INDEX idx_usage_summary_tariff_profile (tariff_profile),
+    INDEX idx_usage_summary_read_cycle (read_cycle)
 );
 
 -- Related Links Table for Usage Summaries
@@ -470,6 +481,29 @@ CREATE TABLE usage_summary_related_links
     related_links    VARCHAR(1024),
     FOREIGN KEY (usage_summary_id) REFERENCES usage_summaries (id) ON DELETE CASCADE,
     INDEX idx_usage_summary_related_links (usage_summary_id)
+);
+
+-- Tariff Rider Ref Table (Object-based entity, no IdentifiedObject)
+-- TariffRiderRef extends Object per ESPI 4.0 XSD (espi.xsd:1602-1627)
+-- XSD sequence: riderType → enrollmentStatus → effectiveDate
+-- Part of TariffRiderRefs collection in UsageSummary (Phase 11)
+CREATE TABLE tariff_rider_refs
+(
+    id                 BIGINT AUTO_INCREMENT PRIMARY KEY,
+
+    -- ESPI 4.0 fields in XSD sequence order
+    rider_type         VARCHAR(256) NOT NULL,
+    enrollment_status  VARCHAR(32) NOT NULL,
+    effective_date     BIGINT NOT NULL,
+
+    -- Foreign key relationship (parent: UsageSummary)
+    usage_summary_id   CHAR(36),
+
+    FOREIGN KEY (usage_summary_id) REFERENCES usage_summaries (id) ON DELETE CASCADE,
+
+    INDEX idx_tariff_rider_ref_usage_summary (usage_summary_id),
+    INDEX idx_tariff_rider_ref_rider_type (rider_type),
+    INDEX idx_tariff_rider_ref_enrollment_status (enrollment_status)
 );
 
 -- Line Item Table (Object-based entity, no IdentifiedObject)

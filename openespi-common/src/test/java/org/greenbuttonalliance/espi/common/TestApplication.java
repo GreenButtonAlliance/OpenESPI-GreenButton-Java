@@ -35,7 +35,8 @@ import org.springframework.web.client.RestTemplate;
 @Profile({"test", "test-mysql", "test-postgres"})
 @EntityScan(basePackages = {
     "org.greenbuttonalliance.espi.common.domain.usage",
-    "org.greenbuttonalliance.espi.common.domain.customer"
+    "org.greenbuttonalliance.espi.common.domain.customer",
+    "org.greenbuttonalliance.espi.common.domain.common"
 })
 @EnableJpaRepositories(basePackages = "org.greenbuttonalliance.espi.common.repositories")
 public class TestApplication {
