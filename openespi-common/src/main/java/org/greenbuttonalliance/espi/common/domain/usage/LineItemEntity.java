@@ -25,9 +25,9 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.JdbcTypeCode;
+import org.greenbuttonalliance.espi.common.domain.common.DateTimeInterval;
+import org.greenbuttonalliance.espi.common.domain.common.SummaryMeasurement;
 import org.hibernate.proxy.HibernateProxy;
-import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -35,7 +35,6 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Objects;
-import java.util.UUID;
 
 /**
  * Pure JPA/Hibernate entity for LineItem without JAXB concerns.
@@ -61,12 +60,12 @@ public class LineItemEntity {
 
     /**
      * Primary key identifier.
+     * LineItem extends Object (not IdentifiedObject) per ESPI 4.0 XSD (espi.xsd:1449).
      */
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @JdbcTypeCode(SqlTypes.CHAR)
-    @Column(length = 36, columnDefinition = "char(36)", updatable = false, nullable = false)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(updatable = false, nullable = false)
+    private Long id;
 
     /**
      * Amount for this line item in currency minor units (e.g., cents).
@@ -100,6 +99,47 @@ public class LineItemEntity {
     @Size(max = 256, message = "Note cannot exceed 256 characters")
     private String note;
 
+    /**
+     * Relevant measurement for line item (optional).
+     * Per ESPI 4.0 XSD (espi.xsd:1471), extension field.
+     */
+    @Embedded
+    @AttributeOverrides({
+        @AttributeOverride(name = "powerOfTenMultiplier", column = @Column(name = "measurement_multiplier")),
+        @AttributeOverride(name = "timeStamp", column = @Column(name = "measurement_timestamp")),
+        @AttributeOverride(name = "uom", column = @Column(name = "measurement_uom")),
+        @AttributeOverride(name = "value", column = @Column(name = "measurement_value")),
+        @AttributeOverride(name = "readingTypeRef", column = @Column(name = "measurement_reading_type_ref", length = 512))
+    })
+    private SummaryMeasurement measurement;
+
+    /**
+     * Classification of line item (required).
+     * Per ESPI 4.0 XSD (espi.xsd:1476), extension field.
+     * ItemKind enumeration values (e.g., 1=Energy Generation Fee, 2=Energy Delivery Fee, etc.)
+     */
+    @Column(name = "item_kind", nullable = false)
+    @NotNull(message = "Item kind cannot be null")
+    private Integer itemKind;
+
+    /**
+     * Per unit cost (optional).
+     * Per ESPI 4.0 XSD (espi.xsd:1481), extension field.
+     */
+    @Column(name = "unit_cost")
+    private Long unitCost;
+
+    /**
+     * Time period covered by the line item (optional).
+     * Per ESPI 4.0 XSD (espi.xsd:1486), extension field to support pricing changes mid-billing period.
+     */
+    @Embedded
+    @AttributeOverrides({
+        @AttributeOverride(name = "start", column = @Column(name = "item_period_start")),
+        @AttributeOverride(name = "duration", column = @Column(name = "item_period_duration"))
+    })
+    private DateTimeInterval itemPeriod;
+
     // ElectricPowerUsageSummary relationship removed - deprecated resource
 
     /**
@@ -111,12 +151,14 @@ public class LineItemEntity {
     private UsageSummaryEntity usageSummary;
 
     /**
-     * Constructor with basic line item information.
-     * 
+     * Constructor with basic line item information (legacy, pre-ESPI 4.0 compliance).
+     * @deprecated Use constructor with itemKind parameter for ESPI 4.0 compliance.
+     *
      * @param amount the amount in currency minor units
      * @param dateTime the timestamp
      * @param note the descriptive note
      */
+    @Deprecated
     public LineItemEntity(Long amount, Long dateTime, String note) {
         this.amount = amount;
         this.dateTime = dateTime;
@@ -124,18 +166,77 @@ public class LineItemEntity {
     }
 
     /**
-     * Constructor with full line item information.
-     * 
+     * Constructor with basic line item information and required itemKind.
+     *
+     * @param amount the amount in currency minor units
+     * @param dateTime the timestamp
+     * @param note the descriptive note
+     * @param itemKind the classification of the line item (required)
+     */
+    public LineItemEntity(Long amount, Long dateTime, String note, Integer itemKind) {
+        this.amount = amount;
+        this.dateTime = dateTime;
+        this.note = note;
+        this.itemKind = itemKind;
+    }
+
+    /**
+     * Constructor with full line item information (legacy, pre-ESPI 4.0 compliance).
+     * @deprecated Use constructor with itemKind parameter for ESPI 4.0 compliance.
+     *
      * @param amount the amount in currency minor units
      * @param rounding the rounding adjustment
      * @param dateTime the timestamp
      * @param note the descriptive note
      */
+    @Deprecated
     public LineItemEntity(Long amount, Long rounding, Long dateTime, String note) {
         this.amount = amount;
         this.rounding = rounding;
         this.dateTime = dateTime;
         this.note = note;
+    }
+
+    /**
+     * Constructor with full line item information including required itemKind.
+     *
+     * @param amount the amount in currency minor units
+     * @param rounding the rounding adjustment
+     * @param dateTime the timestamp
+     * @param note the descriptive note
+     * @param itemKind the classification of the line item (required)
+     */
+    public LineItemEntity(Long amount, Long rounding, Long dateTime, String note, Integer itemKind) {
+        this.amount = amount;
+        this.rounding = rounding;
+        this.dateTime = dateTime;
+        this.note = note;
+        this.itemKind = itemKind;
+    }
+
+    /**
+     * Constructor with complete line item information including all optional fields.
+     *
+     * @param amount the amount in currency minor units
+     * @param rounding the rounding adjustment
+     * @param dateTime the timestamp
+     * @param note the descriptive note
+     * @param measurement relevant measurement for line item
+     * @param itemKind the classification of the line item (required)
+     * @param unitCost per unit cost
+     * @param itemPeriod time period covered by the line item
+     */
+    public LineItemEntity(Long amount, Long rounding, Long dateTime, String note,
+                          SummaryMeasurement measurement, Integer itemKind,
+                          Long unitCost, DateTimeInterval itemPeriod) {
+        this.amount = amount;
+        this.rounding = rounding;
+        this.dateTime = dateTime;
+        this.note = note;
+        this.measurement = measurement;
+        this.itemKind = itemKind;
+        this.unitCost = unitCost;
+        this.itemPeriod = itemPeriod;
     }
 
     // ElectricPowerUsageSummary setter removed - deprecated resource

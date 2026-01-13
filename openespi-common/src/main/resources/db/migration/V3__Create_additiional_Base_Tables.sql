@@ -18,15 +18,17 @@
  * - interval_block_related_links (FK dependency)
  * - interval_readings (extends Object, requires vendor-specific auto-increment, depends on interval_blocks)
  * - reading_qualities (extends Object, requires vendor-specific auto-increment, depends on interval_readings)
+ * - usage_summaries + usage_summary_related_links (moved to maintain dependency order with line_items)
  *
  * Reason: IntervalReading and ReadingQuality both extend Object (not IdentifiedObject) per ESPI 4.0 XSD
  * (espi.xsd:1016 and espi.xsd:1062), requiring Long ID with vendor-specific auto-increment syntax
  * (BIGINT AUTO_INCREMENT for MySQL/H2, BIGSERIAL for PostgreSQL). To keep the dependency chain together
  * (meter_readings → interval_blocks → interval_readings → reading_qualities), all were moved to V2 vendor files.
  *
+ * LineItem also extends Object (espi.xsd:1449) and requires vendor-specific auto-increment. Since LineItem
+ * has a foreign key to usage_summaries, usage_summaries was moved to V2 to maintain proper dependency order.
+ *
  * Tables in this migration:
- * - usage_summaries (depends on usage_points from V2)
- * - usage_summary_related_links (FK dependency)
  * - subscription_usage_points (join table)
  * - aggregated_node_refs (depends on pnode_refs from V2)
  * - customer schema tables
@@ -61,130 +63,14 @@
 --      db/vendor/postgres/V2__PostgreSQL_Specific_Tables.sql
 --      db/vendor/h2/V2__H2_Specific_Tables.sql
 
--- Usage Summary Table
-CREATE TABLE usage_summaries
-(
-    id                          CHAR(36) PRIMARY KEY ,
-    description                 VARCHAR(255),
-    created                     TIMESTAMP,
-    updated                     TIMESTAMP,
-    published                   TIMESTAMP,
-    up_link_rel                 VARCHAR(255),
-    up_link_href                VARCHAR(1024),
-    up_link_type                VARCHAR(255),
-    self_link_rel               VARCHAR(255),
-    self_link_href              VARCHAR(1024),
-    self_link_type              VARCHAR(255),
-
-    -- Usage summary specific fields
-    bill_last_period            BIGINT,
-    bill_to_date                BIGINT,
-    cost_additional_last_period BIGINT,
-    currency                    VARCHAR(3),
-    quality_of_reading          VARCHAR(50),
-    status_timestamp            BIGINT,
-
-    -- Embedded DateTimeInterval: billingPeriod
-    billing_period_start        BIGINT,
-    billing_period_duration     BIGINT,
-
-    -- Embedded DateTimeInterval: ratchetDemandPeriod
-    ratchet_demand_period_start BIGINT,
-    ratchet_demand_period_duration BIGINT,
-
-    -- Embedded SummaryMeasurement: overallConsumptionLastPeriod
-    overall_consumption_last_period_multiplier VARCHAR(255),
-    overall_consumption_last_period_timestamp BIGINT,
-    overall_consumption_last_period_uom VARCHAR(50),
-    overall_consumption_last_period_value BIGINT,
-    overall_consumption_last_period_reading_type_ref VARCHAR(512),
-
-    -- Embedded SummaryMeasurement: currentBillingPeriodOverAllConsumption
-    current_billing_period_overall_consumption_multiplier VARCHAR(255),
-    current_billing_period_overall_consumption_timestamp BIGINT,
-    current_billing_period_overall_consumption_uom VARCHAR(50),
-    current_billing_period_overall_consumption_value BIGINT,
-    current_billing_period_overall_consumption_reading_type_ref VARCHAR(512),
-
-    -- Embedded SummaryMeasurement: currentDayLastYearNetConsumption
-    current_day_last_year_net_consumption_multiplier VARCHAR(255),
-    current_day_last_year_net_consumption_timestamp BIGINT,
-    current_day_last_year_net_consumption_uom VARCHAR(50),
-    current_day_last_year_net_consumption_value BIGINT,
-    current_day_last_year_net_consumption_reading_type_ref VARCHAR(512),
-
-    -- Embedded SummaryMeasurement: currentDayNetConsumption
-    current_day_net_consumption_multiplier VARCHAR(255),
-    current_day_net_consumption_timestamp BIGINT,
-    current_day_net_consumption_uom VARCHAR(50),
-    current_day_net_consumption_value BIGINT,
-    current_day_net_consumption_reading_type_ref VARCHAR(512),
-
-    -- Embedded SummaryMeasurement: currentDayOverallConsumption
-    current_day_overall_consumption_multiplier VARCHAR(255),
-    current_day_overall_consumption_timestamp BIGINT,
-    current_day_overall_consumption_uom VARCHAR(50),
-    current_day_overall_consumption_value BIGINT,
-    current_day_overall_consumption_reading_type_ref VARCHAR(512),
-
-    -- Embedded SummaryMeasurement: peakDemand
-    peak_demand_multiplier VARCHAR(255),
-    peak_demand_timestamp BIGINT,
-    peak_demand_uom VARCHAR(50),
-    peak_demand_value BIGINT,
-    peak_demand_reading_type_ref VARCHAR(512),
-
-    -- Embedded SummaryMeasurement: previousDayLastYearOverallConsumption
-    previous_day_last_year_overall_consumption_multiplier VARCHAR(255),
-    previous_day_last_year_overall_consumption_timestamp BIGINT,
-    previous_day_last_year_overall_consumption_uom VARCHAR(50),
-    previous_day_last_year_overall_consumption_value BIGINT,
-    previous_day_last_year_overall_consumption_reading_type_ref VARCHAR(512),
-
-    -- Embedded SummaryMeasurement: previousDayNetConsumption
-    previous_day_net_consumption_multiplier VARCHAR(255),
-    previous_day_net_consumption_timestamp BIGINT,
-    previous_day_net_consumption_uom VARCHAR(50),
-    previous_day_net_consumption_value BIGINT,
-    previous_day_net_consumption_reading_type_ref VARCHAR(512),
-
-    -- Embedded SummaryMeasurement: previousDayOverallConsumption
-    previous_day_overall_consumption_multiplier VARCHAR(255),
-    previous_day_overall_consumption_timestamp BIGINT,
-    previous_day_overall_consumption_uom VARCHAR(50),
-    previous_day_overall_consumption_value BIGINT,
-    previous_day_overall_consumption_reading_type_ref VARCHAR(512),
-
-    -- Embedded SummaryMeasurement: ratchetDemand
-    ratchet_demand_multiplier VARCHAR(255),
-    ratchet_demand_timestamp BIGINT,
-    ratchet_demand_uom VARCHAR(50),
-    ratchet_demand_value BIGINT,
-    ratchet_demand_reading_type_ref VARCHAR(512),
-
-    -- Foreign key relationships
-    usage_point_id              CHAR(36),
-
-    FOREIGN KEY (usage_point_id) REFERENCES usage_points (id) ON DELETE CASCADE
-);
-
--- Indexes for usage_summaries table
-CREATE INDEX idx_usage_summary_usage_point_id ON usage_summaries (usage_point_id);
-CREATE INDEX idx_usage_summary_billing_period_start ON usage_summaries (billing_period_start);
-CREATE INDEX idx_usage_summary_created ON usage_summaries (created);
-CREATE INDEX idx_usage_summary_updated ON usage_summaries (updated);
-
-
--- Related Links Table for Usage Summaries
-CREATE TABLE usage_summary_related_links
-(
-    usage_summary_id CHAR(36) NOT NULL,
-    related_links    VARCHAR(1024),
-    FOREIGN KEY (usage_summary_id) REFERENCES usage_summaries (id) ON DELETE CASCADE
-);
-
--- Indexes for usage_summary_related_links table
-CREATE INDEX idx_usage_summary_related_links ON usage_summary_related_links (usage_summary_id);
+-- Usage Summary Table - Moved to vendor-specific V2 migration files
+-- UsageSummary table moved to V2 migration files because LineItem (which extends Object)
+-- requires vendor-specific auto-increment syntax and has a foreign key to usage_summaries.
+-- To maintain proper dependency order, usage_summaries must be created before line_items.
+-- Table creation moved to V2 vendor files.
+-- See: db/vendor/mysql/V2__MySQL_Specific_Tables.sql
+--      db/vendor/postgres/V2__PostgreSQL_Specific_Tables.sql
+--      db/vendor/h2/V2__H2_Specific_Tables.sql
 
 -- Join Table for Subscription-UsagePoint Many-to-Many Relationship
 CREATE TABLE subscription_usage_points
@@ -547,38 +433,12 @@ CREATE TABLE end_device_related_links
 
 CREATE INDEX idx_end_device_related_links ON end_device_related_links (end_device_id);
 
--- Line Item Table
-CREATE TABLE line_items
-(
-    id               CHAR(36) PRIMARY KEY ,
-    description      VARCHAR(255),
-    created          TIMESTAMP,
-    updated          TIMESTAMP,
-    published        TIMESTAMP,
-    up_link_rel      VARCHAR(255),
-    up_link_href     VARCHAR(1024),
-    up_link_type     VARCHAR(255),
-    self_link_rel    VARCHAR(255),
-    self_link_href   VARCHAR(1024),
-    self_link_type   VARCHAR(255),
-
-    -- Line item specific fields
-    amount           BIGINT       NOT NULL,
-    rounding         BIGINT,
-    date_time        BIGINT       NOT NULL,
-    note             VARCHAR(256) NOT NULL,
-
-    -- Foreign key relationships
-    usage_summary_id CHAR(36),
-
-    FOREIGN KEY (usage_summary_id) REFERENCES usage_summaries (id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_line_item_usage_summary ON line_items (usage_summary_id);
-CREATE INDEX idx_line_item_date_time ON line_items (date_time);
-CREATE INDEX idx_line_item_amount ON line_items (amount);
-CREATE INDEX idx_line_item_created ON line_items (created);
-CREATE INDEX idx_line_item_updated ON line_items (updated);
+-- Line Item Table - Moved to vendor-specific V2 migration files
+-- LineItem extends Object (not IdentifiedObject) per ESPI 4.0 XSD (espi.xsd:1449)
+-- Table creation moved to V2 vendor files due to auto-increment syntax differences
+-- See: db/vendor/mysql/V2__MySQL_Specific_Tables.sql
+--      db/vendor/postgres/V2__PostgreSQL_Specific_Tables.sql
+--      db/vendor/h2/V2__H2_Specific_Tables.sql
 
 -- Meter Entity Table (Joined inheritance from EndDevice)
 CREATE TABLE meters

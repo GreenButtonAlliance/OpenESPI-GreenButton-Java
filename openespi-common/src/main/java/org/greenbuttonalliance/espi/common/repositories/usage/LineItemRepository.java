@@ -28,40 +28,22 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Spring Data JPA repository for LineItemEntity.
+ * <p>
+ * LineItem extends Object (not IdentifiedObject) in ESPI 4.0 XSD,
+ * so it uses Long ID (not UUID).
+ * <p>
+ * Following established pattern from Phases 7-9, keeping only queries using indexed columns:
+ * - findAllIds() uses primary key
+ * - findAllByUsageSummaryId() uses foreign key index (usage_summary_id)
+ */
 @Repository
-public interface LineItemRepository extends JpaRepository<LineItemEntity, UUID> {
-	// JpaRepository provides: save(), findAll(), findById(), deleteById(), etc.
-	// Note: merge() functionality is handled by save() in Spring Data JPA
-
-	// All 12 original NamedQueries from LineItemEntity:
-
-	@Query("SELECT li FROM LineItemEntity li WHERE li.usageSummary.id = :electricPowerUsageSummaryId ORDER BY li.dateTime")
-	List<LineItemEntity> findByElectricPowerUsageSummaryId(@Param("electricPowerUsageSummaryId") UUID electricPowerUsageSummaryId);
-
-	@Query("SELECT li FROM LineItemEntity li WHERE li.usageSummary.id = :usageSummaryId ORDER BY li.dateTime")
-	List<LineItemEntity> findByUsageSummaryId(@Param("usageSummaryId") UUID usageSummaryId);
-
-	@Query("SELECT li FROM LineItemEntity li WHERE li.dateTime >= :startTime AND li.dateTime <= :endTime ORDER BY li.dateTime")
-	List<LineItemEntity> findByDateTimeRange(@Param("startTime") Long startTime, @Param("endTime") Long endTime);
-
-	@Query("SELECT li FROM LineItemEntity li WHERE li.amount >= :minAmount AND li.amount <= :maxAmount ORDER BY li.amount DESC")
-	List<LineItemEntity> findByAmountRange(@Param("minAmount") Long minAmount, @Param("maxAmount") Long maxAmount);
-
-	@Query("SELECT li FROM LineItemEntity li WHERE LOWER(li.note) LIKE LOWER(CONCAT('%', :searchText, '%')) ORDER BY li.dateTime")
-	List<LineItemEntity> findByNoteContaining(@Param("searchText") String searchText);
+public interface LineItemRepository extends JpaRepository<LineItemEntity, Long> {
 
 	@Query("SELECT li.id FROM LineItemEntity li")
-	List<UUID> findAllIds();
+	List<Long> findAllIds();
 
-	@Query("SELECT SUM(li.amount) FROM LineItemEntity li WHERE li.usageSummary.id = :electricPowerUsageSummaryId")
-	Long sumAmountsByElectricPowerUsageSummary(@Param("electricPowerUsageSummaryId") UUID electricPowerUsageSummaryId);
-
-	@Query("SELECT SUM(li.amount) FROM LineItemEntity li WHERE li.usageSummary.id = :usageSummaryId")
-	Long sumAmountsByUsageSummary(@Param("usageSummaryId") UUID usageSummaryId);
-
-	@Query("SELECT COUNT(li) FROM LineItemEntity li WHERE li.usageSummary.id = :electricPowerUsageSummaryId")
-	Long countByElectricPowerUsageSummary(@Param("electricPowerUsageSummaryId") UUID electricPowerUsageSummaryId);
-
-	@Query("SELECT COUNT(li) FROM LineItemEntity li WHERE li.usageSummary.id = :usageSummaryId")
-	Long countByUsageSummary(@Param("usageSummaryId") UUID usageSummaryId);
+	@Query("SELECT li FROM LineItemEntity li WHERE li.usageSummary.id = :usageSummaryId ORDER BY li.dateTime")
+	List<LineItemEntity> findAllByUsageSummaryId(@Param("usageSummaryId") UUID usageSummaryId);
 }
