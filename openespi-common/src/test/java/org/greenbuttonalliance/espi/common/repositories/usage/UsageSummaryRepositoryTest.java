@@ -472,11 +472,13 @@ class UsageSummaryRepositoryTest extends BaseRepositoryTest {
             lineItem1.setAmount(1000L);
             lineItem1.setDateTime(randomOffsetDateTime().toEpochSecond());
             lineItem1.setNote("Additional charge 1");
+            lineItem1.setItemKind(1); // Energy Generation Fee
 
             LineItemEntity lineItem2 = new LineItemEntity();
             lineItem2.setAmount(2000L);
             lineItem2.setDateTime(randomOffsetDateTime().toEpochSecond());
             lineItem2.setNote("Additional charge 2");
+            lineItem2.setItemKind(2); // Energy Delivery Fee
 
             // Act
             saved.addCostAdditionalDetailLastPeriod(lineItem1);

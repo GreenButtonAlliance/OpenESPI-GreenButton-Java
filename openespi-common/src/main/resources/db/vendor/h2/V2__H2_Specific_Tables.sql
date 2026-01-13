@@ -9,20 +9,23 @@
  * column type requirements.
  * 
  * Tables included:
+ * - service_delivery_points (extends Object - vendor-specific AUTO_INCREMENT)
  * - time_configurations (with BINARY columns for dst_end_rule, dst_start_rule)
  * - usage_points (with BINARY column for role_flags)
  * - time_configuration_related_links (FK dependency)
  * - usage_point_related_links (FK dependency)
+ * - pnode_refs (extends Object - vendor-specific AUTO_INCREMENT, FK to usage_points)
+ * - aggregated_node_refs (extends Object - vendor-specific AUTO_INCREMENT, FK to usage_points)
+ * - aggregated_node_ref_pnode_refs (join table)
  * - meter_readings (FK dependency on usage_points)
  * - meter_reading_related_links (FK dependency)
  * - interval_blocks (FK dependency on meter_readings)
  * - interval_block_related_links (FK dependency)
- * - interval_readings (FK dependency on interval_blocks - no related_links, extends Object)
- * - reading_qualities (FK dependency on interval_readings - no related_links, extends Object)
- * - usage_summaries (FK dependency on usage_points)
+ * - interval_readings (extends Object - vendor-specific AUTO_INCREMENT, FK to interval_blocks)
+ * - reading_qualities (extends Object - vendor-specific AUTO_INCREMENT, FK to interval_readings)
+ * - usage_summaries (FK dependency on usage_points, must precede line_items)
  * - usage_summary_related_links (FK dependency)
- * - subscription_usage_points (join table)
- * - customer schema tables (FK dependency on time_configurations)
+ * - line_items (extends Object - vendor-specific AUTO_INCREMENT, FK to usage_summaries)
  *
  * Total tables in this migration: 25+
  * Compatible with: H2 Database
@@ -343,3 +346,166 @@ CREATE TABLE reading_qualities
 -- Create indexes for reading_qualities table
 CREATE INDEX idx_reading_quality_interval_reading_id ON reading_qualities (interval_reading_id);
 CREATE INDEX idx_reading_quality_quality ON reading_qualities (quality);
+
+-- Usage Summary Table (IdentifiedObject-based entity with UUID)
+-- Must be created before line_items which references it
+CREATE TABLE usage_summaries
+(
+    id                          CHAR(36) PRIMARY KEY ,
+    description                 VARCHAR(255),
+    created                     TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated                     TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    published                   TIMESTAMP(6),
+    up_link_rel                 VARCHAR(255),
+    up_link_href                VARCHAR(1024),
+    up_link_type                VARCHAR(255),
+    self_link_rel               VARCHAR(255),
+    self_link_href              VARCHAR(1024),
+    self_link_type              VARCHAR(255),
+
+    -- Usage summary specific fields
+    bill_last_period            BIGINT,
+    bill_to_date                BIGINT,
+    cost_additional_last_period BIGINT,
+    currency                    VARCHAR(3),
+    quality_of_reading          VARCHAR(50),
+    status_timestamp            BIGINT,
+
+    -- Embedded DateTimeInterval: billingPeriod
+    billing_period_start        BIGINT,
+    billing_period_duration     BIGINT,
+
+    -- Embedded DateTimeInterval: ratchetDemandPeriod
+    ratchet_demand_period_start BIGINT,
+    ratchet_demand_period_duration BIGINT,
+
+    -- Embedded SummaryMeasurement: overallConsumptionLastPeriod
+    overall_consumption_last_period_multiplier VARCHAR(255),
+    overall_consumption_last_period_timestamp BIGINT,
+    overall_consumption_last_period_uom VARCHAR(50),
+    overall_consumption_last_period_value BIGINT,
+    overall_consumption_last_period_reading_type_ref VARCHAR(512),
+
+    -- Embedded SummaryMeasurement: currentBillingPeriodOverAllConsumption
+    current_billing_period_overall_consumption_multiplier VARCHAR(255),
+    current_billing_period_overall_consumption_timestamp BIGINT,
+    current_billing_period_overall_consumption_uom VARCHAR(50),
+    current_billing_period_overall_consumption_value BIGINT,
+    current_billing_period_overall_consumption_reading_type_ref VARCHAR(512),
+
+    -- Embedded SummaryMeasurement: currentDayLastYearNetConsumption
+    current_day_last_year_net_consumption_multiplier VARCHAR(255),
+    current_day_last_year_net_consumption_timestamp BIGINT,
+    current_day_last_year_net_consumption_uom VARCHAR(50),
+    current_day_last_year_net_consumption_value BIGINT,
+    current_day_last_year_net_consumption_reading_type_ref VARCHAR(512),
+
+    -- Embedded SummaryMeasurement: currentDayNetConsumption
+    current_day_net_consumption_multiplier VARCHAR(255),
+    current_day_net_consumption_timestamp BIGINT,
+    current_day_net_consumption_uom VARCHAR(50),
+    current_day_net_consumption_value BIGINT,
+    current_day_net_consumption_reading_type_ref VARCHAR(512),
+
+    -- Embedded SummaryMeasurement: currentDayOverallConsumption
+    current_day_overall_consumption_multiplier VARCHAR(255),
+    current_day_overall_consumption_timestamp BIGINT,
+    current_day_overall_consumption_uom VARCHAR(50),
+    current_day_overall_consumption_value BIGINT,
+    current_day_overall_consumption_reading_type_ref VARCHAR(512),
+
+    -- Embedded SummaryMeasurement: peakDemand
+    peak_demand_multiplier VARCHAR(255),
+    peak_demand_timestamp BIGINT,
+    peak_demand_uom VARCHAR(50),
+    peak_demand_value BIGINT,
+    peak_demand_reading_type_ref VARCHAR(512),
+
+    -- Embedded SummaryMeasurement: previousDayLastYearOverallConsumption
+    previous_day_last_year_overall_consumption_multiplier VARCHAR(255),
+    previous_day_last_year_overall_consumption_timestamp BIGINT,
+    previous_day_last_year_overall_consumption_uom VARCHAR(50),
+    previous_day_last_year_overall_consumption_value BIGINT,
+    previous_day_last_year_overall_consumption_reading_type_ref VARCHAR(512),
+
+    -- Embedded SummaryMeasurement: previousDayNetConsumption
+    previous_day_net_consumption_multiplier VARCHAR(255),
+    previous_day_net_consumption_timestamp BIGINT,
+    previous_day_net_consumption_uom VARCHAR(50),
+    previous_day_net_consumption_value BIGINT,
+    previous_day_net_consumption_reading_type_ref VARCHAR(512),
+
+    -- Embedded SummaryMeasurement: previousDayOverallConsumption
+    previous_day_overall_consumption_multiplier VARCHAR(255),
+    previous_day_overall_consumption_timestamp BIGINT,
+    previous_day_overall_consumption_uom VARCHAR(50),
+    previous_day_overall_consumption_value BIGINT,
+    previous_day_overall_consumption_reading_type_ref VARCHAR(512),
+
+    -- Embedded SummaryMeasurement: ratchetDemand
+    ratchet_demand_multiplier VARCHAR(255),
+    ratchet_demand_timestamp BIGINT,
+    ratchet_demand_uom VARCHAR(50),
+    ratchet_demand_value BIGINT,
+    ratchet_demand_reading_type_ref VARCHAR(512),
+
+    -- Foreign key relationships
+    usage_point_id              CHAR(36),
+
+    FOREIGN KEY (usage_point_id) REFERENCES usage_points (id) ON DELETE CASCADE
+);
+
+-- Create indexes for usage_summaries table
+CREATE INDEX idx_usage_summary_usage_point_id ON usage_summaries (usage_point_id);
+CREATE INDEX idx_usage_summary_billing_period_start ON usage_summaries (billing_period_start);
+CREATE INDEX idx_usage_summary_created ON usage_summaries (created);
+CREATE INDEX idx_usage_summary_updated ON usage_summaries (updated);
+
+-- Related Links Table for Usage Summaries
+CREATE TABLE usage_summary_related_links
+(
+    usage_summary_id CHAR(36) NOT NULL,
+    related_links    VARCHAR(1024),
+    FOREIGN KEY (usage_summary_id) REFERENCES usage_summaries (id) ON DELETE CASCADE
+);
+
+-- Create index for usage_summary_related_links table
+CREATE INDEX idx_usage_summary_related_links ON usage_summary_related_links (usage_summary_id);
+
+-- Line Item Table (Object-based entity, no IdentifiedObject)
+-- LineItem extends Object per ESPI 4.0 XSD (espi.xsd:1449)
+-- XSD sequence: amount → rounding → dateTime → note → measurement → itemKind → unitCost → itemPeriod
+CREATE TABLE line_items
+(
+    id                           BIGINT AUTO_INCREMENT PRIMARY KEY,
+
+    -- ESPI 4.0 fields in XSD sequence order
+    amount                       BIGINT,
+    rounding                     BIGINT,
+    date_time                    BIGINT,
+    note                         VARCHAR(256) NOT NULL,
+
+    -- Embedded SummaryMeasurement: measurement
+    measurement_multiplier       VARCHAR(255),
+    measurement_timestamp        BIGINT,
+    measurement_uom              VARCHAR(50),
+    measurement_value            BIGINT,
+    measurement_reading_type_ref VARCHAR(512),
+
+    item_kind                    INTEGER NOT NULL,
+    unit_cost                    BIGINT,
+
+    -- Embedded DateTimeInterval: itemPeriod
+    item_period_start            BIGINT,
+    item_period_duration         BIGINT,
+
+    -- Foreign key relationship (parent: UsageSummary)
+    usage_summary_id             CHAR(36),
+
+    FOREIGN KEY (usage_summary_id) REFERENCES usage_summaries (id) ON DELETE CASCADE
+);
+
+-- Create indexes for line_items table
+CREATE INDEX idx_line_item_usage_summary ON line_items (usage_summary_id);
+CREATE INDEX idx_line_item_date_time ON line_items (date_time);
+CREATE INDEX idx_line_item_amount ON line_items (amount);

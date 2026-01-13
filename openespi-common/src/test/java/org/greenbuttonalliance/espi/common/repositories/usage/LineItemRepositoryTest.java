@@ -18,10 +18,13 @@
 
 package org.greenbuttonalliance.espi.common.repositories.usage;
 
-import jakarta.validation.ConstraintViolation;
+import org.greenbuttonalliance.espi.common.domain.common.DateTimeInterval;
+import org.greenbuttonalliance.espi.common.domain.common.SummaryMeasurement;
 import org.greenbuttonalliance.espi.common.domain.usage.LineItemEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.UsageSummaryEntity;
 import org.greenbuttonalliance.espi.common.test.BaseRepositoryTest;
+import org.greenbuttonalliance.espi.common.test.TestDataBuilders;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -29,15 +32,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
 
 /**
  * Comprehensive test suite for LineItemRepository.
- * 
- * Tests all CRUD operations, 10 custom query methods, relationships,
+ *
+ * Tests all CRUD operations, 2 custom query methods, relationships,
  * and validation constraints for LineItem entities.
  */
 @DisplayName("LineItem Repository Tests")
@@ -49,6 +50,9 @@ class LineItemRepositoryTest extends BaseRepositoryTest {
     @Autowired
     private UsageSummaryRepository usageSummaryRepository;
 
+    @Autowired
+    private UsagePointRepository usagePointRepository;
+
     @Nested
     @DisplayName("CRUD Operations")
     class CrudOperationsTest {
@@ -57,11 +61,24 @@ class LineItemRepositoryTest extends BaseRepositoryTest {
         @DisplayName("Should save and retrieve line item successfully")
         void shouldSaveAndRetrieveLineItemSuccessfully() {
             // Arrange
-            LineItemEntity lineItem = new LineItemEntity(
-                10000L, // $100.00 in cents
-                1640995200L, // 2022-01-01 00:00:00 UTC
-                "Monthly service charge"
+            UsagePointEntity usagePoint = TestDataBuilders.createValidUsagePoint();
+            UsagePointEntity savedUsagePoint = usagePointRepository.save(usagePoint);
+
+            UsageSummaryEntity usageSummary = new UsageSummaryEntity(
+                new DateTimeInterval(1640995200L, 2592000L),
+                500000L,
+                250000L
             );
+            usageSummary.setUsagePoint(savedUsagePoint);
+            UsageSummaryEntity savedUsageSummary = usageSummaryRepository.save(usageSummary);
+
+            LineItemEntity lineItem = new LineItemEntity();
+            lineItem.setAmount(10000L);
+            lineItem.setRounding(5L);
+            lineItem.setDateTime(1641000000L);
+            lineItem.setNote("Energy delivery charge");
+            lineItem.setItemKind(2); // Energy Delivery Fee
+            lineItem.setUsageSummary(savedUsageSummary);
 
             // Act
             LineItemEntity saved = lineItemRepository.save(lineItem);
@@ -73,20 +90,41 @@ class LineItemRepositoryTest extends BaseRepositoryTest {
             assertThat(saved.getId()).isNotNull();
             assertThat(retrieved).isPresent();
             assertThat(retrieved.get().getAmount()).isEqualTo(10000L);
-            assertThat(retrieved.get().getDateTime()).isEqualTo(1640995200L);
-            assertThat(retrieved.get().getNote()).isEqualTo("Monthly service charge");
+            assertThat(retrieved.get().getRounding()).isEqualTo(5L);
+            assertThat(retrieved.get().getDateTime()).isEqualTo(1641000000L);
+            assertThat(retrieved.get().getNote()).isEqualTo("Energy delivery charge");
+            assertThat(retrieved.get().getItemKind()).isEqualTo(2);
+            assertThat(retrieved.get().getUsageSummary().getId()).isEqualTo(savedUsageSummary.getId());
         }
 
         @Test
-        @DisplayName("Should save line item with rounding")
-        void shouldSaveLineItemWithRounding() {
+        @DisplayName("Should save line item with all optional fields")
+        void shouldSaveLineItemWithAllOptionalFields() {
             // Arrange
-            LineItemEntity lineItem = new LineItemEntity(
-                9999L, // $99.99 in cents
-                1L, // 1 cent rounding
-                1640995200L,
-                "Usage charge with rounding"
+            UsagePointEntity usagePoint = TestDataBuilders.createValidUsagePoint();
+            UsagePointEntity savedUsagePoint = usagePointRepository.save(usagePoint);
+
+            UsageSummaryEntity usageSummary = new UsageSummaryEntity(
+                new DateTimeInterval(1640995200L, 2592000L),
+                500000L,
+                250000L
             );
+            usageSummary.setUsagePoint(savedUsagePoint);
+            UsageSummaryEntity savedUsageSummary = usageSummaryRepository.save(usageSummary);
+
+            SummaryMeasurement measurement = new SummaryMeasurement("3", 1641000000L, "Wh", 15000L, null);
+            DateTimeInterval itemPeriod = new DateTimeInterval(1640995200L, 86400L);
+
+            LineItemEntity lineItem = new LineItemEntity();
+            lineItem.setAmount(15000L);
+            lineItem.setRounding(10L);
+            lineItem.setDateTime(1641000000L);
+            lineItem.setNote("Peak usage charge");
+            lineItem.setMeasurement(measurement);
+            lineItem.setItemKind(1); // Energy Generation Fee
+            lineItem.setUnitCost(150L);
+            lineItem.setItemPeriod(itemPeriod);
+            lineItem.setUsageSummary(savedUsageSummary);
 
             // Act
             LineItemEntity saved = lineItemRepository.save(lineItem);
@@ -95,36 +133,11 @@ class LineItemRepositoryTest extends BaseRepositoryTest {
 
             // Assert
             assertThat(retrieved).isPresent();
-            assertThat(retrieved.get().getAmount()).isEqualTo(9999L);
-            assertThat(retrieved.get().getRounding()).isEqualTo(1L);
-            assertThat(retrieved.get().getNote()).isEqualTo("Usage charge with rounding");
-        }
-
-        @Test
-        @DisplayName("Should save line item with usage summary relationship")
-        void shouldSaveLineItemWithUsageSummaryRelationship() {
-            // Arrange
-            UsageSummaryEntity usageSummary = new UsageSummaryEntity();
-            usageSummary.setDescription("Test Usage Summary");
-            UsageSummaryEntity savedUsageSummary = usageSummaryRepository.saveAndFlush(usageSummary);
-            flushAndClear(); // Clear session to avoid cascade conflicts
-            
-            LineItemEntity lineItem = new LineItemEntity(
-                5000L, // $50.00 in cents
-                1640995200L,
-                "Line item with usage summary"
-            );
-            lineItem.setUsageSummary(savedUsageSummary);
-
-            // Act
-            LineItemEntity saved = lineItemRepository.saveAndFlush(lineItem);
-            flushAndClear();
-            Optional<LineItemEntity> retrieved = lineItemRepository.findById(saved.getId());
-
-            // Assert
-            assertThat(retrieved).isPresent();
-            assertThat(retrieved.get().getUsageSummary()).isNotNull();
-            assertThat(retrieved.get().getUsageSummary().getId()).isEqualTo(savedUsageSummary.getId());
+            assertThat(retrieved.get().getMeasurement()).isNotNull();
+            assertThat(retrieved.get().getMeasurement().getValue()).isEqualTo(15000L);
+            assertThat(retrieved.get().getUnitCost()).isEqualTo(150L);
+            assertThat(retrieved.get().getItemPeriod()).isNotNull();
+            assertThat(retrieved.get().getItemPeriod().getStart()).isEqualTo(1640995200L);
         }
     }
 
@@ -133,232 +146,209 @@ class LineItemRepositoryTest extends BaseRepositoryTest {
     class CustomQueryMethodsTest {
 
         @Test
-        @DisplayName("Should find line items by usage summary ID")
-        void shouldFindLineItemsByUsageSummaryId() {
-            // Arrange
-            UsageSummaryEntity usageSummary = new UsageSummaryEntity();
-            usageSummary.setDescription("Query Test Usage Summary");
-            UsageSummaryEntity savedUsageSummary = usageSummaryRepository.saveAndFlush(usageSummary);
-            flushAndClear(); // Clear session to avoid cascade conflicts
-            
-            LineItemEntity lineItem1 = new LineItemEntity(1000L, 1640995200L, "First item");
-            lineItem1.setUsageSummary(savedUsageSummary);
-            LineItemEntity lineItem2 = new LineItemEntity(2000L, 1640995300L, "Second item");
-            lineItem2.setUsageSummary(savedUsageSummary);
-            
-            lineItemRepository.saveAndFlush(lineItem1);
-            lineItemRepository.saveAndFlush(lineItem2);
-            flushAndClear();
-
-            // Act
-            List<LineItemEntity> lineItems = lineItemRepository.findByUsageSummaryId(savedUsageSummary.getId());
-
-            // Assert
-            assertThat(lineItems).hasSize(2);
-            assertThat(lineItems).extracting(LineItemEntity::getNote)
-                .containsExactly("First item", "Second item"); // Should be ordered by dateTime
-        }
-
-        @Test
-        @DisplayName("Should find line items by date time range")
-        void shouldFindLineItemsByDateTimeRange() {
-            // Arrange
-            LineItemEntity lineItem1 = new LineItemEntity(1000L, 1640995200L, "Item 1"); // 2022-01-01
-            LineItemEntity lineItem2 = new LineItemEntity(2000L, 1641081600L, "Item 2"); // 2022-01-02
-            LineItemEntity lineItem3 = new LineItemEntity(3000L, 1641168000L, "Item 3"); // 2022-01-03
-            
-            lineItemRepository.save(lineItem1);
-            lineItemRepository.save(lineItem2);
-            lineItemRepository.save(lineItem3);
-            flushAndClear();
-
-            // Act
-            List<LineItemEntity> lineItems = lineItemRepository.findByDateTimeRange(
-                1640995200L, // 2022-01-01
-                1641081600L  // 2022-01-02
-            );
-
-            // Assert
-            assertThat(lineItems).hasSize(2);
-            assertThat(lineItems).extracting(LineItemEntity::getNote)
-                .containsExactly("Item 1", "Item 2");
-        }
-
-        @Test
-        @DisplayName("Should find line items by amount range")
-        void shouldFindLineItemsByAmountRange() {
-            // Arrange
-            LineItemEntity lineItem1 = new LineItemEntity(1000L, 1640995200L, "Low amount");
-            LineItemEntity lineItem2 = new LineItemEntity(5000L, 1640995200L, "Medium amount");
-            LineItemEntity lineItem3 = new LineItemEntity(10000L, 1640995200L, "High amount");
-            
-            lineItemRepository.save(lineItem1);
-            lineItemRepository.save(lineItem2);
-            lineItemRepository.save(lineItem3);
-            flushAndClear();
-
-            // Act
-            List<LineItemEntity> lineItems = lineItemRepository.findByAmountRange(2000L, 8000L);
-
-            // Assert
-            assertThat(lineItems).hasSize(1);
-            assertThat(lineItems.get(0).getNote()).isEqualTo("Medium amount");
-            assertThat(lineItems.get(0).getAmount()).isEqualTo(5000L);
-        }
-
-        @Test
-        @DisplayName("Should find line items by note containing text")
-        void shouldFindLineItemsByNoteContaining() {
-            // Arrange
-            LineItemEntity lineItem1 = new LineItemEntity(1000L, 1640995200L, "Monthly service charge");
-            LineItemEntity lineItem2 = new LineItemEntity(2000L, 1640995200L, "Usage charge for electricity");
-            LineItemEntity lineItem3 = new LineItemEntity(3000L, 1640995200L, "Tax and fees");
-            
-            lineItemRepository.save(lineItem1);
-            lineItemRepository.save(lineItem2);
-            lineItemRepository.save(lineItem3);
-            flushAndClear();
-
-            // Act
-            List<LineItemEntity> lineItems = lineItemRepository.findByNoteContaining("charge");
-
-            // Assert
-            assertThat(lineItems).hasSize(2);
-            assertThat(lineItems).extracting(LineItemEntity::getNote)
-                .contains("Monthly service charge", "Usage charge for electricity");
-        }
-
-        @Test
         @DisplayName("Should find all IDs")
         void shouldFindAllIds() {
             // Arrange
-            LineItemEntity lineItem1 = new LineItemEntity(1000L, 1640995200L, "Item 1");
-            LineItemEntity lineItem2 = new LineItemEntity(2000L, 1640995200L, "Item 2");
-            
+            UsagePointEntity usagePoint = TestDataBuilders.createValidUsagePoint();
+            UsagePointEntity savedUsagePoint = usagePointRepository.save(usagePoint);
+
+            UsageSummaryEntity usageSummary = new UsageSummaryEntity(
+                new DateTimeInterval(1640995200L, 2592000L),
+                500000L,
+                250000L
+            );
+            usageSummary.setUsagePoint(savedUsagePoint);
+            UsageSummaryEntity savedUsageSummary = usageSummaryRepository.save(usageSummary);
+
+            LineItemEntity lineItem1 = new LineItemEntity(10000L, 1641000000L, "Charge 1", 1);
+            lineItem1.setUsageSummary(savedUsageSummary);
+
+            LineItemEntity lineItem2 = new LineItemEntity(20000L, 1641086400L, "Charge 2", 2);
+            lineItem2.setUsageSummary(savedUsageSummary);
+
             LineItemEntity saved1 = lineItemRepository.save(lineItem1);
             LineItemEntity saved2 = lineItemRepository.save(lineItem2);
             flushAndClear();
 
             // Act
-            List<UUID> allIds = lineItemRepository.findAllIds();
+            List<Long> allIds = lineItemRepository.findAllIds();
 
             // Assert
             assertThat(allIds).contains(saved1.getId(), saved2.getId());
         }
 
         @Test
-        @DisplayName("Should sum amounts by usage summary")
-        void shouldSumAmountsByUsageSummary() {
+        @DisplayName("Should find all line items by usage summary ID")
+        void shouldFindAllLineItemsByUsageSummaryId() {
             // Arrange
-            UsageSummaryEntity usageSummary = new UsageSummaryEntity();
-            usageSummary.setDescription("Sum Test Usage Summary");
-            UsageSummaryEntity savedUsageSummary = usageSummaryRepository.saveAndFlush(usageSummary);
-            flushAndClear(); // Clear session to avoid cascade conflicts
-            
-            LineItemEntity lineItem1 = new LineItemEntity(1000L, 1640995200L, "Item 1");
-            lineItem1.setUsageSummary(savedUsageSummary);
-            LineItemEntity lineItem2 = new LineItemEntity(2000L, 1640995200L, "Item 2");
-            lineItem2.setUsageSummary(savedUsageSummary);
-            LineItemEntity lineItem3 = new LineItemEntity(3000L, 1640995200L, "Item 3");
-            lineItem3.setUsageSummary(savedUsageSummary);
-            
-            lineItemRepository.saveAndFlush(lineItem1);
-            lineItemRepository.saveAndFlush(lineItem2);
-            lineItemRepository.saveAndFlush(lineItem3);
-            flushAndClear();
+            UsagePointEntity usagePoint = TestDataBuilders.createValidUsagePoint();
+            UsagePointEntity savedUsagePoint = usagePointRepository.save(usagePoint);
 
-            // Act
-            Long totalAmount = lineItemRepository.sumAmountsByUsageSummary(savedUsageSummary.getId());
-
-            // Assert
-            assertThat(totalAmount).isEqualTo(6000L); // 1000 + 2000 + 3000
-        }
-
-        @Test
-        @DisplayName("Should count line items by usage summary")
-        void shouldCountLineItemsByUsageSummary() {
-            // Arrange
-            UsageSummaryEntity usageSummary = new UsageSummaryEntity();
-            usageSummary.setDescription("Count Test Usage Summary");
-            UsageSummaryEntity savedUsageSummary = usageSummaryRepository.saveAndFlush(usageSummary);
-            flushAndClear(); // Clear session to avoid cascade conflicts
-            
-            LineItemEntity lineItem1 = new LineItemEntity(1000L, 1640995200L, "Item 1");
-            lineItem1.setUsageSummary(savedUsageSummary);
-            LineItemEntity lineItem2 = new LineItemEntity(2000L, 1640995200L, "Item 2");
-            lineItem2.setUsageSummary(savedUsageSummary);
-            
-            lineItemRepository.saveAndFlush(lineItem1);
-            lineItemRepository.saveAndFlush(lineItem2);
-            flushAndClear();
-
-            // Act
-            Long count = lineItemRepository.countByUsageSummary(savedUsageSummary.getId());
-
-            // Assert
-            assertThat(count).isEqualTo(2L);
-        }
-    }
-
-    @Nested
-    @DisplayName("Entity Validation")
-    class ValidationTest {
-
-        @Test
-        @DisplayName("Should validate required fields")
-        void shouldValidateRequiredFields() {
-            // Arrange
-            LineItemEntity lineItem = new LineItemEntity();
-            // Not setting required fields: amount, dateTime, note
-
-            // Act & Assert
-            Set<ConstraintViolation<LineItemEntity>> violations = validator.validate(lineItem);
-            assertThat(violations).hasSize(3); // amount, dateTime, note are required
-            
-            Set<String> violationMessages = violations.stream()
-                .map(ConstraintViolation::getMessage)
-                .collect(java.util.stream.Collectors.toSet());
-            
-            assertThat(violationMessages).contains(
-                "Amount cannot be null",
-                "Date time cannot be null",
-                "Note cannot be null"
+            UsageSummaryEntity usageSummary1 = new UsageSummaryEntity(
+                new DateTimeInterval(1640995200L, 2592000L),
+                500000L,
+                250000L
             );
-        }
+            usageSummary1.setUsagePoint(savedUsagePoint);
+            UsageSummaryEntity savedUsageSummary1 = usageSummaryRepository.save(usageSummary1);
 
-        @Test
-        @DisplayName("Should validate note length constraint")
-        void shouldValidateNoteLengthConstraint() {
-            // Arrange
-            String longNote = "A".repeat(257); // Exceeds 256 character limit
-            LineItemEntity lineItem = new LineItemEntity(1000L, 1640995200L, longNote);
+            UsageSummaryEntity usageSummary2 = new UsageSummaryEntity(
+                new DateTimeInterval(1643587200L, 2592000L),
+                600000L,
+                300000L
+            );
+            usageSummary2.setUsagePoint(savedUsagePoint);
+            UsageSummaryEntity savedUsageSummary2 = usageSummaryRepository.save(usageSummary2);
 
-            // Act & Assert
-            Set<ConstraintViolation<LineItemEntity>> violations = validator.validate(lineItem);
-            assertThat(violations).hasSize(1);
-            assertThat(violations.iterator().next().getMessage())
-                .isEqualTo("Note cannot exceed 256 characters");
+            LineItemEntity lineItem1 = new LineItemEntity(10000L, 1641000000L, "Summary 1 - Item 1", 1);
+            lineItem1.setUsageSummary(savedUsageSummary1);
+
+            LineItemEntity lineItem2 = new LineItemEntity(20000L, 1641086400L, "Summary 1 - Item 2", 2);
+            lineItem2.setUsageSummary(savedUsageSummary1);
+
+            LineItemEntity lineItem3 = new LineItemEntity(30000L, 1643600000L, "Summary 2 - Item 1", 1);
+            lineItem3.setUsageSummary(savedUsageSummary2);
+
+            lineItemRepository.save(lineItem1);
+            lineItemRepository.save(lineItem2);
+            lineItemRepository.save(lineItem3);
+            flushAndClear();
+
+            // Act
+            List<LineItemEntity> lineItems = lineItemRepository.findAllByUsageSummaryId(savedUsageSummary1.getId());
+
+            // Assert
+            assertThat(lineItems).hasSize(2);
+            assertThat(lineItems).extracting(LineItemEntity::getNote)
+                .containsExactlyInAnyOrder("Summary 1 - Item 1", "Summary 1 - Item 2");
         }
     }
 
     @Nested
-    @DisplayName("Entity Functionality")
-    class EntityFunctionalityTest {
+    @DisplayName("JPA Relationships")
+    class RelationshipsTest {
 
         @Test
-        @DisplayName("Should persist with auto-generated UUID")
-        void shouldPersistWithAutoGeneratedUuid() {
+        @DisplayName("Should maintain usage summary relationship")
+        void shouldMaintainUsageSummaryRelationship() {
             // Arrange
-            LineItemEntity lineItem = new LineItemEntity(1000L, 1640995200L, "UUID test");
+            UsagePointEntity usagePoint = TestDataBuilders.createValidUsagePoint();
+            UsagePointEntity savedUsagePoint = usagePointRepository.save(usagePoint);
+
+            UsageSummaryEntity usageSummary = new UsageSummaryEntity(
+                new DateTimeInterval(1640995200L, 2592000L),
+                500000L,
+                250000L
+            );
+            usageSummary.setDescription("Test Summary");
+            usageSummary.setUsagePoint(savedUsagePoint);
+            UsageSummaryEntity savedUsageSummary = usageSummaryRepository.save(usageSummary);
+
+            LineItemEntity lineItem = new LineItemEntity(10000L, 1641000000L, "Test Charge", 1);
+            lineItem.setUsageSummary(savedUsageSummary);
+
+            // Act
+            LineItemEntity saved = lineItemRepository.save(lineItem);
+            flushAndClear();
+            Optional<LineItemEntity> retrieved = lineItemRepository.findById(saved.getId());
+
+            // Assert
+            assertThat(retrieved).isPresent();
+            assertThat(retrieved.get().getUsageSummary()).isNotNull();
+            assertThat(retrieved.get().getUsageSummary().getId()).isEqualTo(savedUsageSummary.getId());
+            assertThat(retrieved.get().getUsageSummary().getDescription()).isEqualTo("Test Summary");
+        }
+    }
+
+    @Nested
+    @DisplayName("Business Logic")
+    class BusinessLogicTest {
+
+        @Test
+        @DisplayName("Should validate line item correctly")
+        void shouldValidateLineItemCorrectly() {
+            // Arrange
+            LineItemEntity validLineItem = new LineItemEntity(10000L, 1641000000L, "Valid charge", 1);
+            LineItemEntity invalidLineItem1 = new LineItemEntity(10000L, 1641000000L, null, 1); // null note
+            LineItemEntity invalidLineItem2 = new LineItemEntity(10000L, 1641000000L, "  ", 1); // blank note
+
+            // Act & Assert
+            assertThat(validLineItem.isValid()).isTrue();
+            assertThat(invalidLineItem1.isValid()).isFalse();
+            assertThat(invalidLineItem2.isValid()).isFalse();
+        }
+
+        @Test
+        @DisplayName("Should correctly identify charges and credits")
+        void shouldCorrectlyIdentifyChargesAndCredits() {
+            // Arrange
+            LineItemEntity charge = new LineItemEntity(10000L, 1641000000L, "Charge", 1);
+            LineItemEntity credit = new LineItemEntity(-5000L, 1641000000L, "Credit", 3);
+            LineItemEntity zeroAmount = new LineItemEntity(0L, 1641000000L, "Zero", 1);
+
+            // Act & Assert
+            assertThat(charge.isCharge()).isTrue();
+            assertThat(charge.isCredit()).isFalse();
+
+            assertThat(credit.isCharge()).isFalse();
+            assertThat(credit.isCredit()).isTrue();
+
+            assertThat(zeroAmount.isCharge()).isFalse();
+            assertThat(zeroAmount.isCredit()).isFalse();
+            assertThat(zeroAmount.isZeroAmount()).isTrue();
+        }
+
+        @Test
+        @DisplayName("Should calculate total amount with rounding")
+        void shouldCalculateTotalAmountWithRounding() {
+            // Arrange
+            LineItemEntity withRounding = new LineItemEntity(10000L, 15L, 1641000000L, "With rounding", 1);
+            LineItemEntity withoutRounding = new LineItemEntity(10000L, 1641000000L, "Without rounding", 1);
+
+            // Act & Assert
+            assertThat(withRounding.getTotalAmount()).isEqualTo(10015L);
+            assertThat(withRounding.hasRounding()).isTrue();
+
+            assertThat(withoutRounding.getTotalAmount()).isEqualTo(10000L);
+            assertThat(withoutRounding.hasRounding()).isFalse();
+        }
+    }
+
+    @Nested
+    @DisplayName("Entity Persistence")
+    class EntityPersistenceTest {
+
+        @Test
+        @DisplayName("Should persist and retrieve line item")
+        void shouldPersistAndRetrieveLineItem() {
+            // Arrange
+            UsagePointEntity usagePoint = TestDataBuilders.createValidUsagePoint();
+            UsagePointEntity savedUsagePoint = usagePointRepository.save(usagePoint);
+
+            UsageSummaryEntity usageSummary = new UsageSummaryEntity(
+                new DateTimeInterval(1640995200L, 2592000L),
+                500000L,
+                250000L
+            );
+            usageSummary.setUsagePoint(savedUsagePoint);
+            UsageSummaryEntity savedUsageSummary = usageSummaryRepository.save(usageSummary);
+
+            LineItemEntity lineItem = new LineItemEntity(10000L, 1641000000L, "Persistence Test", 1);
+            lineItem.setUsageSummary(savedUsageSummary);
 
             // Act
             LineItemEntity saved = lineItemRepository.save(lineItem);
             flushAndClear();
 
             // Assert
+            // LineItem extends Object (not IdentifiedObject) in ESPI 4.0 XSD,
+            // so it has Long ID but no Atom links or timestamps
             assertThat(saved.getId()).isNotNull();
-            assertThat(saved.getAmount()).isEqualTo(1000L);
-            assertThat(saved.getNote()).isEqualTo("UUID test");
+            assertThat(saved.getAmount()).isEqualTo(10000L);
+            assertThat(saved.getDateTime()).isEqualTo(1641000000L);
+            assertThat(saved.getNote()).isEqualTo("Persistence Test");
+            assertThat(saved.getItemKind()).isEqualTo(1);
+            assertThat(saved.getUsageSummary().getId()).isEqualTo(savedUsageSummary.getId());
         }
     }
 }
