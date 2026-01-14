@@ -23,9 +23,11 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.greenbuttonalliance.espi.common.domain.common.BillingChargeSource;
 import org.greenbuttonalliance.espi.common.domain.common.DateTimeInterval;
 import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
 import org.greenbuttonalliance.espi.common.domain.common.SummaryMeasurement;
+import org.greenbuttonalliance.espi.common.domain.common.TariffRiderRefEntity;
 import org.hibernate.proxy.HibernateProxy;
 
 import java.util.ArrayList;
@@ -48,6 +50,19 @@ public class UsageSummaryEntity extends IdentifiedObject {
 
     private static final long serialVersionUID = 1L;
 
+    // ========== XSD Order: Fields 1-4 (Simple Types) ==========
+
+    /**
+     * Billing period for this summary.
+     * Time interval covered by the billing period.
+     */
+    @Embedded
+    @AttributeOverrides({
+        @AttributeOverride(name = "start", column = @Column(name = "billing_period_start")),
+        @AttributeOverride(name = "duration", column = @Column(name = "billing_period_duration"))
+    })
+    private DateTimeInterval billingPeriod;
+
     /**
      * Bill amount for the last billing period.
      * Monetary value representing the total bill.
@@ -69,6 +84,17 @@ public class UsageSummaryEntity extends IdentifiedObject {
     @Column(name = "cost_additional_last_period")
     private Long costAdditionalLastPeriod;
 
+    // ========== XSD Order: Field 5 (Collection) ==========
+
+    /**
+     * Additional cost details for the last billing period.
+     * Line items breaking down additional charges.
+     */
+    @OneToMany(mappedBy = "usageSummary", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<LineItemEntity> costAdditionalDetailLastPeriod = new ArrayList<>();
+
+    // ========== XSD Order: Field 6 (Simple Type) ==========
+
     /**
      * Currency code for monetary values.
      * ISO 4217 currency codes (USD, EUR, etc.).
@@ -76,41 +102,7 @@ public class UsageSummaryEntity extends IdentifiedObject {
     @Column(name = "currency", length = 3)
     private String currency;
 
-    /**
-     * Quality indicator for the reading data.
-     * Describes the reliability and accuracy of the measurements.
-     */
-    @Column(name = "quality_of_reading", length = 50)
-    private String qualityOfReading;
-
-    /**
-     * Timestamp indicating when the status was last updated.
-     * Unix timestamp format.
-     */
-    @Column(name = "status_timestamp")
-    private Long statusTimeStamp;
-
-    /**
-     * Billing period for this summary.
-     * Time interval covered by the billing period.
-     */
-    @Embedded
-    @AttributeOverrides({
-        @AttributeOverride(name = "start", column = @Column(name = "billing_period_start")),
-        @AttributeOverride(name = "duration", column = @Column(name = "billing_period_duration"))
-    })
-    private DateTimeInterval billingPeriod;
-
-    /**
-     * Ratchet demand period.
-     * Time period for the highest demand that sets the ratchet.
-     */
-    @Embedded
-    @AttributeOverrides({
-        @AttributeOverride(name = "start", column = @Column(name = "ratchet_demand_period_start")),
-        @AttributeOverride(name = "duration", column = @Column(name = "ratchet_demand_period_duration"))
-    })
-    private DateTimeInterval ratchetDemandPeriod;
+    // ========== XSD Order: Fields 7-15 (SummaryMeasurements) ==========
 
     /**
      * Overall consumption for the last billing period.
@@ -229,6 +221,17 @@ public class UsageSummaryEntity extends IdentifiedObject {
     })
     private SummaryMeasurement previousDayOverallConsumption;
 
+    // ========== XSD Order: Field 16 (Simple Type) ==========
+
+    /**
+     * Quality indicator for the reading data.
+     * Describes the reliability and accuracy of the measurements.
+     */
+    @Column(name = "quality_of_reading", length = 50)
+    private String qualityOfReading;
+
+    // ========== XSD Order: Field 17 (SummaryMeasurement) ==========
+
     /**
      * Ratchet demand measurement.
      * Highest demand that establishes billing demand.
@@ -243,6 +246,79 @@ public class UsageSummaryEntity extends IdentifiedObject {
     })
     private SummaryMeasurement ratchetDemand;
 
+    // ========== XSD Order: Field 18 (DateTimeInterval) ==========
+
+    /**
+     * Ratchet demand period.
+     * Time period for the highest demand that sets the ratchet.
+     */
+    @Embedded
+    @AttributeOverrides({
+        @AttributeOverride(name = "start", column = @Column(name = "ratchet_demand_period_start")),
+        @AttributeOverride(name = "duration", column = @Column(name = "ratchet_demand_period_duration"))
+    })
+    private DateTimeInterval ratchetDemandPeriod;
+
+    // ========== XSD Order: Field 19 (Simple Type - REQUIRED) ==========
+
+    /**
+     * Timestamp indicating when the status was last updated.
+     * Unix timestamp format.
+     * REQUIRED field per ESPI 4.0 XSD.
+     */
+    @Column(name = "status_timestamp")
+    private Long statusTimeStamp;
+
+    // ========== XSD Order: Field 20 (Simple Type - NEW) ==========
+
+    /**
+     * Commodity being measured.
+     * ServiceKind enumeration value (e.g., 0=electricity, 1=gas, 2=water).
+     */
+    @Column(name = "commodity")
+    private Integer commodity;
+
+    // ========== XSD Order: Field 21 (Simple Type - NEW) ==========
+
+    /**
+     * Tariff profile identifier.
+     * Identifies the tariff or rate schedule applied.
+     */
+    @Column(name = "tariff_profile", length = 256)
+    private String tariffProfile;
+
+    // ========== XSD Order: Field 22 (Simple Type - NEW) ==========
+
+    /**
+     * Read cycle identifier.
+     * Identifies the meter reading schedule or cycle.
+     */
+    @Column(name = "read_cycle", length = 256)
+    private String readCycle;
+
+    // ========== XSD Order: Field 23 (Collection - NEW) ==========
+
+    /**
+     * References to tariff riders applied to this usage summary.
+     * Tariff riders are rate options applied to the base tariff.
+     */
+    @OneToMany(mappedBy = "usageSummary", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<TariffRiderRefEntity> tariffRiderRefs = new ArrayList<>();
+
+    // ========== XSD Order: Field 24 (Embedded - NEW) ==========
+
+    /**
+     * Information about the source of billing charges.
+     * Agency or system that generated the billing information.
+     */
+    @Embedded
+    @AttributeOverrides({
+        @AttributeOverride(name = "agencyName", column = @Column(name = "billing_charge_source_agency_name", length = 256))
+    })
+    private BillingChargeSource billingChargeSource;
+
+    // ========== XSD Order: Field 25 (Relationship - Keep at end) ==========
+
     /**
      * Usage point that this summary belongs to.
      * Many summaries can belong to one usage point.
@@ -250,13 +326,6 @@ public class UsageSummaryEntity extends IdentifiedObject {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usage_point_id")
     private UsagePointEntity usagePoint;
-
-    /**
-     * Additional cost details for the last billing period.
-     * Line items breaking down additional charges.
-     */
-    @OneToMany(mappedBy = "usageSummary", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<LineItemEntity> costAdditionalDetailLastPeriod = new ArrayList<>();
 
     /**
      * Constructor with billing period and basic bill amounts.
@@ -287,13 +356,39 @@ public class UsageSummaryEntity extends IdentifiedObject {
     /**
      * Removes a line item from additional cost details.
      * Clears the bidirectional relationship.
-     * 
+     *
      * @param lineItem the line item to remove
      */
     public void removeCostAdditionalDetailLastPeriod(LineItemEntity lineItem) {
         if (lineItem != null) {
             this.costAdditionalDetailLastPeriod.remove(lineItem);
             lineItem.setUsageSummary(null);
+        }
+    }
+
+    /**
+     * Adds a tariff rider reference to this usage summary.
+     * Sets up the bidirectional relationship.
+     *
+     * @param tariffRiderRef the tariff rider ref to add
+     */
+    public void addTariffRiderRef(TariffRiderRefEntity tariffRiderRef) {
+        if (tariffRiderRef != null) {
+            this.tariffRiderRefs.add(tariffRiderRef);
+            tariffRiderRef.setUsageSummary(this);
+        }
+    }
+
+    /**
+     * Removes a tariff rider reference from this usage summary.
+     * Clears the bidirectional relationship.
+     *
+     * @param tariffRiderRef the tariff rider ref to remove
+     */
+    public void removeTariffRiderRef(TariffRiderRefEntity tariffRiderRef) {
+        if (tariffRiderRef != null) {
+            this.tariffRiderRefs.remove(tariffRiderRef);
+            tariffRiderRef.setUsageSummary(null);
         }
     }
 
@@ -347,25 +442,20 @@ public class UsageSummaryEntity extends IdentifiedObject {
     /**
      * Merges data from another UsageSummaryEntity.
      * Updates all summary data and embedded measurements.
-     * 
+     *
      * @param other the other usage summary entity to merge from
      */
     public void merge(UsageSummaryEntity other) {
         if (other != null) {
             super.merge(other);
-            
+
             // Update billing and cost information
+            this.billingPeriod = other.billingPeriod;
             this.billLastPeriod = other.billLastPeriod;
             this.billToDate = other.billToDate;
             this.costAdditionalLastPeriod = other.costAdditionalLastPeriod;
             this.currency = other.currency;
-            this.qualityOfReading = other.qualityOfReading;
-            this.statusTimeStamp = other.statusTimeStamp;
-            
-            // Update time intervals
-            this.billingPeriod = other.billingPeriod;
-            this.ratchetDemandPeriod = other.ratchetDemandPeriod;
-            
+
             // Update embedded measurements
             this.overallConsumptionLastPeriod = other.overallConsumptionLastPeriod;
             this.currentBillingPeriodOverAllConsumption = other.currentBillingPeriodOverAllConsumption;
@@ -376,8 +466,19 @@ public class UsageSummaryEntity extends IdentifiedObject {
             this.previousDayLastYearOverallConsumption = other.previousDayLastYearOverallConsumption;
             this.previousDayNetConsumption = other.previousDayNetConsumption;
             this.previousDayOverallConsumption = other.previousDayOverallConsumption;
+
+            // Update quality and demand information
+            this.qualityOfReading = other.qualityOfReading;
             this.ratchetDemand = other.ratchetDemand;
-            
+            this.ratchetDemandPeriod = other.ratchetDemandPeriod;
+            this.statusTimeStamp = other.statusTimeStamp;
+
+            // Update new ESPI 4.0 fields
+            this.commodity = other.commodity;
+            this.tariffProfile = other.tariffProfile;
+            this.readCycle = other.readCycle;
+            this.billingChargeSource = other.billingChargeSource;
+
             // Replace cost detail line items with bidirectional setup
             this.costAdditionalDetailLastPeriod.clear();
             if (other.costAdditionalDetailLastPeriod != null) {
@@ -385,7 +486,15 @@ public class UsageSummaryEntity extends IdentifiedObject {
                     addCostAdditionalDetailLastPeriod(lineItem);
                 }
             }
-            
+
+            // Replace tariff rider refs with bidirectional setup
+            this.tariffRiderRefs.clear();
+            if (other.tariffRiderRefs != null) {
+                for (TariffRiderRefEntity tariffRiderRef : other.tariffRiderRefs) {
+                    addTariffRiderRef(tariffRiderRef);
+                }
+            }
+
             // Update usage point if provided
             if (other.usagePoint != null) {
                 this.usagePoint = other.usagePoint;
@@ -398,13 +507,19 @@ public class UsageSummaryEntity extends IdentifiedObject {
      */
     public void unlink() {
         clearRelatedLinks();
-        
+
         // Clear cost detail line items
         for (LineItemEntity lineItem : new ArrayList<>(costAdditionalDetailLastPeriod)) {
             removeCostAdditionalDetailLastPeriod(lineItem);
         }
         costAdditionalDetailLastPeriod.clear();
-        
+
+        // Clear tariff rider refs
+        for (TariffRiderRefEntity tariffRiderRef : new ArrayList<>(tariffRiderRefs)) {
+            removeTariffRiderRef(tariffRiderRef);
+        }
+        tariffRiderRefs.clear();
+
         // Clear relationships with simple field assignment
         this.usagePoint = null;
     }
@@ -573,14 +688,11 @@ public class UsageSummaryEntity extends IdentifiedObject {
     public String toString() {
         return getClass().getSimpleName() + "(" +
                 "id = " + getId() + ", " +
+                "billingPeriod = " + getBillingPeriod() + ", " +
                 "billLastPeriod = " + getBillLastPeriod() + ", " +
                 "billToDate = " + getBillToDate() + ", " +
                 "costAdditionalLastPeriod = " + getCostAdditionalLastPeriod() + ", " +
                 "currency = " + getCurrency() + ", " +
-                "qualityOfReading = " + getQualityOfReading() + ", " +
-                "statusTimeStamp = " + getStatusTimeStamp() + ", " +
-                "billingPeriod = " + getBillingPeriod() + ", " +
-                "ratchetDemandPeriod = " + getRatchetDemandPeriod() + ", " +
                 "overallConsumptionLastPeriod = " + getOverallConsumptionLastPeriod() + ", " +
                 "currentBillingPeriodOverAllConsumption = " + getCurrentBillingPeriodOverAllConsumption() + ", " +
                 "currentDayLastYearNetConsumption = " + getCurrentDayLastYearNetConsumption() + ", " +
@@ -590,7 +702,14 @@ public class UsageSummaryEntity extends IdentifiedObject {
                 "previousDayLastYearOverallConsumption = " + getPreviousDayLastYearOverallConsumption() + ", " +
                 "previousDayNetConsumption = " + getPreviousDayNetConsumption() + ", " +
                 "previousDayOverallConsumption = " + getPreviousDayOverallConsumption() + ", " +
+                "qualityOfReading = " + getQualityOfReading() + ", " +
                 "ratchetDemand = " + getRatchetDemand() + ", " +
+                "ratchetDemandPeriod = " + getRatchetDemandPeriod() + ", " +
+                "statusTimeStamp = " + getStatusTimeStamp() + ", " +
+                "commodity = " + getCommodity() + ", " +
+                "tariffProfile = " + getTariffProfile() + ", " +
+                "readCycle = " + getReadCycle() + ", " +
+                "billingChargeSource = " + getBillingChargeSource() + ", " +
                 "description = " + getDescription() + ", " +
                 "created = " + getCreated() + ", " +
                 "updated = " + getUpdated() + ", " +

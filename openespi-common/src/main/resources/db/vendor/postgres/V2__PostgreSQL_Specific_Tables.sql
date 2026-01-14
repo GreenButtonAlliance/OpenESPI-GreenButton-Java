@@ -440,6 +440,14 @@ CREATE TABLE usage_summaries
     ratchet_demand_value BIGINT,
     ratchet_demand_reading_type_ref VARCHAR(512),
 
+    -- ESPI 4.0 extension fields (Phase 11)
+    commodity                   INTEGER,
+    tariff_profile              VARCHAR(256),
+    read_cycle                  VARCHAR(256),
+
+    -- Embedded BillingChargeSource: billingChargeSource
+    billing_charge_source_agency_name VARCHAR(256),
+
     -- Foreign key relationships
     usage_point_id              CHAR(36),
 
@@ -450,6 +458,9 @@ CREATE INDEX idx_usage_summary_usage_point_id ON usage_summaries (usage_point_id
 CREATE INDEX idx_usage_summary_billing_period_start ON usage_summaries (billing_period_start);
 CREATE INDEX idx_usage_summary_created ON usage_summaries (created);
 CREATE INDEX idx_usage_summary_updated ON usage_summaries (updated);
+CREATE INDEX idx_usage_summary_commodity ON usage_summaries (commodity);
+CREATE INDEX idx_usage_summary_tariff_profile ON usage_summaries (tariff_profile);
+CREATE INDEX idx_usage_summary_read_cycle ON usage_summaries (read_cycle);
 
 -- Related Links Table for Usage Summaries
 CREATE TABLE usage_summary_related_links
@@ -460,6 +471,29 @@ CREATE TABLE usage_summary_related_links
 );
 
 CREATE INDEX idx_usage_summary_related_links ON usage_summary_related_links (usage_summary_id);
+
+-- Tariff Rider Ref Table (Object-based entity, no IdentifiedObject)
+-- TariffRiderRef extends Object per ESPI 4.0 XSD (espi.xsd:1602-1627)
+-- XSD sequence: riderType → enrollmentStatus → effectiveDate
+-- Part of TariffRiderRefs collection in UsageSummary (Phase 11)
+CREATE TABLE tariff_rider_refs
+(
+    id                 BIGSERIAL PRIMARY KEY,
+
+    -- ESPI 4.0 fields in XSD sequence order
+    rider_type         VARCHAR(256) NOT NULL,
+    enrollment_status  VARCHAR(32) NOT NULL,
+    effective_date     BIGINT NOT NULL,
+
+    -- Foreign key relationship (parent: UsageSummary)
+    usage_summary_id   CHAR(36),
+
+    FOREIGN KEY (usage_summary_id) REFERENCES usage_summaries (id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_tariff_rider_ref_usage_summary ON tariff_rider_refs (usage_summary_id);
+CREATE INDEX idx_tariff_rider_ref_rider_type ON tariff_rider_refs (rider_type);
+CREATE INDEX idx_tariff_rider_ref_enrollment_status ON tariff_rider_refs (enrollment_status);
 
 -- Line Item Table (Object-based entity, no IdentifiedObject)
 -- LineItem extends Object per ESPI 4.0 XSD (espi.xsd:1449)

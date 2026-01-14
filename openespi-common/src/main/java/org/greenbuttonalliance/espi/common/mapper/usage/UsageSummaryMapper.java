@@ -24,6 +24,7 @@ import org.greenbuttonalliance.espi.common.dto.usage.UsageSummaryDto;
 import org.greenbuttonalliance.espi.common.mapper.BaseIdentifiedObjectMapper;
 import org.greenbuttonalliance.espi.common.mapper.BaseMapperUtils;
 import org.greenbuttonalliance.espi.common.mapper.DateTimeMapper;
+import org.greenbuttonalliance.espi.common.mapper.SummaryMeasurementMapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
@@ -37,14 +38,18 @@ import org.mapstruct.MappingTarget;
 @Mapper(componentModel = "spring", uses = {
     DateTimeMapper.class,
     BaseMapperUtils.class,
-    DateTimeIntervalMapper.class
+    DateTimeIntervalMapper.class,
+    SummaryMeasurementMapper.class,
+    LineItemMapper.class,
+    TariffRiderRefMapper.class
 })
 public interface UsageSummaryMapper {
 
     /**
      * Converts a UsageSummaryEntity to a UsageSummaryDto.
-     * Maps usage summary data including billing period and cost information.
-     * 
+     * Maps usage summary data including billing period, cost information, consumption summaries,
+     * and tariff details per ESPI 4.0 specification.
+     *
      * @param entity the usage summary entity
      * @return the usage summary DTO
      */
@@ -60,15 +65,33 @@ public interface UsageSummaryMapper {
     @Mapping(target = "billLastPeriod", source = "billLastPeriod")
     @Mapping(target = "billToDate", source = "billToDate")
     @Mapping(target = "costAdditionalLastPeriod", source = "costAdditionalLastPeriod")
+    @Mapping(target = "costAdditionalDetailLastPeriod", source = "costAdditionalDetailLastPeriod")
     @Mapping(target = "currency", source = "currency")
+    @Mapping(target = "overallConsumptionLastPeriod", source = "overallConsumptionLastPeriod")
+    @Mapping(target = "currentBillingPeriodOverAllConsumption", source = "currentBillingPeriodOverAllConsumption")
+    @Mapping(target = "currentDayLastYearNetConsumption", source = "currentDayLastYearNetConsumption")
+    @Mapping(target = "currentDayNetConsumption", source = "currentDayNetConsumption")
+    @Mapping(target = "currentDayOverallConsumption", source = "currentDayOverallConsumption")
+    @Mapping(target = "peakDemand", source = "peakDemand")
+    @Mapping(target = "previousDayLastYearOverallConsumption", source = "previousDayLastYearOverallConsumption")
+    @Mapping(target = "previousDayNetConsumption", source = "previousDayNetConsumption")
+    @Mapping(target = "previousDayOverallConsumption", source = "previousDayOverallConsumption")
     @Mapping(target = "qualityOfReading", source = "qualityOfReading")
-    @Mapping(target = "statusTimeStamp", source = "statusTimeStamp", qualifiedByName = "longToOffset")
+    @Mapping(target = "ratchetDemand", source = "ratchetDemand")
+    @Mapping(target = "ratchetDemandPeriod", source = "ratchetDemandPeriod")
+    @Mapping(target = "statusTimeStamp", source = "statusTimeStamp")
+    @Mapping(target = "commodity", source = "commodity")
+    @Mapping(target = "tariffProfile", source = "tariffProfile")
+    @Mapping(target = "readCycle", source = "readCycle")
+    @Mapping(target = "tariffRiderRefs", source = "tariffRiderRefs", qualifiedByName = "entityListToTariffRiderRefsDto")
+    @Mapping(target = "billingChargeSource", source = "billingChargeSource")
     UsageSummaryDto toDto(UsageSummaryEntity entity);
 
     /**
      * Converts a UsageSummaryDto to a UsageSummaryEntity.
-     * Maps usage summary data including billing period and cost information.
-     * 
+     * Maps usage summary data including billing period, cost information, consumption summaries,
+     * and tariff details per ESPI 4.0 specification.
+     *
      * @param dto the usage summary DTO
      * @return the usage summary entity
      */
@@ -80,9 +103,26 @@ public interface UsageSummaryMapper {
     @Mapping(target = "billLastPeriod", source = "billLastPeriod")
     @Mapping(target = "billToDate", source = "billToDate")
     @Mapping(target = "costAdditionalLastPeriod", source = "costAdditionalLastPeriod")
+    @Mapping(target = "costAdditionalDetailLastPeriod", source = "costAdditionalDetailLastPeriod")
     @Mapping(target = "currency", source = "currency")
+    @Mapping(target = "overallConsumptionLastPeriod", source = "overallConsumptionLastPeriod")
+    @Mapping(target = "currentBillingPeriodOverAllConsumption", source = "currentBillingPeriodOverAllConsumption")
+    @Mapping(target = "currentDayLastYearNetConsumption", source = "currentDayLastYearNetConsumption")
+    @Mapping(target = "currentDayNetConsumption", source = "currentDayNetConsumption")
+    @Mapping(target = "currentDayOverallConsumption", source = "currentDayOverallConsumption")
+    @Mapping(target = "peakDemand", source = "peakDemand")
+    @Mapping(target = "previousDayLastYearOverallConsumption", source = "previousDayLastYearOverallConsumption")
+    @Mapping(target = "previousDayNetConsumption", source = "previousDayNetConsumption")
+    @Mapping(target = "previousDayOverallConsumption", source = "previousDayOverallConsumption")
     @Mapping(target = "qualityOfReading", source = "qualityOfReading")
-    @Mapping(target = "statusTimeStamp", source = "statusTimeStamp", qualifiedByName = "offsetToLong")
+    @Mapping(target = "ratchetDemand", source = "ratchetDemand")
+    @Mapping(target = "ratchetDemandPeriod", source = "ratchetDemandPeriod")
+    @Mapping(target = "statusTimeStamp", source = "statusTimeStamp")
+    @Mapping(target = "commodity", source = "commodity")
+    @Mapping(target = "tariffProfile", source = "tariffProfile")
+    @Mapping(target = "readCycle", source = "readCycle")
+    @Mapping(target = "tariffRiderRefs", source = "tariffRiderRefs", qualifiedByName = "tariffRiderRefsDtoToEntityList")
+    @Mapping(target = "billingChargeSource", source = "billingChargeSource")
     @Mapping(target = "usagePoint", ignore = true) // Relationship handled separately
     @Mapping(target = "created", ignore = true) // Inherited from IdentifiedObject
     @Mapping(target = "relatedLinks", ignore = true)
@@ -93,14 +133,39 @@ public interface UsageSummaryMapper {
     /**
      * Updates an existing UsageSummaryEntity with data from a UsageSummaryDto.
      * Useful for merge operations where the entity ID should be preserved.
-     * 
+     * Maps all ESPI 4.0 fields while preserving entity identity and relationships.
+     *
      * @param dto the source DTO
      * @param entity the target entity to update
      */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "published", source = "published", qualifiedByName = "offsetToLocal")
     @Mapping(target = "updated", source = "updated", qualifiedByName = "offsetToLocal")
-    @Mapping(target = "statusTimeStamp", source = "statusTimeStamp", qualifiedByName = "offsetToLong")
+    @Mapping(target = "description", source = "description")
+    @Mapping(target = "billingPeriod", source = "billingPeriod")
+    @Mapping(target = "billLastPeriod", source = "billLastPeriod")
+    @Mapping(target = "billToDate", source = "billToDate")
+    @Mapping(target = "costAdditionalLastPeriod", source = "costAdditionalLastPeriod")
+    @Mapping(target = "costAdditionalDetailLastPeriod", source = "costAdditionalDetailLastPeriod")
+    @Mapping(target = "currency", source = "currency")
+    @Mapping(target = "overallConsumptionLastPeriod", source = "overallConsumptionLastPeriod")
+    @Mapping(target = "currentBillingPeriodOverAllConsumption", source = "currentBillingPeriodOverAllConsumption")
+    @Mapping(target = "currentDayLastYearNetConsumption", source = "currentDayLastYearNetConsumption")
+    @Mapping(target = "currentDayNetConsumption", source = "currentDayNetConsumption")
+    @Mapping(target = "currentDayOverallConsumption", source = "currentDayOverallConsumption")
+    @Mapping(target = "peakDemand", source = "peakDemand")
+    @Mapping(target = "previousDayLastYearOverallConsumption", source = "previousDayLastYearOverallConsumption")
+    @Mapping(target = "previousDayNetConsumption", source = "previousDayNetConsumption")
+    @Mapping(target = "previousDayOverallConsumption", source = "previousDayOverallConsumption")
+    @Mapping(target = "qualityOfReading", source = "qualityOfReading")
+    @Mapping(target = "ratchetDemand", source = "ratchetDemand")
+    @Mapping(target = "ratchetDemandPeriod", source = "ratchetDemandPeriod")
+    @Mapping(target = "statusTimeStamp", source = "statusTimeStamp")
+    @Mapping(target = "commodity", source = "commodity")
+    @Mapping(target = "tariffProfile", source = "tariffProfile")
+    @Mapping(target = "readCycle", source = "readCycle")
+    @Mapping(target = "tariffRiderRefs", source = "tariffRiderRefs", qualifiedByName = "tariffRiderRefsDtoToEntityList")
+    @Mapping(target = "billingChargeSource", source = "billingChargeSource")
     @Mapping(target = "usagePoint", ignore = true) // Relationship handled separately
     @Mapping(target = "created", ignore = true) // Inherited from IdentifiedObject
     @Mapping(target = "relatedLinks", ignore = true)
