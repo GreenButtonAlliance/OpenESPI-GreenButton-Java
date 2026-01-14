@@ -62,7 +62,7 @@ public class AssociateUsagePointController {
 	}
 
 	@GetMapping("/custodian/retailcustomers/{retailCustomerId}/usagepoints/form")
-	public String form(@PathVariable UUID retailCustomerId, ModelMap model) {
+	public String form(@PathVariable Long retailCustomerId, ModelMap model) {
 		model.put("usagePointForm", new UsagePointEntityForm());
 		model.put("retailCustomerId", retailCustomerId);
 
@@ -71,20 +71,21 @@ public class AssociateUsagePointController {
 
 	@PostMapping("/custodian/retailcustomers/{retailCustomerId}/usagepoints/create")
 	public String create(
-			@PathVariable UUID retailCustomerId,
+			@PathVariable Long retailCustomerId,
 			@ModelAttribute("usagePointForm") @Valid UsagePointEntityForm usagePointForm,
 			BindingResult result) {
 		if (result.hasErrors())
 			return "/custodian/retailcustomers/usagepoints/form";
 
+		// TODO: Implement usage point association - associateById method needs to be implemented
 		// retailCustomerService returns legacy SubscriptionEntity, not SubscriptionEntityEntity
-		var subscription = retailCustomerService.associateByUUID(
-				retailCustomerId, UUID.fromString(usagePointForm.getUUID()));
+		// var subscription = retailCustomerService.associateById(
+		//		retailCustomerId, UUID.fromString(usagePointForm.getUUID()));
 
-		if (subscription != null) {
+		// if (subscription != null) {
 			// TODO: Implement NotificationService
 			// notificationService.notify(subscription, null, null);
-		}
+		// }
 		return "redirect:/custodian/retailcustomers";
 	}
 
