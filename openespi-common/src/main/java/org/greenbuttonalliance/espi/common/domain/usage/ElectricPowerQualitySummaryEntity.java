@@ -114,6 +114,17 @@ public class ElectricPowerQualitySummaryEntity extends IdentifiedObject {
     private Long shortInterruptions;
 
     /**
+     * Summary interval for this power quality summary.
+     * Time period covered by these measurements.
+     */
+    @Embedded
+    @AttributeOverrides({
+        @AttributeOverride(name = "start", column = @Column(name = "summary_interval_start")),
+        @AttributeOverride(name = "duration", column = @Column(name = "summary_interval_duration"))
+    })
+    private DateTimeInterval summaryInterval;
+
+    /**
      * Number of supply voltage dips during the summary period.
      * Temporary reductions in RMS voltage.
      */
@@ -141,17 +152,6 @@ public class ElectricPowerQualitySummaryEntity extends IdentifiedObject {
      */
     @Column(name = "temp_overvoltage")
     private Long tempOvervoltage;
-
-    /**
-     * Summary interval for this power quality summary.
-     * Time period covered by these measurements.
-     */
-    @Embedded
-    @AttributeOverrides({
-        @AttributeOverride(name = "start", column = @Column(name = "summary_interval_start")),
-        @AttributeOverride(name = "duration", column = @Column(name = "summary_interval_duration"))
-    })
-    private DateTimeInterval summaryInterval;
 
     /**
      * Usage point that this power quality summary belongs to.
