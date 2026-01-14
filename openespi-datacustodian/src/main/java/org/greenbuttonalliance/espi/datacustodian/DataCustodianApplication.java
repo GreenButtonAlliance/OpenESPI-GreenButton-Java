@@ -45,7 +45,8 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 })
 @EntityScan(basePackages = {
     "org.greenbuttonalliance.espi.common.domain.usage",
-    "org.greenbuttonalliance.espi.common.domain.customer"
+    "org.greenbuttonalliance.espi.common.domain.customer",
+    "org.greenbuttonalliance.espi.common.domain.common"
 })
 @EnableJpaRepositories(basePackages = {
     "org.greenbuttonalliance.espi.common.repositories"
