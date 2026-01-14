@@ -50,7 +50,7 @@ public class AuthorizationServiceImpl implements AuthorizationService {
 	private final AuthorizationMapper authorizationMapper;
 
 	@Override
-	public List<AuthorizationEntity> findAllByRetailCustomerId(UUID retailCustomerId) {
+	public List<AuthorizationEntity> findAllByRetailCustomerId(Long retailCustomerId) {
 		return authorizationRepository
 				.findAllByRetailCustomerId(retailCustomerId);
 	}
@@ -84,7 +84,7 @@ public class AuthorizationServiceImpl implements AuthorizationService {
 	}
 
 	@Override
-	public AuthorizationEntity findByScope(String scope, UUID retailCustomerId) {
+	public AuthorizationEntity findByScope(String scope, Long retailCustomerId) {
 		return authorizationRepository.findByScope(scope, retailCustomerId).orElse(null);
 	}
 
@@ -173,7 +173,7 @@ public class AuthorizationServiceImpl implements AuthorizationService {
 	}
 
 	@Override
-	public AuthorizationEntity findById(UUID retailCustomerId, UUID authorizationId) {
+	public AuthorizationEntity findById(Long retailCustomerId, UUID authorizationId) {
 		return this.authorizationRepository.findById(authorizationId).orElse(null);
 	}
 

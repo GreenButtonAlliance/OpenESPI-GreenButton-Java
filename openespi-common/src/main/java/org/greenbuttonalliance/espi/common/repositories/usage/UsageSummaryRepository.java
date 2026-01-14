@@ -59,9 +59,9 @@ public interface UsageSummaryRepository extends JpaRepository<UsageSummaryEntity
     List<UUID> findAllIdsByUsagePointId(@Param("usagePointId") UUID usagePointId);
 
     @Query("SELECT e.id FROM UsagePointEntity u, UsageSummaryEntity e WHERE u.retailCustomer.id = :o1Id AND e.usagePoint.id = :o2Id")
-    List<UUID> findAllIdsByXpath2(@Param("o1Id") UUID o1Id, @Param("o2Id") UUID o2Id);
+    List<UUID> findAllIdsByXpath2(@Param("o1Id") Long o1Id, @Param("o2Id") UUID o2Id);
 
     @Query("SELECT e.id FROM UsagePointEntity u, UsageSummaryEntity e WHERE u.retailCustomer.id = :o1Id AND e.usagePoint.id = :o2Id AND e.id = :o3Id")
-    Optional<UUID> findIdByXpath(@Param("o1Id") UUID o1Id, @Param("o2Id") UUID o2Id, @Param("o3Id") UUID o3Id);
+    Optional<UUID> findIdByXpath(@Param("o1Id") Long o1Id, @Param("o2Id") UUID o2Id, @Param("o3Id") UUID o3Id);
 
 }

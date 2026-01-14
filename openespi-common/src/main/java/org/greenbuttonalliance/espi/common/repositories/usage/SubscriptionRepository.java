@@ -55,7 +55,7 @@ public interface SubscriptionRepository extends JpaRepository<SubscriptionEntity
 	List<UUID> findAllIds();
 
 	@Query("SELECT s FROM SubscriptionEntity s WHERE s.retailCustomer.id = :retailCustomerId")
-	List<SubscriptionEntity> findByRetailCustomerId(@Param("retailCustomerId") UUID retailCustomerId);
+	List<SubscriptionEntity> findByRetailCustomerId(@Param("retailCustomerId") Long retailCustomerId);
 
 	@Query("SELECT s FROM SubscriptionEntity s WHERE s.applicationInformation.id = :applicationInformationId")
 	List<SubscriptionEntity> findByApplicationInformationId(@Param("applicationInformationId") UUID applicationInformationId);

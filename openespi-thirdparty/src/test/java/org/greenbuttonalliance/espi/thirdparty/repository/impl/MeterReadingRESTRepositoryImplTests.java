@@ -43,7 +43,7 @@ public class MeterReadingRESTRepositoryImplTests {
         repository.setUsagePointRESTRepository(usagePointRESTRepository);
 
         // Create test data with UUID
-        UUID retailCustomerId = UUID.randomUUID();
+        Long retailCustomerId = 1000002L;
         UUID meterReadingId = UUID.randomUUID();
         
         // Create MeterReadingEntity

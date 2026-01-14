@@ -36,7 +36,7 @@ public interface AuthorizationRepository extends JpaRepository<AuthorizationEnti
 
 	// JpaRepository provides: save(), findById(), findAll(), deleteById(), etc.
 
-	List<AuthorizationEntity> findAllByRetailCustomerId(UUID retailCustomerId);
+	List<AuthorizationEntity> findAllByRetailCustomerId(Long retailCustomerId);
 
 	@Query("SELECT a.id FROM AuthorizationEntity a WHERE a.applicationInformation.id = :applicationInformationId")
 	List<UUID> findAllIdsByApplicationInformationId(@Param("applicationInformationId") UUID applicationInformationId);
@@ -44,10 +44,10 @@ public interface AuthorizationRepository extends JpaRepository<AuthorizationEnti
 	Optional<AuthorizationEntity> findByState(String state);
 
 	@Query("SELECT a FROM AuthorizationEntity a WHERE a.scope = :scope AND a.retailCustomer.id = :retailCustomerId")
-	Optional<AuthorizationEntity> findByScope(@Param("scope") String scope, @Param("retailCustomerId") UUID retailCustomerId);
+	Optional<AuthorizationEntity> findByScope(@Param("scope") String scope, @Param("retailCustomerId") Long retailCustomerId);
 
 	@Query("SELECT a.id FROM AuthorizationEntity a WHERE a.retailCustomer.id = :retailCustomerId")
-	List<UUID> findAllIds(@Param("retailCustomerId") UUID retailCustomerId);
+	List<UUID> findAllIds(@Param("retailCustomerId") Long retailCustomerId);
 
 	// findById is already provided by JpaRepository<AuthorizationEntity, UUID>
 	// Optional<AuthorizationEntity> findById(UUID id) is inherited
@@ -77,6 +77,6 @@ public interface AuthorizationRepository extends JpaRepository<AuthorizationEnti
 	List<AuthorizationEntity> findExpiredAuthorizations(@Param("currentTime") Long currentTime);
 
 	@Query("SELECT a FROM AuthorizationEntity a WHERE a.retailCustomer.id = :customerId AND a.applicationInformation.id = :applicationId AND (a.expiresIn IS NULL OR a.expiresIn > :currentTime)")
-	List<AuthorizationEntity> findActiveByCustomerAndApplication(@Param("customerId") UUID customerId, @Param("applicationId") UUID applicationId, @Param("currentTime") Long currentTime);
+	List<AuthorizationEntity> findActiveByCustomerAndApplication(@Param("customerId") Long customerId, @Param("applicationId") UUID applicationId, @Param("currentTime") Long currentTime);
 
 }

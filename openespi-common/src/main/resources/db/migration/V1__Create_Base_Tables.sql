@@ -137,39 +137,9 @@ CREATE TABLE application_information_scopes
 
 CREATE INDEX idx_app_info_scopes ON application_information_scopes (application_information_id);
 
--- Retail Customer Table
-CREATE TABLE retail_customers
-(
-    id             CHAR(36) PRIMARY KEY,
-    description    VARCHAR(255),
-    created        TIMESTAMP NOT NULL,
-    updated        TIMESTAMP NOT NULL,
-    published      TIMESTAMP,
-    up_link_rel    VARCHAR(255),
-    up_link_href   VARCHAR(1024),
-    up_link_type   VARCHAR(255),
-    self_link_rel  VARCHAR(255),
-    self_link_href VARCHAR(1024),
-    self_link_type VARCHAR(255),
-
-    -- Retail customer specific fields
-    username       VARCHAR(255) UNIQUE,
-    first_name     VARCHAR(255),
-    last_name      VARCHAR(255),
-    password       VARCHAR(255),
-    enabled        BOOLEAN              DEFAULT TRUE,
-    role           VARCHAR(50)          DEFAULT 'ROLE_USER',
-    email          VARCHAR(100),
-    phone          VARCHAR(20),
-    account_created BIGINT,
-    last_login     BIGINT,
-    account_locked BOOLEAN              DEFAULT FALSE,
-    failed_login_attempts INTEGER       DEFAULT 0
-);
-
-CREATE INDEX idx_retail_customer_username ON retail_customers (username);
-CREATE INDEX idx_retail_customer_created ON retail_customers (created);
-CREATE INDEX idx_retail_customer_updated ON retail_customers (updated);
+-- Retail Customer Table - Moved to vendor-specific V2 migration files
+-- RetailCustomer is an application-specific correlation table (not part of ESPI standard)
+-- Table creation moved to V2 vendor files due to auto-increment syntax differences
 
 -- Service Delivery Point Table - Moved to vendor-specific V2 migration files
 -- ServiceDeliveryPoint extends Object (not IdentifiedObject) per ESPI 4.0 XSD (espi.xsd:1161)
@@ -196,7 +166,7 @@ CREATE TABLE authorizations
     published_period_start     BIGINT,
     published_period_duration  BIGINT,
     application_information_id CHAR(36),
-    retail_customer_id         CHAR(36),
+    retail_customer_id         BIGINT,
     subscription_id            CHAR(36),
     access_token               VARCHAR(1024),
     refresh_token              VARCHAR(1024),
@@ -220,8 +190,8 @@ CREATE TABLE authorizations
     response_type              VARCHAR(50),
     third_party                VARCHAR(255),
 
-    FOREIGN KEY (application_information_id) REFERENCES application_information (id) ON DELETE CASCADE,
-    FOREIGN KEY (retail_customer_id) REFERENCES retail_customers (id) ON DELETE CASCADE
+    FOREIGN KEY (application_information_id) REFERENCES application_information (id) ON DELETE CASCADE
+    -- FK constraint for retail_customer_id added in V2 after retail_customers table is created
 );
 
 CREATE INDEX idx_authorization_app_id ON authorizations (application_information_id);
@@ -318,10 +288,10 @@ CREATE TABLE subscriptions
     -- Foreign key relationships
     application_information_id     CHAR(36),
     authorization_id               CHAR(36),
-    retail_customer_id             CHAR(36),
+    retail_customer_id             BIGINT,
 
-    FOREIGN KEY (application_information_id) REFERENCES application_information (id) ON DELETE CASCADE,
-    FOREIGN KEY (retail_customer_id) REFERENCES retail_customers (id) ON DELETE CASCADE
+    FOREIGN KEY (application_information_id) REFERENCES application_information (id) ON DELETE CASCADE
+    -- FK constraint for retail_customer_id added in V2 after retail_customers table is created
 );
 
 CREATE INDEX idx_subscription_app_id ON subscriptions (application_information_id);

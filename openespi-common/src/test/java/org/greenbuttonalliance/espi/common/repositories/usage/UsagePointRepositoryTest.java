@@ -370,10 +370,10 @@ class UsagePointRepositoryTest extends BaseRepositoryTest {
         @DisplayName("Should handle empty results gracefully")
         void shouldHandleEmptyResultsGracefully() {
             // Act & Assert
-            assertThat(usagePointRepository.findAllByRetailCustomerId(UUID.randomUUID())).isEmpty();
+            assertThat(usagePointRepository.findAllByRetailCustomerId(999999L)).isEmpty();
             assertThat(usagePointRepository.findByResourceUri("nonexistent-uri")).isEmpty();
             assertThat(usagePointRepository.findByRelatedHref("nonexistent-href")).isEmpty();
-            assertThat(usagePointRepository.findAllIdsByRetailCustomerId(UUID.randomUUID())).isEmpty();
+            assertThat(usagePointRepository.findAllIdsByRetailCustomerId(999999L)).isEmpty();
         }
     }
 

@@ -47,7 +47,7 @@ public class MeterReadingServiceImplTests {
 	@Test
 	public void findByUUID_returnsMeterReading() throws JAXBException {
 		MeterReadingEntity meterReading = Factory.newMeterReading();
-		UUID retailCustomerId = UUID.randomUUID();
+		Long retailCustomerId = 1000003L;
 		UUID meterReadingId = UUID.randomUUID();
 
 		when(repository.findByUUID(eq(retailCustomerId), eq(meterReadingId))).thenReturn(

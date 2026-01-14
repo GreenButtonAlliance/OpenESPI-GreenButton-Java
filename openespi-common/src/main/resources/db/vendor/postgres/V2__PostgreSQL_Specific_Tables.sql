@@ -133,12 +133,12 @@ CREATE TABLE usage_points
     rated_power_reading_type_ref                                       VARCHAR(512),
 
     -- Foreign key relationships
-    retail_customer_id        CHAR(36),
+    retail_customer_id        BIGINT,
     service_delivery_point_id BIGINT,
     local_time_parameters_id  CHAR(36),
     subscription_id           CHAR(36),
 
-    FOREIGN KEY (retail_customer_id) REFERENCES retail_customers (id) ON DELETE CASCADE,
+    -- FK constraint for retail_customer_id added at end of V2 after retail_customers table is created
     FOREIGN KEY (service_delivery_point_id) REFERENCES service_delivery_points (id) ON DELETE SET NULL,
     FOREIGN KEY (local_time_parameters_id) REFERENCES time_configurations (id) ON DELETE SET NULL
 );
@@ -531,3 +531,43 @@ CREATE TABLE line_items
 CREATE INDEX idx_line_item_usage_summary ON line_items (usage_summary_id);
 CREATE INDEX idx_line_item_date_time ON line_items (date_time);
 CREATE INDEX idx_line_item_amount ON line_items (amount);
+
+-- Retail Customer Table (Application-specific correlation table)
+-- RetailCustomer is an application-specific correlation table (not part of ESPI standard)
+-- Used to correlate UsagePoint energy data to individual users
+CREATE TABLE retail_customers
+(
+    id                     BIGSERIAL PRIMARY KEY,
+
+    -- Application correlation fields
+    username               VARCHAR(255) UNIQUE,
+    first_name             VARCHAR(255),
+    last_name              VARCHAR(255),
+    password               VARCHAR(255),
+    enabled                BOOLEAN DEFAULT TRUE,
+    role                   VARCHAR(50) DEFAULT 'ROLE_USER',
+    email                  VARCHAR(100),
+    phone                  VARCHAR(20),
+    account_created        BIGINT,
+    last_login             BIGINT,
+    account_locked         BOOLEAN DEFAULT FALSE,
+    failed_login_attempts  INTEGER DEFAULT 0
+);
+
+-- Create index for authentication hot path
+CREATE INDEX idx_retail_customer_username ON retail_customers (username);
+
+-- Add foreign key constraint for authorizations.retail_customer_id
+-- (Column type changed to BIGINT in V1, FK constraint added here after retail_customers table exists)
+ALTER TABLE authorizations ADD CONSTRAINT fk_authorization_retail_customer
+    FOREIGN KEY (retail_customer_id) REFERENCES retail_customers (id) ON DELETE CASCADE;
+
+-- Add foreign key constraint for subscriptions.retail_customer_id
+-- (Column type changed to BIGINT in V1, FK constraint added here after retail_customers table exists)
+ALTER TABLE subscriptions ADD CONSTRAINT fk_subscription_retail_customer
+    FOREIGN KEY (retail_customer_id) REFERENCES retail_customers (id) ON DELETE CASCADE;
+
+-- Add foreign key constraint for usage_points.retail_customer_id
+-- (Column type changed to BIGINT, FK constraint added here after retail_customers table is created)
+ALTER TABLE usage_points ADD CONSTRAINT fk_usage_point_retail_customer
+    FOREIGN KEY (retail_customer_id) REFERENCES retail_customers (id) ON DELETE CASCADE;

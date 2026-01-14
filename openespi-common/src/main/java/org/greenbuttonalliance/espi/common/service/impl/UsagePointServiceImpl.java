@@ -63,7 +63,7 @@ public class UsagePointServiceImpl implements UsagePointService {
 	}
 
 	@Override
-	public UsagePointEntity findById(UUID retailCustomerId, UUID usagePointId) {
+	public UsagePointEntity findById(Long retailCustomerId, UUID usagePointId) {
 		// TODO: Implement scoped query for retailCustomer.usagePoint
 		return usagePointRepository.findById(usagePointId).orElse(null);
 	}
@@ -119,7 +119,7 @@ public class UsagePointServiceImpl implements UsagePointService {
 	}
 
 	@Override
-	public List<UUID> findAllIdsForRetailCustomer(UUID id) {
+	public List<UUID> findAllIdsForRetailCustomer(Long id) {
 		return usagePointRepository
 				.findAllIdsByRetailCustomerId(id);
 	}
@@ -139,7 +139,7 @@ public class UsagePointServiceImpl implements UsagePointService {
 	}
 
 	@Override
-	public List<UsagePointEntity> findAllByRetailCustomer(UUID retailCustomerId) {
+	public List<UsagePointEntity> findAllByRetailCustomer(Long retailCustomerId) {
 		return usagePointRepository.findAllByRetailCustomerId(retailCustomerId);
 	}
 

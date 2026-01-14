@@ -35,7 +35,6 @@ import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
-import java.util.UUID;
 
 @Controller
 @PreAuthorize("hasRole('ROLE_CUSTODIAN')")
@@ -88,7 +87,7 @@ public class RetailCustomerController extends BaseController {
 	}
 
 	@RequestMapping(value = "/custodian/retailcustomers/{retailCustomerId}", method = RequestMethod.GET)
-	public String show(@PathVariable UUID retailCustomerId, ModelMap model) {
+	public String show(@PathVariable Long retailCustomerId, ModelMap model) {
 		RetailCustomerEntity retailCustomer = service.findById(retailCustomerId);
 		model.put("retailCustomer", retailCustomer);
 		return "/custodian/retailcustomers/show";

@@ -26,6 +26,6 @@ import java.util.UUID;
 
 public interface MeterReadingRESTService {
 
-	MeterReadingEntity findByUUID(UUID retailCustomerId, UUID uuid)
+	MeterReadingEntity findByUUID(Long retailCustomerId, UUID uuid)
 			throws JAXBException;
 }

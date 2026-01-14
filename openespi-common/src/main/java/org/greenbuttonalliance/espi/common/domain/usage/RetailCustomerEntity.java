@@ -28,20 +28,21 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
 import org.greenbuttonalliance.espi.common.utils.security.PasswordPolicy;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.proxy.HibernateProxy;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
 
 /**
  * Pure JPA/Hibernate entity for RetailCustomer without JAXB concerns.
  * <p>
  * Represents a retail energy customer for Green Button data access.
+ * This is an application-specific correlation table (not part of ESPI standard).
+ * Used to correlate UsagePoint energy data to individual users.
  * Authentication concerns are handled in DataCustodian/ThirdParty repositories.
  */
 @Entity
@@ -49,13 +50,19 @@ import java.util.UUID;
 @Getter
 @Setter
 @NoArgsConstructor
-public class RetailCustomerEntity extends IdentifiedObject {
+public class RetailCustomerEntity implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    // Password encoder removed - authentication moved to DataCustodian/ThirdParty
-    // private static final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-    
+    /**
+     * Primary key using database auto-increment.
+     * RetailCustomer is an application table, not an ESPI resource.
+     */
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private Long id;
+
     // Password policy validator
     private static final PasswordPolicy passwordPolicy = new PasswordPolicy();
 
@@ -288,109 +295,13 @@ public class RetailCustomerEntity extends IdentifiedObject {
         this.failedLoginAttempts = 0;
     }
 
-    /**
-     * Generates the self href for this retail customer.
-     * 
-     * @return self href string
-     */
-    public String getSelfHref() {
-        return "/espi/1_1/resource/RetailCustomer/" + getHashedId();
-    }
 
-    /**
-     * Generates the up href for this retail customer.
-     * 
-     * @return up href string
-     */
-    public String getUpHref() {
-        return "/espi/1_1/resource/RetailCustomer";
-    }
-
-    /**
-     * Overrides the default self href generation to use retail customer specific logic.
-     * 
-     * @return self href for this retail customer
-     */
-    @Override
-    protected String generateDefaultSelfHref() {
-        return getSelfHref();
-    }
-
-    /**
-     * Overrides the default up href generation to use retail customer specific logic.
-     * 
-     * @return up href for this retail customer
-     */
-    @Override
-    protected String generateDefaultUpHref() {
-        return getUpHref();
-    }
-
-    /**
-     * Manual getter for ID field (Lombok issue workaround).
-     * 
-     * @return the entity ID
-     */
-    public UUID getId() {
-        return this.id;
-    }
-
-    /**
-     * Custom implementation for retail customers to use ID instead of UUID.
-     * 
-     * @return string representation of the ID
-     */
-    @Override
-    public String getHashedId() {
-        return getId() != null ? getId().toString() : "";
-    }
-
-    /**
-     * Merges data from another RetailCustomerEntity.
-     * Updates user information but preserves security-sensitive fields.
-     * 
-     * @param other the other retail customer entity to merge from
-     */
-    public void merge(RetailCustomerEntity other) {
-        if (other != null) {
-            super.merge(other);
-            
-            // Update basic information
-            this.firstName = other.firstName;
-            this.lastName = other.lastName;
-            this.email = other.email;
-            this.phone = other.phone;
-            
-            // Only update role if provided
-            if (other.role != null && !other.role.trim().isEmpty()) {
-                this.role = other.role;
-            }
-            
-            // SECURITY: Never merge password, enabled, accountLocked, or authentication fields
-            // Password updates must use setPasswordSecurely() method
-            // Note: Collections are not merged to preserve existing relationships
-        }
-    }
-
-    /**
-     * Safely updates password during merge if a new password is provided.
-     * This method should be called separately from merge() for security.
-     * 
-     * @param newRawPassword the new plain text password, or null to skip update
-     */
-    public void updatePasswordDuringMerge(String newRawPassword) {
-        if (newRawPassword != null && !newRawPassword.trim().isEmpty()) {
-            setPasswordSecurely(newRawPassword);
-        }
-    }
 
     /**
      * Clears all relationships when unlinking the entity.
-     * Simplified - applications handle relationship cleanup.
+     * Applications handle relationship cleanup.
      */
     public void unlink() {
-        clearRelatedLinks();
-        
         // Simple collection clearing - applications handle bidirectional cleanup
         usagePoints.clear();
         authorizations.clear();
@@ -598,22 +509,17 @@ public class RetailCustomerEntity extends IdentifiedObject {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "(" +
-                "id = " + getId() + ", " +
-                "username = " + getUsername() + ", " +
-                "firstName = " + getFirstName() + ", " +
-                "lastName = " + getLastName() + ", " +
-                "password = " + getPassword() + ", " +
-                "enabled = " + getEnabled() + ", " +
-                "role = " + getRole() + ", " +
-                "email = " + getEmail() + ", " +
-                "phone = " + getPhone() + ", " +
-                "accountCreated = " + getAccountCreated() + ", " +
-                "lastLogin = " + getLastLogin() + ", " +
-                "accountLocked = " + getAccountLocked() + ", " +
-                "failedLoginAttempts = " + getFailedLoginAttempts() + ", " +
-                "description = " + getDescription() + ", " +
-                "created = " + getCreated() + ", " +
-                "updated = " + getUpdated() + ", " +
-                "published = " + getPublished() + ")";
+                "id = " + id + ", " +
+                "username = " + username + ", " +
+                "firstName = " + firstName + ", " +
+                "lastName = " + lastName + ", " +
+                "enabled = " + enabled + ", " +
+                "role = " + role + ", " +
+                "email = " + email + ", " +
+                "phone = " + phone + ", " +
+                "accountCreated = " + accountCreated + ", " +
+                "lastLogin = " + lastLogin + ", " +
+                "accountLocked = " + accountLocked + ", " +
+                "failedLoginAttempts = " + failedLoginAttempts + ")";
     }
 }

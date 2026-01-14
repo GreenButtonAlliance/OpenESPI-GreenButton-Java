@@ -379,7 +379,7 @@ class AuthorizationRepositoryTest extends BaseRepositoryTest {
         @DisplayName("Should handle empty results gracefully")
         void shouldHandleEmptyResultsGracefully() {
             // Act & Assert
-            assertThat(authorizationRepository.findAllByRetailCustomerId(UUID.randomUUID())).isEmpty();
+            assertThat(authorizationRepository.findAllByRetailCustomerId(999999L)).isEmpty();
             assertThat(authorizationRepository.findByState("nonexistent-state")).isEmpty();
             assertThat(authorizationRepository.findByAccessToken("nonexistent-token")).isEmpty();
             assertThat(authorizationRepository.findByRefreshToken("nonexistent-refresh-token")).isEmpty();

@@ -45,19 +45,19 @@ public interface UsagePointService {
 
 	void deleteByHashedId(String usagePointHashedId);
 
-	List<UUID> findAllIdsForRetailCustomer(UUID id);
+	List<UUID> findAllIdsForRetailCustomer(Long id);
 
 	String feedFor(List<UsagePointEntity> usagePoints) throws JAXBException;
 
 	String entryFor(UsagePointEntity usagePoint);
 
-	List<UsagePointEntity> findAllByRetailCustomer(UUID retailCustomerId);
+	List<UsagePointEntity> findAllByRetailCustomer(Long retailCustomerId);
 
 	UsagePointEntity save(UsagePointEntity usagePoint);
  
 	UsagePointEntity findById(UUID usagePointId);
 
-	UsagePointEntity findById(UUID retailCustomerId, UUID usagePointId);
+	UsagePointEntity findById(Long retailCustomerId, UUID usagePointId);
 
 	// Legacy EntryType methods removed - incompatible with Spring Boot 3.5
 

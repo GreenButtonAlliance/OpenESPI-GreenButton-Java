@@ -28,8 +28,8 @@ import java.util.UUID;
 // TODO repository convergence with common
 //
 public interface UsagePointRESTRepository {
-	List<UsagePointEntity> findAllByRetailCustomerId(UUID id) throws JAXBException;
+	List<UsagePointEntity> findAllByRetailCustomerId(Long id) throws JAXBException;
 
-	UsagePointEntity findByHashedId(UUID retailCustomerId, String usagePointHashedId)
+	UsagePointEntity findByHashedId(Long retailCustomerId, String usagePointHashedId)
 			throws JAXBException;
 }

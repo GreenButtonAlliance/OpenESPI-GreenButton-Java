@@ -310,7 +310,7 @@ class UsageSummaryRepositoryTest extends BaseRepositoryTest {
             UsageSummaryEntity summary = createCompleteTestSetup();
             UsageSummaryEntity saved = persistAndFlush(summary);
 
-            UUID retailCustomerId = summary.getUsagePoint().getRetailCustomer().getId();
+            Long retailCustomerId = summary.getUsagePoint().getRetailCustomer().getId();
             UUID usagePointId = summary.getUsagePoint().getId();
 
             // Act
@@ -327,7 +327,7 @@ class UsageSummaryRepositoryTest extends BaseRepositoryTest {
             UsageSummaryEntity summary = createCompleteTestSetup();
             UsageSummaryEntity saved = persistAndFlush(summary);
 
-            UUID retailCustomerId = summary.getUsagePoint().getRetailCustomer().getId();
+            Long retailCustomerId = summary.getUsagePoint().getRetailCustomer().getId();
             UUID usagePointId = summary.getUsagePoint().getId();
             UUID summaryId = saved.getId();
 

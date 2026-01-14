@@ -82,7 +82,7 @@ public class UsagePointRESTRepositoryIntegrationTest {
         mockAuthorization.setResourceURI("http://localhost:8080/DataCustodian/espi/1_1/resource/Batch/RetailCustomer/1/UsagePoint");
         mockAuthorization.setAccessToken("test-access-token");
 
-        when(authorizationService.findAllByRetailCustomerId(any(UUID.class)))
+        when(authorizationService.findAllByRetailCustomerId(any(Long.class)))
                 .thenReturn(Collections.singletonList(mockAuthorization));
     }
 
@@ -118,7 +118,7 @@ public class UsagePointRESTRepositoryIntegrationTest {
         when(responseSpec.bodyToMono(String.class)).thenReturn(Mono.just(xmlResponse));
 
         // Execute test
-        List<UsagePointEntity> result = usagePointRESTRepository.findAllByRetailCustomerId(UUID.randomUUID());
+        List<UsagePointEntity> result = usagePointRESTRepository.findAllByRetailCustomerId(1000001L);
 
         // Verify results
         assertNotNull(result);
@@ -130,7 +130,7 @@ public class UsagePointRESTRepositoryIntegrationTest {
     public void testFindByHashedId_WithExistingUsagePoint() throws Exception {
         // This test would require a more complete XML structure to work properly
         // For now, we'll test the method exists and handles null gracefully
-        UsagePointEntity result = usagePointRESTRepository.findByHashedId(UUID.randomUUID(), "test-hashed-id");
+        UsagePointEntity result = usagePointRESTRepository.findByHashedId(1000004L, "test-hashed-id");
         
         // Should return null when no matching usage points found
         assertNull(result);

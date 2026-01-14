@@ -27,32 +27,30 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Modern Spring Data JPA repository for RetailCustomer entities.
+ * RetailCustomer is an application-specific correlation table (not part of ESPI standard).
  * Replaces the legacy RetailCustomerRepositoryImpl with modern Spring Data patterns.
  */
 @Repository
-public interface RetailCustomerRepository extends JpaRepository<RetailCustomerEntity, UUID> {
+public interface RetailCustomerRepository extends JpaRepository<RetailCustomerEntity, Long> {
 
     // JpaRepository provides: save(), findById(), findAll(), deleteById(), etc.
 
     /**
-     * Find retail customer by username.
+     * Find retail customer by username (indexed).
      */
     Optional<RetailCustomerEntity> findByUsername(String username);
 
     /**
      * Find retail customers by role.
      */
-    @Query("SELECT rc FROM RetailCustomerEntity rc WHERE rc.role = :role")
-    List<RetailCustomerEntity> findByRole(@Param("role") String role);
+    List<RetailCustomerEntity> findByRole(String role);
 
     /**
      * Find enabled retail customers.
      */
-    @Query("SELECT rc FROM RetailCustomerEntity rc WHERE rc.enabled = true")
     List<RetailCustomerEntity> findByEnabledTrue();
 
     /**
@@ -63,8 +61,7 @@ public interface RetailCustomerRepository extends JpaRepository<RetailCustomerEn
     /**
      * Find retail customers by first and last name.
      */
-    @Query("SELECT rc FROM RetailCustomerEntity rc WHERE rc.firstName = :firstName AND rc.lastName = :lastName")
-    List<RetailCustomerEntity> findByFirstNameAndLastName(@Param("firstName") String firstName, @Param("lastName") String lastName);
+    List<RetailCustomerEntity> findByFirstNameAndLastName(String firstName, String lastName);
 
     /**
      * Check if username exists.
@@ -77,10 +74,10 @@ public interface RetailCustomerRepository extends JpaRepository<RetailCustomerEn
     boolean existsByEmail(String email);
 
     /**
-     * Find all retail customer IDs.
+     * Find all retail customer IDs (performance optimized - selects only IDs).
      */
     @Query("SELECT rc.id FROM RetailCustomerEntity rc")
-    List<UUID> findAllIds();
+    List<Long> findAllIds();
 
     /**
      * Find retail customers created after timestamp.
@@ -97,6 +94,5 @@ public interface RetailCustomerRepository extends JpaRepository<RetailCustomerEn
     /**
      * Find locked accounts.
      */
-    @Query("SELECT rc FROM RetailCustomerEntity rc WHERE rc.accountLocked = true")
-    List<RetailCustomerEntity> findLockedAccounts();
+    List<RetailCustomerEntity> findByAccountLockedTrue();
 }
