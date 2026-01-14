@@ -34,7 +34,7 @@ public class MeterReadingRESTServiceImpl implements MeterReadingRESTService {
 	protected MeterReadingRESTRepository repository;
 
 	@Override
-	public MeterReadingEntity findByUUID(UUID retailCustomerId, UUID uuid)
+	public MeterReadingEntity findByUUID(Long retailCustomerId, UUID uuid)
 			throws JAXBException {
 		return repository.findByUUID(retailCustomerId, uuid);
 	}

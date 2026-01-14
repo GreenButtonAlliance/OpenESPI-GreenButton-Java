@@ -128,7 +128,7 @@ public class ModernAuthorizationController {
     @GetMapping("/authorizations")
     public String authorizationList(ModelMap model, Principal principal) {
         try {
-            UUID customerId = getCurrentCustomerId(principal);
+            Long customerId = getCurrentCustomerId(principal);
             var authorizations = authorizationService.findAllByRetailCustomerId(customerId);
             model.put("authorizationList", authorizations);
             return "/RetailCustomer/AuthorizationList/index";
@@ -246,7 +246,7 @@ public class ModernAuthorizationController {
      */
     private void importInitialData(Principal principal) {
         try {
-            UUID customerId = getCurrentCustomerId(principal);
+            Long customerId = getCurrentCustomerId(principal);
             usagePointRESTRepository.findAllByRetailCustomerId(customerId);
             logger.debug("Successfully imported initial usage point data");
         } catch (JAXBException e) {
@@ -259,7 +259,7 @@ public class ModernAuthorizationController {
     /**
      * Gets the current customer ID from the authenticated principal.
      */
-    private UUID getCurrentCustomerId(Principal principal) {
+    private Long getCurrentCustomerId(Principal principal) {
         if (principal instanceof Authentication auth) {
             var customer = retailCustomerService.findByUsername(auth.getName());
             if (customer != null) {

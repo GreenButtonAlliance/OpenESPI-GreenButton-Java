@@ -100,7 +100,7 @@ public class UsagePointRESTRepositoryImpl implements UsagePointRESTRepository {
 	}
 
 	@Override
-	public List<UsagePointEntity> findAllByRetailCustomerId(UUID retailCustomerId)
+	public List<UsagePointEntity> findAllByRetailCustomerId(Long retailCustomerId)
 			throws JAXBException {
 
 		AuthorizationEntity authorization = findAuthorization(retailCustomerId);
@@ -129,7 +129,7 @@ public class UsagePointRESTRepositoryImpl implements UsagePointRESTRepository {
 	}
 
 	@Override
-	public UsagePointEntity findByHashedId(UUID retailCustomerId,
+	public UsagePointEntity findByHashedId(Long retailCustomerId,
 			String usagePointHashedId) throws JAXBException {
 		List<UsagePointEntity> usagePoints = findAllByRetailCustomerId(retailCustomerId);
 
@@ -143,7 +143,7 @@ public class UsagePointRESTRepositoryImpl implements UsagePointRESTRepository {
 	}
 
 
-	private AuthorizationEntity findAuthorization(UUID retailCustomerId) {
+	private AuthorizationEntity findAuthorization(Long retailCustomerId) {
 		List<AuthorizationEntity> authorizations = authorizationService
 				.findAllByRetailCustomerId(retailCustomerId);
 		return authorizations.get(authorizations.size() - 1);

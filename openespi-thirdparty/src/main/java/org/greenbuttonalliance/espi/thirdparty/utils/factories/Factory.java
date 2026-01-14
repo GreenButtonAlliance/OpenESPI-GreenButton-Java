@@ -36,7 +36,7 @@ public class Factory {
 		usagePoint.setServiceCategory(ServiceCategory.ELECTRICITY);
 
 		RetailCustomerEntity retailCustomer = new RetailCustomerEntity();
-		retailCustomer.setId(UUID.randomUUID());
+		retailCustomer.setId(1000000L);
 		usagePoint.setRetailCustomer(retailCustomer);
 
 		usagePoint.getMeterReadings().add(newMeterReading());
