@@ -340,14 +340,15 @@ CREATE TABLE electric_power_quality_summaries
     power_frequency         BIGINT,
     rapid_voltage_changes   BIGINT,
     short_interruptions     BIGINT,
-    supply_voltage_dips     BIGINT,
-    supply_voltage_imbalance BIGINT,
-    supply_voltage_variations BIGINT,
-    temp_overvoltage        BIGINT,
 
     -- Embedded DateTimeInterval: summaryInterval
     summary_interval_start  BIGINT,
     summary_interval_duration BIGINT,
+
+    supply_voltage_dips     BIGINT,
+    supply_voltage_imbalance BIGINT,
+    supply_voltage_variations BIGINT,
+    temp_overvoltage        BIGINT,
 
     -- Foreign key relationships
     usage_point_id          CHAR(36),
