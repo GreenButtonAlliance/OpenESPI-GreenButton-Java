@@ -43,7 +43,7 @@ public interface UsagePointRepository extends JpaRepository<UsagePointEntity, UU
      * Find all usage points for a specific retail customer.
      */
     @Query("SELECT up FROM UsagePointEntity up WHERE up.retailCustomer.id = :retailCustomerId")
-    List<UsagePointEntity> findAllByRetailCustomerId(@Param("retailCustomerId") UUID retailCustomerId);
+    List<UsagePointEntity> findAllByRetailCustomerId(@Param("retailCustomerId") Long retailCustomerId);
 
     /**
      * Find usage point by resource URI.
@@ -67,7 +67,7 @@ public interface UsagePointRepository extends JpaRepository<UsagePointEntity, UU
      * Find all usage point IDs for a specific retail customer.
      */
     @Query("SELECT up.id FROM UsagePointEntity up WHERE up.retailCustomer.id = :retailCustomerId")
-    List<UUID> findAllIdsByRetailCustomerId(@Param("retailCustomerId") UUID retailCustomerId);
+    List<UUID> findAllIdsByRetailCustomerId(@Param("retailCustomerId") Long retailCustomerId);
 
     /**
      * Find all usage point IDs.

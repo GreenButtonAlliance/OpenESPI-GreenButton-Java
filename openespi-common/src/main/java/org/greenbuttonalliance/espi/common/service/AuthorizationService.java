@@ -28,7 +28,7 @@ import java.util.UUID;
 
 public interface AuthorizationService {
 	// residue from random stories
-	List<AuthorizationEntity> findAllByRetailCustomerId(UUID retailCustomerId);
+	List<AuthorizationEntity> findAllByRetailCustomerId(Long retailCustomerId);
 
 	/**
 	 * @param applicationInformationId
@@ -43,7 +43,7 @@ public interface AuthorizationService {
 
 	AuthorizationEntity findByState(String state);
 
-	AuthorizationEntity findByScope(String scope, UUID retailCustomerId);
+	AuthorizationEntity findByScope(String scope, Long retailCustomerId);
 
 	AuthorizationEntity findByAccessToken(String accessToken);
 
@@ -68,7 +68,7 @@ public interface AuthorizationService {
 	// import-exportResource services
 	AuthorizationEntity importResource(InputStream stream);
 
-	AuthorizationEntity findById(UUID retailCustomerId, UUID authorizationId);
+	AuthorizationEntity findById(Long retailCustomerId, UUID authorizationId);
 
 	AuthorizationEntity findByUUID(UUID uuid);
 

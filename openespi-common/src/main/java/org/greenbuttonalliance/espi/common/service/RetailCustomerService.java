@@ -20,30 +20,19 @@
 package org.greenbuttonalliance.espi.common.service;
 
 import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
-import org.greenbuttonalliance.espi.common.domain.usage.SubscriptionEntity;
-import java.io.InputStream;
 import java.util.List;
-import java.util.UUID;
 
+/**
+ * Service interface for RetailCustomer operations.
+ * RetailCustomer is an application-specific correlation table (not part of ESPI standard).
+ */
 public interface RetailCustomerService {
 
 	List<RetailCustomerEntity> findAll();
 
-	RetailCustomerEntity findByHashedId(UUID retailCustomerId);
+	RetailCustomerEntity findById(Long retailCustomerId);
 
 	RetailCustomerEntity save(RetailCustomerEntity customer);
-
-	RetailCustomerEntity findById(UUID retailCustomerId);
-
-	RetailCustomerEntity findById(String retailCustomerId);
-
-	void add(RetailCustomerEntity retailCustomer);
-
-	void delete(RetailCustomerEntity retailCustomer);
-
-	RetailCustomerEntity importResource(InputStream stream);
-
-	SubscriptionEntity associateByUUID(UUID retailCustomerId, UUID uuId);
 
 	RetailCustomerEntity findByUsername(String username);
 

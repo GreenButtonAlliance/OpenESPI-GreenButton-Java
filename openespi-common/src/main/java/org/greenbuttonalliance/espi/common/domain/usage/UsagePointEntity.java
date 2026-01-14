@@ -242,7 +242,7 @@ public class UsagePointEntity extends IdentifiedObject {
      */
     public String getUpHref() {
         if (retailCustomer != null) {
-            return "RetailCustomer/" + retailCustomer.getHashedId() + "/UsagePoint";
+            return "RetailCustomer/" + retailCustomer.getId() + "/UsagePoint";
         }
         return "/espi/1_1/resource/UsagePoint";
     }

@@ -162,11 +162,11 @@ public class TestDataBuilders {
 
     /**
      * Creates a valid RetailCustomerEntity for testing.
+     * Note: RetailCustomer is an application-specific correlation table (not part of ESPI standard).
      */
     public static RetailCustomerEntity createValidRetailCustomer() {
         RetailCustomerEntity retailCustomer = new RetailCustomerEntity();
-        retailCustomer.setDescription(faker.lorem().sentence(4, 8));
-        
+
         // Ensure enabled is set properly (@NotNull constraint)
         retailCustomer.setEnabled(true);
         

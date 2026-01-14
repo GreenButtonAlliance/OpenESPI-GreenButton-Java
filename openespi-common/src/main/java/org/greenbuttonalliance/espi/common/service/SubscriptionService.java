@@ -45,6 +45,6 @@ public interface SubscriptionService {
 	SubscriptionEntity addUsagePoint(SubscriptionEntity subscription,
 							   UsagePointEntity usagePoint);
 
-	UUID findRetailCustomerId(UUID subscriptionId, UUID usagePointId);
+	Long findRetailCustomerId(UUID subscriptionId, UUID usagePointId);
 
 }

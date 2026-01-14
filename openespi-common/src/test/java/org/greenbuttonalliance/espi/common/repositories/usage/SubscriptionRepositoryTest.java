@@ -551,7 +551,7 @@ class SubscriptionRepositoryTest extends BaseRepositoryTest {
             // Act & Assert
             assertThat(subscriptionRepository.findByHashedId("nonexistent-hash")).isEmpty();
             assertThat(subscriptionRepository.findByAuthorizationId(UUID.randomUUID())).isEmpty();
-            assertThat(subscriptionRepository.findByRetailCustomerId(UUID.randomUUID())).isEmpty();
+            assertThat(subscriptionRepository.findByRetailCustomerId(999999L)).isEmpty();
             assertThat(subscriptionRepository.findByApplicationInformationId(UUID.randomUUID())).isEmpty();
             assertThat(subscriptionRepository.findByUsagePointId(UUID.randomUUID())).isEmpty();
         }

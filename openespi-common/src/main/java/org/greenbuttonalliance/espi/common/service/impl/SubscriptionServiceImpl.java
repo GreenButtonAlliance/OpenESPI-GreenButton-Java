@@ -147,8 +147,8 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 	}
 
 	@Override
-	public UUID findRetailCustomerId(UUID subscriptionId, UUID usagePointId) {
-		UUID result = null;
+	public Long findRetailCustomerId(UUID subscriptionId, UUID usagePointId) {
+		Long result = null;
 		SubscriptionEntity subscription = findById(subscriptionId);
 		if (subscription != null && subscription.getRetailCustomer() != null) {
 			result = subscription.getRetailCustomer().getId();

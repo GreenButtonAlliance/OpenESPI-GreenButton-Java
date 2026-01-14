@@ -32,15 +32,16 @@ import jakarta.validation.ConstraintViolation;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
 
 /**
  * Comprehensive test suite for RetailCustomerRepository.
- * 
- * Tests all CRUD operations, 11 custom query methods, relationships,
+ *
+ * Tests all CRUD operations, custom query methods, relationships,
  * and validation constraints for RetailCustomer entities.
+ *
+ * Note: RetailCustomer is an application-specific correlation table (not part of ESPI standard).
  */
 @DisplayName("RetailCustomer Repository Tests")
 class RetailCustomerRepositoryTest extends BaseRepositoryTest {
@@ -57,8 +58,9 @@ class RetailCustomerRepositoryTest extends BaseRepositoryTest {
         void shouldSaveAndRetrieveRetailCustomerSuccessfully() {
             // Arrange
             RetailCustomerEntity retailCustomer = TestDataBuilders.createValidRetailCustomer();
-            retailCustomer.setDescription("Test Retail Customer for CRUD");
             retailCustomer.setUsername("testuser@example.com");
+            retailCustomer.setFirstName("Test");
+            retailCustomer.setLastName("User");
 
             // Act
             RetailCustomerEntity saved = retailCustomerRepository.save(retailCustomer);
@@ -69,8 +71,9 @@ class RetailCustomerRepositoryTest extends BaseRepositoryTest {
             assertThat(saved).isNotNull();
             assertThat(saved.getId()).isNotNull();
             assertThat(retrieved).isPresent();
-            assertThat(retrieved.get().getDescription()).isEqualTo("Test Retail Customer for CRUD");
             assertThat(retrieved.get().getUsername()).isEqualTo("testuser@example.com");
+            assertThat(retrieved.get().getFirstName()).isEqualTo("Test");
+            assertThat(retrieved.get().getLastName()).isEqualTo("User");
             assertThat(retrieved.get().getEnabled()).isTrue();
         }
 
@@ -99,7 +102,7 @@ class RetailCustomerRepositoryTest extends BaseRepositoryTest {
             RetailCustomerEntity retailCustomer = TestDataBuilders.createValidRetailCustomer();
             retailCustomer.setUsername("delete@example.com");
             RetailCustomerEntity saved = retailCustomerRepository.save(retailCustomer);
-            UUID retailCustomerId = saved.getId();
+            Long retailCustomerId = saved.getId();
             flushAndClear();
 
             // Act
@@ -121,7 +124,7 @@ class RetailCustomerRepositoryTest extends BaseRepositoryTest {
 
             // Act & Assert
             assertThat(retailCustomerRepository.existsById(saved.getId())).isTrue();
-            assertThat(retailCustomerRepository.existsById(UUID.randomUUID())).isFalse();
+            assertThat(retailCustomerRepository.existsById(999999L)).isFalse();
         }
 
         @Test
@@ -324,7 +327,7 @@ class RetailCustomerRepositoryTest extends BaseRepositoryTest {
             flushAndClear();
 
             // Act
-            List<UUID> allIds = retailCustomerRepository.findAllIds();
+            List<Long> allIds = retailCustomerRepository.findAllIds();
 
             // Assert
             assertThat(allIds).hasSizeGreaterThanOrEqualTo(3);
@@ -413,7 +416,7 @@ class RetailCustomerRepositoryTest extends BaseRepositoryTest {
             flushAndClear();
 
             // Act
-            List<RetailCustomerEntity> lockedAccounts = retailCustomerRepository.findLockedAccounts();
+            List<RetailCustomerEntity> lockedAccounts = retailCustomerRepository.findByAccountLockedTrue();
 
             // Assert
             assertThat(lockedAccounts).hasSize(2);
@@ -561,54 +564,45 @@ class RetailCustomerRepositoryTest extends BaseRepositoryTest {
     }
 
     @Nested
-    @DisplayName("Base Class Functionality")
-    class BaseClassTest {
+    @DisplayName("Entity Functionality")
+    class EntityFunctionalityTest {
 
         @Test
-        @DisplayName("Should inherit IdentifiedObject functionality")
-        void shouldInheritIdentifiedObjectFunctionality() {
-            // Arrange & Act
-            RetailCustomerEntity retailCustomer = TestDataBuilders.createValidRetailCustomer();
-
-            // Assert
-            assertThat(retailCustomer.getId()).isNotNull();
-            assertThat(retailCustomer.getId()).isInstanceOf(UUID.class);
-            // RetailCustomerEntity extends IdentifiedObject and inherits UUID functionality
-        }
-
-        @Test
-        @DisplayName("Should set timestamps on persist")
-        void shouldSetTimestampsOnPersist() {
+        @DisplayName("Should auto-generate ID on persist")
+        void shouldAutoGenerateIdOnPersist() {
             // Arrange
             RetailCustomerEntity retailCustomer = TestDataBuilders.createValidRetailCustomer();
-            retailCustomer.setUsername("timestamp@example.com");
+            retailCustomer.setUsername("autoid@example.com");
+
+            // Verify ID is null before save
+            assertThat(retailCustomer.getId()).isNull();
 
             // Act
             RetailCustomerEntity saved = retailCustomerRepository.save(retailCustomer);
             flushAndClear();
 
-            // Assert
-            assertThat(saved.getCreated()).isNotNull();
-            assertThat(saved.getUpdated()).isNotNull();
+            // Assert - ID should be auto-generated by database
+            assertThat(saved.getId()).isNotNull();
+            assertThat(saved.getId()).isInstanceOf(Long.class);
+            assertThat(saved.getId()).isPositive();
         }
 
         @Test
-        @DisplayName("Should test equals and hashCode")
-        void shouldTestEqualsAndHashCode() {
+        @DisplayName("Should test equals and hashCode with Long ID")
+        void shouldTestEqualsAndHashCodeWithLongId() {
             // Arrange
-            UUID sharedId = UUID.randomUUID();
-            
             RetailCustomerEntity customer1 = TestDataBuilders.createValidRetailCustomer();
-            customer1.setId(sharedId);
             customer1.setUsername("customer1@example.com");
-            
+            RetailCustomerEntity savedCustomer1 = retailCustomerRepository.save(customer1);
+            flushAndClear();
+
             RetailCustomerEntity customer2 = TestDataBuilders.createValidRetailCustomer();
-            customer2.setId(sharedId);
+            customer2.setId(savedCustomer1.getId());
             customer2.setUsername("customer2@example.com");
 
-            // Act & Assert
-            assertThat(customer1).isEqualTo(customer2);
-            assertThat(customer1.hashCode()).isEqualTo(customer2.hashCode());
+            // Act & Assert - entities with same ID should be equal
+            assertThat(customer2).isEqualTo(savedCustomer1);
+            assertThat(customer2.hashCode()).isEqualTo(savedCustomer1.hashCode());
         }
 
         @Test
@@ -617,14 +611,16 @@ class RetailCustomerRepositoryTest extends BaseRepositoryTest {
             // Arrange
             RetailCustomerEntity retailCustomer = TestDataBuilders.createValidRetailCustomer();
             retailCustomer.setUsername("tostring@example.com");
+            RetailCustomerEntity saved = retailCustomerRepository.save(retailCustomer);
+            flushAndClear();
 
             // Act
-            String toString = retailCustomer.toString();
+            String toString = saved.toString();
 
             // Assert
             assertThat(toString).isNotNull();
             assertThat(toString).contains("RetailCustomerEntity");
-            assertThat(toString).contains(retailCustomer.getId().toString());
+            assertThat(toString).contains(saved.getId().toString());
         }
     }
 }
