@@ -20,7 +20,10 @@ package org.greenbuttonalliance.espi.common.repositories.usage;
 
 import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
+import org.greenbuttonalliance.espi.common.domain.common.AmiBillingReadyKind;
 import org.greenbuttonalliance.espi.common.domain.common.LinkType;
+import org.greenbuttonalliance.espi.common.domain.common.PhaseCodeKind;
+import org.greenbuttonalliance.espi.common.domain.common.UsagePointConnectedKind;
 import org.greenbuttonalliance.espi.common.test.BaseRepositoryTest;
 import org.greenbuttonalliance.espi.common.test.TestDataBuilders;
 import org.junit.jupiter.api.DisplayName;
@@ -209,6 +212,33 @@ class UsagePointRepositoryTest extends BaseRepositoryTest {
             assertThat(entity.getReadRoute()).isEqualTo("Route-42");
             assertThat(entity.getServiceDeliveryRemark()).isEqualTo("High priority customer");
             assertThat(entity.getServicePriority()).isEqualTo("P1");
+        }
+
+        @Test
+        @DisplayName("Should persist and retrieve Phase 16b enum fields")
+        void shouldPersistAndRetrievePhase16bEnumFields() {
+            // Arrange - Create usage point with all Phase 16b enum fields set
+            UsagePointEntity usagePoint = TestDataBuilders.createValidUsagePoint();
+            usagePoint.setDescription("Usage Point with Phase 16b enum fields");
+
+            // Set Phase 16b enum fields
+            usagePoint.setAmiBillingReady(AmiBillingReadyKind.BILLING_APPROVED);
+            usagePoint.setConnectionState(UsagePointConnectedKind.CONNECTED);
+            usagePoint.setPhaseCode(PhaseCodeKind.ABCN);
+
+            // Act - Save and retrieve
+            UsagePointEntity saved = usagePointRepository.save(usagePoint);
+            flushAndClear();
+            Optional<UsagePointEntity> retrieved = usagePointRepository.findById(saved.getId());
+
+            // Assert - Verify all Phase 16b enum fields persisted correctly
+            assertThat(retrieved).isPresent();
+            UsagePointEntity entity = retrieved.get();
+
+            // Verify enum fields
+            assertThat(entity.getAmiBillingReady()).isEqualTo(AmiBillingReadyKind.BILLING_APPROVED);
+            assertThat(entity.getConnectionState()).isEqualTo(UsagePointConnectedKind.CONNECTED);
+            assertThat(entity.getPhaseCode()).isEqualTo(PhaseCodeKind.ABCN);
         }
     }
 

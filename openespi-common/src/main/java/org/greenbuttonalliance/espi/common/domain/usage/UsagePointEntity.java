@@ -22,9 +22,12 @@ package org.greenbuttonalliance.espi.common.domain.usage;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import org.greenbuttonalliance.espi.common.domain.common.AmiBillingReadyKind;
 import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
+import org.greenbuttonalliance.espi.common.domain.common.PhaseCodeKind;
 import org.greenbuttonalliance.espi.common.domain.common.ServiceCategory;
 import org.greenbuttonalliance.espi.common.domain.common.SummaryMeasurement;
+import org.greenbuttonalliance.espi.common.domain.common.UsagePointConnectedKind;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.proxy.HibernateProxy;
 
@@ -45,8 +48,12 @@ public class UsagePointEntity extends IdentifiedObject {
 
     private static final long serialVersionUID = 1L;
 
+    // ==================== XSD Sequence Order (per ESPI 4.0 espi.xsd) ====================
+    // Fields ordered to match exact XSD element sequence for UsagePoint complexType
+
     /**
      * Role flags for the usage point (hex binary representation).
+     * XSD Position 1: roleFlags
      */
     @Column(name = "role_flags")
     private byte[] roleFlags;
@@ -54,6 +61,7 @@ public class UsagePointEntity extends IdentifiedObject {
     /**
      * Service category for this usage point.
      * Required field indicating the type of service.
+     * XSD Position 2: ServiceCategory
      */
     @NotNull
     @Enumerated(EnumType.STRING)
@@ -62,20 +70,46 @@ public class UsagePointEntity extends IdentifiedObject {
 
     /**
      * Status of the usage point.
+     * XSD Position 3: status
      */
     @Column(name = "status")
     private Short status;
 
+    // XSD Position 4: serviceDeliveryPoint - See relationship section below
+
     /**
-     * URI for this usage point.
-     * Used for external references and linking.
+     * Tracks the lifecycle of the metering installation at a usage point with respect to
+     * readiness for billing via advanced metering infrastructure reads.
+     * Per ESPI 4.0 XSD: [extension] AmiBillingReadyKind enum.
+     * XSD Position 5: amiBillingReady
      */
-    @Column(name = "uri")
-    private String uri;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "ami_billing_ready", length = 32)
+    private AmiBillingReadyKind amiBillingReady;
+
+    /**
+     * True if as a result of an inspection or otherwise, there is a reason to suspect
+     * that a previous billing may have been performed with erroneous data.
+     * Value should be reset once this potential discrepancy has been resolved.
+     * Per ESPI 4.0 XSD: [extension] boolean field.
+     * XSD Position 6: checkBilling
+     */
+    @Column(name = "check_billing")
+    private Boolean checkBilling;
+
+    /**
+     * State of the usage point with respect to connection to the network.
+     * Per ESPI 4.0 XSD: [extension] UsagePointConnectedKind enum.
+     * XSD Position 7: connectionState
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "connection_state", length = 32)
+    private UsagePointConnectedKind connectionState;
 
     /**
      * Estimated load for this usage point as SummaryMeasurement.
      * Contains value, unit of measure, multiplier, and reading type reference.
+     * XSD Position 8: estimatedLoad
      */
     @Embedded
     @AttributeOverrides({
@@ -88,8 +122,49 @@ public class UsagePointEntity extends IdentifiedObject {
     private SummaryMeasurement estimatedLoad;
 
     /**
+     * True if grounded.
+     * Per ESPI 4.0 XSD: [extension] boolean field.
+     * XSD Position 9: grounded
+     */
+    @Column(name = "grounded")
+    private Boolean grounded;
+
+    /**
+     * If true, this usage point is a service delivery point, i.e., a usage point
+     * where the ownership of the service changes hands.
+     * Per ESPI 4.0 XSD: [extension] boolean field.
+     * XSD Position 10: isSdp
+     */
+    @Column(name = "is_sdp")
+    private Boolean isSdp;
+
+    /**
+     * If true, this usage point is virtual, i.e., no physical location exists in the
+     * network where a meter could be located to collect the meter readings.
+     * For example, one may define a virtual usage point to serve as an aggregation of
+     * usage for all of a company's premises distributed widely across the distribution territory.
+     * Otherwise, the usage point is physical, i.e., there is a logical point in the network
+     * where a meter could be located to collect meter readings.
+     * Per ESPI 4.0 XSD: [extension] boolean field.
+     * XSD Position 11: isVirtual
+     */
+    @Column(name = "is_virtual")
+    private Boolean isVirtual;
+
+    /**
+     * If true, minimal or zero usage is expected at this usage point for situations such as
+     * premises vacancy, logical or physical disconnect.
+     * It is used for readings validation and estimation.
+     * Per ESPI 4.0 XSD: [extension] boolean field.
+     * XSD Position 12: minimalUsageExpected
+     */
+    @Column(name = "minimal_usage_expected")
+    private Boolean minimalUsageExpected;
+
+    /**
      * Nominal service voltage for this usage point as SummaryMeasurement.
      * Contains value, unit of measure, multiplier, and reading type reference.
+     * XSD Position 13: nominalServiceVoltage
      */
     @Embedded
     @AttributeOverrides({
@@ -102,8 +177,29 @@ public class UsagePointEntity extends IdentifiedObject {
     private SummaryMeasurement nominalServiceVoltage;
 
     /**
+     * Outage region in which this usage point is located.
+     * Per ESPI 4.0 XSD: [extension] String256 field (max length 256).
+     * XSD Position 14: outageRegion
+     */
+    @Column(name = "outage_region", length = 256)
+    private String outageRegion;
+
+    /**
+     * Phase code. Number of wires and specific nominal phases can be deduced from
+     * enumeration literal values. For example, ABCN is three-phase, four-wire,
+     * s12n (splitSecondary12N) is single-phase, three-wire, and s1n and s2n are
+     * single-phase, two-wire.
+     * Per ESPI 4.0 XSD: [extension] PhaseCodeKind enum.
+     * XSD Position 15: phaseCode
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "phase_code", length = 32)
+    private PhaseCodeKind phaseCode;
+
+    /**
      * Rated current for this usage point as SummaryMeasurement.
      * Contains value, unit of measure, multiplier, and reading type reference.
+     * XSD Position 16: ratedCurrent
      */
     @Embedded
     @AttributeOverrides({
@@ -118,6 +214,7 @@ public class UsagePointEntity extends IdentifiedObject {
     /**
      * Rated power for this usage point as SummaryMeasurement.
      * Contains value, unit of measure, multiplier, and reading type reference.
+     * XSD Position 17: ratedPower
      */
     @Embedded
     @AttributeOverrides({
@@ -130,61 +227,10 @@ public class UsagePointEntity extends IdentifiedObject {
     private SummaryMeasurement ratedPower;
 
     /**
-     * True if as a result of an inspection or otherwise, there is a reason to suspect
-     * that a previous billing may have been performed with erroneous data.
-     * Value should be reset once this potential discrepancy has been resolved.
-     * Per ESPI 4.0 XSD: [extension] boolean field.
-     */
-    @Column(name = "check_billing")
-    private Boolean checkBilling;
-
-    /**
-     * True if grounded.
-     * Per ESPI 4.0 XSD: [extension] boolean field.
-     */
-    @Column(name = "grounded")
-    private Boolean grounded;
-
-    /**
-     * If true, this usage point is a service delivery point, i.e., a usage point
-     * where the ownership of the service changes hands.
-     * Per ESPI 4.0 XSD: [extension] boolean field.
-     */
-    @Column(name = "is_sdp")
-    private Boolean isSdp;
-
-    /**
-     * If true, this usage point is virtual, i.e., no physical location exists in the
-     * network where a meter could be located to collect the meter readings.
-     * For example, one may define a virtual usage point to serve as an aggregation of
-     * usage for all of a company's premises distributed widely across the distribution territory.
-     * Otherwise, the usage point is physical, i.e., there is a logical point in the network
-     * where a meter could be located to collect meter readings.
-     * Per ESPI 4.0 XSD: [extension] boolean field.
-     */
-    @Column(name = "is_virtual")
-    private Boolean isVirtual;
-
-    /**
-     * If true, minimal or zero usage is expected at this usage point for situations such as
-     * premises vacancy, logical or physical disconnect.
-     * It is used for readings validation and estimation.
-     * Per ESPI 4.0 XSD: [extension] boolean field.
-     */
-    @Column(name = "minimal_usage_expected")
-    private Boolean minimalUsageExpected;
-
-    /**
-     * Outage region in which this usage point is located.
-     * Per ESPI 4.0 XSD: [extension] String256 field (max length 256).
-     */
-    @Column(name = "outage_region", length = 256)
-    private String outageRegion;
-
-    /**
      * Cycle day on which the meter for this usage point will normally be read.
      * Usually correlated with the billing cycle.
      * Per ESPI 4.0 XSD: [extension] String256 field (max length 256).
+     * XSD Position 18: readCycle
      */
     @Column(name = "read_cycle", length = 256)
     private String readCycle;
@@ -193,6 +239,7 @@ public class UsagePointEntity extends IdentifiedObject {
      * Identifier of the route to which this usage point is assigned for purposes of meter reading.
      * Typically used to configure hand held meter reading systems prior to collection of reads.
      * Per ESPI 4.0 XSD: [extension] String256 field (max length 256).
+     * XSD Position 19: readRoute
      */
     @Column(name = "read_route", length = 256)
     private String readRoute;
@@ -200,6 +247,7 @@ public class UsagePointEntity extends IdentifiedObject {
     /**
      * Remarks about this usage point, for example the reason for it being rated with a non-nominal priority.
      * Per ESPI 4.0 XSD: [extension] String256 field (max length 256).
+     * XSD Position 20: serviceDeliveryRemark
      */
     @Column(name = "service_delivery_remark", length = 256)
     private String serviceDeliveryRemark;
@@ -208,9 +256,25 @@ public class UsagePointEntity extends IdentifiedObject {
      * Priority of service for this usage point.
      * Note that usage points at the same service location can have different priorities.
      * Per ESPI 4.0 XSD: [extension] String32 field (max length 32).
+     * XSD Position 21: servicePriority
      */
     @Column(name = "service_priority", length = 32)
     private String servicePriority;
+
+    // XSD Position 22-23: pnodeRefs and aggregateNodeRefs - See relationship sections below
+
+    // ==================== Legacy Fields (NOT in ESPI 4.0 XSD) ====================
+    // TODO Phase 16c: Review if these fields should be removed or mapped to XSD elements
+
+    /**
+     * URI for this usage point.
+     * Used for external references and linking.
+     * NOTE: This field is NOT in ESPI 4.0 XSD - legacy field for review.
+     */
+    @Column(name = "uri")
+    private String uri;
+
+    // ==================== JPA Relationships ====================
 
     /**
      * Service delivery point associated with this usage point.
