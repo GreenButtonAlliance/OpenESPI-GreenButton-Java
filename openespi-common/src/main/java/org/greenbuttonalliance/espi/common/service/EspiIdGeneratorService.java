@@ -134,12 +134,51 @@ public class EspiIdGeneratorService {
     private UUID bytesToUUID(byte[] bytes) {
         long msb = 0;
         long lsb = 0;
-        
+
         for (int i = 0; i < 8; i++) {
             msb = (msb << 8) | (bytes[i] & 0xff);
             lsb = (lsb << 8) | (bytes[8 + i] & 0xff);
         }
-        
+
         return new UUID(msb, lsb);
+    }
+
+    /**
+     * Generates a NAESB ESPI compliant UUID5 for a Subscription entity.
+     *
+     * The UUID5 is generated from clientId + username + current timestamp to ensure
+     * uniqueness even when the same client/user creates multiple subscriptions.
+     *
+     * @param clientId the OAuth2 client ID
+     * @param username the retail customer username
+     * @return a unique UUID5 identifier for the subscription
+     * @throws IllegalArgumentException if both clientId and username are null or empty
+     */
+    public UUID generateSubscriptionId(String clientId, String username) {
+        if ((clientId == null || clientId.trim().isEmpty()) &&
+            (username == null || username.trim().isEmpty())) {
+            throw new IllegalArgumentException("At least one of clientId or username must be provided");
+        }
+
+        // Build the name string with timestamp for non-repeatability
+        StringBuilder nameBuilder = new StringBuilder();
+        nameBuilder.append("Subscription:");
+        if (clientId != null && !clientId.trim().isEmpty()) {
+            nameBuilder.append(clientId.trim());
+        }
+        nameBuilder.append(":");
+        if (username != null && !username.trim().isEmpty()) {
+            nameBuilder.append(username.trim());
+        }
+        nameBuilder.append(":");
+        nameBuilder.append(System.currentTimeMillis());
+        nameBuilder.append(":");
+        nameBuilder.append(System.nanoTime()); // Additional entropy
+
+        try {
+            return generateUUID5(ESPI_NAMESPACE, nameBuilder.toString());
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-1 algorithm not available", e);
+        }
     }
 }

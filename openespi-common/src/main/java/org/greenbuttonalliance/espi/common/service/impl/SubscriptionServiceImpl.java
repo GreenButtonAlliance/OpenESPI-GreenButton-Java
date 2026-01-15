@@ -28,13 +28,13 @@ import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 import org.greenbuttonalliance.espi.common.repositories.usage.SubscriptionRepository;
 import org.greenbuttonalliance.espi.common.repositories.usage.UsagePointRepository;
 import org.greenbuttonalliance.espi.common.service.ApplicationInformationService;
+import org.greenbuttonalliance.espi.common.service.EspiIdGeneratorService;
 import org.greenbuttonalliance.espi.common.service.RetailCustomerService;
 import org.greenbuttonalliance.espi.common.service.SubscriptionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -54,6 +54,9 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 	@Autowired
 	private ApplicationInformationService applicationInformationService;
 
+	@Autowired
+	private EspiIdGeneratorService espiIdGeneratorService;
+
 	//@Lazy // Added to break the circular dependency
 	@Autowired
 	private RetailCustomerService retailCustomerService;
@@ -61,7 +64,10 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 	@Override
 	public SubscriptionEntity createSubscription(String username, Set<String> roles, String clientId) {
 		SubscriptionEntity subscription = new SubscriptionEntity();
-		subscription.setId(UUID.randomUUID());
+
+		// Generate UUID5 from clientId + username with timestamp for uniqueness
+		UUID subscriptionId = espiIdGeneratorService.generateSubscriptionId(clientId, username);
+		subscription.setId(subscriptionId);
 
 		if (roles.contains("ROLE_USER")) {
 			// For user-based subscriptions, find the retail customer by username
@@ -91,7 +97,6 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 			}
 			subscription.setRetailCustomer(null); // No specific retail customer for client-based subscriptions
 		}
-		subscription.setLastUpdate(LocalDateTime.now());
 		subscriptionRepository.save(subscription);
 
 		logger.info("Created subscription for username: " + username);
@@ -132,7 +137,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
 	@Override
 	public SubscriptionEntity findByAuthorizationId(UUID id) {
-		return subscriptionRepository.findByAuthorizationId(id).orElse(null);
+		return subscriptionRepository.findByAuthorization_Id(id).orElse(null);
 	}
 
 	@Override
