@@ -35,57 +35,56 @@ import java.util.UUID;
 /**
  * Modern Spring Data JPA repository for UsagePoint entities.
  * Replaces the legacy UsagePointRepositoryImpl with modern Spring Data patterns.
+ * <p>
+ * Phase 16c Repository Cleanup:
+ * - Removed queries on non-indexed columns (uri)
+ * - Removed full table scan queries (findAllIds)
+ * - Converted @Query to Spring Data JPA derived queries where possible
+ * - Use built-in JpaRepository methods (existsById, deleteById) instead of custom queries
+ * - All remaining queries use indexed columns for optimal performance
  */
 @Repository
 public interface UsagePointRepository extends JpaRepository<UsagePointEntity, UUID> {
 
     /**
      * Find all usage points for a specific retail customer.
+     * Uses indexed column: retail_customer_id
+     * Converted to Spring Data JPA derived query method (Phase 16c).
+     *
+     * @param retailCustomerId the retail customer ID
+     * @return list of usage points for the customer
      */
-    @Query("SELECT up FROM UsagePointEntity up WHERE up.retailCustomer.id = :retailCustomerId")
-    List<UsagePointEntity> findAllByRetailCustomerId(@Param("retailCustomerId") Long retailCustomerId);
-
-    /**
-     * Find usage point by resource URI.
-     */
-    @Query("SELECT up FROM UsagePointEntity up WHERE up.uri = :uri")
-    Optional<UsagePointEntity> findByResourceUri(@Param("uri") String uri);
+    List<UsagePointEntity> findAllByRetailCustomerId(Long retailCustomerId);
 
     /**
      * Find usage point by related href.
+     * Uses indexed relationship: usage_point_related_links(usage_point_id)
+     *
+     * @param href the related link href
+     * @return optional usage point matching the href
      */
     @Query("SELECT up FROM UsagePointEntity up JOIN up.relatedLinks rl WHERE rl.href = :href")
     Optional<UsagePointEntity> findByRelatedHref(@Param("href") String href);
 
     /**
      * Find all usage points updated after a given timestamp.
+     * Uses indexed column: updated
+     *
+     * @param lastUpdate the last update timestamp
+     * @return list of usage points updated after the given time
      */
-    @Query("SELECT up FROM UsagePointEntity up WHERE up.updated > :lastUpdate")
-    List<UsagePointEntity> findAllUpdatedAfter(@Param("lastUpdate") LocalDateTime lastUpdate);
+    List<UsagePointEntity> findAllByUpdatedAfter(LocalDateTime lastUpdate);
 
     /**
      * Find all usage point IDs for a specific retail customer.
+     * Uses indexed column: retail_customer_id
+     *
+     * @param retailCustomerId the retail customer ID
+     * @return list of usage point IDs for the customer
      */
     @Query("SELECT up.id FROM UsagePointEntity up WHERE up.retailCustomer.id = :retailCustomerId")
     List<UUID> findAllIdsByRetailCustomerId(@Param("retailCustomerId") Long retailCustomerId);
 
-    /**
-     * Find all usage point IDs.
-     */
-    @Query("SELECT up.id FROM UsagePointEntity up")
-    List<UUID> findAllIds();
-
-    /**
-     * Check if usage point exists by UUID.
-     */
-    @Query("SELECT COUNT(up) > 0 FROM UsagePointEntity up WHERE up.id = :uuid")
-    boolean existsByUuid(@Param("uuid") UUID uuid);
-
-    /**
-     * Delete usage point by UUID.
-     */
-    @Modifying
-    @Transactional
-    @Query("DELETE FROM UsagePointEntity up WHERE up.id = :uuid")
-    void deleteByUuid(@Param("uuid") UUID uuid);
+    // Note: Use built-in existsById(UUID id) instead of custom existsByUuid
+    // Note: Use built-in deleteById(UUID id) instead of custom deleteByUuid
 }
