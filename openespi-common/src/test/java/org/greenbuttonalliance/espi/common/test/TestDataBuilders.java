@@ -31,6 +31,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Minimal utility class for creating test data entities.
@@ -246,12 +247,12 @@ public class TestDataBuilders {
 
     /**
      * Creates a valid SubscriptionEntity for testing.
+     * Note: Subscription is an application-specific entity (NOT an ESPI resource),
+     * so it does not extend IdentifiedObject and requires UUID to be set before persisting.
      */
     public static SubscriptionEntity createValidSubscription() {
-        SubscriptionEntity subscription = new SubscriptionEntity();
-        subscription.setDescription(faker.lorem().sentence(3, 6));
+        SubscriptionEntity subscription = new SubscriptionEntity(UUID.randomUUID());
         subscription.setHashedId("hashed-" + faker.internet().uuid());
-        subscription.setLastUpdate(LocalDateTime.now());
         return subscription;
     }
 

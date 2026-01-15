@@ -33,6 +33,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -106,8 +107,12 @@ public class UsagePointServiceImpl implements UsagePointService {
 
 	@Override
 	public List<UsagePointEntity> findAllUpdatedFor(SubscriptionEntity subscription) {
-		// TODO: Implement query to find usage points updated after subscription timestamp
-		return usagePointRepository.findAllUpdatedAfter(subscription.getLastUpdateAsLocalDateTime());
+		// Return all usage points associated with the subscription
+		// Subscription no longer tracks lastUpdate timestamp
+		if (subscription == null || subscription.getUsagePoints() == null) {
+			return new ArrayList<>();
+		}
+		return new ArrayList<>(subscription.getUsagePoints());
 	}
 
 	@Override

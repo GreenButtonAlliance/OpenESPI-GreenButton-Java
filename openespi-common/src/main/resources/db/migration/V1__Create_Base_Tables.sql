@@ -265,40 +265,27 @@ CREATE TABLE reading_type_related_links
 
 CREATE INDEX idx_reading_type_related_links ON reading_type_related_links (reading_type_id);
 
--- Subscription Table (depends only on application_information and retail_customers)
+-- Subscription Table (application-specific entity, NOT an ESPI resource)
+-- Does not extend IdentifiedObject - no self_link, up_link, or timestamps
 CREATE TABLE subscriptions
 (
-    id                             CHAR(36) PRIMARY KEY ,
-    description                    VARCHAR(255),
-    created                        TIMESTAMP NOT NULL,
-    updated                        TIMESTAMP NOT NULL,
-    published                      TIMESTAMP,
-    up_link_rel                    VARCHAR(255),
-    up_link_href                   VARCHAR(1024),
-    up_link_type                   VARCHAR(255),
-    self_link_rel                  VARCHAR(255),
-    self_link_href                 VARCHAR(1024),
-    self_link_type                 VARCHAR(255),
+    id                             CHAR(36) PRIMARY KEY,
 
     -- Subscription specific fields
     hashed_id                      VARCHAR(64),
-    has_customer_matching_criteria BOOLEAN              DEFAULT FALSE,
-    last_update                    TIMESTAMP,
 
     -- Foreign key relationships
-    application_information_id     CHAR(36),
+    application_information_id     CHAR(36) NOT NULL,
     authorization_id               CHAR(36),
-    retail_customer_id             BIGINT,
+    retail_customer_id             BIGINT NOT NULL,
 
     FOREIGN KEY (application_information_id) REFERENCES application_information (id) ON DELETE CASCADE
     -- FK constraint for retail_customer_id added in V2 after retail_customers table is created
 );
 
-CREATE INDEX idx_subscription_app_id ON subscriptions (application_information_id);
-CREATE INDEX idx_subscription_customer_id ON subscriptions (retail_customer_id);
-CREATE INDEX idx_subscription_last_update ON subscriptions (last_update);
-CREATE INDEX idx_subscription_created ON subscriptions (created);
-CREATE INDEX idx_subscription_updated ON subscriptions (updated);
+CREATE INDEX idx_subscription_retail_customer ON subscriptions (retail_customer_id);
+CREATE INDEX idx_subscription_application ON subscriptions (application_information_id);
+CREATE INDEX idx_subscription_authorization ON subscriptions (authorization_id);
 
 -- Batch List Table (Independent - no foreign key dependencies)
 CREATE TABLE batch_lists

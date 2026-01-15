@@ -21,48 +21,55 @@ package org.greenbuttonalliance.espi.common.repositories.usage;
 
 import org.greenbuttonalliance.espi.common.domain.usage.SubscriptionEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Repository for SubscriptionEntity using Spring Data JPA query derivation.
+ *
+ * <p>All queries are automatically generated from method names by Spring Data JPA.
+ * No explicit @Query annotations needed.</p>
+ */
 @Repository
 public interface SubscriptionRepository extends JpaRepository<SubscriptionEntity, UUID> {
 	// JpaRepository provides: save(), findAll(), findById(), deleteById(), etc.
-	// Note: merge() functionality is handled by save() in Spring Data JPA
 
+	/**
+	 * Finds a subscription by its hashed ID.
+	 * Used for API access where the hashed ID is exposed externally.
+	 *
+	 * @param hashedId the hashed identifier
+	 * @return the subscription if found
+	 */
 	Optional<SubscriptionEntity> findByHashedId(String hashedId);
 
-	@Modifying
-	@Transactional
-	@Query("DELETE FROM SubscriptionEntity s WHERE s.id = :id")
-	void deleteById(@Param("id") UUID id);
+	/**
+	 * Finds a subscription by its associated authorization ID.
+	 * Uses index: idx_subscription_authorization
+	 *
+	 * @param id the authorization UUID
+	 * @return the subscription if found
+	 */
+	Optional<SubscriptionEntity> findByAuthorization_Id(UUID id);
 
-	// findById is already provided by JpaRepository<SubscriptionEntity, UUID>
-	// Optional<SubscriptionEntity> findById(UUID id) is inherited
+	/**
+	 * Finds all subscriptions for a retail customer.
+	 * Uses index: idx_subscription_retail_customer
+	 *
+	 * @param id the retail customer ID
+	 * @return list of subscriptions
+	 */
+	List<SubscriptionEntity> findByRetailCustomer_Id(Long id);
 
-	@Query("SELECT s FROM SubscriptionEntity s WHERE s.authorization.id = :authorizationId")
-	Optional<SubscriptionEntity> findByAuthorizationId(@Param("authorizationId") UUID id);
-
-	// Missing NamedQueries that need to be added:
-
-	@Query("SELECT s.id FROM SubscriptionEntity s")
-	List<UUID> findAllIds();
-
-	@Query("SELECT s FROM SubscriptionEntity s WHERE s.retailCustomer.id = :retailCustomerId")
-	List<SubscriptionEntity> findByRetailCustomerId(@Param("retailCustomerId") Long retailCustomerId);
-
-	@Query("SELECT s FROM SubscriptionEntity s WHERE s.applicationInformation.id = :applicationInformationId")
-	List<SubscriptionEntity> findByApplicationInformationId(@Param("applicationInformationId") UUID applicationInformationId);
-
-	@Query("SELECT s FROM SubscriptionEntity s WHERE s.authorization IS NOT NULL AND s.authorization.status = 'ACTIVE'")
-	List<SubscriptionEntity> findActiveSubscriptions();
-
-	@Query("SELECT DISTINCT s FROM SubscriptionEntity s JOIN s.usagePoints up WHERE up.id = :usagePointId")
-	List<SubscriptionEntity> findByUsagePointId(@Param("usagePointId") UUID usagePointId);
+	/**
+	 * Finds all subscriptions for an application.
+	 * Uses index: idx_subscription_application
+	 *
+	 * @param id the application information UUID
+	 * @return list of subscriptions
+	 */
+	List<SubscriptionEntity> findByApplicationInformation_Id(UUID id);
 }
