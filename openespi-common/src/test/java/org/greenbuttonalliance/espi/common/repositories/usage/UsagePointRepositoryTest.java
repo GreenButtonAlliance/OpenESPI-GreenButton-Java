@@ -165,6 +165,51 @@ class UsagePointRepositoryTest extends BaseRepositoryTest {
             // Assert
             assertThat(finalCount).isEqualTo(initialCount + 5);
         }
+
+        @Test
+        @DisplayName("Should persist and retrieve Phase 16a extension fields")
+        void shouldPersistAndRetrievePhase16aExtensionFields() {
+            // Arrange - Create usage point with all Phase 16a fields set
+            UsagePointEntity usagePoint = TestDataBuilders.createValidUsagePoint();
+            usagePoint.setDescription("Usage Point with Phase 16a fields");
+
+            // Set Phase 16a boolean fields
+            usagePoint.setCheckBilling(true);
+            usagePoint.setGrounded(false);
+            usagePoint.setIsSdp(true);
+            usagePoint.setIsVirtual(false);
+            usagePoint.setMinimalUsageExpected(true);
+
+            // Set Phase 16a string fields
+            usagePoint.setOutageRegion("North Region");
+            usagePoint.setReadCycle("Monthly");
+            usagePoint.setReadRoute("Route-42");
+            usagePoint.setServiceDeliveryRemark("High priority customer");
+            usagePoint.setServicePriority("P1");
+
+            // Act - Save and retrieve
+            UsagePointEntity saved = usagePointRepository.save(usagePoint);
+            flushAndClear();
+            Optional<UsagePointEntity> retrieved = usagePointRepository.findById(saved.getId());
+
+            // Assert - Verify all Phase 16a fields persisted correctly
+            assertThat(retrieved).isPresent();
+            UsagePointEntity entity = retrieved.get();
+
+            // Verify boolean fields
+            assertThat(entity.getCheckBilling()).isTrue();
+            assertThat(entity.getGrounded()).isFalse();
+            assertThat(entity.getIsSdp()).isTrue();
+            assertThat(entity.getIsVirtual()).isFalse();
+            assertThat(entity.getMinimalUsageExpected()).isTrue();
+
+            // Verify string fields
+            assertThat(entity.getOutageRegion()).isEqualTo("North Region");
+            assertThat(entity.getReadCycle()).isEqualTo("Monthly");
+            assertThat(entity.getReadRoute()).isEqualTo("Route-42");
+            assertThat(entity.getServiceDeliveryRemark()).isEqualTo("High priority customer");
+            assertThat(entity.getServicePriority()).isEqualTo("P1");
+        }
     }
 
     @Nested
