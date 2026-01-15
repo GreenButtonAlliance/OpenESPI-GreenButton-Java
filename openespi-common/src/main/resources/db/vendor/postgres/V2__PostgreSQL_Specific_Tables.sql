@@ -103,9 +103,9 @@ CREATE TABLE usage_points
     service_category          VARCHAR(50),                            -- 2. ServiceCategory
     status                    SMALLINT,                               -- 3. status
     -- 4. serviceDeliveryPoint (FK handled below)
-    -- 5. amiBillingReady (enum - Phase 16b)
+    ami_billing_ready         VARCHAR(32),                            -- 5. amiBillingReady (Phase 16b)
     check_billing             BOOLEAN,                                -- 6. checkBilling (Phase 16a)
-    -- 7. connectionState (enum - Phase 16b)
+    connection_state          VARCHAR(32),                            -- 7. connectionState (Phase 16b)
 
     -- 8. estimatedLoad (embedded SummaryMeasurement)
     estimated_load_multiplier                                          VARCHAR(255),
@@ -127,7 +127,7 @@ CREATE TABLE usage_points
     nominal_voltage_reading_type_ref                                   VARCHAR(512),
 
     outage_region             VARCHAR(256),                           -- 14. outageRegion (Phase 16a)
-    -- 15. phaseCode (enum - Phase 16b)
+    phase_code                VARCHAR(32),                            -- 15. phaseCode (Phase 16b)
 
     -- 16. ratedCurrent (embedded SummaryMeasurement)
     rated_current_multiplier                                           VARCHAR(255),
