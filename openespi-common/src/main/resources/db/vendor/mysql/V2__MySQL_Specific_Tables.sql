@@ -582,3 +582,29 @@ ALTER TABLE subscriptions ADD CONSTRAINT fk_subscription_retail_customer
 -- (Column type changed to BIGINT, FK constraint added here after retail_customers table is created)
 ALTER TABLE usage_points ADD CONSTRAINT fk_usage_point_retail_customer
     FOREIGN KEY (retail_customer_id) REFERENCES retail_customers (id) ON DELETE CASCADE;
+
+-- ================================================================================
+-- Batch List Tables (MySQL-specific with BIGINT AUTO_INCREMENT)
+-- ================================================================================
+
+-- Batch List Table
+-- BatchList is a simple operational entity (NOT an ESPI resource)
+-- Does NOT extend IdentifiedObject, uses Long ID with auto-increment
+CREATE TABLE batch_lists
+(
+    id             BIGINT AUTO_INCREMENT PRIMARY KEY,
+    resource_count INT DEFAULT 0
+);
+
+CREATE INDEX idx_batch_list_resource_count ON batch_lists (resource_count);
+
+-- Batch List Resources Collection Table
+CREATE TABLE batch_list_resources
+(
+    batch_list_id BIGINT       NOT NULL,
+    resource_uri  VARCHAR(512) NOT NULL,
+    FOREIGN KEY (batch_list_id) REFERENCES batch_lists (id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_batch_list_resources_batch_id ON batch_list_resources (batch_list_id);
+CREATE INDEX idx_batch_list_resources_uri ON batch_list_resources (resource_uri);

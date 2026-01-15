@@ -25,9 +25,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.proxy.HibernateProxy;
-import org.hibernate.type.SqlTypes;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -44,6 +42,7 @@ import java.util.stream.Collectors;
  *
  * Note: BatchList does NOT extend IdentifiedObject per ESPI 4.0 specification.
  * It is not a top-level resource with selfLink/upLink/relatedLinks.
+ * Uses Long ID with auto-increment as a simple operational entity.
  */
 @Entity
 @Table(name = "batch_lists", indexes = {
@@ -57,13 +56,12 @@ public class BatchListEntity {
     private static final long serialVersionUID = 1L;
 
     /**
-     * Primary key identifier.
+     * Primary key identifier (48-bit auto-increment).
      */
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @JdbcTypeCode(SqlTypes.CHAR)
-    @Column(length = 36, columnDefinition = "char(36)", updatable = false, nullable = false)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(updatable = false, nullable = false)
+    private Long id;
 
     /**
      * List of resource URIs for batch processing.
