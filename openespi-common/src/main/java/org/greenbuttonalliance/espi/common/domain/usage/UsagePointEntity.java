@@ -130,6 +130,89 @@ public class UsagePointEntity extends IdentifiedObject {
     private SummaryMeasurement ratedPower;
 
     /**
+     * True if as a result of an inspection or otherwise, there is a reason to suspect
+     * that a previous billing may have been performed with erroneous data.
+     * Value should be reset once this potential discrepancy has been resolved.
+     * Per ESPI 4.0 XSD: [extension] boolean field.
+     */
+    @Column(name = "check_billing")
+    private Boolean checkBilling;
+
+    /**
+     * True if grounded.
+     * Per ESPI 4.0 XSD: [extension] boolean field.
+     */
+    @Column(name = "grounded")
+    private Boolean grounded;
+
+    /**
+     * If true, this usage point is a service delivery point, i.e., a usage point
+     * where the ownership of the service changes hands.
+     * Per ESPI 4.0 XSD: [extension] boolean field.
+     */
+    @Column(name = "is_sdp")
+    private Boolean isSdp;
+
+    /**
+     * If true, this usage point is virtual, i.e., no physical location exists in the
+     * network where a meter could be located to collect the meter readings.
+     * For example, one may define a virtual usage point to serve as an aggregation of
+     * usage for all of a company's premises distributed widely across the distribution territory.
+     * Otherwise, the usage point is physical, i.e., there is a logical point in the network
+     * where a meter could be located to collect meter readings.
+     * Per ESPI 4.0 XSD: [extension] boolean field.
+     */
+    @Column(name = "is_virtual")
+    private Boolean isVirtual;
+
+    /**
+     * If true, minimal or zero usage is expected at this usage point for situations such as
+     * premises vacancy, logical or physical disconnect.
+     * It is used for readings validation and estimation.
+     * Per ESPI 4.0 XSD: [extension] boolean field.
+     */
+    @Column(name = "minimal_usage_expected")
+    private Boolean minimalUsageExpected;
+
+    /**
+     * Outage region in which this usage point is located.
+     * Per ESPI 4.0 XSD: [extension] String256 field (max length 256).
+     */
+    @Column(name = "outage_region", length = 256)
+    private String outageRegion;
+
+    /**
+     * Cycle day on which the meter for this usage point will normally be read.
+     * Usually correlated with the billing cycle.
+     * Per ESPI 4.0 XSD: [extension] String256 field (max length 256).
+     */
+    @Column(name = "read_cycle", length = 256)
+    private String readCycle;
+
+    /**
+     * Identifier of the route to which this usage point is assigned for purposes of meter reading.
+     * Typically used to configure hand held meter reading systems prior to collection of reads.
+     * Per ESPI 4.0 XSD: [extension] String256 field (max length 256).
+     */
+    @Column(name = "read_route", length = 256)
+    private String readRoute;
+
+    /**
+     * Remarks about this usage point, for example the reason for it being rated with a non-nominal priority.
+     * Per ESPI 4.0 XSD: [extension] String256 field (max length 256).
+     */
+    @Column(name = "service_delivery_remark", length = 256)
+    private String serviceDeliveryRemark;
+
+    /**
+     * Priority of service for this usage point.
+     * Note that usage points at the same service location can have different priorities.
+     * Per ESPI 4.0 XSD: [extension] String32 field (max length 32).
+     */
+    @Column(name = "service_priority", length = 32)
+    private String servicePriority;
+
+    /**
      * Service delivery point associated with this usage point.
      * ServiceDeliveryPoint is now a standalone ESPI resource.
      */

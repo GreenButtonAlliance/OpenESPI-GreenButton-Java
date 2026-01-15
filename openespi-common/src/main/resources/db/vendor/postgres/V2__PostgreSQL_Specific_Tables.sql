@@ -96,41 +96,61 @@ CREATE TABLE usage_points
     self_link_href            VARCHAR(1024),
     self_link_type            VARCHAR(255),
 
-    -- Usage point specific fields
-    kind                      VARCHAR(50),
-    status                    SMALLINT,
-    uri                       VARCHAR(1024),
-    service_category          VARCHAR(50),
-    service_delivery_remark   VARCHAR(255),
-    role_flags                BYTEA,
+    -- Usage point specific fields (ordered per ESPI 4.0 XSD sequence)
+    -- XSD sequence: roleFlags, ServiceCategory, status, serviceDeliveryPoint, amiBillingReady, checkBilling, connectionState, estimatedLoad, grounded, isSdp, isVirtual, minimalUsageExpected, nominalServiceVoltage, outageRegion, phaseCode, ratedCurrent, ratedPower, readCycle, readRoute, serviceDeliveryRemark, servicePriority
 
-    -- Embedded SummaryMeasurement: estimatedLoad
+    role_flags                BYTEA,                                   -- 1. roleFlags
+    service_category          VARCHAR(50),                            -- 2. ServiceCategory
+    status                    SMALLINT,                               -- 3. status
+    -- 4. serviceDeliveryPoint (FK handled below)
+    -- 5. amiBillingReady (enum - Phase 16b)
+    check_billing             BOOLEAN,                                -- 6. checkBilling (Phase 16a)
+    -- 7. connectionState (enum - Phase 16b)
+
+    -- 8. estimatedLoad (embedded SummaryMeasurement)
     estimated_load_multiplier                                          VARCHAR(255),
     estimated_load_timestamp                                           BIGINT,
     estimated_load_uom                                                 VARCHAR(50),
     estimated_load_value                                               BIGINT,
     estimated_load_reading_type_ref                                    VARCHAR(512),
 
-    -- Embedded SummaryMeasurement: nominalServiceVoltage
+    grounded                  BOOLEAN,                                -- 9. grounded (Phase 16a)
+    is_sdp                    BOOLEAN,                                -- 10. isSdp (Phase 16a)
+    is_virtual                BOOLEAN,                                -- 11. isVirtual (Phase 16a)
+    minimal_usage_expected    BOOLEAN,                                -- 12. minimalUsageExpected (Phase 16a)
+
+    -- 13. nominalServiceVoltage (embedded SummaryMeasurement)
     nominal_voltage_multiplier                                         VARCHAR(255),
     nominal_voltage_timestamp                                          BIGINT,
     nominal_voltage_uom                                                VARCHAR(50),
     nominal_voltage_value                                              BIGINT,
     nominal_voltage_reading_type_ref                                   VARCHAR(512),
 
-    -- Embedded SummaryMeasurement: ratedCurrent
+    outage_region             VARCHAR(256),                           -- 14. outageRegion (Phase 16a)
+    -- 15. phaseCode (enum - Phase 16b)
+
+    -- 16. ratedCurrent (embedded SummaryMeasurement)
     rated_current_multiplier                                           VARCHAR(255),
     rated_current_timestamp                                            BIGINT,
     rated_current_uom                                                  VARCHAR(50),
     rated_current_value                                                BIGINT,
     rated_current_reading_type_ref                                     VARCHAR(512),
 
-    -- Embedded SummaryMeasurement: ratedPower
+    -- 17. ratedPower (embedded SummaryMeasurement)
     rated_power_multiplier                                             VARCHAR(255),
     rated_power_timestamp                                              BIGINT,
     rated_power_uom                                                    VARCHAR(50),
     rated_power_value                                                  BIGINT,
     rated_power_reading_type_ref                                       VARCHAR(512),
+
+    read_cycle                VARCHAR(256),                           -- 18. readCycle (Phase 16a)
+    read_route                VARCHAR(256),                           -- 19. readRoute (Phase 16a)
+    service_delivery_remark   VARCHAR(256),                           -- 20. serviceDeliveryRemark (Phase 16a)
+    service_priority          VARCHAR(32),                            -- 21. servicePriority (Phase 16a)
+
+    -- EXTRA FIELDS (not in ESPI 4.0 XSD - to be reviewed in Phase 16b)
+    kind                      VARCHAR(50),                            -- NOT IN XSD (legacy field?)
+    uri                       VARCHAR(1024),                          -- NOT IN XSD (legacy field?)
 
     -- Foreign key relationships
     retail_customer_id        BIGINT,
