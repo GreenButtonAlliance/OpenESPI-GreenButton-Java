@@ -287,36 +287,7 @@ CREATE INDEX idx_subscription_retail_customer ON subscriptions (retail_customer_
 CREATE INDEX idx_subscription_application ON subscriptions (application_information_id);
 CREATE INDEX idx_subscription_authorization ON subscriptions (authorization_id);
 
--- Batch List Table (Independent - no foreign key dependencies)
-CREATE TABLE batch_lists
-(
-    id             CHAR(36) PRIMARY KEY ,
-    description    VARCHAR(255),
-    created        TIMESTAMP,
-    updated        TIMESTAMP,
-    published      TIMESTAMP,
-    up_link_rel    VARCHAR(255),
-    up_link_href   VARCHAR(1024),
-    up_link_type   VARCHAR(255),
-    self_link_rel  VARCHAR(255),
-    self_link_href VARCHAR(1024),
-    self_link_type VARCHAR(255),
-
-    -- Batch list specific fields
-    resource_count INT                  DEFAULT 0
-);
-
-CREATE INDEX idx_batch_list_created ON batch_lists (created);
-CREATE INDEX idx_batch_list_resource_count ON batch_lists (resource_count);
-CREATE INDEX idx_batch_list_updated ON batch_lists (updated);
-
--- Batch List Resources Collection Table
-CREATE TABLE batch_list_resources
-(
-    batch_list_id CHAR(36)     NOT NULL,
-    resource_uri  VARCHAR(512) NOT NULL,
-    FOREIGN KEY (batch_list_id) REFERENCES batch_lists (id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_batch_list_resources_batch_id ON batch_list_resources (batch_list_id);
-CREATE INDEX idx_batch_list_resources_uri ON batch_list_resources (resource_uri);
+-- Batch List Table - Moved to vendor-specific V2 migration files
+-- BatchList is a simple operational entity (NOT an ESPI resource)
+-- Does NOT extend IdentifiedObject, uses Long ID with auto-increment
+-- Table creation moved to V2 vendor files due to auto-increment syntax differences
