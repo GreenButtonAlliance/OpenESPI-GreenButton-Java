@@ -287,24 +287,7 @@ class UsagePointRepositoryTest extends BaseRepositoryTest {
                     .contains("Customer 2 Usage Point");
         }
 
-        @Test
-        @DisplayName("Should find usage point by resource URI")
-        void shouldFindUsagePointByResourceUri() {
-            // Arrange
-            UsagePointEntity usagePoint = TestDataBuilders.createValidUsagePoint();
-            usagePoint.setDescription("Usage Point with URI");
-            usagePoint.setUri("/espi/1_1/resource/UsagePoint/123");
-            usagePointRepository.save(usagePoint);
-            flushAndClear();
-
-            // Act
-            Optional<UsagePointEntity> result = usagePointRepository.findByResourceUri("/espi/1_1/resource/UsagePoint/123");
-
-            // Assert
-            assertThat(result).isPresent();
-            assertThat(result.get().getDescription()).isEqualTo("Usage Point with URI");
-            assertThat(result.get().getUri()).isEqualTo("/espi/1_1/resource/UsagePoint/123");
-        }
+        // Phase 16c: Removed test for findByResourceUri (method removed - uri not indexed, legacy field)
 
         @Test
         @DisplayName("Should find usage point by related href")
@@ -355,7 +338,7 @@ class UsagePointRepositoryTest extends BaseRepositoryTest {
             flushAndClear();
 
             // Act
-            List<UsagePointEntity> results = usagePointRepository.findAllUpdatedAfter(cutoffTime);
+            List<UsagePointEntity> results = usagePointRepository.findAllByUpdatedAfter(cutoffTime);
 
             // Assert - Should find at least the recent usage point
             assertThat(results).isNotEmpty();
@@ -386,69 +369,18 @@ class UsagePointRepositoryTest extends BaseRepositoryTest {
             assertThat(usagePointIds).contains(savedUsagePoints.get(0).getId(), savedUsagePoints.get(1).getId());
         }
 
-        @Test
-        @DisplayName("Should find all usage point IDs")
-        void shouldFindAllUsagePointIds() {
-            // Arrange
-            long initialCount = usagePointRepository.count();
-            List<UsagePointEntity> usagePoints = TestDataBuilders.createValidEntities(3, TestDataBuilders::createValidUsagePoint);
-            List<UsagePointEntity> savedUsagePoints = usagePointRepository.saveAll(usagePoints);
-            flushAndClear();
-
-            // Act
-            List<UUID> allIds = usagePointRepository.findAllIds();
-
-            // Assert
-            assertThat(allIds).hasSizeGreaterThanOrEqualTo(3);
-            assertThat(allIds).contains(
-                    savedUsagePoints.get(0).getId(),
-                    savedUsagePoints.get(1).getId(),
-                    savedUsagePoints.get(2).getId()
-            );
-        }
-
-        @Test
-        @DisplayName("Should check if usage point exists by UUID")
-        void shouldCheckIfUsagePointExistsByUuid() {
-            // Arrange
-            UsagePointEntity usagePoint = TestDataBuilders.createValidUsagePoint();
-            UsagePointEntity saved = usagePointRepository.save(usagePoint);
-            flushAndClear();
-
-            // Act & Assert
-            assertThat(usagePointRepository.existsByUuid(saved.getId())).isTrue();
-            assertThat(usagePointRepository.existsByUuid(UUID.randomUUID())).isFalse();
-        }
-
-        @Test
-        @DisplayName("Should delete usage point by UUID")
-        void shouldDeleteUsagePointByUuid() {
-            // Arrange
-            UsagePointEntity usagePoint = TestDataBuilders.createValidUsagePoint();
-            usagePoint.setDescription("Usage Point to Delete by UUID");
-            UsagePointEntity saved = usagePointRepository.save(usagePoint);
-            UUID usagePointId = saved.getId();
-            flushAndClear();
-
-            // Verify it exists
-            assertThat(usagePointRepository.existsById(usagePointId)).isTrue();
-
-            // Act
-            usagePointRepository.deleteByUuid(usagePointId);
-            flushAndClear();
-
-            // Assert
-            assertThat(usagePointRepository.existsById(usagePointId)).isFalse();
-        }
+        // Phase 16c: Removed test for findAllIds (method removed - full table scan without WHERE clause)
+        // Phase 16c: Removed test for existsByUuid (use built-in existsById instead)
+        // Phase 16c: Removed test for deleteByUuid (use built-in deleteById instead)
 
         @Test
         @DisplayName("Should handle empty results gracefully")
         void shouldHandleEmptyResultsGracefully() {
-            // Act & Assert
+            // Act & Assert - Test all indexed query methods with non-existent data
             assertThat(usagePointRepository.findAllByRetailCustomerId(999999L)).isEmpty();
-            assertThat(usagePointRepository.findByResourceUri("nonexistent-uri")).isEmpty();
             assertThat(usagePointRepository.findByRelatedHref("nonexistent-href")).isEmpty();
             assertThat(usagePointRepository.findAllIdsByRetailCustomerId(999999L)).isEmpty();
+            assertThat(usagePointRepository.findAllByUpdatedAfter(java.time.LocalDateTime.now())).isEmpty();
         }
     }
 
