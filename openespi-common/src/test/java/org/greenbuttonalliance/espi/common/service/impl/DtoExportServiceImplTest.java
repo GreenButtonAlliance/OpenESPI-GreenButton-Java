@@ -47,7 +47,11 @@ class DtoExportServiceImplTest {
         // UsagePointMapper only needs serviceDeliveryPointMapper (no date fields after IdentifiedObject removal)
         ReflectionTestUtils.setField(usagePointMapper, "serviceDeliveryPointMapper", new ServiceDeliveryPointMapperImpl());
 
-        dtoExportService = new DtoExportServiceImpl(usagePointRepository, usagePointMapper);
+        // Create EspiIdGeneratorService for UUID5 generation
+        org.greenbuttonalliance.espi.common.service.EspiIdGeneratorService espiIdGeneratorService =
+            new org.greenbuttonalliance.espi.common.service.EspiIdGeneratorService();
+
+        dtoExportService = new DtoExportServiceImpl(usagePointRepository, usagePointMapper, espiIdGeneratorService);
     }
 
     @Test
@@ -329,7 +333,6 @@ class DtoExportServiceImplTest {
                 null, "4", "1", null, "840", "12", "NET", "TOTAL", 900L, "NET", "KILO", "DAILY", "V", "1", "CONTINUOUS", "1", null,
                 null, null);
 
-        // AtomContentDto readingTypeDtoContent = new AtomContentDto(readingTypeDto);
         List<LinkDto> readingTypeLinkList = new ArrayList<>();
         readingTypeLinkList.add(new LinkDto("self", "/espi/1_1/resource/ReadingType/07"));
         readingTypeLinkList.add(new LinkDto("up", "/espi/1_1/resource/ReadingType"));

@@ -102,16 +102,29 @@ class MigrationVerificationTest {
             null, null, null, null, null // pnodeRefs, aggregatedNodeRefs, meterReadings, usageSummaries, electricPowerQualitySummaries
         );
 
-        // Wrap in Atom entry (IdentifiedObject fields handled by Atom layer)
-        AtomEntryDto entry = new AtomEntryDto(null, null, dto);
+        // Wrap in Atom entry using full constructor (payload moved directly to AtomEntryDto, no AtomContentDto wrapper)
+        java.time.LocalDateTime localDateTime = java.time.LocalDateTime.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS);
+        java.time.OffsetDateTime now = localDateTime.atOffset(java.time.ZoneOffset.UTC).toZonedDateTime().toOffsetDateTime();
+        AtomEntryDto entry = new AtomEntryDto(
+            "urn:uuid:test-entry",
+            "Test Usage Point",
+            now,
+            now,
+            null, // links
+            dto   // content - passed directly (AtomEntryDto now includes AtomContentDto functionality)
+        );
 
         // Marshal using Jackson 3
         String xml = assertDoesNotThrow(() -> xmlMapper.writeValueAsString(entry));
 
+        // Debug: print XML
+        System.out.println("Generated XML:");
+        System.out.println(xml);
+
         // Verify XML structure
-        assertTrue(xml.contains("entry")); // Now wrapping in Atom entry
-        assertTrue(xml.contains("UsagePoint"));
-        assertTrue(xml.contains("http://naesb.org/espi"));
+        assertTrue(xml.contains("entry"), "XML should contain 'entry' element"); // Now wrapping in Atom entry
+        assertTrue(xml.contains("UsagePoint"), "XML should contain 'UsagePoint' element");
+        assertTrue(xml.contains("http://naesb.org/espi"), "XML should contain ESPI namespace");
     }
 
     @Test

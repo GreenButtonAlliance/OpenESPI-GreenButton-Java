@@ -63,7 +63,7 @@ public record AtomEntryDto(
             include = JsonTypeInfo.As.WRAPPER_OBJECT,
             property = "type")
     @JsonSubTypes({
-            // ESPI Usage resources (espi: namespace - top-level IdentifiedObject-based)
+            // Namespace-prefixed names (kept for compatibility)
             @JsonSubTypes.Type(value = ApplicationInformationDto.class, name = "espi:ApplicationInformation"),
             @JsonSubTypes.Type(value = AuthorizationDto.class, name = "espi:Authorization"),
             @JsonSubTypes.Type(value = ElectricPowerQualitySummaryDto.class, name = "espi:ElectricPowerQualitySummary"),
@@ -73,19 +73,35 @@ public record AtomEntryDto(
             @JsonSubTypes.Type(value = TimeConfigurationDto.class, name = "espi:TimeConfiguration"),
             @JsonSubTypes.Type(value = UsagePointDto.class, name = "espi:UsagePoint"),
             @JsonSubTypes.Type(value = UsageSummaryDto.class, name = "espi:UsageSummary"),
-            // ESPI Customer resources (cust: namespace - top-level IdentifiedObject-based)
             @JsonSubTypes.Type(value = CustomerDto.class, name = "cust:Customer"),
             @JsonSubTypes.Type(value = CustomerAccountDto.class, name = "cust:CustomerAccount"),
             @JsonSubTypes.Type(value = CustomerAgreementDto.class, name = "cust:CustomerAgreement"),
             @JsonSubTypes.Type(value = EndDeviceDto.class, name = "cust:EndDevice"),
             @JsonSubTypes.Type(value = MeterDto.class, name = "cust:Meter"),
             @JsonSubTypes.Type(value = ProgramDateIdMappingsDto.class, name = "cust:ProgramDateIdMappings"),
-            // Note: TimeConfigurationDto supports BOTH espi: and cust: namespaces (same type in both schemas)
             @JsonSubTypes.Type(value = TimeConfigurationDto.class, name = "cust:TimeConfiguration"),
             @JsonSubTypes.Type(value = ServiceLocationDto.class, name = "cust:ServiceLocation"),
-            @JsonSubTypes.Type(value = StatementDto.class, name = "cust:Statement")
+            @JsonSubTypes.Type(value = StatementDto.class, name = "cust:Statement"),
+            // Local element names (for Jackson deserialization which uses local name without prefix)
+            @JsonSubTypes.Type(value = ApplicationInformationDto.class, name = "ApplicationInformation"),
+            @JsonSubTypes.Type(value = AuthorizationDto.class, name = "Authorization"),
+            @JsonSubTypes.Type(value = ElectricPowerQualitySummaryDto.class, name = "ElectricPowerQualitySummary"),
+            @JsonSubTypes.Type(value = IntervalBlockDto.class, name = "IntervalBlock"),
+            @JsonSubTypes.Type(value = MeterReadingDto.class, name = "MeterReading"),
+            @JsonSubTypes.Type(value = ReadingTypeDto.class, name = "ReadingType"),
+            @JsonSubTypes.Type(value = TimeConfigurationDto.class, name = "TimeConfiguration"),
+            @JsonSubTypes.Type(value = UsagePointDto.class, name = "UsagePoint"),
+            @JsonSubTypes.Type(value = UsageSummaryDto.class, name = "UsageSummary"),
+            @JsonSubTypes.Type(value = CustomerDto.class, name = "Customer"),
+            @JsonSubTypes.Type(value = CustomerAccountDto.class, name = "CustomerAccount"),
+            @JsonSubTypes.Type(value = CustomerAgreementDto.class, name = "CustomerAgreement"),
+            @JsonSubTypes.Type(value = EndDeviceDto.class, name = "EndDevice"),
+            @JsonSubTypes.Type(value = MeterDto.class, name = "Meter"),
+            @JsonSubTypes.Type(value = ProgramDateIdMappingsDto.class, name = "ProgramDateIdMappings"),
+            @JsonSubTypes.Type(value = ServiceLocationDto.class, name = "ServiceLocation"),
+            @JsonSubTypes.Type(value = StatementDto.class, name = "Statement")
             // TODO: Add when ServiceSupplierDto is implemented:
-            // @JsonSubTypes.Type(value = ServiceSupplierDto.class, name = "cust:ServiceSupplier")
+            // @JsonSubTypes.Type(value = ServiceSupplierDto.class, name = "ServiceSupplier")
     })
     @XmlAnyElement(lax = true)
     @XmlElement(name = "content", namespace = "http://www.w3.org/2005/Atom")
@@ -122,16 +138,20 @@ public record AtomEntryDto(
     }
 
     /**
-     * Constructor for basic entry data with auto-generated timestamps.
+     * Convenience constructor for testing with auto-generated timestamps.
+     * Creates an AtomEntryDto with current timestamp and no links.
+     *
+     * @param id the entry identifier (urn:uuid:xxx format)
+     * @param title the entry title
+     * @param content the resource content (payload moved directly to AtomEntryDto)
      */
-    public AtomEntryDto(String id, String title, Object resource) {
+    public AtomEntryDto(String id, String title, Object content) {
         LocalDateTime localDateTime = LocalDateTime.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS);
         OffsetDateTime now = localDateTime.atOffset(ZoneOffset.UTC).toZonedDateTime().toOffsetDateTime();
-
-        this(id, title, now, now, null,
-             new AtomContentDto("application/xml", resource), null, null);
+        this(id, title, now, now, null, content, null, null);
     }
-    
+
+
     /**
      * Gets the self link from the entry links.
      * 
