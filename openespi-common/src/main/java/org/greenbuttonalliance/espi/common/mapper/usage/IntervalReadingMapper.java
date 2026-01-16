@@ -58,14 +58,4 @@ public interface IntervalReadingMapper {
     @Mapping(target = "intervalBlock", ignore = true)
     IntervalReadingEntity toEntity(IntervalReadingDto dto);
 
-    /**
-     * Updates an existing IntervalReadingEntity with data from an IntervalReadingDto.
-     * Useful for merge operations where the entity ID should be preserved.
-     *
-     * @param dto the source DTO
-     * @param entity the target entity to update
-     */
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "intervalBlock", ignore = true)
-    void updateEntity(IntervalReadingDto dto, @MappingTarget IntervalReadingEntity entity);
 }

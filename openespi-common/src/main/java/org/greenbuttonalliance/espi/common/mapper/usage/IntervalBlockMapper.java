@@ -29,8 +29,11 @@ import org.mapstruct.Mapping;
 
 /**
  * MapStruct mapper for converting between IntervalBlockEntity and IntervalBlockDto.
- * 
- * Handles the conversion between the JPA entity used for persistence and the DTO 
+ *
+ * Maps only IntervalBlock fields. IdentifiedObject fields are NOT part of the usage.xsd
+ * definition and are handled by AtomFeedDto/AtomEntryDto.
+ *
+ * Handles the conversion between the JPA entity used for persistence and the DTO
  * used for JAXB XML marshalling in the Green Button API.
  */
 @Mapper(componentModel = "spring", uses = {
@@ -48,8 +51,7 @@ public interface IntervalBlockMapper {
      * @param entity the interval block entity
      * @return the interval block DTO
      */
-    @Mapping(target = "id", ignore = true) // DTO id field not used (legacy field)
-    @Mapping(target = "uuid", source = "id", qualifiedByName = "uuidToString")
+    @Mapping(target = "id", ignore = true) // IdentifiedObject field handled by Atom layer
     @Mapping(target = "interval", source = "interval")
     @Mapping(target = "intervalReadings", source = "intervalReadings")
     IntervalBlockDto toDto(IntervalBlockEntity entity);
@@ -61,14 +63,7 @@ public interface IntervalBlockMapper {
      * @param dto the interval block DTO
      * @return the interval block entity
      */
-    @Mapping(target = "id", source = "uuid", qualifiedByName = "stringToUuid")
-    @Mapping(target = "created", ignore = true)
-    @Mapping(target = "updated", ignore = true)
-    @Mapping(target = "published", ignore = true)
-    @Mapping(target = "upLink", ignore = true)
-    @Mapping(target = "selfLink", ignore = true)
-    @Mapping(target = "relatedLinks", ignore = true)
-    @Mapping(target = "description", ignore = true)
+    @Mapping(target = "id", ignore = true) // IdentifiedObject field handled by Atom layer
     @Mapping(target = "interval", source = "interval")
     @Mapping(target = "intervalReadings", source = "intervalReadings")
     @Mapping(target = "meterReading", ignore = true) // Relationships handled separately

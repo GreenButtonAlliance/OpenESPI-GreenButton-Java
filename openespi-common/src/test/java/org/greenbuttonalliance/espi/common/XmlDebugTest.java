@@ -20,6 +20,7 @@
 package org.greenbuttonalliance.espi.common;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import org.greenbuttonalliance.espi.common.dto.atom.AtomEntryDto;
 import org.greenbuttonalliance.espi.common.dto.usage.UsagePointDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -71,17 +72,21 @@ class XmlDebugTest {
         // Create a simple UsagePointDto
         UsagePointDto usagePoint = new UsagePointDto(
             "urn:uuid:debug-test",
-            "Debug Service",
             new byte[]{0x01}, // Simple role flag
             null, // serviceCategory
             (short) 1, // Active status
-            null, null, null, null, // measurement fields
-            null, null, null, // reference fields
-            null, null, null // collection fields
+            null, null, null, null, null, // serviceDeliveryPoint, amiBillingReady, checkBilling, connectionState, estimatedLoad
+            null, null, null, null, // grounded, isSdp, isVirtual, minimalUsageExpected
+            null, null, null, null, null, // nominalServiceVoltage, outageRegion, phaseCode, ratedCurrent, ratedPower
+            null, null, null, null, // readCycle, readRoute, serviceDeliveryRemark, servicePriority
+            null, null, null, null, null // pnodeRefs, aggregatedNodeRefs, meterReadings, usageSummaries, electricPowerQualitySummaries
         );
 
+        // Wrap in Atom entry with description as title (IdentifiedObject fields handled by Atom layer)
+        AtomEntryDto entry = new AtomEntryDto("urn:uuid:debug-test", "Debug Service", usagePoint);
+
         // Marshal to XML using Jackson 3
-        String xml = xmlMapper.writeValueAsString(usagePoint);
+        String xml = xmlMapper.writeValueAsString(entry);
 
         // Print the actual XML for debugging
         System.out.println("Generated XML (Jackson 3):");
@@ -94,19 +99,21 @@ class XmlDebugTest {
         assertThat(xml.trim()).isNotEmpty();
 
         // Validate root element
+        assertThat(xml).contains("entry"); // Now wrapping in Atom entry
         assertThat(xml).contains("UsagePoint");
 
         // Validate ESPI namespace
         assertThat(xml).contains("http://naesb.org/espi");
 
         // Validate content
-        assertThat(xml).contains("Debug Service");
+        assertThat(xml).contains("Debug Service"); // In Atom title
         assertThat(xml).containsPattern("<status[^>]*>1</status>");
         assertThat(xml).contains("01"); // roleFlags as hex
 
-        // Validate XML structure
-        assertThat(xml).startsWith("<UsagePoint");
-        assertThat(xml.trim()).endsWith("</UsagePoint>"); // Trim whitespace
+        // Validate XML structure - now wrapped in Atom entry
+        assertThat(xml).contains("<entry");
+        assertThat(xml).contains("<title>Debug Service</title>");
+        assertThat(xml).contains("</entry>");
 
         // Validate no utility methods are serialized (should have @XmlTransient)
         assertThat(xml).doesNotContain("meterReadingCount");
@@ -121,17 +128,21 @@ class XmlDebugTest {
         // Create UsagePoint with more fields populated
         UsagePointDto usagePoint = new UsagePointDto(
             "urn:uuid:complex-test",
-            "Complex Service with Special & Characters <test>",
             new byte[]{0x01, 0x02, 0x03, 0x04},
             null, // serviceCategory
             (short) 2,
+            null, null, null, null, null,
             null, null, null, null,
-            null, null, null,
-            null, null, null
+            null, null, null, null, null,
+            null, null, null, null,
+            null, null, null, null, null
         );
 
+        // Wrap in Atom entry with description as title (IdentifiedObject fields handled by Atom layer)
+        AtomEntryDto entry = new AtomEntryDto("urn:uuid:complex-test", "Complex Service with Special & Characters <test>", usagePoint);
+
         // Marshal to XML using Jackson 3
-        String xml = xmlMapper.writeValueAsString(usagePoint);
+        String xml = xmlMapper.writeValueAsString(entry);
 
         // Print for debugging
         System.out.println("\nComplex XML (Jackson 3):");
@@ -146,27 +157,33 @@ class XmlDebugTest {
         // Validate hex encoding of roleFlags
         assertThat(xml).contains("01020304");
 
-        // Validate structure
+        // Validate structure - description in Atom title
         assertThat(xml).contains("Complex Service with Special &amp; Characters &lt;test>");
+        assertThat(xml).contains("<entry");
+        assertThat(xml).contains("</entry>");
     }
 
     @Test
     @DisplayName("Debug: Minimal UsagePoint (mostly nulls)")
     void debugMinimalUsagePoint() throws Exception {
-        // Create minimal UsagePoint - full constructor has 15 parameters
+        // Create minimal UsagePoint
         UsagePointDto usagePoint = new UsagePointDto(
             "urn:uuid:minimal-test", // uuid
-            null, // description
             null, // roleFlags
             null, // serviceCategory
             null, // status
-            null, null, null, null, // 4 measurement fields
-            null, null, null, // serviceDeliveryPoint, pnodeRefs, aggregatedNodeRefs
-            null, null, null // 3 collection fields
+            null, null, null, null, null, // serviceDeliveryPoint, amiBillingReady, checkBilling, connectionState, estimatedLoad
+            null, null, null, null, // grounded, isSdp, isVirtual, minimalUsageExpected
+            null, null, null, null, null, // nominalServiceVoltage, outageRegion, phaseCode, ratedCurrent, ratedPower
+            null, null, null, null, // readCycle, readRoute, serviceDeliveryRemark, servicePriority
+            null, null, null, null, null // pnodeRefs, aggregatedNodeRefs, meterReadings, usageSummaries, electricPowerQualitySummaries
         );
 
+        // Wrap in Atom entry with null title (IdentifiedObject fields handled by Atom layer)
+        AtomEntryDto entry = new AtomEntryDto("urn:uuid:minimal-test", null, usagePoint);
+
         // Marshal to XML using Jackson 3
-        String xml = xmlMapper.writeValueAsString(usagePoint);
+        String xml = xmlMapper.writeValueAsString(entry);
 
         // Print for debugging
         System.out.println("\nMinimal XML (Jackson 3):");
@@ -175,11 +192,12 @@ class XmlDebugTest {
         System.out.println("========================\n");
 
         // Validate minimal structure
+        assertThat(xml).contains("entry"); // Now wrapping in Atom entry
         assertThat(xml).contains("UsagePoint");
         assertThat(xml).contains("http://naesb.org/espi");
 
         // Validate that null fields are not included (NON_EMPTY policy)
-        assertThat(xml).doesNotContain("<description");
+        assertThat(xml).doesNotContain("<description"); // Still no description in content
         assertThat(xml).doesNotContain("<roleFlags");
     }
 }

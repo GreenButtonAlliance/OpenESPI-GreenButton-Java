@@ -29,6 +29,9 @@ import org.mapstruct.Mapping;
 /**
  * MapStruct mapper for converting between MeterReadingEntity and MeterReadingDto.
  *
+ * Maps only MeterReading fields. IdentifiedObject fields are NOT part of the usage.xsd
+ * definition and are handled by AtomFeedDto/AtomEntryDto.
+ *
  * Per ESPI 4.0 specification, MeterReading has NO child elements - only relationships
  * expressed via Atom links. The DTO contains NO fields beyond id/uuid.
  *
@@ -41,12 +44,11 @@ public interface MeterReadingMapper {
     /**
      * Converts a MeterReadingEntity to a MeterReadingDto.
      * Maps all related entities to their corresponding DTOs.
-     * 
+     *
      * @param entity the meter reading entity
      * @return the meter reading DTO
      */
-    @Mapping(target = "id", ignore = true) // DTO id field not used
-    @Mapping(target = "uuid", source = "id", qualifiedByName = "uuidToString")
+    @Mapping(target = "id", ignore = true) // IdentifiedObject field handled by Atom layer
     MeterReadingDto toDto(MeterReadingEntity entity);
 
     /**
@@ -56,14 +58,7 @@ public interface MeterReadingMapper {
      * @param dto the meter reading DTO
      * @return the meter reading entity
      */
-    @Mapping(target = "id", source = "uuid", qualifiedByName = "stringToUuid")
-    @Mapping(target = "created", ignore = true) // Audit field managed by persistence
-    @Mapping(target = "updated", ignore = true) // Audit field managed by persistence
-    @Mapping(target = "published", ignore = true) // Audit field managed by persistence
-    @Mapping(target = "description", ignore = true) // Managed separately
-    @Mapping(target = "selfLink", ignore = true) // Link managed separately
-    @Mapping(target = "upLink", ignore = true) // Link managed separately
-    @Mapping(target = "relatedLinks", ignore = true) // Links managed separately
+    @Mapping(target = "id", ignore = true) // IdentifiedObject field handled by Atom layer
     @Mapping(target = "usagePoint", ignore = true) // Relationship managed separately
     @Mapping(target = "readingType", ignore = true) // Relationship managed separately
     @Mapping(target = "intervalBlocks", ignore = true) // Relationship managed separately

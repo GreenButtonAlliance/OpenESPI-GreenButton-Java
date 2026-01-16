@@ -29,9 +29,12 @@ import org.mapstruct.MappingTarget;
 
 /**
  * MapStruct mapper for converting between CustomerAccountEntity and CustomerAccountDto.
- * 
- * Handles the conversion between the JPA entity used for persistence and the DTO 
+ * <p>
+ * Handles the conversion between the JPA entity used for persistence and the DTO
  * used for JAXB XML marshalling in the Green Button API.
+ * <p>
+ * Maps only customer.xsd CustomerAccount fields. IdentifiedObject fields are NOT part of
+ * the customer.xsd CustomerAccount definition and are handled by AtomFeedDto/AtomEntryDto.
  */
 @Mapper(componentModel = "spring", uses = {
     DateTimeMapper.class,
@@ -41,19 +44,12 @@ public interface CustomerAccountMapper {
 
     /**
      * Converts a CustomerAccountEntity to a CustomerAccountDto.
-     * Maps customer account information and billing details.
-     * 
+     * Maps only customer.xsd CustomerAccount fields.
+     *
      * @param entity the customer account entity
      * @return the customer account DTO
      */
-    @Mapping(target = "id", ignore = true) // DTO uses Long, entity uses UUID
-    @Mapping(target = "uuid", source = "id", qualifiedByName = "uuidToString")
-    @Mapping(target = "published", source = "published", qualifiedByName = "localToOffset")
-    @Mapping(target = "updated", source = "updated", qualifiedByName = "localToOffset")
-    @Mapping(target = "relatedLinks", ignore = true) // Links handled separately
-    @Mapping(target = "selfLink", ignore = true)
-    @Mapping(target = "upLink", ignore = true)
-    @Mapping(target = "description", source = "description")
+    @Mapping(target = "id", ignore = true) // IdentifiedObject field handled by Atom layer
     @Mapping(target = "accountId", source = "accountId")
     @Mapping(target = "accountNumber", ignore = true) // Not in entity
     @Mapping(target = "budgetBill", source = "budgetBill")
@@ -67,15 +63,12 @@ public interface CustomerAccountMapper {
 
     /**
      * Converts a CustomerAccountDto to a CustomerAccountEntity.
-     * Maps customer account information and billing details.
-     * 
+     * Maps only customer.xsd CustomerAccount fields.
+     *
      * @param dto the customer account DTO
      * @return the customer account entity
      */
-    @Mapping(target = "id", source = "uuid", qualifiedByName = "stringToUuid")
-    @Mapping(target = "published", source = "published", qualifiedByName = "offsetToLocal")
-    @Mapping(target = "updated", source = "updated", qualifiedByName = "offsetToLocal")
-    @Mapping(target = "description", source = "description")
+    @Mapping(target = "id", ignore = true) // IdentifiedObject field handled by Atom layer
     @Mapping(target = "accountId", source = "accountId")
     @Mapping(target = "budgetBill", source = "budgetBill")
     @Mapping(target = "billingCycle", source = "billingCycle")
@@ -83,33 +76,6 @@ public interface CustomerAccountMapper {
     @Mapping(target = "isPrePay", source = "isPrePay")
     @Mapping(target = "notifications", ignore = true) // Relationship handled separately
     @Mapping(target = "contactInfo", ignore = true) // Relationship handled separately
-    @Mapping(target = "relatedLinks", ignore = true)
-    @Mapping(target = "selfLink", ignore = true)
-    @Mapping(target = "upLink", ignore = true)
     CustomerAccountEntity toEntity(CustomerAccountDto dto);
 
-    /**
-     * Updates an existing CustomerAccountEntity with data from a CustomerAccountDto.
-     * Useful for merge operations where the entity ID should be preserved.
-     * 
-     * @param dto the source DTO
-     * @param entity the target entity to update
-     */
-    @Mapping(target = "type", ignore = true)
-    @Mapping(target = "title", ignore = true)
-    @Mapping(target = "subject", ignore = true)
-    @Mapping(target = "revisionNumber", ignore = true)
-    @Mapping(target = "lastModifiedDateTime", ignore = true)
-    @Mapping(target = "createdDateTime", ignore = true)
-    @Mapping(target = "created", ignore = true)
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "published", source = "published", qualifiedByName = "offsetToLocal")
-    @Mapping(target = "updated", source = "updated", qualifiedByName = "offsetToLocal")
-    @Mapping(target = "isPrePay", source = "isPrePay")
-    @Mapping(target = "notifications", ignore = true) // Relationship handled separately
-    @Mapping(target = "contactInfo", ignore = true) // Relationship handled separately
-    @Mapping(target = "relatedLinks", ignore = true)
-    @Mapping(target = "selfLink", ignore = true)
-    @Mapping(target = "upLink", ignore = true)
-    void updateEntity(CustomerAccountDto dto, @MappingTarget CustomerAccountEntity entity);
 }

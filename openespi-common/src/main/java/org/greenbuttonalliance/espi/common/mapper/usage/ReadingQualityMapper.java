@@ -54,14 +54,4 @@ public interface ReadingQualityMapper {
     @Mapping(target = "intervalReading", ignore = true)
     ReadingQualityEntity toEntity(ReadingQualityDto dto);
 
-    /**
-     * Updates an existing ReadingQualityEntity with data from a ReadingQualityDto.
-     * Useful for merge operations where the entity ID should be preserved.
-     *
-     * @param dto the source DTO
-     * @param entity the target entity to update
-     */
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "intervalReading", ignore = true)
-    void updateEntity(ReadingQualityDto dto, @MappingTarget ReadingQualityEntity entity);
 }

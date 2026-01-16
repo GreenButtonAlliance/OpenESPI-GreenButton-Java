@@ -34,21 +34,18 @@ import org.greenbuttonalliance.espi.common.dto.usage.DateTimeIntervalDto;
 @XmlRootElement(name = "ElectricPowerQualitySummary", namespace = "http://naesb.org/espi")
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "ElectricPowerQualitySummary", namespace = "http://naesb.org/espi", propOrder = {
-    "description", "flickerPlt", "flickerPst", "harmonicVoltage", "longInterruptions", 
-    "mainsVoltage", "measurementProtocol", "powerFrequency", "rapidVoltageChanges", 
-    "shortInterruptions", "summaryInterval", "supplyVoltageDips", "supplyVoltageImbalance", 
-    "supplyVoltageVariations", "tempOvervoltage", "usagePointId"
+    "flickerPlt", "flickerPst", "harmonicVoltage", "longInterruptions",
+    "mainsVoltage", "measurementProtocol", "powerFrequency", "rapidVoltageChanges",
+    "shortInterruptions", "summaryInterval", "supplyVoltageDips", "supplyVoltageImbalance",
+    "supplyVoltageVariations", "tempOvervoltage"
 })
 public record ElectricPowerQualitySummaryDto(
-    
+
     @XmlTransient
     Long id,
-    
+
     @XmlAttribute(name = "mRID")
     String uuid,
-    
-    @XmlElement(name = "description")
-    String description,
     
     /**
      * Flicker PLT (Long-term) measurement.
@@ -181,19 +178,18 @@ public record ElectricPowerQualitySummaryDto(
      * Default constructor for JAXB.
      */
     public ElectricPowerQualitySummaryDto() {
-        this(null, null, null, null, null, null, null, null, null, null, null, null, null, 
-             null, null, null, null, null);
+        this(null, null, null, null, null, null, null, null, null, null, null,
+             null, null, null, null, null, null);
     }
-    
+
     /**
      * Constructor with basic identification.
-     * 
+     *
      * @param id the database identifier
      * @param uuid the unique resource identifier
-     * @param description human-readable description
      */
-    public ElectricPowerQualitySummaryDto(Long id, String uuid, String description) {
-        this(id, uuid, description, null, null, null, null, null, null, null, null, null, 
+    public ElectricPowerQualitySummaryDto(Long id, String uuid) {
+        this(id, uuid, null, null, null, null, null, null, null, null, null,
              null, null, null, null, null, null);
     }
     

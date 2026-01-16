@@ -31,9 +31,12 @@ import org.mapstruct.MappingTarget;
 
 /**
  * MapStruct mapper for converting between UsageSummaryEntity and UsageSummaryDto.
- * 
- * Handles the conversion between the JPA entity used for persistence and the DTO 
+ * <p>
+ * Handles the conversion between the JPA entity used for persistence and the DTO
  * used for JAXB XML marshalling in the Green Button API.
+ * <p>
+ * Maps only ESPI 4.0 XSD UsageSummary fields. IdentifiedObject fields are NOT part of
+ * the espi.xsd UsageSummary definition and are handled by AtomFeedDto/AtomEntryDto.
  */
 @Mapper(componentModel = "spring", uses = {
     DateTimeMapper.class,
@@ -47,20 +50,12 @@ public interface UsageSummaryMapper {
 
     /**
      * Converts a UsageSummaryEntity to a UsageSummaryDto.
-     * Maps usage summary data including billing period, cost information, consumption summaries,
-     * and tariff details per ESPI 4.0 specification.
+     * Maps only ESPI 4.0 XSD UsageSummary fields (billing period, cost information, consumption summaries, tariff details).
      *
      * @param entity the usage summary entity
      * @return the usage summary DTO
      */
-    @Mapping(target = "id", ignore = true) // DTO id field not used
-    @Mapping(target = "uuid", source = "id", qualifiedByName = "uuidToString")
-    @Mapping(target = "published", source = "published", qualifiedByName = "localToOffset")
-    @Mapping(target = "updated", source = "updated", qualifiedByName = "localToOffset")
-    @Mapping(target = "relatedLinks", ignore = true) // Links handled separately
-    @Mapping(target = "selfLink", ignore = true)
-    @Mapping(target = "upLink", ignore = true)
-    @Mapping(target = "description", source = "description")
+    @Mapping(target = "id", ignore = true) // IdentifiedObject field handled by Atom layer
     @Mapping(target = "billingPeriod", source = "billingPeriod")
     @Mapping(target = "billLastPeriod", source = "billLastPeriod")
     @Mapping(target = "billToDate", source = "billToDate")
@@ -89,16 +84,12 @@ public interface UsageSummaryMapper {
 
     /**
      * Converts a UsageSummaryDto to a UsageSummaryEntity.
-     * Maps usage summary data including billing period, cost information, consumption summaries,
-     * and tariff details per ESPI 4.0 specification.
+     * Maps only ESPI 4.0 XSD UsageSummary fields (billing period, cost information, consumption summaries, tariff details).
      *
      * @param dto the usage summary DTO
      * @return the usage summary entity
      */
-    @Mapping(target = "id", source = "uuid", qualifiedByName = "stringToUuid")
-    @Mapping(target = "published", source = "published", qualifiedByName = "offsetToLocal")
-    @Mapping(target = "updated", source = "updated", qualifiedByName = "offsetToLocal")
-    @Mapping(target = "description", source = "description")
+    @Mapping(target = "id", ignore = true) // IdentifiedObject field handled by Atom layer
     @Mapping(target = "billingPeriod", source = "billingPeriod")
     @Mapping(target = "billLastPeriod", source = "billLastPeriod")
     @Mapping(target = "billToDate", source = "billToDate")
@@ -124,52 +115,6 @@ public interface UsageSummaryMapper {
     @Mapping(target = "tariffRiderRefs", source = "tariffRiderRefs", qualifiedByName = "tariffRiderRefsDtoToEntityList")
     @Mapping(target = "billingChargeSource", source = "billingChargeSource")
     @Mapping(target = "usagePoint", ignore = true) // Relationship handled separately
-    @Mapping(target = "created", ignore = true) // Inherited from IdentifiedObject
-    @Mapping(target = "relatedLinks", ignore = true)
-    @Mapping(target = "selfLink", ignore = true)
-    @Mapping(target = "upLink", ignore = true)
     UsageSummaryEntity toEntity(UsageSummaryDto dto);
 
-    /**
-     * Updates an existing UsageSummaryEntity with data from a UsageSummaryDto.
-     * Useful for merge operations where the entity ID should be preserved.
-     * Maps all ESPI 4.0 fields while preserving entity identity and relationships.
-     *
-     * @param dto the source DTO
-     * @param entity the target entity to update
-     */
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "published", source = "published", qualifiedByName = "offsetToLocal")
-    @Mapping(target = "updated", source = "updated", qualifiedByName = "offsetToLocal")
-    @Mapping(target = "description", source = "description")
-    @Mapping(target = "billingPeriod", source = "billingPeriod")
-    @Mapping(target = "billLastPeriod", source = "billLastPeriod")
-    @Mapping(target = "billToDate", source = "billToDate")
-    @Mapping(target = "costAdditionalLastPeriod", source = "costAdditionalLastPeriod")
-    @Mapping(target = "costAdditionalDetailLastPeriod", source = "costAdditionalDetailLastPeriod")
-    @Mapping(target = "currency", source = "currency")
-    @Mapping(target = "overallConsumptionLastPeriod", source = "overallConsumptionLastPeriod")
-    @Mapping(target = "currentBillingPeriodOverAllConsumption", source = "currentBillingPeriodOverAllConsumption")
-    @Mapping(target = "currentDayLastYearNetConsumption", source = "currentDayLastYearNetConsumption")
-    @Mapping(target = "currentDayNetConsumption", source = "currentDayNetConsumption")
-    @Mapping(target = "currentDayOverallConsumption", source = "currentDayOverallConsumption")
-    @Mapping(target = "peakDemand", source = "peakDemand")
-    @Mapping(target = "previousDayLastYearOverallConsumption", source = "previousDayLastYearOverallConsumption")
-    @Mapping(target = "previousDayNetConsumption", source = "previousDayNetConsumption")
-    @Mapping(target = "previousDayOverallConsumption", source = "previousDayOverallConsumption")
-    @Mapping(target = "qualityOfReading", source = "qualityOfReading")
-    @Mapping(target = "ratchetDemand", source = "ratchetDemand")
-    @Mapping(target = "ratchetDemandPeriod", source = "ratchetDemandPeriod")
-    @Mapping(target = "statusTimeStamp", source = "statusTimeStamp")
-    @Mapping(target = "commodity", source = "commodity")
-    @Mapping(target = "tariffProfile", source = "tariffProfile")
-    @Mapping(target = "readCycle", source = "readCycle")
-    @Mapping(target = "tariffRiderRefs", source = "tariffRiderRefs", qualifiedByName = "tariffRiderRefsDtoToEntityList")
-    @Mapping(target = "billingChargeSource", source = "billingChargeSource")
-    @Mapping(target = "usagePoint", ignore = true) // Relationship handled separately
-    @Mapping(target = "created", ignore = true) // Inherited from IdentifiedObject
-    @Mapping(target = "relatedLinks", ignore = true)
-    @Mapping(target = "selfLink", ignore = true)
-    @Mapping(target = "upLink", ignore = true)
-    void updateEntity(UsageSummaryDto dto, @MappingTarget UsageSummaryEntity entity);
 }
