@@ -147,10 +147,6 @@ CREATE TABLE usage_points
     service_delivery_remark   VARCHAR(256),                           -- 20. serviceDeliveryRemark (Phase 16a)
     service_priority          VARCHAR(32),                            -- 21. servicePriority (Phase 16a)
 
-    -- EXTRA FIELDS (not in ESPI 4.0 XSD - to be reviewed in Phase 16b)
-    kind                      VARCHAR(50),                            -- NOT IN XSD (legacy field?)
-    uri                       VARCHAR(1024),                          -- NOT IN XSD (legacy field?)
-
     -- Foreign key relationships
     retail_customer_id        BIGINT,
     service_delivery_point_id BIGINT,
@@ -161,7 +157,6 @@ CREATE TABLE usage_points
     FOREIGN KEY (service_delivery_point_id) REFERENCES service_delivery_points (id) ON DELETE SET NULL,
     FOREIGN KEY (local_time_parameters_id) REFERENCES time_configurations (id) ON DELETE SET NULL,
 
-    INDEX                     idx_usage_point_kind (kind),
     INDEX                     idx_usage_point_status (status),
     INDEX                     idx_usage_point_customer_id (retail_customer_id),
     INDEX                     idx_usage_point_sdp_id (service_delivery_point_id),

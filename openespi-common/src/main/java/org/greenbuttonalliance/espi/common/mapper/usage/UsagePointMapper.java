@@ -111,7 +111,6 @@ public interface UsagePointMapper {
     @Mapping(target = "readRoute", source = "readRoute")
     @Mapping(target = "serviceDeliveryRemark", source = "serviceDeliveryRemark")
     @Mapping(target = "servicePriority", source = "servicePriority")
-    @Mapping(target = "uri", ignore = true) // Legacy field
     @Mapping(target = "pnodeRefs", ignore = true) // TODO: Add mapper implementation
     @Mapping(target = "aggregatedNodeRefs", ignore = true) // TODO: Add mapper implementation
     @Mapping(target = "meterReadings", ignore = true) // Circular dependency - handle separately

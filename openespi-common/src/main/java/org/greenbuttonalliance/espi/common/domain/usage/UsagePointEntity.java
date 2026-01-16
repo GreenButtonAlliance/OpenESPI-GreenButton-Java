@@ -263,17 +263,6 @@ public class UsagePointEntity extends IdentifiedObject {
 
     // XSD Position 22-23: pnodeRefs and aggregateNodeRefs - See relationship sections below
 
-    // ==================== Legacy Fields (NOT in ESPI 4.0 XSD) ====================
-    // TODO Phase 16c: Review if these fields should be removed or mapped to XSD elements
-
-    /**
-     * URI for this usage point.
-     * Used for external references and linking.
-     * NOTE: This field is NOT in ESPI 4.0 XSD - legacy field for review.
-     */
-    @Column(name = "uri")
-    private String uri;
-
     // ==================== JPA Relationships ====================
 
     /**
@@ -439,7 +428,6 @@ public class UsagePointEntity extends IdentifiedObject {
             this.serviceCategory = other.serviceCategory;
             this.status = other.status;
             this.roleFlags = other.roleFlags;
-            this.uri = other.uri;
         }
     }
 
@@ -484,7 +472,6 @@ public class UsagePointEntity extends IdentifiedObject {
                 "roleFlags = " + getRoleFlags() + ", " +
                 "serviceCategory = " + getServiceCategory() + ", " +
                 "status = " + getStatus() + ", " +
-                "uri = " + getUri() + ", " +
                 "estimatedLoad = " + getEstimatedLoad() + ", " +
                 "nominalServiceVoltage = " + getNominalServiceVoltage() + ", " +
                 "ratedCurrent = " + getRatedCurrent() + ", " +
