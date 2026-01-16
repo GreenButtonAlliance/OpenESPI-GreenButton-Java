@@ -39,7 +39,7 @@ import java.util.List;
 @XmlRootElement(name = "UsageSummary", namespace = "http://naesb.org/espi")
 @XmlAccessorType(XmlAccessType.PROPERTY)
 @XmlType(name = "UsageSummary", namespace = "http://naesb.org/espi", propOrder = {
-    "description", "billingPeriod", "billLastPeriod", "billToDate",
+    "billingPeriod", "billLastPeriod", "billToDate",
     "costAdditionalLastPeriod", "costAdditionalDetailLastPeriod", "currency",
     "overallConsumptionLastPeriod", "currentBillingPeriodOverAllConsumption",
     "currentDayLastYearNetConsumption", "currentDayNetConsumption",
@@ -56,22 +56,6 @@ public record UsageSummaryDto(
     @XmlAttribute(name = "mRID")
     String uuid,
 
-    @XmlTransient
-    OffsetDateTime published,
-
-    @XmlTransient
-    OffsetDateTime updated,
-
-    @XmlTransient
-    LinkDto selfLink,
-
-    @XmlTransient
-    LinkDto upLink,
-
-    @XmlTransient
-    List<LinkDto> relatedLinks,
-
-    String description,
     DateTimeIntervalDto billingPeriod,
     Long billLastPeriod,
     Long billToDate,
@@ -97,15 +81,6 @@ public record UsageSummaryDto(
     TariffRiderRefsDto tariffRiderRefs,
     BillingChargeSourceDto billingChargeSource
 ) {
-
-    /**
-     * Description of the usage summary.
-     * Inherited from IdentifiedObject.
-     */
-    @XmlElement(name = "description")
-    public String getDescription() {
-        return description;
-    }
 
     /**
      * The billing period to which the included measurements apply.
@@ -341,8 +316,7 @@ public record UsageSummaryDto(
     public UsageSummaryDto() {
         this(null, null, null, null, null, null, null, null,
              null, null, null, null, null, null, null, null,
-             null, null, null, null, null, null, null, null,
-             null, null, null, null, null, null, null, null);
+             null, null, null, null, null, null, null, null, null, null);
     }
 
     /**
@@ -352,9 +326,9 @@ public record UsageSummaryDto(
      * @param statusTimeStamp the status timestamp (required)
      */
     public UsageSummaryDto(String uuid, Long statusTimeStamp) {
-        this(null, uuid, null, null, null, null, null, null, null, null, null, null,
-             null, null, null, null, null, null, null, null, null, null, null, null,
-             null, null, statusTimeStamp, null, null, null, null, null);
+        this(null, uuid, null, null, null, null, null, null,
+             null, null, null, null, null, null, null, null,
+             null, null, null, null, statusTimeStamp, null, null, null, null, null);
     }
 
     /**
@@ -365,8 +339,8 @@ public record UsageSummaryDto(
      * @param statusTimeStamp the status timestamp (required)
      */
     public UsageSummaryDto(String uuid, DateTimeIntervalDto billingPeriod, Long statusTimeStamp) {
-        this(null, uuid, null, null, null, null, null, null, billingPeriod, null, null, null,
-             null, null, null, null, null, null, null, null, null, null, null, null,
-             null, null, statusTimeStamp, null, null, null, null, null);
+        this(null, uuid, billingPeriod, null, null, null, null, null,
+             null, null, null, null, null, null, null, null,
+             null, null, null, null, statusTimeStamp, null, null, null, null, null);
     }
 }

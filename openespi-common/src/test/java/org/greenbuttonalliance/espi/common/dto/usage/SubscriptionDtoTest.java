@@ -133,7 +133,7 @@ class SubscriptionDtoTest {
         AtomEntryDto usagePointEntry = new AtomEntryDto(
             "urn:uuid:test-usage-point",
             "Test Usage Point",
-            new UsagePointDto()
+            new UsagePointDto(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)
         );
 
         AtomEntryDto meterReadingEntry = new AtomEntryDto(
@@ -161,7 +161,7 @@ class SubscriptionDtoTest {
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
 
         List<AtomEntryDto> entries = List.of(
-            new AtomEntryDto("urn:uuid:entry1", "Entry 1", new UsagePointDto()),
+            new AtomEntryDto("urn:uuid:entry1", "Entry 1", new UsagePointDto(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)),
             new AtomEntryDto("urn:uuid:entry2", "Entry 2", new MeterReadingDto())
         );
 
@@ -218,7 +218,7 @@ class SubscriptionDtoTest {
     void shouldIncludeAllEntriesInAtomFeedDto() {
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
 
-        AtomEntryDto entry1 = new AtomEntryDto("urn:uuid:entry1", "Entry 1", new UsagePointDto());
+        AtomEntryDto entry1 = new AtomEntryDto("urn:uuid:entry1", "Entry 1", new UsagePointDto(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null));
         AtomEntryDto entry2 = new AtomEntryDto("urn:uuid:entry2", "Entry 2", new MeterReadingDto());
 
         SubscriptionDto dto = new SubscriptionDto(

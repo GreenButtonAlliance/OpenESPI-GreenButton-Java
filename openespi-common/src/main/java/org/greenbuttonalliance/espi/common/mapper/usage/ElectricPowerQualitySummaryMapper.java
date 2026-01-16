@@ -30,8 +30,11 @@ import org.mapstruct.MappingTarget;
 
 /**
  * MapStruct mapper for converting between ElectricPowerQualitySummaryEntity and ElectricPowerQualitySummaryDto.
- * 
- * Handles the conversion between the JPA entity used for persistence and the DTO 
+ *
+ * Maps only ElectricPowerQualitySummary fields. IdentifiedObject fields are NOT part of the usage.xsd
+ * definition and are handled by AtomFeedDto/AtomEntryDto.
+ *
+ * Handles the conversion between the JPA entity used for persistence and the DTO
  * used for JAXB XML marshalling in the Green Button API.
  */
 @Mapper(componentModel = "spring", uses = {
@@ -44,47 +47,24 @@ public interface ElectricPowerQualitySummaryMapper {
     /**
      * Converts an ElectricPowerQualitySummaryEntity to an ElectricPowerQualitySummaryDto.
      * Maps power quality metrics and measurement information.
-     * 
+     *
      * @param entity the electric power quality summary entity
      * @return the electric power quality summary DTO
      */
-    @Mapping(target = "id", ignore = true) // DTO id field not used
-    @Mapping(target = "uuid", source = "id", qualifiedByName = "uuidToString")
+    @Mapping(target = "id", ignore = true) // IdentifiedObject field handled by Atom layer
     @Mapping(target = "usagePointId", source = "usagePoint.id", qualifiedByName = "uuidToLong")
     ElectricPowerQualitySummaryDto toDto(ElectricPowerQualitySummaryEntity entity);
 
     /**
      * Converts an ElectricPowerQualitySummaryDto to an ElectricPowerQualitySummaryEntity.
      * Maps power quality metrics and measurement information.
-     * 
+     *
      * @param dto the electric power quality summary DTO
      * @return the electric power quality summary entity
      */
-    @Mapping(target = "id", source = "uuid", qualifiedByName = "stringToUuid")
-    @Mapping(target = "created", ignore = true)
-    @Mapping(target = "updated", ignore = true)
-    @Mapping(target = "published", ignore = true)
-    @Mapping(target = "upLink", ignore = true)
-    @Mapping(target = "selfLink", ignore = true)
-    @Mapping(target = "relatedLinks", ignore = true)
+    @Mapping(target = "id", ignore = true) // IdentifiedObject field handled by Atom layer
     @Mapping(target = "usagePoint", ignore = true) // Relationships handled separately
     @Mapping(target = "upResource", ignore = true)
     ElectricPowerQualitySummaryEntity toEntity(ElectricPowerQualitySummaryDto dto);
 
-    /**
-     * Updates an existing ElectricPowerQualitySummaryEntity with data from an ElectricPowerQualitySummaryDto.
-     * Useful for merge operations where the entity ID should be preserved.
-     * 
-     * @param dto the source DTO
-     * @param entity the target entity to update
-     */
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "created", ignore = true)
-    @Mapping(target = "updated", ignore = true)
-    @Mapping(target = "published", ignore = true)
-    @Mapping(target = "upLink", ignore = true)
-    @Mapping(target = "selfLink", ignore = true)
-    @Mapping(target = "relatedLinks", ignore = true)
-    @Mapping(target = "usagePoint", ignore = true)
-    void updateEntity(ElectricPowerQualitySummaryDto dto, @MappingTarget ElectricPowerQualitySummaryEntity entity);
 }

@@ -30,6 +30,9 @@ import org.mapstruct.MappingTarget;
 /**
  * MapStruct mapper for converting between ApplicationInformationEntity and ApplicationInformationDto.
  *
+ * Maps only ApplicationInformation fields. IdentifiedObject fields are NOT part of the usage.xsd
+ * definition and are handled by AtomFeedDto/AtomEntryDto.
+ *
  * Handles the conversion between the JPA entity used for persistence and the DTO
  * used for JAXB XML marshalling in the Green Button API.
  *
@@ -48,7 +51,6 @@ public interface ApplicationInformationMapper {
      * @param entity the application information entity
      * @return the application information DTO
      */
-    @Mapping(target = "uuid", source = "id", qualifiedByName = "uuidToString")
     // XSD fields in order
     @Mapping(target = "dataCustodianId", source = "dataCustodianId")
     @Mapping(target = "dataCustodianApplicationStatus", source = "dataCustodianApplicationStatus")
@@ -95,36 +97,9 @@ public interface ApplicationInformationMapper {
      * @param dto the application information DTO
      * @return the application information entity
      */
-    @Mapping(target = "id", source = "uuid", qualifiedByName = "stringToUuid")
-    @Mapping(target = "created", ignore = true)
-    @Mapping(target = "published", ignore = true)
-    @Mapping(target = "updated", ignore = true)
-    @Mapping(target = "description", ignore = true)
-    @Mapping(target = "relatedLinks", ignore = true)
-    @Mapping(target = "selfLink", ignore = true)
-    @Mapping(target = "upLink", ignore = true)
     @Mapping(target = "scope", ignore = true) // Complex type conversion needed: String -> Set<String>
     @Mapping(target = "grantTypes", ignore = true) // Complex type conversion needed: String -> Set<GrantType>
     @Mapping(target = "relatedLinkHrefs", ignore = true) // Extension field not in ESPI 4.0 XSD
     ApplicationInformationEntity toEntity(ApplicationInformationDto dto);
 
-    /**
-     * Updates an existing ApplicationInformationEntity with data from an ApplicationInformationDto.
-     * Useful for merge operations where the entity ID should be preserved.
-     *
-     * @param dto the source DTO
-     * @param entity the target entity to update
-     */
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "published", ignore = true)
-    @Mapping(target = "updated", ignore = true)
-    @Mapping(target = "created", ignore = true)
-    @Mapping(target = "description", ignore = true)
-    @Mapping(target = "relatedLinks", ignore = true)
-    @Mapping(target = "selfLink", ignore = true)
-    @Mapping(target = "upLink", ignore = true)
-    @Mapping(target = "scope", ignore = true) // Complex type conversion needed: String -> Set<String>
-    @Mapping(target = "grantTypes", ignore = true) // Complex type conversion needed: String -> Set<GrantType>
-    @Mapping(target = "relatedLinkHrefs", ignore = true) // Extension field not in ESPI 4.0 XSD
-    void updateEntity(ApplicationInformationDto dto, @MappingTarget ApplicationInformationEntity entity);
 }

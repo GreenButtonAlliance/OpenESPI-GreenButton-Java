@@ -58,6 +58,7 @@ public class DtoExportServiceImpl implements DtoExportService {
 
     private final UsagePointRepository usagePointRepository;
     private final UsagePointMapper usagePointMapper;
+    private final org.greenbuttonalliance.espi.common.service.EspiIdGeneratorService espiIdGeneratorService;
 
     private final String XML_HEADER = """
             <?xml version="1.0" encoding="UTF-8"?>
@@ -187,10 +188,23 @@ public class DtoExportServiceImpl implements DtoExportService {
 
     @Override
     public AtomEntryDto createAtomEntry(String title, Object resource) {
+        java.time.LocalDateTime localDateTime = java.time.LocalDateTime.now()
+            .truncatedTo(java.time.temporal.ChronoUnit.SECONDS);
+        java.time.OffsetDateTime now = localDateTime.atOffset(java.time.ZoneOffset.UTC)
+            .toZonedDateTime().toOffsetDateTime();
+
+        // Generate a UUID5 using title and resource type as the base
+        // Using the subscription pattern: combine title + resource class + timestamp for uniqueness
+        String resourceType = resource.getClass().getSimpleName();
+        UUID uuid5 = espiIdGeneratorService.generateSubscriptionId(resourceType, title);
+
         return new AtomEntryDto(
-            UUID.randomUUID().toString(),  // id
-            title,                         // title
-            resource                      // resource (uses convenience constructor)
+            "urn:uuid:" + uuid5.toString(),  // id - Version 5 UUID
+            title,                           // title
+            now,                             // published
+            now,                             // updated
+            null,                            // links
+            resource                         // content (payload moved directly to AtomEntryDto)
         );
     }
 }

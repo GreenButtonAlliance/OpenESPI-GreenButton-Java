@@ -29,9 +29,12 @@ import org.mapstruct.MappingTarget;
 
 /**
  * MapStruct mapper for converting between CustomerAgreementEntity and CustomerAgreementDto.
- * 
- * Handles the conversion between the JPA entity used for persistence and the DTO 
+ * <p>
+ * Handles the conversion between the JPA entity used for persistence and the DTO
  * used for JAXB XML marshalling in the Green Button API.
+ * <p>
+ * Maps only customer.xsd CustomerAgreement fields. IdentifiedObject fields are NOT part of
+ * the customer.xsd CustomerAgreement definition and are handled by AtomFeedDto/AtomEntryDto.
  */
 @Mapper(componentModel = "spring", uses = {
     DateTimeMapper.class,
@@ -41,19 +44,12 @@ public interface CustomerAgreementMapper {
 
     /**
      * Converts a CustomerAgreementEntity to a CustomerAgreementDto.
-     * Maps customer agreement information and service terms.
-     * 
+     * Maps only customer.xsd CustomerAgreement fields.
+     *
      * @param entity the customer agreement entity
      * @return the customer agreement DTO
      */
-    @Mapping(target = "id", ignore = true) // DTO uses Long, entity uses UUID
-    @Mapping(target = "uuid", source = "id", qualifiedByName = "uuidToString")
-    @Mapping(target = "published", source = "published", qualifiedByName = "localToOffset")
-    @Mapping(target = "updated", source = "updated", qualifiedByName = "localToOffset")
-    @Mapping(target = "relatedLinks", ignore = true) // Links handled separately
-    @Mapping(target = "selfLink", ignore = true)
-    @Mapping(target = "upLink", ignore = true)
-    @Mapping(target = "description", source = "description")
+    @Mapping(target = "id", ignore = true) // IdentifiedObject field handled by Atom layer
     @Mapping(target = "signDate", source = "signDate")
     @Mapping(target = "validityInterval", ignore = true) // Complex mapping
     @Mapping(target = "customerAccount", ignore = true) // Relationship handled separately
@@ -63,49 +59,20 @@ public interface CustomerAgreementMapper {
 
     /**
      * Converts a CustomerAgreementDto to a CustomerAgreementEntity.
-     * Maps customer agreement information and service terms.
-     * 
+     * Maps only customer.xsd CustomerAgreement fields.
+     *
      * @param dto the customer agreement DTO
      * @return the customer agreement entity
      */
-    @Mapping(target = "id", source = "uuid", qualifiedByName = "stringToUuid")
-    @Mapping(target = "published", source = "published", qualifiedByName = "offsetToLocal")
-    @Mapping(target = "updated", source = "updated", qualifiedByName = "offsetToLocal")
-    @Mapping(target = "description", source = "description")
+    @Mapping(target = "id", ignore = true) // IdentifiedObject field handled by Atom layer
     @Mapping(target = "signDate", source = "signDate")
     @Mapping(target = "validityInterval", ignore = true) // Complex mapping
-    @Mapping(target = "created", ignore = true) // Inherited from IdentifiedObject
     @Mapping(target = "createdDateTime", ignore = true) // From Document
     @Mapping(target = "lastModifiedDateTime", ignore = true) // From Document
     @Mapping(target = "revisionNumber", ignore = true) // From Document
     @Mapping(target = "subject", ignore = true) // From Document
     @Mapping(target = "title", ignore = true) // From Document
     @Mapping(target = "type", ignore = true) // From Document
-    @Mapping(target = "relatedLinks", ignore = true)
-    @Mapping(target = "selfLink", ignore = true)
-    @Mapping(target = "upLink", ignore = true)
     CustomerAgreementEntity toEntity(CustomerAgreementDto dto);
 
-    /**
-     * Updates an existing CustomerAgreementEntity with data from a CustomerAgreementDto.
-     * Useful for merge operations where the entity ID should be preserved.
-     * 
-     * @param dto the source DTO
-     * @param entity the target entity to update
-     */
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "published", source = "published", qualifiedByName = "offsetToLocal")
-    @Mapping(target = "updated", source = "updated", qualifiedByName = "offsetToLocal")
-    @Mapping(target = "validityInterval", ignore = true) // Complex mapping
-    @Mapping(target = "created", ignore = true) // Inherited from IdentifiedObject
-    @Mapping(target = "createdDateTime", ignore = true) // From Document
-    @Mapping(target = "lastModifiedDateTime", ignore = true) // From Document
-    @Mapping(target = "revisionNumber", ignore = true) // From Document
-    @Mapping(target = "subject", ignore = true) // From Document
-    @Mapping(target = "title", ignore = true) // From Document
-    @Mapping(target = "type", ignore = true) // From Document
-    @Mapping(target = "relatedLinks", ignore = true)
-    @Mapping(target = "selfLink", ignore = true)
-    @Mapping(target = "upLink", ignore = true)
-    void updateEntity(CustomerAgreementDto dto, @MappingTarget CustomerAgreementEntity entity);
 }

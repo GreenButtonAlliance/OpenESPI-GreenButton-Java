@@ -29,6 +29,9 @@ import org.mapstruct.MappingTarget;
 /**
  * MapStruct mapper for converting between TimeConfigurationEntity and TimeConfigurationDto.
  *
+ * Maps only TimeConfiguration fields. IdentifiedObject fields are NOT part of the usage.xsd
+ * definition and are handled by AtomFeedDto/AtomEntryDto.
+ *
  * Handles the conversion between the JPA entity used for persistence and the DTO
  * used for JAXB XML marshalling in the Green Button API.
  *
@@ -46,8 +49,7 @@ public interface TimeConfigurationMapper extends BaseIdentifiedObjectMapper {
      * @param entity the time configuration entity
      * @return the time configuration DTO
      */
-    @Mapping(target = "id", ignore = true) // DTO id field not used
-    @Mapping(target = "uuid", source = "id") // Map entity ID to DTO uuid for XML mRID
+    @Mapping(target = "id", ignore = true) // IdentifiedObject field handled by Atom layer
     TimeConfigurationDto toDto(TimeConfigurationEntity entity);
 
     /**
@@ -58,37 +60,9 @@ public interface TimeConfigurationMapper extends BaseIdentifiedObjectMapper {
      * @param dto the time configuration DTO
      * @return the time configuration entity
      */
-    @Mapping(target = "id", ignore = true) // ID set by persistence layer
+    @Mapping(target = "id", ignore = true) // IdentifiedObject field handled by Atom layer
     @Mapping(target = "usagePoints", ignore = true) // Collection managed separately
     @Mapping(target = "customer", ignore = true) // Relationship managed separately
-    @Mapping(target = "created", ignore = true) // Audit field managed by persistence
-    @Mapping(target = "updated", ignore = true) // Audit field managed by persistence
-    @Mapping(target = "published", ignore = true) // Audit field managed by persistence
-    @Mapping(target = "selfLink", ignore = true) // Link managed separately
-    @Mapping(target = "upLink", ignore = true) // Link managed separately
-    @Mapping(target = "relatedLinks", ignore = true) // Links managed separately
-    @Mapping(target = "description", ignore = true) // Generated dynamically by entity
     TimeConfigurationEntity toEntity(TimeConfigurationDto dto);
 
-    /**
-     * Updates an existing TimeConfigurationEntity with data from a TimeConfigurationDto.
-     * Useful for merge operations where entity values need to be updated without
-     * creating a new instance.
-     *
-     * Preserves existing relationships and audit fields while updating time configuration data.
-     *
-     * @param dto the source DTO
-     * @param entity the target entity to update
-     */
-    @Mapping(target = "id", ignore = true) // Never update ID
-    @Mapping(target = "usagePoints", ignore = true) // Preserve existing collection
-    @Mapping(target = "customer", ignore = true) // Preserve existing relationship
-    @Mapping(target = "created", ignore = true) // Preserve audit field
-    @Mapping(target = "updated", ignore = true) // Will be updated by persistence layer
-    @Mapping(target = "published", ignore = true) // Preserve audit field
-    @Mapping(target = "selfLink", ignore = true) // Preserve existing link
-    @Mapping(target = "upLink", ignore = true) // Preserve existing link
-    @Mapping(target = "relatedLinks", ignore = true) // Preserve existing links
-    @Mapping(target = "description", ignore = true) // Generated dynamically by entity
-    void updateEntity(TimeConfigurationDto dto, @MappingTarget TimeConfigurationEntity entity);
 }

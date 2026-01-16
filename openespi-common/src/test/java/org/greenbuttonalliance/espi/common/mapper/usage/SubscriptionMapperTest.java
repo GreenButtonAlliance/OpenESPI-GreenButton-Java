@@ -118,7 +118,7 @@ class SubscriptionMapperTest {
         SubscriptionEntity entity = new SubscriptionEntity(TEST_SUBSCRIPTION_ID);
 
         List<AtomEntryDto> entries = List.of(
-            new AtomEntryDto("urn:uuid:entry1", "Usage Point", new UsagePointDto()),
+            new AtomEntryDto("urn:uuid:entry1", "Usage Point", new UsagePointDto(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)),
             new AtomEntryDto("urn:uuid:entry2", "Meter Reading", new MeterReadingDto())
         );
 

@@ -19,7 +19,10 @@
 
 package org.greenbuttonalliance.espi.common.dto.usage;
 
+import org.greenbuttonalliance.espi.common.domain.common.AmiBillingReadyKind;
+import org.greenbuttonalliance.espi.common.domain.common.PhaseCodeKind;
 import org.greenbuttonalliance.espi.common.domain.common.ServiceCategory;
+import org.greenbuttonalliance.espi.common.domain.common.UsagePointConnectedKind;
 import org.greenbuttonalliance.espi.common.dto.SummaryMeasurementDto;
 
 import jakarta.xml.bind.annotation.*;
@@ -36,17 +39,17 @@ import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 @XmlRootElement(name = "UsagePoint", namespace = "http://naesb.org/espi")
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "UsagePoint", namespace = "http://naesb.org/espi", propOrder = {
-    "description", "roleFlags", "serviceCategory", "status", "estimatedLoad",
-    "nominalServiceVoltage", "ratedCurrent", "ratedPower", "serviceDeliveryPoint",
-    "pnodeRefs", "aggregatedNodeRefs"
+    "roleFlags", "serviceCategory", "status", "serviceDeliveryPoint",
+    "amiBillingReady", "checkBilling", "connectionState", "estimatedLoad",
+    "grounded", "isSdp", "isVirtual", "minimalUsageExpected",
+    "nominalServiceVoltage", "outageRegion", "phaseCode", "ratedCurrent",
+    "ratedPower", "readCycle", "readRoute", "serviceDeliveryRemark",
+    "servicePriority", "pnodeRefs", "aggregatedNodeRefs"
 })
 public record UsagePointDto(
 
     @XmlTransient
     String uuid,
-
-    @XmlElement(name = "description")
-    String description,
 
     @XmlElement(name = "roleFlags", type = String.class)
     @XmlJavaTypeAdapter(HexBinaryAdapter.class)
@@ -58,6 +61,30 @@ public record UsagePointDto(
     @XmlElement(name = "status")
     Short status,
 
+    @XmlElement(name = "ServiceDeliveryPoint")
+    ServiceDeliveryPointDto serviceDeliveryPoint,
+
+    /**
+     * Lifecycle states of the metering installation with respect to readiness for billing via AMI reads.
+     * Per ESPI 4.0 XSD: [extension] AmiBillingReadyKind enum.
+     */
+    @XmlElement(name = "amiBillingReady")
+    AmiBillingReadyKind amiBillingReady,
+
+    /**
+     * True if there is a reason to suspect that a previous billing may have been performed with erroneous data.
+     * Per ESPI 4.0 XSD: [extension] boolean field.
+     */
+    @XmlElement(name = "checkBilling")
+    Boolean checkBilling,
+
+    /**
+     * State of the usage point with respect to connection to the network.
+     * Per ESPI 4.0 XSD: [extension] UsagePointConnectedKind enum.
+     */
+    @XmlElement(name = "connectionState")
+    UsagePointConnectedKind connectionState,
+
     /**
      * Estimated load for the usage point as SummaryMeasurement.
      */
@@ -65,10 +92,52 @@ public record UsagePointDto(
     SummaryMeasurementDto estimatedLoad,
 
     /**
+     * True if grounded.
+     * Per ESPI 4.0 XSD: [extension] boolean field.
+     */
+    @XmlElement(name = "grounded")
+    Boolean grounded,
+
+    /**
+     * True if this usage point is a service delivery point.
+     * Per ESPI 4.0 XSD: [extension] boolean field.
+     */
+    @XmlElement(name = "isSdp")
+    Boolean isSdp,
+
+    /**
+     * True if this usage point is virtual (no physical location exists).
+     * Per ESPI 4.0 XSD: [extension] boolean field.
+     */
+    @XmlElement(name = "isVirtual")
+    Boolean isVirtual,
+
+    /**
+     * True if minimal or zero usage is expected at this usage point.
+     * Per ESPI 4.0 XSD: [extension] boolean field.
+     */
+    @XmlElement(name = "minimalUsageExpected")
+    Boolean minimalUsageExpected,
+
+    /**
      * Nominal service voltage for the usage point as SummaryMeasurement.
      */
     @XmlElement(name = "nominalServiceVoltage")
     SummaryMeasurementDto nominalServiceVoltage,
+
+    /**
+     * Outage region in which this usage point is located.
+     * Per ESPI 4.0 XSD: [extension] String256 field.
+     */
+    @XmlElement(name = "outageRegion")
+    String outageRegion,
+
+    /**
+     * Phase code indicating number of wires and specific nominal phases.
+     * Per ESPI 4.0 XSD: [extension] PhaseCodeKind enum.
+     */
+    @XmlElement(name = "phaseCode")
+    PhaseCodeKind phaseCode,
 
     /**
      * Rated current for the usage point as SummaryMeasurement.
@@ -82,8 +151,33 @@ public record UsagePointDto(
     @XmlElement(name = "ratedPower")
     SummaryMeasurementDto ratedPower,
 
-    @XmlElement(name = "ServiceDeliveryPoint")
-    ServiceDeliveryPointDto serviceDeliveryPoint,
+    /**
+     * Cycle day on which the meter will normally be read.
+     * Per ESPI 4.0 XSD: [extension] String256 field.
+     */
+    @XmlElement(name = "readCycle")
+    String readCycle,
+
+    /**
+     * Route identifier for meter reading purposes.
+     * Per ESPI 4.0 XSD: [extension] String256 field.
+     */
+    @XmlElement(name = "readRoute")
+    String readRoute,
+
+    /**
+     * Remarks about this usage point.
+     * Per ESPI 4.0 XSD: [extension] String256 field.
+     */
+    @XmlElement(name = "serviceDeliveryRemark")
+    String serviceDeliveryRemark,
+
+    /**
+     * Priority of service for this usage point.
+     * Per ESPI 4.0 XSD: [extension] String32 field.
+     */
+    @XmlElement(name = "servicePriority")
+    String servicePriority,
 
     /**
      * Array of pricing node references.
@@ -112,7 +206,8 @@ public record UsagePointDto(
      * Default constructor for JAXB.
      */
     public UsagePointDto() {
-        this(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+        this(null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+             null, null, null, null, null, null, null, null, null, null, null, null, null);
     }
 
     /**
@@ -122,14 +217,14 @@ public record UsagePointDto(
      * @param serviceCategory the service category
      */
     public UsagePointDto(String uuid, ServiceCategory serviceCategory) {
-        this(uuid, null, null, serviceCategory, null, null, null, null, null, null, null, null, null, null, null);
+        this(uuid, null, serviceCategory, null, null, null, null, null, null, null, null, null, null,
+             null, null, null, null, null, null, null, null, null, null, null, null, null, null);
     }
 
     /**
      * Constructor with core ESPI elements.
      *
      * @param uuid the resource identifier
-     * @param description human-readable description
      * @param serviceCategory the service category
      * @param estimatedLoad estimated load measurement
      * @param nominalServiceVoltage nominal voltage measurement
@@ -137,12 +232,13 @@ public record UsagePointDto(
      * @param ratedPower rated power measurement
      * @param serviceDeliveryPoint service delivery point details
      */
-    public UsagePointDto(String uuid, String description, ServiceCategory serviceCategory,
+    public UsagePointDto(String uuid, ServiceCategory serviceCategory,
                         SummaryMeasurementDto estimatedLoad, SummaryMeasurementDto nominalServiceVoltage,
                         SummaryMeasurementDto ratedCurrent, SummaryMeasurementDto ratedPower,
                         ServiceDeliveryPointDto serviceDeliveryPoint) {
-        this(uuid, description, null, serviceCategory, null, estimatedLoad, nominalServiceVoltage,
-             ratedCurrent, ratedPower, serviceDeliveryPoint, null, null, null, null, null);
+        this(uuid, null, serviceCategory, null, serviceDeliveryPoint, null, null, null, estimatedLoad,
+             null, null, null, null, nominalServiceVoltage, null, null, ratedCurrent, ratedPower,
+             null, null, null, null, null, null, null, null, null);
     }
 
     /**

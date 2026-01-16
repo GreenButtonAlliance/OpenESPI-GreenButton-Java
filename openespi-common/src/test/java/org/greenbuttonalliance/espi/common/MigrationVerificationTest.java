@@ -25,6 +25,7 @@ import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerEntity;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.MeterEntity;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.ServiceLocationEntity;
+import org.greenbuttonalliance.espi.common.dto.atom.AtomEntryDto;
 import org.greenbuttonalliance.espi.common.dto.usage.UsagePointDto;
 import org.greenbuttonalliance.espi.common.dto.SummaryMeasurementDto;
 import org.junit.jupiter.api.Test;
@@ -88,15 +89,42 @@ class MigrationVerificationTest {
             .defaultDateFormat(new StdDateFormat())
             .build();
 
-        // Create a simple DTO without constructor arguments
-        UsagePointDto dto = new UsagePointDto();
+        // Create a simple DTO with all nulls
+        UsagePointDto dto = new UsagePointDto(
+            null, // uuid
+            null, // roleFlags
+            null, // serviceCategory
+            null, // status
+            null, null, null, null, null, // serviceDeliveryPoint, amiBillingReady, checkBilling, connectionState, estimatedLoad
+            null, null, null, null, // grounded, isSdp, isVirtual, minimalUsageExpected
+            null, null, null, null, null, // nominalServiceVoltage, outageRegion, phaseCode, ratedCurrent, ratedPower
+            null, null, null, null, // readCycle, readRoute, serviceDeliveryRemark, servicePriority
+            null, null, null, null, null // pnodeRefs, aggregatedNodeRefs, meterReadings, usageSummaries, electricPowerQualitySummaries
+        );
+
+        // Wrap in Atom entry using full constructor (payload moved directly to AtomEntryDto, no AtomContentDto wrapper)
+        java.time.LocalDateTime localDateTime = java.time.LocalDateTime.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS);
+        java.time.OffsetDateTime now = localDateTime.atOffset(java.time.ZoneOffset.UTC).toZonedDateTime().toOffsetDateTime();
+        AtomEntryDto entry = new AtomEntryDto(
+            "urn:uuid:test-entry",
+            "Test Usage Point",
+            now,
+            now,
+            null, // links
+            dto   // content - passed directly (AtomEntryDto now includes AtomContentDto functionality)
+        );
 
         // Marshal using Jackson 3
-        String xml = assertDoesNotThrow(() -> xmlMapper.writeValueAsString(dto));
+        String xml = assertDoesNotThrow(() -> xmlMapper.writeValueAsString(entry));
+
+        // Debug: print XML
+        System.out.println("Generated XML:");
+        System.out.println(xml);
 
         // Verify XML structure
-        assertTrue(xml.contains("UsagePoint"));
-        assertTrue(xml.contains("http://naesb.org/espi"));
+        assertTrue(xml.contains("entry"), "XML should contain 'entry' element"); // Now wrapping in Atom entry
+        assertTrue(xml.contains("UsagePoint"), "XML should contain 'UsagePoint' element");
+        assertTrue(xml.contains("http://naesb.org/espi"), "XML should contain ESPI namespace");
     }
 
     @Test

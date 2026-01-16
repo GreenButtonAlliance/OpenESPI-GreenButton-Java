@@ -6,8 +6,9 @@ import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 import org.greenbuttonalliance.espi.common.dto.atom.AtomEntryDto;
 import org.greenbuttonalliance.espi.common.dto.atom.AtomFeedDto;
 import org.greenbuttonalliance.espi.common.dto.atom.LinkDto;
+import org.greenbuttonalliance.espi.common.dto.BillingChargeSourceDto;
+import org.greenbuttonalliance.espi.common.dto.SummaryMeasurementDto;
 import org.greenbuttonalliance.espi.common.dto.usage.*;
-import org.greenbuttonalliance.espi.common.mapper.DateTimeMapperImpl;
 import org.greenbuttonalliance.espi.common.mapper.usage.*;
 import org.greenbuttonalliance.espi.common.repositories.usage.UsagePointRepository;
 import org.jspecify.annotations.NonNull;
@@ -43,11 +44,14 @@ class DtoExportServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        ReflectionTestUtils.setField(usagePointMapper, "dateTimeMapper", new DateTimeMapperImpl());
+        // UsagePointMapper only needs serviceDeliveryPointMapper (no date fields after IdentifiedObject removal)
         ReflectionTestUtils.setField(usagePointMapper, "serviceDeliveryPointMapper", new ServiceDeliveryPointMapperImpl());
-        ReflectionTestUtils.setField(meterReadingMapper, "dateTimeMapper", new DateTimeMapperImpl());
 
-        dtoExportService = new DtoExportServiceImpl(usagePointRepository, usagePointMapper);
+        // Create EspiIdGeneratorService for UUID5 generation
+        org.greenbuttonalliance.espi.common.service.EspiIdGeneratorService espiIdGeneratorService =
+            new org.greenbuttonalliance.espi.common.service.EspiIdGeneratorService();
+
+        dtoExportService = new DtoExportServiceImpl(usagePointRepository, usagePointMapper, espiIdGeneratorService);
     }
 
     @Test
@@ -61,11 +65,15 @@ class DtoExportServiceImplTest {
         AtomEntryDto meterReadingEntryDto = getMeeterReadingEntryDto(now);
         AtomEntryDto readingEntry = getReadingEntryDto(now);
         AtomEntryDto intervalBlockEntry = getIntervlBlockEntryDto(now);
+        AtomEntryDto timeConfigEntry = getTimeConfigurationEntry(now);
+        AtomEntryDto usageSummaryEntry = getUsageSummaryEntry(now);
+        AtomEntryDto epqsEntry = getElectricPowerQualitySummaryEntry(now);
 
         AtomFeedDto atomFeedDto = new AtomFeedDto("urn:uuid:15B0A4ED-CCF4-5521-A0A1-9FF650EC8A6B",
                 "Green Button Subscription Feed",
                 now, now, null,
-                List.of(usagePointEntryDto, meterReadingEntryDto, readingEntry, intervalBlockEntry));
+                List.of(usagePointEntryDto, meterReadingEntryDto, readingEntry, intervalBlockEntry,
+                        timeConfigEntry, usageSummaryEntry, epqsEntry));
 
         // Act
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
@@ -97,11 +105,41 @@ class DtoExportServiceImplTest {
         assertThat(xml).contains("<content>");
         assertThat(xml).contains("</content>");
 
-        // Assert - All 4 entries present
+        // Assert - All 7 entries present
         assertThat(xml).contains("Front Electric Meter");  // UsagePoint title
         assertThat(xml).contains("Meter Reading");  // MeterReading title
         assertThat(xml).contains("Type of Meter Reading Data");  // ReadingType title
         assertThat(xml).contains("Interval Block");  // IntervalBlock title
+        assertThat(xml).contains("EST Time Configuration");  // TimeConfiguration title
+        assertThat(xml).contains("Monthly Usage Summary");  // UsageSummary title
+        assertThat(xml).contains("Power Quality Summary");  // ElectricPowerQualitySummary title
+
+        // Assert - UsageSummary fields with populated data
+        assertThat(xml).contains("<billLastPeriod");
+        assertThat(xml).contains("150000");  // billLastPeriod value
+        assertThat(xml).contains("<currency");
+        assertThat(xml).contains("USD");
+        assertThat(xml).contains("<qualityOfReading");
+        assertThat(xml).contains("14");  // qualityOfReading value
+        assertThat(xml).contains("<tariffProfile");
+        assertThat(xml).contains("TOU-Residential");
+        assertThat(xml).contains("<tariffRiderRefs");
+        assertThat(xml).contains("Green-Energy-Rider");
+        assertThat(xml).contains("<billingChargeSource");
+        assertThat(xml).contains("MEASURED");
+
+        // Assert - ElectricPowerQualitySummary fields with populated data
+        assertThat(xml).contains("<flickerPlt");
+        assertThat(xml).contains("850");  // flickerPlt value
+        assertThat(xml).contains("<harmonicVoltage");
+        assertThat(xml).contains("320");  // harmonicVoltage value
+        assertThat(xml).contains("<mainsVoltage");
+        assertThat(xml).contains("120000");  // mainsVoltage value
+        assertThat(xml).contains("<powerFrequency");
+        assertThat(xml).contains("60000");  // powerFrequency value
+        assertThat(xml).contains("<measurementProtocol");
+        assertThat(xml).contains("<supplyVoltageImbalance");
+        assertThat(xml).contains("150");  // supplyVoltageImbalance value
     }
 
     @Test
@@ -295,7 +333,6 @@ class DtoExportServiceImplTest {
                 null, "4", "1", null, "840", "12", "NET", "TOTAL", 900L, "NET", "KILO", "DAILY", "V", "1", "CONTINUOUS", "1", null,
                 null, null);
 
-        // AtomContentDto readingTypeDtoContent = new AtomContentDto(readingTypeDto);
         List<LinkDto> readingTypeLinkList = new ArrayList<>();
         readingTypeLinkList.add(new LinkDto("self", "/espi/1_1/resource/ReadingType/07"));
         readingTypeLinkList.add(new LinkDto("up", "/espi/1_1/resource/ReadingType"));
@@ -346,5 +383,96 @@ class DtoExportServiceImplTest {
                 now,
                 usagePointList,
                 usagePointDto);
+    }
+
+    private static @NonNull AtomEntryDto getTimeConfigurationEntry(OffsetDateTime now) {
+        // TimeConfigurationDto full constructor: id, uuid, dstEndRule, dstOffset, dstStartRule, tzOffset
+        TimeConfigurationDto timeConfigDto = new TimeConfigurationDto(
+                null,      // id (ignored - handled by Atom layer)
+                null,      // uuid (handled by Atom layer)
+                null,      // dstEndRule (byte[])
+                3600L,     // dstOffset (1 hour DST in seconds)
+                null,      // dstStartRule (byte[])
+                -18000L    // tzOffset (-5 hours in seconds = EST)
+        );
+
+        List<LinkDto> links = new ArrayList<>();
+        links.add(new LinkDto("self", "/espi/1_1/resource/LocalTimeParameters/01"));
+        links.add(new LinkDto("up", "/espi/1_1/resource/LocalTimeParameters"));
+
+        return new AtomEntryDto("urn:uuid:2A0B8C3D-4E5F-5678-90AB-CDEF12345678", "EST Time Configuration",
+                now, now, links, timeConfigDto);
+    }
+
+    private static @NonNull AtomEntryDto getUsageSummaryEntry(OffsetDateTime now) {
+        // Canonical constructor: id, uuid, + 24 XSD fields with comprehensive test data
+        UsageSummaryDto usageSummaryDto = new UsageSummaryDto(
+                null,     // id
+                null,     // uuid
+                new DateTimeIntervalDto(1330578000L, 2592000L), // billingPeriod (30 days)
+                150000L,  // billLastPeriod ($1500.00 in cents)
+                175000L,  // billToDate ($1750.00 in cents)
+                25000L,   // costAdditionalLastPeriod ($250.00 additional charges)
+                List.of(new LineItemDto(15000L, 0L, 1332392400L, "Demand Charge", null, 2, null, null),
+                        new LineItemDto(10000L, 0L, 1332392400L, "Service Fee", null, 3, null, null)),
+                "USD",    // currency
+                new SummaryMeasurementDto("3", 1330578000L, "72", 450000L, null), // overallConsumptionLastPeriod (450 kWh)
+                new SummaryMeasurementDto("3", 1333256400L, "72", 425000L, null), // currentBillingPeriodOverAllConsumption (425 kWh)
+                new SummaryMeasurementDto("3", 1330491600L, "72", 390000L, null), // currentDayLastYearNetConsumption (390 kWh)
+                new SummaryMeasurementDto("3", 1333256400L, "72", 15000L, null),  // currentDayNetConsumption (15 kWh)
+                new SummaryMeasurementDto("3", 1333256400L, "72", 16000L, null),  // currentDayOverallConsumption (16 kWh)
+                new SummaryMeasurementDto("38", 1332392400L, "72", 5000L, null),  // peakDemand (5 kW)
+                new SummaryMeasurementDto("3", 1330405200L, "72", 385000L, null), // previousDayLastYearOverallConsumption (385 kWh)
+                new SummaryMeasurementDto("3", 1333170000L, "72", 14500L, null),  // previousDayNetConsumption (14.5 kWh)
+                new SummaryMeasurementDto("3", 1333170000L, "72", 15500L, null),  // previousDayOverallConsumption (15.5 kWh)
+                "14",     // qualityOfReading (VALID)
+                new SummaryMeasurementDto("38", 1331182800L, "72", 4800L, null),  // ratchetDemand (4.8 kW)
+                new DateTimeIntervalDto(1328000000L, 31536000L), // ratchetDemandPeriod (1 year)
+                1333256400L, // statusTimeStamp
+                1,        // commodity (ELECTRICITY_SECONDARY_METERED)
+                "TOU-Residential", // tariffProfile
+                "15",     // readCycle (15th of month)
+                new TariffRiderRefsDto(List.of(
+                        new TariffRiderRefDto("Green-Energy-Rider", "ENROLLED", 1328000000L),
+                        new TariffRiderRefDto("Demand-Response-Credit", "ENROLLED", 1328000000L))),
+                new BillingChargeSourceDto("MEASURED") // billingChargeSource
+        );
+
+        List<LinkDto> links = new ArrayList<>();
+        links.add(new LinkDto("self", "/espi/1_1/resource/RetailCustomer/9B6C7066/UsagePoint/5446AF3F/UsageSummary/01"));
+        links.add(new LinkDto("up", "/espi/1_1/resource/RetailCustomer/9B6C7066/UsagePoint/5446AF3F/UsageSummary"));
+
+        return new AtomEntryDto("urn:uuid:3B1C9D4E-5F6A-5789-01BC-DEF234567890", "Monthly Usage Summary",
+                now, now, links, usageSummaryDto);
+    }
+
+    private static @NonNull AtomEntryDto getElectricPowerQualitySummaryEntry(OffsetDateTime now) {
+        // Canonical constructor: id, uuid, + 14 XSD fields, usagePointId = 17 parameters with comprehensive test data
+        ElectricPowerQualitySummaryDto epqsDto = new ElectricPowerQualitySummaryDto(
+                null,   // id
+                null,   // uuid
+                850L,   // flickerPlt (0.85 long-term flicker severity)
+                720L,   // flickerPst (0.72 short-term flicker severity)
+                320L,   // harmonicVoltage (3.20% THD)
+                2L,     // longInterruptions (2 long interruptions)
+                120000L, // mainsVoltage (120.000 V in millivolts)
+                (short) 4, // measurementProtocol (IEC 61000-4-30)
+                60000L, // powerFrequency (60.000 Hz in millihertz)
+                5L,     // rapidVoltageChanges (5 rapid voltage changes)
+                3L,     // shortInterruptions (3 short interruptions)
+                new DateTimeIntervalDto(1330578000L, 86400L), // summaryInterval (1 day)
+                8L,     // supplyVoltageDips (8 voltage dips)
+                150L,   // supplyVoltageImbalance (1.50% imbalance)
+                250L,   // supplyVoltageVariations (2.50% voltage variation)
+                1L,     // tempOvervoltage (1 temporary overvoltage event)
+                null    // usagePointId
+        );
+
+        List<LinkDto> links = new ArrayList<>();
+        links.add(new LinkDto("self", "/espi/1_1/resource/RetailCustomer/9B6C7066/UsagePoint/5446AF3F/ElectricPowerQualitySummary/01"));
+        links.add(new LinkDto("up", "/espi/1_1/resource/RetailCustomer/9B6C7066/UsagePoint/5446AF3F/ElectricPowerQualitySummary"));
+
+        return new AtomEntryDto("urn:uuid:4C2D0E5F-6A7B-5890-12CD-EF3456789012", "Power Quality Summary",
+                now, now, links, epqsDto);
     }
 }

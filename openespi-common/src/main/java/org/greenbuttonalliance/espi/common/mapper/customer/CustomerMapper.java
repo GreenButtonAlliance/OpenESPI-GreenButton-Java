@@ -35,8 +35,11 @@ import java.util.List;
 
 /**
  * MapStruct mapper for converting between CustomerEntity and CustomerDto.
- * 
- * Handles the conversion between the JPA entity used for persistence and the DTO 
+ *
+ * Maps only Customer fields. IdentifiedObject fields are NOT part of the customer.xsd
+ * definition and are handled by AtomFeedDto/AtomEntryDto.
+ *
+ * Handles the conversion between the JPA entity used for persistence and the DTO
  * used for JAXB XML marshalling in the Green Button API.
  */
 @Mapper(componentModel = "spring", uses = {
@@ -47,11 +50,10 @@ public interface CustomerMapper extends BaseMapperUtils {
     /**
      * Converts a CustomerEntity to a CustomerDto.
      * Maps customer information including embedded objects.
-     * 
+     *
      * @param entity the customer entity
      * @return the customer DTO
      */
-    @Mapping(target = "uuid", source = "id", qualifiedByName = "uuidToString")
     @Mapping(target = "organisationRole", source = ".", qualifiedByName = "mapOrganisationRole")
     @Mapping(target = "kind", source = "kind")
     @Mapping(target = "specialNeed", source = "specialNeed")
@@ -66,11 +68,10 @@ public interface CustomerMapper extends BaseMapperUtils {
     /**
      * Converts a CustomerDto to a CustomerEntity.
      * Maps customer information including embedded objects.
-     * 
+     *
      * @param dto the customer DTO
      * @return the customer entity
      */
-    @Mapping(target = "id", source = "uuid", qualifiedByName = "stringToUuid")
     @Mapping(target = "organisation", source = "organisationRole", qualifiedByName = "mapOrganisation")
     @Mapping(target = "phoneNumbers", ignore = true)
     @Mapping(target = "kind", source = "kind")
@@ -84,44 +85,7 @@ public interface CustomerMapper extends BaseMapperUtils {
     @Mapping(target = "customerAccounts", ignore = true)
     @Mapping(target = "timeConfiguration", ignore = true)
     @Mapping(target = "statements", ignore = true)
-    @Mapping(target = "created", ignore = true)
-    @Mapping(target = "updated", ignore = true)
-    @Mapping(target = "published", ignore = true)
-    @Mapping(target = "relatedLinks", ignore = true)
-    @Mapping(target = "selfLink", ignore = true)
-    @Mapping(target = "upLink", ignore = true)
-    @Mapping(target = "description", ignore = true)
     CustomerEntity toEntity(CustomerDto dto);
-
-    /**
-     * Updates an existing CustomerEntity with data from a CustomerDto.
-     * Useful for merge operations where the entity ID should be preserved.
-     * 
-     * @param dto the source DTO
-     * @param entity the target entity to update
-     */
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "organisation", source = "organisationRole", qualifiedByName = "mapOrganisation")
-    @Mapping(target = "phoneNumbers", ignore = true)
-    @Mapping(target = "kind", source = "kind")
-    @Mapping(target = "specialNeed", source = "specialNeed")
-    @Mapping(target = "vip", source = "vip")
-    @Mapping(target = "pucNumber", source = "pucNumber")
-    @Mapping(target = "status", source = "status")
-    @Mapping(target = "priority", source = "priority")
-    @Mapping(target = "locale", source = "locale")
-    @Mapping(target = "customerName", source = "customerName")
-    @Mapping(target = "customerAccounts", ignore = true)
-    @Mapping(target = "timeConfiguration", ignore = true)
-    @Mapping(target = "statements", ignore = true)
-    @Mapping(target = "created", ignore = true)
-    @Mapping(target = "updated", ignore = true)
-    @Mapping(target = "published", ignore = true)
-    @Mapping(target = "relatedLinks", ignore = true)
-    @Mapping(target = "selfLink", ignore = true)
-    @Mapping(target = "upLink", ignore = true)
-    @Mapping(target = "description", ignore = true)
-    void updateEntity(CustomerDto dto, @MappingTarget CustomerEntity entity);
 
     /**
      * Maps CustomerEntity with PhoneNumberEntity list to OrganisationRoleDto.

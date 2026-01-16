@@ -29,8 +29,11 @@ import org.mapstruct.MappingTarget;
 
 /**
  * MapStruct mapper for converting between AuthorizationEntity and AuthorizationDto.
- * 
- * Handles the conversion between the JPA entity used for persistence and the DTO 
+ *
+ * Maps only Authorization fields. IdentifiedObject fields are NOT part of the usage.xsd
+ * definition and are handled by AtomFeedDto/AtomEntryDto.
+ *
+ * Handles the conversion between the JPA entity used for persistence and the DTO
  * used for JAXB XML marshalling in the Green Button API.
  */
 @Mapper(componentModel = "spring", uses = {
@@ -46,7 +49,6 @@ public interface AuthorizationMapper {
      * @param entity the authorization entity
      * @return the authorization DTO
      */
-    @Mapping(target = "uuid", source = "id", qualifiedByName = "uuidToString")
     // XSD-compliant fields
     @Mapping(target = "authorizedPeriod", source = "authorizedPeriod")
     @Mapping(target = "publishedPeriod", source = "publishedPeriod")
@@ -79,11 +81,6 @@ public interface AuthorizationMapper {
      * @param dto the authorization DTO
      * @return the authorization entity
      */
-    @Mapping(target = "id", source = "uuid", qualifiedByName = "stringToUuid")
-    @Mapping(target = "created", ignore = true)
-    @Mapping(target = "published", ignore = true)
-    @Mapping(target = "updated", ignore = true)
-    @Mapping(target = "description", ignore = true)
     // XSD-compliant fields
     @Mapping(target = "authorizedPeriod", source = "authorizedPeriod")
     @Mapping(target = "publishedPeriod", source = "publishedPeriod")
@@ -107,51 +104,7 @@ public interface AuthorizationMapper {
     @Mapping(target = "thirdParty", source = "thirdParty")
     @Mapping(target = "applicationInformation", ignore = true) // Complex mapping, handle separately
     @Mapping(target = "retailCustomer", ignore = true) // Complex mapping, handle separately
-    @Mapping(target = "relatedLinks", ignore = true)
-    @Mapping(target = "selfLink", ignore = true)
-    @Mapping(target = "upLink", ignore = true)
     @Mapping(target = "subscription", ignore = true)
     AuthorizationEntity toEntity(AuthorizationDto dto);
 
-    /**
-     * Updates an existing AuthorizationEntity with data from an AuthorizationDto.
-     * Useful for update operations where the entity ID should be preserved.
-     *
-     * @param dto the source DTO
-     * @param entity the target entity to update
-     */
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "published", ignore = true)
-    @Mapping(target = "updated", ignore = true)
-    @Mapping(target = "created", ignore = true)
-    @Mapping(target = "description", ignore = true)
-    // XSD-compliant fields - will be mapped
-    @Mapping(target = "authorizedPeriod", source = "authorizedPeriod")
-    @Mapping(target = "publishedPeriod", source = "publishedPeriod")
-    @Mapping(target = "status", source = "status")
-    @Mapping(target = "expiresIn", source = "expiresIn")
-    @Mapping(target = "grantType", source = "grantType")
-    @Mapping(target = "scope", source = "scope")
-    @Mapping(target = "tokenType", source = "tokenType")
-    @Mapping(target = "error", source = "error")
-    @Mapping(target = "errorDescription", source = "errorDescription")
-    @Mapping(target = "errorUri", source = "errorUri")
-    @Mapping(target = "resourceURI", source = "resourceURI")
-    @Mapping(target = "authorizationURI", source = "authorizationUri")
-    @Mapping(target = "customerResourceURI", source = "customerResourceURI")
-    // OAuth2 implementation fields - will be mapped
-    @Mapping(target = "accessToken", source = "accessToken")
-    @Mapping(target = "refreshToken", source = "refreshToken")
-    @Mapping(target = "code", source = "authorizationCode")
-    @Mapping(target = "state", source = "state")
-    @Mapping(target = "responseType", source = "responseType")
-    @Mapping(target = "thirdParty", source = "thirdParty")
-    // Relationships - preserve existing
-    @Mapping(target = "relatedLinks", ignore = true)
-    @Mapping(target = "selfLink", ignore = true)
-    @Mapping(target = "upLink", ignore = true)
-    @Mapping(target = "retailCustomer", ignore = true)
-    @Mapping(target = "applicationInformation", ignore = true)
-    @Mapping(target = "subscription", ignore = true)
-    void updateEntity(AuthorizationDto dto, @MappingTarget AuthorizationEntity entity);
 }

@@ -20,6 +20,7 @@
 package org.greenbuttonalliance.espi.common;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import org.greenbuttonalliance.espi.common.dto.atom.AtomEntryDto;
 import org.greenbuttonalliance.espi.common.dto.usage.UsagePointDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -72,22 +73,27 @@ class Jackson3XmlMarshallingTest {
         // Create a UsagePointDto with realistic ESPI data
         UsagePointDto usagePoint = new UsagePointDto(
             "urn:uuid:test-usage-point",
-            "Residential Electric Service",
             new byte[]{0x01, 0x04}, // Electricity consumer role flags
             null, // serviceCategory
             (short) 1, // Active status
-            null, null, null, null, // measurement fields
-            null, null, null, // reference fields
-            null, null, null // collection fields
+            null, null, null, null, null, // serviceDeliveryPoint, amiBillingReady, checkBilling, connectionState, estimatedLoad
+            null, null, null, null, // grounded, isSdp, isVirtual, minimalUsageExpected
+            null, null, null, null, null, // nominalServiceVoltage, outageRegion, phaseCode, ratedCurrent, ratedPower
+            null, null, null, null, // readCycle, readRoute, serviceDeliveryRemark, servicePriority
+            null, null, null, null, null // pnodeRefs, aggregatedNodeRefs, meterReadings, usageSummaries, electricPowerQualitySummaries
         );
 
+        // Wrap in Atom entry with description as title (IdentifiedObject fields handled by Atom layer)
+        AtomEntryDto entry = new AtomEntryDto("urn:uuid:test-usage-point", "Residential Electric Service", usagePoint);
+
         // Marshal to XML using Jackson 3
-        String xml = xmlMapper.writeValueAsString(usagePoint);
+        String xml = xmlMapper.writeValueAsString(entry);
 
         // Verify XML structure
+        assertThat(xml).contains("entry"); // Now wrapping in Atom entry
         assertThat(xml).contains("UsagePoint");
         assertThat(xml).contains("http://naesb.org/espi");
-        assertThat(xml).contains("Residential Electric Service");
+        assertThat(xml).contains("Residential Electric Service"); // In Atom title
         assertThat(xml).containsPattern("<status[^>]*>1</status>"); // May have xmlns attribute
     }
 
@@ -95,27 +101,32 @@ class Jackson3XmlMarshallingTest {
     @DisplayName("Should perform round-trip marshalling for UsagePointDto")
     void shouldPerformRoundTripMarshallingForUsagePoint() throws Exception {
         // Create original UsagePoint with comprehensive data
-        UsagePointDto original = new UsagePointDto(
+        UsagePointDto originalUsagePoint = new UsagePointDto(
             "urn:uuid:commercial-gas-point",
-            "Commercial Gas Service",
             new byte[]{0x02, 0x08}, // Gas consumer role flags
             null, // serviceCategory
             (short) 1, // Active status
-            null, null, null, null, // measurement fields
-            null, null, null, // reference fields
-            null, null, null // collection fields
+            null, null, null, null, null, // serviceDeliveryPoint, amiBillingReady, checkBilling, connectionState, estimatedLoad
+            null, null, null, null, // grounded, isSdp, isVirtual, minimalUsageExpected
+            null, null, null, null, null, // nominalServiceVoltage, outageRegion, phaseCode, ratedCurrent, ratedPower
+            null, null, null, null, // readCycle, readRoute, serviceDeliveryRemark, servicePriority
+            null, null, null, null, null // pnodeRefs, aggregatedNodeRefs, meterReadings, usageSummaries, electricPowerQualitySummaries
         );
 
+        // Wrap in Atom entry with description as title (IdentifiedObject fields handled by Atom layer)
+        AtomEntryDto originalEntry = new AtomEntryDto("urn:uuid:commercial-gas-point", "Commercial Gas Service", originalUsagePoint);
+
         // Marshal to XML using Jackson 3
-        String xml = xmlMapper.writeValueAsString(original);
+        String xml = xmlMapper.writeValueAsString(originalEntry);
 
         // Unmarshal back from XML using Jackson 3
-        UsagePointDto roundTrip = xmlMapper.readValue(xml, UsagePointDto.class);
+        AtomEntryDto roundTripEntry = xmlMapper.readValue(xml, AtomEntryDto.class);
 
         // Verify data integrity survived round trip
-        assertThat(roundTrip.description()).isEqualTo(original.description());
-        assertThat(roundTrip.status()).isEqualTo(original.status());
-        assertThat(roundTrip.roleFlags()).isEqualTo(original.roleFlags());
+        assertThat(roundTripEntry.title()).isEqualTo(originalEntry.title()); // Description is in Atom title
+        UsagePointDto roundTripUsagePoint = (UsagePointDto) roundTripEntry.content();
+        assertThat(roundTripUsagePoint.status()).isEqualTo(originalUsagePoint.status());
+        assertThat(roundTripUsagePoint.roleFlags()).isEqualTo(originalUsagePoint.roleFlags());
     }
 
     @Test
@@ -123,24 +134,34 @@ class Jackson3XmlMarshallingTest {
     void shouldHandleEmptyUsagePointWithoutErrors() throws Exception {
         // Create empty UsagePoint
         UsagePointDto empty = new UsagePointDto(
-            null, null, null, null, null,
-            null, null, null, null,
-            null, null, null,
-            null, null, null
+            null, // uuid
+            null, // roleFlags
+            null, // serviceCategory
+            null, // status
+            null, null, null, null, null, // serviceDeliveryPoint, amiBillingReady, checkBilling, connectionState, estimatedLoad
+            null, null, null, null, // grounded, isSdp, isVirtual, minimalUsageExpected
+            null, null, null, null, null, // nominalServiceVoltage, outageRegion, phaseCode, ratedCurrent, ratedPower
+            null, null, null, null, // readCycle, readRoute, serviceDeliveryRemark, servicePriority
+            null, null, null, null, null // pnodeRefs, aggregatedNodeRefs, meterReadings, usageSummaries, electricPowerQualitySummaries
         );
 
+        // Wrap in Atom entry (IdentifiedObject fields handled by Atom layer)
+        AtomEntryDto entry = new AtomEntryDto(null, null, empty);
+
         // Marshal to XML using Jackson 3
-        String xml = xmlMapper.writeValueAsString(empty);
+        String xml = xmlMapper.writeValueAsString(entry);
 
         // Should still contain basic structure
+        assertThat(xml).contains("entry");
         assertThat(xml).contains("UsagePoint");
         assertThat(xml).contains("http://naesb.org/espi");
 
         // Unmarshal back using Jackson 3
-        UsagePointDto roundTrip = xmlMapper.readValue(xml, UsagePointDto.class);
+        AtomEntryDto roundTripEntry = xmlMapper.readValue(xml, AtomEntryDto.class);
 
         // Should not throw exceptions
-        assertThat(roundTrip).isNotNull();
+        assertThat(roundTripEntry).isNotNull();
+        assertThat(roundTripEntry.content()).isNotNull();
     }
 
     @Test
@@ -149,23 +170,28 @@ class Jackson3XmlMarshallingTest {
         // Create UsagePoint with some null values
         UsagePointDto withNulls = new UsagePointDto(
             "urn:uuid:test-nulls",
-            null, // Null description
             null, // Null role flags
             null, // serviceCategory
             (short) 1, // Non-null status
-            null, null, null, null, // measurement fields
-            null, null, null, // reference fields
-            null, null, null // collection fields
+            null, null, null, null, null, // serviceDeliveryPoint, amiBillingReady, checkBilling, connectionState, estimatedLoad
+            null, null, null, null, // grounded, isSdp, isVirtual, minimalUsageExpected
+            null, null, null, null, null, // nominalServiceVoltage, outageRegion, phaseCode, ratedCurrent, ratedPower
+            null, null, null, null, // readCycle, readRoute, serviceDeliveryRemark, servicePriority
+            null, null, null, null, null // pnodeRefs, aggregatedNodeRefs, meterReadings, usageSummaries, electricPowerQualitySummaries
         );
 
+        // Wrap in Atom entry with null description/title (IdentifiedObject fields handled by Atom layer)
+        AtomEntryDto entry = new AtomEntryDto("urn:uuid:test-nulls", null, withNulls);
+
         // Marshal to XML using Jackson 3
-        String xml = xmlMapper.writeValueAsString(withNulls);
+        String xml = xmlMapper.writeValueAsString(entry);
 
         // Unmarshal back using Jackson 3
-        UsagePointDto roundTrip = xmlMapper.readValue(xml, UsagePointDto.class);
+        AtomEntryDto roundTripEntry = xmlMapper.readValue(xml, AtomEntryDto.class);
 
         // Verify nulls are preserved
-        assertThat(roundTrip.description()).isNull();
+        assertThat(roundTripEntry.title()).isNull(); // Null description is in Atom title
+        UsagePointDto roundTrip = (UsagePointDto) roundTripEntry.content();
         assertThat(roundTrip.roleFlags()).isNull();
         assertThat(roundTrip.status()).isEqualTo(withNulls.status());
     }
@@ -176,19 +202,26 @@ class Jackson3XmlMarshallingTest {
         // Create UsagePoint
         UsagePointDto usagePoint = new UsagePointDto(
             "urn:uuid:test-namespaces",
-            "Test Service",
-            null, null, null,
-            null, null, null, null,
-            null, null, null,
-            null, null, null
+            null, // roleFlags
+            null, // serviceCategory
+            null, // status
+            null, null, null, null, null, // serviceDeliveryPoint, amiBillingReady, checkBilling, connectionState, estimatedLoad
+            null, null, null, null, // grounded, isSdp, isVirtual, minimalUsageExpected
+            null, null, null, null, null, // nominalServiceVoltage, outageRegion, phaseCode, ratedCurrent, ratedPower
+            null, null, null, null, // readCycle, readRoute, serviceDeliveryRemark, servicePriority
+            null, null, null, null, null // pnodeRefs, aggregatedNodeRefs, meterReadings, usageSummaries, electricPowerQualitySummaries
         );
 
+        // Wrap in Atom entry with description as title (IdentifiedObject fields handled by Atom layer)
+        AtomEntryDto entry = new AtomEntryDto("urn:uuid:test-namespaces", "Test Service", usagePoint);
+
         // Marshal to XML using Jackson 3
-        String xml = xmlMapper.writeValueAsString(usagePoint);
+        String xml = xmlMapper.writeValueAsString(entry);
 
         // Verify namespace declarations
         assertThat(xml).contains("xmlns");
         assertThat(xml).contains("http://naesb.org/espi");
+        assertThat(xml).contains("http://www.w3.org/2005/Atom"); // Atom namespace
 
         // Verify no legacy namespaces
         assertThat(xml).doesNotContain("legacy");
@@ -198,18 +231,24 @@ class Jackson3XmlMarshallingTest {
     @Test
     @DisplayName("Should marshal special characters correctly")
     void shouldMarshalSpecialCharactersCorrectly() throws Exception {
-        // Create UsagePoint with special characters
+        // Create UsagePoint with special characters in description (will be in Atom title)
         UsagePointDto usagePoint = new UsagePointDto(
             "urn:uuid:test-special-chars",
-            "Service & Co. <Electric> \"Smart\" Meter",
-            null, null, null,
-            null, null, null, null,
-            null, null, null,
-            null, null, null
+            null, // roleFlags
+            null, // serviceCategory
+            null, // status
+            null, null, null, null, null, // serviceDeliveryPoint, amiBillingReady, checkBilling, connectionState, estimatedLoad
+            null, null, null, null, // grounded, isSdp, isVirtual, minimalUsageExpected
+            null, null, null, null, null, // nominalServiceVoltage, outageRegion, phaseCode, ratedCurrent, ratedPower
+            null, null, null, null, // readCycle, readRoute, serviceDeliveryRemark, servicePriority
+            null, null, null, null, null // pnodeRefs, aggregatedNodeRefs, meterReadings, usageSummaries, electricPowerQualitySummaries
         );
 
+        // Wrap in Atom entry with special characters in title (IdentifiedObject fields handled by Atom layer)
+        AtomEntryDto entry = new AtomEntryDto("urn:uuid:test-special-chars", "Service & Co. <Electric> \"Smart\" Meter", usagePoint);
+
         // Marshal to XML using Jackson 3
-        String xml = xmlMapper.writeValueAsString(usagePoint);
+        String xml = xmlMapper.writeValueAsString(entry);
 
         // Verify XML escaping
         assertThat(xml)
@@ -220,9 +259,9 @@ class Jackson3XmlMarshallingTest {
         assertThat(xml).contains("&lt;Electric>");  // < is escaped, > in quoted text may not be
 
         // Unmarshal back and verify data integrity using Jackson 3
-        UsagePointDto roundTrip = xmlMapper.readValue(xml, UsagePointDto.class);
+        AtomEntryDto roundTripEntry = xmlMapper.readValue(xml, AtomEntryDto.class);
 
-        assertThat(roundTrip.description()).isEqualTo(usagePoint.description());
+        assertThat(roundTripEntry.title()).isEqualTo(entry.title()); // Description is in Atom title
     }
 
     @Test
@@ -231,15 +270,21 @@ class Jackson3XmlMarshallingTest {
         // Create UsagePoint
         UsagePointDto usagePoint = new UsagePointDto(
             "urn:uuid:test-no-exceptions",
-            "Test Service",
-            null, null, null,
-            null, null, null, null,
-            null, null, null,
-            null, null, null
+            null, // roleFlags
+            null, // serviceCategory
+            null, // status
+            null, null, null, null, null, // serviceDeliveryPoint, amiBillingReady, checkBilling, connectionState, estimatedLoad
+            null, null, null, null, // grounded, isSdp, isVirtual, minimalUsageExpected
+            null, null, null, null, null, // nominalServiceVoltage, outageRegion, phaseCode, ratedCurrent, ratedPower
+            null, null, null, null, // readCycle, readRoute, serviceDeliveryRemark, servicePriority
+            null, null, null, null, null // pnodeRefs, aggregatedNodeRefs, meterReadings, usageSummaries, electricPowerQualitySummaries
         );
 
+        // Wrap in Atom entry with description as title (IdentifiedObject fields handled by Atom layer)
+        AtomEntryDto entry = new AtomEntryDto("urn:uuid:test-no-exceptions", "Test Service", usagePoint);
+
         // Verify marshalling does not throw using Jackson 3
-        assertThatCode(() -> xmlMapper.writeValueAsString(usagePoint))
+        assertThatCode(() -> xmlMapper.writeValueAsString(entry))
             .doesNotThrowAnyException();
     }
 }
