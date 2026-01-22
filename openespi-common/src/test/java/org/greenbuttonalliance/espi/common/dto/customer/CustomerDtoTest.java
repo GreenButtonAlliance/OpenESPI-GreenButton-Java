@@ -87,7 +87,8 @@ class CustomerDtoTest {
 
         // Assert - Basic structure
         assertThat(xml).startsWith("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-        assertThat(xml).contains("<feed xmlns=\"http://www.w3.org/2005/Atom\">");
+        assertThat(xml).contains("<atom:feed");
+        assertThat(xml).contains("xmlns:atom=\"http://www.w3.org/2005/Atom\"");
 
         // Assert - Customer namespace (cust: prefix for customer.xsd)
         assertThat(xml).contains("http://naesb.org/espi/customer");

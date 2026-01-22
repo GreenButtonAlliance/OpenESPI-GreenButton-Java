@@ -118,7 +118,7 @@ public class UsagePointRESTRepositoryImpl implements UsagePointRESTRepository {
 		AtomFeedDto feedDto = (AtomFeedDto) unmarshaller.unmarshal(new StringReader(xmlResponse));
 
 		// Use openespi-common mappers for transformation
-		List<UsagePointEntity> usagePoints = feedDto.entries().stream()
+		List<UsagePointEntity> usagePoints = feedDto.getEntries().stream()
 				.map(entry -> {
 					UsagePointDto dto = (UsagePointDto) entry.getResource();
 					return usagePointMapper.toEntity(dto);

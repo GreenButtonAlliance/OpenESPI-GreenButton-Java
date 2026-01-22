@@ -226,6 +226,8 @@ public class DtoExportServiceImpl implements DtoExportService {
             // Atom protocol classes
             org.greenbuttonalliance.espi.common.dto.atom.AtomFeedDto.class,
             org.greenbuttonalliance.espi.common.dto.atom.AtomEntryDto.class,
+            org.greenbuttonalliance.espi.common.dto.atom.UsageAtomEntryDto.class,
+            org.greenbuttonalliance.espi.common.dto.atom.CustomerAtomEntryDto.class,
             org.greenbuttonalliance.espi.common.dto.atom.LinkDto.class,
 
             // Usage domain classes (http://naesb.org/espi)
