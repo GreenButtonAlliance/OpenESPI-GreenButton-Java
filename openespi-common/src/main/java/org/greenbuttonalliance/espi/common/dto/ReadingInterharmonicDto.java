@@ -22,34 +22,36 @@ package org.greenbuttonalliance.espi.common.dto;
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlType;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.math.BigInteger;
 
 /**
- * ReadingInterharmonic DTO record for JAXB XML marshalling/unmarshalling.
- * 
+ * ReadingInterharmonic DTO class for JAXB XML marshalling/unmarshalling.
+ *
  * Represents an interharmonic measurement with numerator and denominator components
  * as defined in the NAESB ESPI standard for power quality measurements.
- * 
+ *
  * Interharmonics are sinusoidal components with frequencies that are not integer
  * multiples of the fundamental frequency. They can cause distortion in power systems.
- * 
+ *
  * @author Green Button Alliance
  * @version 1.4.0
  * @since Spring Boot 3.5
  */
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "ReadingInterharmonic", propOrder = { "numerator", "denominator" })
-public record ReadingInterharmonicDto(
-    BigInteger numerator,
-    BigInteger denominator
-) {
-    /**
-     * Default constructor for JAXB compatibility.
-     */
-    public ReadingInterharmonicDto() {
-        this(null, null);
-    }
-    
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class ReadingInterharmonicDto {
+    private BigInteger numerator;
+    private BigInteger denominator;
+
     /**
      * Constructor with numerator only (denominator defaults to 1).
      *

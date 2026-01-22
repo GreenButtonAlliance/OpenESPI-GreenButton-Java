@@ -20,13 +20,18 @@
 package org.greenbuttonalliance.espi.common.dto.usage;
 
 import jakarta.xml.bind.annotation.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 
 /**
- * DateTimeInterval DTO record for JAXB XML marshalling/unmarshalling.
- * 
+ * DateTimeInterval DTO class for JAXB XML marshalling/unmarshalling.
+ *
  * Represents a time interval with start and duration.
  * Used in various Green Button resources for time-based data.
  */
@@ -35,46 +40,49 @@ import java.time.ZoneOffset;
 @XmlType(name = "DateTimeInterval", namespace = "http://naesb.org/espi", propOrder = {
     "start", "duration"
 })
-public record DateTimeIntervalDto(
-    
-    @XmlElement(name = "start")
-    Long start,
-    
-    @XmlElement(name = "duration")
-    Long duration
-) {
-    
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class DateTimeIntervalDto {
+
+    @XmlElement(name = "start", namespace = "http://naesb.org/espi")
+    private Long start;
+
+    @XmlElement(name = "duration", namespace = "http://naesb.org/espi")
+    private Long duration;
+
     /**
      * Gets the start time as OffsetDateTime.
-     * 
+     *
      * @return start time as OffsetDateTime or null
      */
     public OffsetDateTime getStartDateTime() {
         return start != null ? Instant.ofEpochSecond(start.longValue()).atOffset(ZoneOffset.UTC) : null;
     }
-    
+
     /**
      * Gets the end time as epoch seconds.
-     * 
+     *
      * @return end time or null if start or duration is null
      */
     public Long getEnd() {
         return start != null && duration != null ? start + duration : null;
     }
-    
+
     /**
      * Gets the end time as OffsetDateTime.
-     * 
+     *
      * @return end time as OffsetDateTime or null
      */
     public OffsetDateTime getEndDateTime() {
         Long end = getEnd();
         return end != null ? Instant.ofEpochSecond(end.longValue()).atOffset(ZoneOffset.UTC) : null;
     }
-    
+
     /**
      * Factory method for creating from OffsetDateTime.
-     * 
+     *
      * @param startDateTime the start time as OffsetDateTime
      * @param duration the duration in seconds
      * @return new DateTimeIntervalDto instance

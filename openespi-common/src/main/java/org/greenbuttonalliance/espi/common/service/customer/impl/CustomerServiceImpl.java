@@ -21,7 +21,6 @@ package org.greenbuttonalliance.espi.common.service.customer.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerEntity;
-import org.greenbuttonalliance.espi.common.domain.customer.enums.CustomerKind;
 import org.greenbuttonalliance.espi.common.repositories.customer.CustomerRepository;
 import org.greenbuttonalliance.espi.common.service.customer.CustomerService;
 import org.springframework.stereotype.Service;
@@ -33,8 +32,9 @@ import java.util.UUID;
 
 /**
  * Service implementation for Customer PII data management.
- * 
+ *
  * Provides business logic for Customer schema operations with proper PII handling.
+ * Per ESPI 4.0 API specification, only basic CRUD operations are supported.
  */
 @Service
 @Transactional
@@ -53,54 +53,6 @@ public class CustomerServiceImpl implements CustomerService {
     @Transactional(readOnly = true)
     public Optional<CustomerEntity> findById(UUID id) {
         return customerRepository.findById(id);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<CustomerEntity> findByCustomerName(String customerName) {
-        return customerRepository.findByCustomerName(customerName);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<CustomerEntity> findByKind(CustomerKind kind) {
-        return customerRepository.findByKind(kind);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<CustomerEntity> findByPucNumber(String pucNumber) {
-        return customerRepository.findByPucNumber(pucNumber);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<CustomerEntity> findVipCustomers() {
-        return customerRepository.findVipCustomers();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<CustomerEntity> findCustomersWithSpecialNeeds() {
-        return customerRepository.findCustomersWithSpecialNeeds();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<CustomerEntity> findByLocale(String locale) {
-        return customerRepository.findByLocale(locale);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<CustomerEntity> findByPriorityRange(Integer minPriority, Integer maxPriority) {
-        return customerRepository.findByPriorityRange(minPriority, maxPriority);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<CustomerEntity> findByOrganisationName(String organisationName) {
-        return customerRepository.findByOrganisationName(organisationName);
     }
 
     @Override
@@ -127,11 +79,5 @@ public class CustomerServiceImpl implements CustomerService {
     @Transactional(readOnly = true)
     public long countCustomers() {
         return customerRepository.count();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public long countByKind(CustomerKind kind) {
-        return customerRepository.findByKind(kind).size();
     }
 }

@@ -20,60 +20,50 @@
 package org.greenbuttonalliance.espi.common.dto.usage;
 
 import jakarta.xml.bind.annotation.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
- * TariffRiderRef DTO record for JAXB XML marshalling/unmarshalling.
- * 
- * Represents a single tariff rider reference containing rate options applied 
+ * TariffRiderRef DTO class for JAXB XML marshalling/unmarshalling.
+ *
+ * Represents a single tariff rider reference containing rate options applied
  * to the base tariff profile, enrollment status, and effective date.
- * 
+ *
  * Part of the NAESB ESPI ServiceDeliveryPoint structure for customer billing arrangements.
  */
-@XmlAccessorType(XmlAccessType.PROPERTY)
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "TariffRiderRef", namespace = "http://naesb.org/espi", propOrder = {
     "riderType", "enrollmentStatus", "effectiveDate"
 })
-public record TariffRiderRefDto(
-    
-    String riderType,
-    String enrollmentStatus,
-    Long effectiveDate
-) {
-    
+public class TariffRiderRefDto {
+
     /**
      * Rate options applied to the base tariff profile.
      * Examples: "TIME_OF_USE_PEAK", "NET_METERING", "DEMAND_RESPONSE", "GREEN_TARIFF"
      */
     @XmlElement(name = "riderType")
-    public String getRiderType() {
-        return riderType;
-    }
-    
+    private String riderType;
+
     /**
      * Retail Customer's Tariff Rider enrollment status.
      * Examples: "ENROLLED", "PENDING", "CANCELLED", "SUSPENDED"
      */
     @XmlElement(name = "enrollmentStatus")
-    public String getEnrollmentStatus() {
-        return enrollmentStatus;
-    }
-    
+    private String enrollmentStatus;
+
     /**
      * Effective date of Retail Customer's Tariff Rider enrollment status.
      * Stored as epoch seconds (TimeType in ESPI).
      */
     @XmlElement(name = "effectiveDate")
-    public Long getEffectiveDate() {
-        return effectiveDate;
-    }
-    
-    /**
-     * Default constructor for JAXB.
-     */
-    public TariffRiderRefDto() {
-        this(null, null, null);
-    }
-    
+    private Long effectiveDate;
+
     /**
      * Constructor with rider type and enrollment status.
      * Effective date defaults to current time.

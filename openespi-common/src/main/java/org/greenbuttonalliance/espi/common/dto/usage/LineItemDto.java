@@ -20,10 +20,14 @@
 package org.greenbuttonalliance.espi.common.dto.usage;
 
 import jakarta.xml.bind.annotation.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.greenbuttonalliance.espi.common.dto.SummaryMeasurementDto;
 
 /**
- * LineItem DTO record for JAXB XML marshalling/unmarshalling.
+ * LineItem DTO class for JAXB XML marshalling/unmarshalling.
  *
  * Represents a line item of detail for additional cost.
  * Contains billing line item details including amount, rounding, timestamp,
@@ -34,97 +38,69 @@ import org.greenbuttonalliance.espi.common.dto.SummaryMeasurementDto;
  *
  * Part of the NAESB ESPI UsageSummary structure for detailed cost breakdowns.
  */
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @XmlRootElement(name = "LineItem", namespace = "http://naesb.org/espi")
-@XmlAccessorType(XmlAccessType.PROPERTY)
+@XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "LineItem", namespace = "http://naesb.org/espi", propOrder = {
     "amount", "rounding", "dateTime", "note", "measurement", "itemKind", "unitCost", "itemPeriod"
 })
-public record LineItemDto(
-    Long amount,
-    Long rounding,
-    Long dateTime,
-    String note,
-    SummaryMeasurementDto measurement,
-    Integer itemKind,
-    Long unitCost,
-    DateTimeIntervalDto itemPeriod
-) {
+public class LineItemDto {
 
     /**
      * Cost of line item in currency minor units (e.g., cents).
      */
     @XmlElement(name = "amount")
-    public Long getAmount() {
-        return amount;
-    }
+    private Long amount;
 
     /**
      * Rounding adjustment applied to the line item amount.
      */
     @XmlElement(name = "rounding")
-    public Long getRounding() {
-        return rounding;
-    }
+    private Long rounding;
 
     /**
      * Significant date/time for this line item.
      * Stored as epoch seconds (TimeType in ESPI).
      */
     @XmlElement(name = "dateTime")
-    public Long getDateTime() {
-        return dateTime;
-    }
+    private Long dateTime;
 
     /**
      * Comment or description of the line item.
      */
     @XmlElement(name = "note")
-    public String getNote() {
-        return note;
-    }
+    private String note;
 
     /**
      * Relevant measurement for the line item (extension field).
      * Contains measurement value, unit, multiplier, and reading type reference.
      */
     @XmlElement(name = "measurement")
-    public SummaryMeasurementDto getMeasurement() {
-        return measurement;
-    }
+    private SummaryMeasurementDto measurement;
 
     /**
      * Classification of the line item (extension field).
      * ItemKind enumeration values (e.g., 1=Energy Generation Fee, 2=Energy Delivery Fee, etc.).
      */
     @XmlElement(name = "itemKind")
-    public Integer getItemKind() {
-        return itemKind;
-    }
+    private Integer itemKind;
 
     /**
      * Per unit cost (extension field).
      * Cost per unit of measurement.
      */
     @XmlElement(name = "unitCost")
-    public Long getUnitCost() {
-        return unitCost;
-    }
+    private Long unitCost;
 
     /**
      * Time period covered by this line item (extension field).
      * Supports pricing changes in the middle of a billing period.
      */
     @XmlElement(name = "itemPeriod")
-    public DateTimeIntervalDto getItemPeriod() {
-        return itemPeriod;
-    }
-
-    /**
-     * Default constructor for JAXB.
-     */
-    public LineItemDto() {
-        this(null, null, null, null, null, null, null, null);
-    }
+    private DateTimeIntervalDto itemPeriod;
 
     /**
      * Constructor with basic line item information.

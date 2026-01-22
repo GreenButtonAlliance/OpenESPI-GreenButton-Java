@@ -147,13 +147,11 @@ CREATE TABLE customers
     priority_rank                        INTEGER,
     priority_type                        VARCHAR(256),
 
-    -- Customer specific fields
+    -- Customer specific fields (field order matches customer.xsd:72-112)
     kind                 VARCHAR(50),
     special_need         VARCHAR(255),
     vip                  BOOLEAN              DEFAULT FALSE,
     puc_number           VARCHAR(100),
-    status               VARCHAR(50),
-    priority             VARCHAR(50),
     locale               VARCHAR(10),
     customer_name        VARCHAR(255),
 
@@ -167,7 +165,7 @@ CREATE TABLE customers
 -- Indexes for customers table
 CREATE INDEX idx_customer_kind ON customers (kind);
 CREATE INDEX idx_customer_puc_number ON customers (puc_number);
-CREATE INDEX idx_customer_status ON customers (status);
+CREATE INDEX idx_customer_status ON customers (status_value);
 CREATE INDEX idx_customer_created ON customers (created);
 CREATE INDEX idx_customer_updated ON customers (updated);
 

@@ -24,11 +24,15 @@ import org.greenbuttonalliance.espi.common.dto.SummaryMeasurementDto;
 import org.greenbuttonalliance.espi.common.dto.atom.LinkDto;
 
 import jakarta.xml.bind.annotation.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
- * UsageSummary DTO record for JAXB XML marshalling/unmarshalling.
+ * UsageSummary DTO class for JAXB XML marshalling/unmarshalling.
  * <p>
  * Represents aggregated usage data for a usage point.
  * Per ESPI 4.0 XSD (espi.xsd:806-939), UsageSummary extends IdentifiedObject
@@ -36,8 +40,12 @@ import java.util.List;
  * <p>
  * Supports Atom protocol XML wrapping with published, updated, and link metadata.
  */
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @XmlRootElement(name = "UsageSummary", namespace = "http://naesb.org/espi")
-@XmlAccessorType(XmlAccessType.PROPERTY)
+@XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "UsageSummary", namespace = "http://naesb.org/espi", propOrder = {
     "billingPeriod", "billLastPeriod", "billToDate",
     "costAdditionalLastPeriod", "costAdditionalDetailLastPeriod", "currency",
@@ -48,276 +56,85 @@ import java.util.List;
     "ratchetDemand", "ratchetDemandPeriod", "statusTimeStamp", "commodity",
     "tariffProfile", "readCycle", "tariffRiderRefs", "billingChargeSource"
 })
-public record UsageSummaryDto(
+public class UsageSummaryDto {
 
     @XmlTransient
-    Long id,
+    private Long id;
 
     @XmlAttribute(name = "mRID")
-    String uuid,
+    private String uuid;
 
-    DateTimeIntervalDto billingPeriod,
-    Long billLastPeriod,
-    Long billToDate,
-    Long costAdditionalLastPeriod,
-    List<LineItemDto> costAdditionalDetailLastPeriod,
-    String currency,
-    SummaryMeasurementDto overallConsumptionLastPeriod,
-    SummaryMeasurementDto currentBillingPeriodOverAllConsumption,
-    SummaryMeasurementDto currentDayLastYearNetConsumption,
-    SummaryMeasurementDto currentDayNetConsumption,
-    SummaryMeasurementDto currentDayOverallConsumption,
-    SummaryMeasurementDto peakDemand,
-    SummaryMeasurementDto previousDayLastYearOverallConsumption,
-    SummaryMeasurementDto previousDayNetConsumption,
-    SummaryMeasurementDto previousDayOverallConsumption,
-    String qualityOfReading,
-    SummaryMeasurementDto ratchetDemand,
-    DateTimeIntervalDto ratchetDemandPeriod,
-    Long statusTimeStamp,
-    Integer commodity,
-    String tariffProfile,
-    String readCycle,
-    TariffRiderRefsDto tariffRiderRefs,
-    BillingChargeSourceDto billingChargeSource
-) {
-
-    /**
-     * The billing period to which the included measurements apply.
-     * May also be an off-bill arbitrary period.
-     */
     @XmlElement(name = "billingPeriod")
-    public DateTimeIntervalDto getBillingPeriod() {
-        return billingPeriod;
-    }
+    private DateTimeIntervalDto billingPeriod;
 
-    /**
-     * The amount of the bill for the referenced billingPeriod in hundred-thousandths
-     * of the currency specified in the ReadingType (e.g., 840 = USD).
-     */
     @XmlElement(name = "billLastPeriod")
-    public Long getBillLastPeriod() {
-        return billLastPeriod;
-    }
+    private Long billLastPeriod;
 
-    /**
-     * If the summary contains data from a current period beyond the end of the
-     * referenced billingPeriod, the bill amount as of the date the summary is generated,
-     * in hundred-thousandths of the currency.
-     */
     @XmlElement(name = "billToDate")
-    public Long getBillToDate() {
-        return billToDate;
-    }
+    private Long billToDate;
 
-    /**
-     * Additional charges from the referenced billingPeriod, in hundred-thousandths
-     * of the currency specified in the ReadingType.
-     */
     @XmlElement(name = "costAdditionalLastPeriod")
-    public Long getCostAdditionalLastPeriod() {
-        return costAdditionalLastPeriod;
-    }
+    private Long costAdditionalLastPeriod;
 
-    /**
-     * Additional charges from the referenced billingPeriod which in total add up
-     * to costAdditionalLastPeriod.
-     * Extension field.
-     */
     @XmlElement(name = "costAdditionalDetailLastPeriod")
-    public List<LineItemDto> getCostAdditionalDetailLastPeriod() {
-        return costAdditionalDetailLastPeriod;
-    }
+    private List<LineItemDto> costAdditionalDetailLastPeriod;
 
-    /**
-     * The ISO 4217 code indicating the currency applicable to the bill amounts
-     * in the summary.
-     */
     @XmlElement(name = "currency")
-    public String getCurrency() {
-        return currency;
-    }
+    private String currency;
 
-    /**
-     * The amount of energy consumed for the referenced billingPeriod.
-     * Extension field.
-     */
     @XmlElement(name = "overallConsumptionLastPeriod")
-    public SummaryMeasurementDto getOverallConsumptionLastPeriod() {
-        return overallConsumptionLastPeriod;
-    }
+    private SummaryMeasurementDto overallConsumptionLastPeriod;
 
-    /**
-     * If the summary contains data from a current period beyond the end of the
-     * referenced billingPeriod, the total consumption for the billing period.
-     */
     @XmlElement(name = "currentBillingPeriodOverAllConsumption")
-    public SummaryMeasurementDto getCurrentBillingPeriodOverAllConsumption() {
-        return currentBillingPeriodOverAllConsumption;
-    }
+    private SummaryMeasurementDto currentBillingPeriodOverAllConsumption;
 
-    /**
-     * If the summary contains data from a current period beyond the end of the
-     * referenced billingPeriod, the amount of energy consumed one year ago interpreted
-     * as same day of week same week of year (see ISO 8601) based on the day of the statusTimeStamp.
-     */
     @XmlElement(name = "currentDayLastYearNetConsumption")
-    public SummaryMeasurementDto getCurrentDayLastYearNetConsumption() {
-        return currentDayLastYearNetConsumption;
-    }
+    private SummaryMeasurementDto currentDayLastYearNetConsumption;
 
-    /**
-     * If the summary contains data from a current period beyond the end of the
-     * referenced billingPeriod, net consumption for the current day (delivered - received)
-     * based on the day of the statusTimeStamp.
-     */
     @XmlElement(name = "currentDayNetConsumption")
-    public SummaryMeasurementDto getCurrentDayNetConsumption() {
-        return currentDayNetConsumption;
-    }
+    private SummaryMeasurementDto currentDayNetConsumption;
 
-    /**
-     * If the summary contains data from a current period beyond the end of the
-     * referenced billingPeriod, overall energy consumption for the current day,
-     * based on the day of the statusTimeStamp.
-     */
     @XmlElement(name = "currentDayOverallConsumption")
-    public SummaryMeasurementDto getCurrentDayOverallConsumption() {
-        return currentDayOverallConsumption;
-    }
+    private SummaryMeasurementDto currentDayOverallConsumption;
 
-    /**
-     * If the summary contains data from a current period beyond the end of the
-     * referenced billingPeriod, peak demand recorded for the current period.
-     */
     @XmlElement(name = "peakDemand")
-    public SummaryMeasurementDto getPeakDemand() {
-        return peakDemand;
-    }
+    private SummaryMeasurementDto peakDemand;
 
-    /**
-     * If the summary contains data from a current period beyond the end of the
-     * referenced billingPeriod, the amount of energy consumed on the previous day
-     * one year ago interpreted as same day of week same week of year (see ISO 8601)
-     * based on the day of the statusTimestamp.
-     */
     @XmlElement(name = "previousDayLastYearOverallConsumption")
-    public SummaryMeasurementDto getPreviousDayLastYearOverallConsumption() {
-        return previousDayLastYearOverallConsumption;
-    }
+    private SummaryMeasurementDto previousDayLastYearOverallConsumption;
 
-    /**
-     * If the summary contains data from a current period beyond the end of the
-     * referenced billingPeriod, net consumption for the previous day relative to
-     * the day of the statusTimestamp.
-     */
     @XmlElement(name = "previousDayNetConsumption")
-    public SummaryMeasurementDto getPreviousDayNetConsumption() {
-        return previousDayNetConsumption;
-    }
+    private SummaryMeasurementDto previousDayNetConsumption;
 
-    /**
-     * If the summary contains data from a current period beyond the end of the
-     * referenced billingPeriod, the total consumption for the previous day based
-     * on the day of the statusTimestamp.
-     */
     @XmlElement(name = "previousDayOverallConsumption")
-    public SummaryMeasurementDto getPreviousDayOverallConsumption() {
-        return previousDayOverallConsumption;
-    }
+    private SummaryMeasurementDto previousDayOverallConsumption;
 
-    /**
-     * Indication of the quality of the summary readings.
-     * QualityOfReading enumeration value.
-     */
     @XmlElement(name = "qualityOfReading")
-    public String getQualityOfReading() {
-        return qualityOfReading;
-    }
+    private String qualityOfReading;
 
-    /**
-     * If the summary contains data from a current period beyond the end of the
-     * referenced billingPeriod, the current ratchet demand value for the ratchet
-     * demand over the ratchetDemandPeriod.
-     */
     @XmlElement(name = "ratchetDemand")
-    public SummaryMeasurementDto getRatchetDemand() {
-        return ratchetDemand;
-    }
+    private SummaryMeasurementDto ratchetDemand;
 
-    /**
-     * The period over which the ratchet demand applies.
-     */
     @XmlElement(name = "ratchetDemandPeriod")
-    public DateTimeIntervalDto getRatchetDemandPeriod() {
-        return ratchetDemandPeriod;
-    }
+    private DateTimeIntervalDto ratchetDemandPeriod;
 
-    /**
-     * Date/Time status of this UsageSummary.
-     * Required field - TimeType (epoch seconds).
-     */
     @XmlElement(name = "statusTimeStamp")
-    public Long getStatusTimeStamp() {
-        return statusTimeStamp;
-    }
+    private Long statusTimeStamp;
 
-    /**
-     * The commodity for this summary report.
-     * CommodityKind enumeration value.
-     * Extension field.
-     */
     @XmlElement(name = "commodity")
-    public Integer getCommodity() {
-        return commodity;
-    }
+    private Integer commodity;
 
-    /**
-     * A schedule of charges; structure associated with Tariff that allows the
-     * definition of complex tariff structures such as step and time of use.
-     * Extension field, maximum length 256 characters.
-     */
     @XmlElement(name = "tariffProfile")
-    public String getTariffProfile() {
-        return tariffProfile;
-    }
+    private String tariffProfile;
 
-    /**
-     * Cycle day on which the meter for this usage point will normally be read.
-     * Usually correlated with the billing cycle.
-     * Extension field, maximum length 256 characters.
-     */
     @XmlElement(name = "readCycle")
-    public String getReadCycle() {
-        return readCycle;
-    }
+    private String readCycle;
 
-    /**
-     * List of rate options applied to the base tariff profile.
-     * Extension field.
-     */
     @XmlElement(name = "tariffRiderRefs")
-    public TariffRiderRefsDto getTariffRiderRefs() {
-        return tariffRiderRefs;
-    }
+    private TariffRiderRefsDto tariffRiderRefs;
 
-    /**
-     * Source of Billing Charge.
-     * Extension field.
-     */
     @XmlElement(name = "billingChargeSource")
-    public BillingChargeSourceDto getBillingChargeSource() {
-        return billingChargeSource;
-    }
-
-    /**
-     * Default constructor for JAXB.
-     */
-    public UsageSummaryDto() {
-        this(null, null, null, null, null, null, null, null,
-             null, null, null, null, null, null, null, null,
-             null, null, null, null, null, null, null, null, null, null);
-    }
+    private BillingChargeSourceDto billingChargeSource;
 
     /**
      * Minimal constructor for basic usage summary data.

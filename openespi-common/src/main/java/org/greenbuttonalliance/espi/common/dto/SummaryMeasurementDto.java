@@ -20,87 +20,71 @@
 package org.greenbuttonalliance.espi.common.dto;
 
 import jakarta.xml.bind.annotation.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
- * SummaryMeasurement DTO record for JAXB XML marshalling/unmarshalling.
- * 
+ * SummaryMeasurement DTO class for JAXB XML marshalling/unmarshalling.
+ *
  * Represents an aggregated summary measurement reading used in various
  * ESPI resources like UsagePoint, UsageSummary, etc.
- * 
+ *
  * Contains value, unit of measure, power of ten multiplier, timestamp, and readingTypeRef.
- * 
+ *
  * IMPORTANT: readingTypeRef business rules per NAESB ESPI standard:
  * - If UsagePoint atom 'related' readingType href URL is present: readingTypeRef is redundant and should be null/omitted
  * - If no 'related' readingType href URL exists: readingTypeRef should default to the atom 'self' link's href URL
  */
-@XmlAccessorType(XmlAccessType.PROPERTY)
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "SummaryMeasurement", namespace = "http://naesb.org/espi", propOrder = {
     "powerOfTenMultiplier", "timeStamp", "uom", "value", "readingTypeRef"
 })
-public record SummaryMeasurementDto(
-    
-    String powerOfTenMultiplier,
-    Long timeStamp,
-    String uom,
-    Long value,
-    String readingTypeRef
-) {
-    
+public class SummaryMeasurementDto {
+
     /**
-     * Gets the power of ten multiplier for the measurement.
+     * Power of ten multiplier for the measurement.
      * Used to scale the value (e.g., "3" for kilo, "6" for mega).
      */
     @XmlElement(name = "powerOfTenMultiplier")
-    public String getPowerOfTenMultiplier() {
-        return powerOfTenMultiplier;
-    }
-    
+    private String powerOfTenMultiplier;
+
     /**
-     * Gets the timestamp when this measurement was taken.
+     * Timestamp when this measurement was taken.
      * Stored as epoch seconds (TimeType in ESPI).
      */
     @XmlElement(name = "timeStamp")
-    public Long getTimeStamp() {
-        return timeStamp;
-    }
-    
+    private Long timeStamp;
+
     /**
-     * Gets the unit of measure for this measurement.
+     * Unit of measure for this measurement.
      * Examples: "W" (watts), "V" (volts), "A" (amperes).
      */
     @XmlElement(name = "uom")
-    public String getUom() {
-        return uom;
-    }
-    
+    private String uom;
+
     /**
-     * Gets the measurement value.
+     * Measurement value.
      * Combined with powerOfTenMultiplier to get the actual value.
      */
     @XmlElement(name = "value")
-    public Long getValue() {
-        return value;
-    }
-    
+    private Long value;
+
     /**
-     * Gets the reading type reference (URI).
+     * Reading type reference (URI).
      * Extension reference to a full ReadingType resource.
-     * 
+     *
      * BUSINESS RULE: Per NAESB ESPI standard:
      * - Returns null if UsagePoint atom 'related' readingType href URL is present (redundant)
      * - Returns atom 'self' link href URL if no 'related' readingType href exists
      */
     @XmlElement(name = "readingTypeRef")
-    public String getReadingTypeRef() {
-        return readingTypeRef;
-    }
-    
-    /**
-     * Default constructor for JAXB.
-     */
-    public SummaryMeasurementDto() {
-        this(null, null, null, null, null);
-    }
+    private String readingTypeRef;
     
     /**
      * Constructor with value and unit of measure.

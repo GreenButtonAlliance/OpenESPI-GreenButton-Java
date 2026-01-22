@@ -20,9 +20,13 @@
 package org.greenbuttonalliance.espi.common.dto.usage;
 
 import jakarta.xml.bind.annotation.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
- * ReadingQuality DTO record for JAXB XML marshalling/unmarshalling.
+ * ReadingQuality DTO class for JAXB XML marshalling/unmarshalling.
  *
  * Represents quality indicators for readings, providing information about
  * the accuracy, validation status, and reliability of meter readings.
@@ -35,16 +39,12 @@ import jakarta.xml.bind.annotation.*;
 @XmlType(name = "ReadingQuality", namespace = "http://naesb.org/espi", propOrder = {
     "quality"
 })
-public record ReadingQualityDto(
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class ReadingQualityDto {
 
-    @XmlElement(name = "quality")
-    String quality
-) {
-
-    /**
-     * Default constructor for JAXB.
-     */
-    public ReadingQualityDto() {
-        this(null);
-    }
+    @XmlElement(name = "quality", namespace = "http://naesb.org/espi")
+    private String quality;
 }

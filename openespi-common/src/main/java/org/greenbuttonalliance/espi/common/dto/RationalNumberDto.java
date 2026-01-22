@@ -22,31 +22,33 @@ package org.greenbuttonalliance.espi.common.dto;
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlType;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.math.BigInteger;
 
 /**
- * RationalNumber DTO record for JAXB XML marshalling/unmarshalling.
- * 
+ * RationalNumber DTO class for JAXB XML marshalling/unmarshalling.
+ *
  * Represents a rational number with numerator and denominator components
  * as defined in the NAESB ESPI standard.
- * 
+ *
  * @author Green Button Alliance
  * @version 1.4.0
  * @since Spring Boot 3.5
  */
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "RationalNumber", propOrder = { "numerator", "denominator" })
-public record RationalNumberDto(
-    BigInteger numerator,
-    BigInteger denominator
-) {
-    /**
-     * Default constructor for JAXB compatibility.
-     */
-    public RationalNumberDto() {
-        this(null, null);
-    }
-    
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class RationalNumberDto {
+    private BigInteger numerator;
+    private BigInteger denominator;
+
     /**
      * Constructor with numerator only (denominator defaults to 1).
      *

@@ -20,14 +20,9 @@
 package org.greenbuttonalliance.espi.common.repositories.customer;
 
 import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerEntity;
-import org.greenbuttonalliance.espi.common.domain.customer.enums.CustomerKind;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -35,56 +30,12 @@ import java.util.UUID;
  * <p>
  * Provides Customer schema specific query methods for Customer PII data access.
  * Customer data is separated from Usage data for privacy and compliance reasons.
+ * <p>
+ * Per ESPI 4.0 API specification, only findById is supported (provided by JpaRepository).
+ * Removed queries: findByCustomerName, findByKind, findByPucNumber, findVipCustomers,
+ * findCustomersWithSpecialNeeds, findByLocale, findByPriorityRange, findByOrganisationName
  */
 @Repository
 public interface CustomerRepository extends JpaRepository<CustomerEntity, UUID> {
-
-
-    /**
-     * Find customer by customer name (case insensitive).
-     */
-    @Query("SELECT c FROM CustomerEntity c WHERE UPPER(c.customerName) = UPPER(:customerName)")
-    Optional<CustomerEntity> findByCustomerName(@Param("customerName") String customerName);
-
-    /**
-     * Find customers by kind.
-     */
-    @Query("SELECT c FROM CustomerEntity c WHERE c.kind = :kind")
-    List<CustomerEntity> findByKind(@Param("kind") CustomerKind kind);
-
-    /**
-     * Find customers by PUC number.
-     */
-    @Query("SELECT c FROM CustomerEntity c WHERE c.pucNumber = :pucNumber")
-    Optional<CustomerEntity> findByPucNumber(@Param("pucNumber") String pucNumber);
-
-    /**
-     * Find customers with VIP status.
-     */
-    @Query("SELECT c FROM CustomerEntity c WHERE c.vip = true")
-    List<CustomerEntity> findVipCustomers();
-
-    /**
-     * Find customers with special needs.
-     */
-    @Query("SELECT c FROM CustomerEntity c WHERE c.specialNeed IS NOT NULL AND c.specialNeed != '' AND c.specialNeed != 'NONE'")
-    List<CustomerEntity> findCustomersWithSpecialNeeds();
-
-    /**
-     * Find customers by locale.
-     */
-    @Query("SELECT c FROM CustomerEntity c WHERE c.locale = :locale")
-    List<CustomerEntity> findByLocale(@Param("locale") String locale);
-
-    /**
-     * Find customers by priority value range.
-     */
-    @Query("SELECT c FROM CustomerEntity c WHERE c.priority.value BETWEEN :minPriority AND :maxPriority")
-    List<CustomerEntity> findByPriorityRange(@Param("minPriority") Integer minPriority, @Param("maxPriority") Integer maxPriority);
-
-    /**
-     * Find customers by organisation name.
-     */
-    @Query("SELECT c FROM CustomerEntity c WHERE c.organisation.organisationName = :organisationName")
-    List<CustomerEntity> findByOrganisationName(@Param("organisationName") String organisationName);
+    // Only default JpaRepository methods are supported (findById, findAll, save, delete, etc.)
 }

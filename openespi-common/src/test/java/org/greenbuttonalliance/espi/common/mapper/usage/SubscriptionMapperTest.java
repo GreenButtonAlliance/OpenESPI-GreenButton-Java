@@ -21,6 +21,7 @@ package org.greenbuttonalliance.espi.common.mapper.usage;
 
 import org.greenbuttonalliance.espi.common.domain.usage.SubscriptionEntity;
 import org.greenbuttonalliance.espi.common.dto.atom.AtomEntryDto;
+import org.greenbuttonalliance.espi.common.dto.atom.UsageAtomEntryDto;
 import org.greenbuttonalliance.espi.common.dto.atom.AtomFeedDto;
 import org.greenbuttonalliance.espi.common.dto.usage.MeterReadingDto;
 import org.greenbuttonalliance.espi.common.dto.usage.SubscriptionDto;
@@ -76,7 +77,7 @@ class SubscriptionMapperTest {
         assertThat(dto.getSubscriptionId()).isEqualTo(TEST_SUBSCRIPTION_ID.toString());
         assertThat(dto.getSchemaType()).isEqualTo(SubscriptionDto.SchemaType.ENERGY);
         assertThat(dto.getLinks()).hasSize(1); // Only self link
-        assertThat(dto.getLinks().get(0).rel()).isEqualTo("self");
+        assertThat(dto.getLinks().get(0).getRel()).isEqualTo("self");
     }
 
     @Test
@@ -92,7 +93,7 @@ class SubscriptionMapperTest {
 
         assertThat(dto.getLinks()).hasSize(2); // self + related
         assertThat(dto.getLinks().stream()
-            .filter(link -> "related".equals(link.rel()))
+            .filter(link -> "related".equals(link.getRel()))
             .findFirst())
             .isPresent();
     }
@@ -107,7 +108,7 @@ class SubscriptionMapperTest {
 
         assertThat(dto.getLinks()).hasSize(1); // Only self link
         assertThat(dto.getLinks().stream()
-            .filter(link -> "related".equals(link.rel()))
+            .filter(link -> "related".equals(link.getRel()))
             .findFirst())
             .isEmpty();
     }
@@ -117,17 +118,18 @@ class SubscriptionMapperTest {
     void shouldCreateAtomFeedDtoDirectlyWithEntries() {
         SubscriptionEntity entity = new SubscriptionEntity(TEST_SUBSCRIPTION_ID);
 
-        List<AtomEntryDto> entries = List.of(
-            new AtomEntryDto("urn:uuid:entry1", "Usage Point", new UsagePointDto(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)),
-            new AtomEntryDto("urn:uuid:entry2", "Meter Reading", new MeterReadingDto())
+        // Using Arrays.asList for polymorphic list creation
+        List<AtomEntryDto> entries = java.util.Arrays.asList(
+            new UsageAtomEntryDto("urn:uuid:entry1", "Usage Point", new UsagePointDto(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)),
+            new UsageAtomEntryDto("urn:uuid:entry2", "Meter Reading", new MeterReadingDto())
         );
 
         AtomFeedDto feed = subscriptionMapper.toAtomFeed(entity, SubscriptionDto.SchemaType.ENERGY, entries);
 
         assertThat(feed).isNotNull();
-        assertThat(feed.id()).isEqualTo("urn:uuid:" + TEST_SUBSCRIPTION_ID);
-        assertThat(feed.title()).isEqualTo("Green Button Energy Feed");
-        assertThat(feed.entries()).hasSize(2);
+        assertThat(feed.getId()).isEqualTo("urn:uuid:" + TEST_SUBSCRIPTION_ID);
+        assertThat(feed.getTitle()).isEqualTo("Green Button Energy Feed");
+        assertThat(feed.getEntries()).hasSize(2);
     }
 
     @Test
@@ -175,6 +177,6 @@ class SubscriptionMapperTest {
 
         AtomFeedDto feed = subscriptionMapper.toAtomFeed(entity, SubscriptionDto.SchemaType.CUSTOMER, List.of());
 
-        assertThat(feed.title()).isEqualTo("Green Button Customer Feed");
+        assertThat(feed.getTitle()).isEqualTo("Green Button Customer Feed");
     }
 }

@@ -100,19 +100,20 @@ public class WebConfiguration implements WebMvcConfigurer {
     @Bean
     public Jaxb2Marshaller jaxb2Marshaller() {
         Jaxb2Marshaller marshaller = new Jaxb2Marshaller();
-        
+
         // Set context path for ESPI domain objects
         marshaller.setPackagesToScan(
             "org.greenbuttonalliance.espi.common.domain",
-            "org.greenbuttonalliance.espi.common.models.atom"
+            "org.greenbuttonalliance.espi.common.dto"
         );
-        
-        // Configure marshaller properties
+
+        // Configure marshaller properties including the NamespacePrefixMapper
         marshaller.setMarshallerProperties(java.util.Map.of(
-            Marshaller.JAXB_FORMATTED_OUTPUT, xmlPrettyPrint,
-            Marshaller.JAXB_ENCODING, "UTF-8"
+            Marshaller.JAXB_FORMATTED_OUTPUT, true,
+            Marshaller.JAXB_ENCODING, "UTF-8",
+            "org.glassfish.jaxb.namespacePrefixMapper", new org.greenbuttonalliance.espi.common.utils.EspiNamespacePrefixMapper()
         ));
-        
+
         return marshaller;
     }
 

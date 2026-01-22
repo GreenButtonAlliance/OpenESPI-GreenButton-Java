@@ -54,7 +54,7 @@ public interface CustomerMapper extends BaseMapperUtils {
      * @param entity the customer entity
      * @return the customer DTO
      */
-    @Mapping(target = "organisationRole", source = ".", qualifiedByName = "mapOrganisationRole")
+    @Mapping(target = "organisation", source = ".", qualifiedByName = "mapOrganisation")
     @Mapping(target = "kind", source = "kind")
     @Mapping(target = "specialNeed", source = "specialNeed")
     @Mapping(target = "vip", source = "vip")
@@ -72,7 +72,7 @@ public interface CustomerMapper extends BaseMapperUtils {
      * @param dto the customer DTO
      * @return the customer entity
      */
-    @Mapping(target = "organisation", source = "organisationRole", qualifiedByName = "mapOrganisation")
+    @Mapping(target = "organisation", source = "organisation", qualifiedByName = "mapOrganisationFromDto")
     @Mapping(target = "phoneNumbers", ignore = true)
     @Mapping(target = "kind", source = "kind")
     @Mapping(target = "specialNeed", source = "specialNeed")
@@ -88,51 +88,50 @@ public interface CustomerMapper extends BaseMapperUtils {
     CustomerEntity toEntity(CustomerDto dto);
 
     /**
-     * Maps CustomerEntity with PhoneNumberEntity list to OrganisationRoleDto.
+     * Maps CustomerEntity with PhoneNumberEntity list to OrganisationDto.
      * Combines embedded Organisation data with separate phone number entities.
+     * Field order matches customer.xsd:1096-1125.
      */
-    @Named("mapOrganisationRole")
-    default CustomerDto.OrganisationRoleDto mapOrganisationRole(CustomerEntity entity) {
+    @Named("mapOrganisation")
+    default CustomerDto.OrganisationDto mapOrganisation(CustomerEntity entity) {
         if (entity == null || entity.getOrganisation() == null) {
             return null;
         }
-        
+
         Organisation org = entity.getOrganisation();
         List<PhoneNumberEntity> phoneNumbers = entity.getPhoneNumbers();
-        
+
         // Extract phone numbers by type
         CustomerDto.PhoneNumberDto phone1 = extractPhoneByType(phoneNumbers, PhoneNumberEntity.PhoneType.PRIMARY);
         CustomerDto.PhoneNumberDto phone2 = extractPhoneByType(phoneNumbers, PhoneNumberEntity.PhoneType.SECONDARY);
-        
-        CustomerDto.OrganisationDto orgDto = new CustomerDto.OrganisationDto(
-            org.getOrganisationName(),
+
+        // Constructor order: streetAddress, postalAddress, phone1, phone2, electronicAddress, organisationName
+        return new CustomerDto.OrganisationDto(
             mapStreetAddress(org.getStreetAddress()),
             mapStreetAddress(org.getPostalAddress()),
             phone1,
             phone2,
-            mapElectronicAddress(org.getElectronicAddress())
+            mapElectronicAddress(org.getElectronicAddress()),
+            org.getOrganisationName()
         );
-        
-        return new CustomerDto.OrganisationRoleDto(orgDto);
     }
 
     /**
-     * Maps OrganisationRoleDto to Organisation entity (without phone numbers).
+     * Maps OrganisationDto to Organisation entity (without phone numbers).
      * Phone numbers are handled separately via PhoneNumberEntity.
      */
-    @Named("mapOrganisation")
-    default Organisation mapOrganisation(CustomerDto.OrganisationRoleDto organisationRole) {
-        if (organisationRole == null || organisationRole.organisation() == null) {
+    @Named("mapOrganisationFromDto")
+    default Organisation mapOrganisationFromDto(CustomerDto.OrganisationDto orgDto) {
+        if (orgDto == null) {
             return null;
         }
-        
-        CustomerDto.OrganisationDto orgDto = organisationRole.organisation();
+
         Organisation org = new Organisation();
-        org.setOrganisationName(orgDto.organisationName());
-        org.setStreetAddress(mapStreetAddressFromDto(orgDto.streetAddress()));
-        org.setPostalAddress(mapStreetAddressFromDto(orgDto.postalAddress()));
-        org.setElectronicAddress(mapElectronicAddressFromDto(orgDto.electronicAddress()));
-        
+        org.setOrganisationName(orgDto.getOrganisationName());
+        org.setStreetAddress(mapStreetAddressFromDto(orgDto.getStreetAddress()));
+        org.setPostalAddress(mapStreetAddressFromDto(orgDto.getPostalAddress()));
+        org.setElectronicAddress(mapElectronicAddressFromDto(orgDto.getElectronicAddress()));
+
         // Phone numbers are @Transient in Organisation and managed separately
         return org;
     }
@@ -152,11 +151,11 @@ public interface CustomerMapper extends BaseMapperUtils {
     default Organisation.StreetAddress mapStreetAddressFromDto(CustomerDto.StreetAddressDto dto) {
         if (dto == null) return null;
         Organisation.StreetAddress address = new Organisation.StreetAddress();
-        address.setStreetDetail(dto.streetDetail());
-        address.setTownDetail(dto.townDetail());
-        address.setStateOrProvince(dto.stateOrProvince());
-        address.setPostalCode(dto.postalCode());
-        address.setCountry(dto.country());
+        address.setStreetDetail(dto.getStreetDetail());
+        address.setTownDetail(dto.getTownDetail());
+        address.setStateOrProvince(dto.getStateOrProvince());
+        address.setPostalCode(dto.getPostalCode());
+        address.setCountry(dto.getCountry());
         return address;
     }
 
@@ -173,10 +172,10 @@ public interface CustomerMapper extends BaseMapperUtils {
     default Organisation.ElectronicAddress mapElectronicAddressFromDto(CustomerDto.ElectronicAddressDto dto) {
         if (dto == null) return null;
         Organisation.ElectronicAddress address = new Organisation.ElectronicAddress();
-        address.setEmail1(dto.email1());
-        address.setEmail2(dto.email2());
-        address.setWeb(dto.web());
-        address.setRadio(dto.radio());
+        address.setEmail1(dto.getEmail1());
+        address.setEmail2(dto.getEmail2());
+        address.setWeb(dto.getWeb());
+        address.setRadio(dto.getRadio());
         return address;
     }
 

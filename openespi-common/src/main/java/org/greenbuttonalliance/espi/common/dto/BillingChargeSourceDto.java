@@ -20,9 +20,13 @@
 package org.greenbuttonalliance.espi.common.dto;
 
 import jakarta.xml.bind.annotation.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
- * BillingChargeSource DTO record for JAXB XML marshalling/unmarshalling.
+ * BillingChargeSource DTO class for JAXB XML marshalling/unmarshalling.
  * <p>
  * Information about the source of billing charge.
  * Per ESPI 4.0 XSD (espi.xsd:1628-1643), BillingChargeSource extends Object
@@ -30,38 +34,21 @@ import jakarta.xml.bind.annotation.*;
  * <p>
  * Embedded within UsageSummary DTO.
  */
-@XmlAccessorType(XmlAccessType.PROPERTY)
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "BillingChargeSource", namespace = "http://naesb.org/espi", propOrder = {
     "agencyName"
 })
-public record BillingChargeSourceDto(
-    String agencyName
-) {
-
+public class BillingChargeSourceDto {
     /**
      * Name of the billing source agency.
      * Maximum length 256 characters per String256 type.
      */
     @XmlElement(name = "agencyName")
-    public String getAgencyName() {
-        return agencyName;
-    }
-
-    /**
-     * Default constructor for JAXB.
-     */
-    public BillingChargeSourceDto() {
-        this(null);
-    }
-
-    /**
-     * Constructor with agency name.
-     *
-     * @param agencyName the name of the billing source agency
-     */
-    public BillingChargeSourceDto(String agencyName) {
-        this.agencyName = agencyName;
-    }
+    private String agencyName;
 
     /**
      * Checks if this billing charge source has a value.

@@ -20,11 +20,15 @@
 package org.greenbuttonalliance.espi.common.dto.usage;
 
 import jakarta.xml.bind.annotation.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.greenbuttonalliance.espi.common.dto.RationalNumberDto;
 import org.greenbuttonalliance.espi.common.dto.ReadingInterharmonicDto;
 
 /**
- * ReadingType DTO record for JAXB XML marshalling/unmarshalling.
+ * ReadingType DTO class for JAXB XML marshalling/unmarshalling.
  * 
  * Represents comprehensive characteristics associated with all readings included in a MeterReading.
  * Contains metadata about the type of measurements including commodity, data qualifier,
@@ -34,6 +38,10 @@ import org.greenbuttonalliance.espi.common.dto.ReadingInterharmonicDto;
  * This DTO supports the complete range of ESPI reading type attributes for electricity,
  * gas, water, and other commodity measurements with full pricing and time-of-use support.
  */
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @XmlRootElement(name = "ReadingType", namespace = "http://naesb.org/espi")
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "ReadingType", namespace = "http://naesb.org/espi", propOrder = {
@@ -42,17 +50,17 @@ import org.greenbuttonalliance.espi.common.dto.ReadingInterharmonicDto;
     "powerOfTenMultiplier", "timeAttribute", "tou", "uom", "cpp", "interharmonic",
     "measuringPeriod", "argument"
 })
-public record ReadingTypeDto(
+public class ReadingTypeDto {
     
     @XmlTransient
-    Long id,
+    private Long id;
 
    @XmlTransient
    // @XmlAttribute(name = "mRID")
-    String uuid,
-    
-    @XmlElement(name = "description")
-    String description,
+    private String uuid;
+
+    @XmlTransient
+    private String description;
     
     /**
      * Accumulation behavior describing how readings accumulate over time.
@@ -65,7 +73,7 @@ public record ReadingTypeDto(
      * - BULK_QUANTITY: Total amount in storage
      */
     @XmlElement(name = "accumulationBehaviour")
-    String accumulationBehaviour,
+    private String accumulationBehaviour;
     
     /**
      * Commodity being measured.
@@ -80,7 +88,7 @@ public record ReadingTypeDto(
      * - REFUSE: Waste management
      */
     @XmlElement(name = "commodity")
-    String commodity,
+    private String commodity;
     
     /**
      * Consumption tier for tiered pricing structures.
@@ -89,7 +97,7 @@ public record ReadingTypeDto(
      * Typical values: 1, 2, 3, etc. representing pricing tiers
      */
     @XmlElement(name = "consumptionTier")
-    String consumptionTier,
+    private String consumptionTier;
     
     /**
      * Currency code for monetary readings.
@@ -97,7 +105,7 @@ public record ReadingTypeDto(
      * Only present for cost/price reading types.
      */
     @XmlElement(name = "currency")
-    String currency,
+    private String currency;
     
     /**
      * Data qualifier describing the nature of the reading value.
@@ -111,7 +119,7 @@ public record ReadingTypeDto(
      * - PROJECTED: Future projected value
      */
     @XmlElement(name = "dataQualifier")
-    String dataQualifier,
+    private String dataQualifier;
     
     /**
      * Default quality indicator for readings of this type.
@@ -124,7 +132,7 @@ public record ReadingTypeDto(
      * - DERIVED: Calculated from other readings
      */
     @XmlElement(name = "defaultQuality")
-    String defaultQuality,
+    private String defaultQuality;
     
     /**
      * Direction of energy flow for electrical measurements.
@@ -138,7 +146,7 @@ public record ReadingTypeDto(
      * - TOTAL: Total energy (forward plus reverse)
      */
     @XmlElement(name = "flowDirection")
-    String flowDirection,
+    private String flowDirection;
     
     /**
      * Length of the measurement interval in seconds.
@@ -153,7 +161,7 @@ public record ReadingTypeDto(
      * - 2592000: Monthly intervals (approximate)
      */
     @XmlElement(name = "intervalLength")
-    Long intervalLength,
+    private Long intervalLength;
     
     /**
      * Kind of measurement being performed.
@@ -172,7 +180,7 @@ public record ReadingTypeDto(
      * - CARBON: Carbon emissions
      */
     @XmlElement(name = "kind")
-    String kind,
+    private String kind;
     
     /**
      * Phase information for electrical measurements.
@@ -186,7 +194,7 @@ public record ReadingTypeDto(
      * - NET: Net measurement across all phases
      */
     @XmlElement(name = "phase")
-    String phase,
+    private String phase;
     
     /**
      * Power of ten multiplier for the unit of measure.
@@ -201,7 +209,7 @@ public record ReadingTypeDto(
      * - NONE: 10^0 (no scaling)
      */
     @XmlElement(name = "powerOfTenMultiplier")
-    String powerOfTenMultiplier,
+    private String powerOfTenMultiplier;
     
     /**
      * Time attribute describing the time period of interest.
@@ -217,7 +225,7 @@ public record ReadingTypeDto(
      * - PREVIOUS: Previous period value
      */
     @XmlElement(name = "timeAttribute")
-    String timeAttribute,
+    private String timeAttribute;
 
     /**
      * Time-of-use indicator.
@@ -230,7 +238,7 @@ public record ReadingTypeDto(
      * - 0: No TOU pricing
      */
     @XmlElement(name = "tou")
-    String tou,
+    private String tou;
 
     /**
      * Unit of measure for the readings.
@@ -252,7 +260,7 @@ public record ReadingTypeDto(
      * - GAL: Gallons (water volume)
      */
     @XmlElement(name = "uom")
-    String uom,
+    private String uom;
 
     /**
      * Critical peak pricing indicator.
@@ -264,7 +272,7 @@ public record ReadingTypeDto(
      * - 2: Peak pricing warning
      */
     @XmlElement(name = "cpp")
-    String cpp,
+    private String cpp;
 
     /**
      * Interharmonic information for power quality measurements.
@@ -277,7 +285,7 @@ public record ReadingTypeDto(
      * - Frequency domain analysis
      */
     @XmlElement(name = "interharmonic")
-    ReadingInterharmonicDto interharmonic,
+    private ReadingInterharmonicDto interharmonic;
 
     /**
      * Measuring period for the readings.
@@ -290,7 +298,7 @@ public record ReadingTypeDto(
      * - CUMULATIVE: Cumulative totals
      */
     @XmlElement(name = "measuringPeriod")
-    String measuringPeriod,
+    private String measuringPeriod;
 
     /**
      * Rational number argument for complex calculations.
@@ -302,21 +310,11 @@ public record ReadingTypeDto(
      * - Scaling factors for display
      */
     @XmlElement(name = "argument")
-    RationalNumberDto argument
-    
-) {
-    
-    /**
-     * Default constructor for JAXB.
-     */
-    public ReadingTypeDto() {
-        this(null, null, null, null, null, null, null, null, null, null, null, null, 
-             null, null, null, null, null, null, null, null, null);
-    }
-    
+    private RationalNumberDto argument;
+
     /**
      * Constructor with basic identification.
-     * 
+     *
      * @param id the database identifier
      * @param uuid the unique resource identifier
      * @param description human-readable description

@@ -20,11 +20,15 @@
 package org.greenbuttonalliance.espi.common.dto.usage;
 
 import jakarta.xml.bind.annotation.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.util.List;
 
 /**
- * IntervalReading DTO record for JAXB XML marshalling/unmarshalling.
+ * IntervalReading DTO class for JAXB XML marshalling/unmarshalling.
  *
  * Represents specific readings of a measurement within an interval block.
  * Contains the actual energy values, costs, and reading quality information.
@@ -37,46 +41,39 @@ import java.util.List;
 @XmlType(name = "IntervalReading", namespace = "http://naesb.org/espi", propOrder = {
     "cost", "readingQualities", "timePeriod", "value", "consumptionTier", "tou", "cpp"
 })
-public record IntervalReadingDto(
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class IntervalReadingDto {
 
-    @XmlElement(name = "cost")
-    Long cost,
+    @XmlElement(name = "cost", namespace = "http://naesb.org/espi")
+    private Long cost;
 
-    @XmlElement(name = "ReadingQuality")
-    List<ReadingQualityDto> readingQualities,
+    @XmlElement(name = "ReadingQuality", namespace = "http://naesb.org/espi")
+    private List<ReadingQualityDto> readingQualities;
 
-    @XmlElement(name = "timePeriod")
-    DateTimeIntervalDto timePeriod,
+    @XmlElement(name = "timePeriod", namespace = "http://naesb.org/espi")
+    private DateTimeIntervalDto timePeriod;
 
-    @XmlElement(name = "value")
-    Long value,
+    @XmlElement(name = "value", namespace = "http://naesb.org/espi")
+    private Long value;
 
-    @XmlElement(name = "consumptionTier")
-    Integer consumptionTier,
+    @XmlElement(name = "consumptionTier", namespace = "http://naesb.org/espi")
+    private Integer consumptionTier;
 
-    @XmlElement(name = "tou")
-    Integer tou,
+    @XmlElement(name = "tou", namespace = "http://naesb.org/espi")
+    private Integer tou;
 
-    @XmlElement(name = "cpp")
-    Integer cpp
-) {
-
-    /**
-     * Default constructor for JAXB.
-     */
-    public IntervalReadingDto() {
-        this(null, null, null, null, null, null, null);
-    }
+    @XmlElement(name = "cpp", namespace = "http://naesb.org/espi")
+    private Integer cpp;
 
     /**
-     * Minimal constructor for basic interval reading data.
-     */
-    public IntervalReadingDto(Long value, DateTimeIntervalDto timePeriod) {
-        this(null, null, timePeriod, value, null, null, null);
-    }
-
-    /**
-     * Constructor for interval reading with cost information.
+     * Convenience constructor for basic reading with value, cost, and time period.
+     *
+     * @param value the reading value
+     * @param cost the cost
+     * @param timePeriod the time period
      */
     public IntervalReadingDto(Long value, Long cost, DateTimeIntervalDto timePeriod) {
         this(cost, null, timePeriod, value, null, null, null);

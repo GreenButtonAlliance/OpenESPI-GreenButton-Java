@@ -20,15 +20,19 @@
 package org.greenbuttonalliance.espi.common.dto.usage;
 
 import jakarta.xml.bind.annotation.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.greenbuttonalliance.espi.common.dto.usage.DateTimeIntervalDto;
 
 /**
- * ElectricPowerQualitySummary DTO record for JAXB XML marshalling/unmarshalling.
- * 
+ * ElectricPowerQualitySummary DTO class for JAXB XML marshalling/unmarshalling.
+ *
  * Represents a comprehensive summary of power quality events for electric power delivery.
  * Contains information about voltage quality, frequency variations, interruptions,
  * flicker, harmonics, and other power quality metrics as defined by the NAESB ESPI 1.0 specification.
- * 
+ *
  * All power quality measurements follow IEC standards for power quality measurement and assessment.
  */
 @XmlRootElement(name = "ElectricPowerQualitySummary", namespace = "http://naesb.org/espi")
@@ -39,13 +43,17 @@ import org.greenbuttonalliance.espi.common.dto.usage.DateTimeIntervalDto;
     "shortInterruptions", "summaryInterval", "supplyVoltageDips", "supplyVoltageImbalance",
     "supplyVoltageVariations", "tempOvervoltage"
 })
-public record ElectricPowerQualitySummaryDto(
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class ElectricPowerQualitySummaryDto {
 
     @XmlTransient
-    Long id,
+    private Long id;
 
     @XmlAttribute(name = "mRID")
-    String uuid,
+    private String uuid;
     
     /**
      * Flicker PLT (Long-term) measurement.
@@ -54,8 +62,8 @@ public record ElectricPowerQualitySummaryDto(
      * Unit: dimensionless (0.0 to 20.0 typical range)
      */
     @XmlElement(name = "flickerPlt")
-    Long flickerPlt,
-    
+    private Long flickerPlt;
+
     /**
      * Flicker PST (Short-term) measurement.
      * Represents short-term flicker severity as per IEC 61000-4-15.
@@ -63,32 +71,32 @@ public record ElectricPowerQualitySummaryDto(
      * Unit: dimensionless (0.0 to 20.0 typical range)
      */
     @XmlElement(name = "flickerPst")
-    Long flickerPst,
-    
+    private Long flickerPst;
+
     /**
      * Total harmonic distortion for voltage.
      * Represents the harmonic content in the voltage waveform.
      * Unit: percentage of fundamental frequency (stored as basis points, e.g., 500 = 5.00%)
      */
     @XmlElement(name = "harmonicVoltage")
-    Long harmonicVoltage,
-    
+    private Long harmonicVoltage;
+
     /**
      * Number of long interruptions during the summary period.
      * Interruptions lasting longer than 3 minutes as per IEEE 1159.
      * Unit: count
      */
     @XmlElement(name = "longInterruptions")
-    Long longInterruptions,
-    
+    private Long longInterruptions;
+
     /**
      * RMS voltage of the mains supply.
      * Represents the effective voltage value.
      * Unit: millivolts (mV)
      */
     @XmlElement(name = "mainsVoltage")
-    Long mainsVoltage,
-    
+    private Long mainsVoltage;
+
     /**
      * Measurement protocol identifier.
      * Indicates the standard or method used for measurements.
@@ -99,88 +107,78 @@ public record ElectricPowerQualitySummaryDto(
      * - 4: IEC 61000-4-30 (General power quality)
      */
     @XmlElement(name = "measurementProtocol")
-    Short measurementProtocol,
-    
+    private Short measurementProtocol;
+
     /**
      * Power frequency measurement.
      * Nominal frequency is typically 50Hz or 60Hz.
      * Unit: millihertz (mHz) - e.g., 60000 for 60.000 Hz
      */
     @XmlElement(name = "powerFrequency")
-    Long powerFrequency,
-    
+    private Long powerFrequency;
+
     /**
      * Number of rapid voltage changes during the summary period.
      * Voltage changes exceeding specified thresholds per IEC 61000-4-15.
      * Unit: count
      */
     @XmlElement(name = "rapidVoltageChanges")
-    Long rapidVoltageChanges,
-    
+    private Long rapidVoltageChanges;
+
     /**
      * Number of short interruptions during the summary period.
      * Interruptions lasting between 0.5 seconds and 3 minutes per IEEE 1159.
      * Unit: count
      */
     @XmlElement(name = "shortInterruptions")
-    Long shortInterruptions,
-    
+    private Long shortInterruptions;
+
     /**
      * Summary interval for this power quality summary.
      * Time period covered by these measurements.
      * Typically covers 24-hour periods for daily summaries.
      */
     @XmlElement(name = "summaryInterval")
-    DateTimeIntervalDto summaryInterval,
-    
+    private DateTimeIntervalDto summaryInterval;
+
     /**
      * Number of supply voltage dips during the summary period.
      * Temporary reductions in RMS voltage below 90% of nominal per IEC 61000-4-11.
      * Unit: count
      */
     @XmlElement(name = "supplyVoltageDips")
-    Long supplyVoltageDips,
-    
+    private Long supplyVoltageDips;
+
     /**
      * Supply voltage imbalance measurement.
      * Represents asymmetry in three-phase voltage systems per IEC 61000-4-27.
      * Unit: percentage of positive sequence component (stored as basis points)
      */
     @XmlElement(name = "supplyVoltageImbalance")
-    Long supplyVoltageImbalance,
-    
+    private Long supplyVoltageImbalance;
+
     /**
      * Supply voltage variations measurement.
      * Long-term voltage magnitude variations from nominal per IEC 61000-4-30.
      * Unit: percentage deviation from nominal (stored as basis points)
      */
     @XmlElement(name = "supplyVoltageVariations")
-    Long supplyVoltageVariations,
-    
+    private Long supplyVoltageVariations;
+
     /**
      * Temporary overvoltage events count.
      * Voltage increases above 110% of nominal for limited duration per IEEE 1159.
      * Unit: count
      */
     @XmlElement(name = "tempOvervoltage")
-    Long tempOvervoltage,
-    
+    private Long tempOvervoltage;
+
     /**
      * Reference to the usage point this power quality summary belongs to.
      * Represents the logical relationship to the measurement point.
      */
     @XmlTransient
-    Long usagePointId
-    
-) {
-    
-    /**
-     * Default constructor for JAXB.
-     */
-    public ElectricPowerQualitySummaryDto() {
-        this(null, null, null, null, null, null, null, null, null, null, null,
-             null, null, null, null, null, null);
-    }
+    private Long usagePointId;
 
     /**
      * Constructor with basic identification.

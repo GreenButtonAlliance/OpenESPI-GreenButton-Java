@@ -20,7 +20,6 @@
 package org.greenbuttonalliance.espi.common.service.customer;
 
 import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerEntity;
-import org.greenbuttonalliance.espi.common.domain.customer.enums.CustomerKind;
 
 import java.util.List;
 import java.util.Optional;
@@ -28,10 +27,14 @@ import java.util.UUID;
 
 /**
  * Service interface for Customer PII data management.
- * 
+ *
  * Handles Customer schema operations with proper separation from Usage data.
  * Customer data contains Personally Identifiable Information (PII) and requires
  * special handling according to NAESB REQ.21 ESPI standards.
+ * <p>
+ * Per ESPI 4.0 API specification, only basic CRUD operations are supported.
+ * Removed methods: findByCustomerName, findByKind, findByPucNumber, findVipCustomers,
+ * findCustomersWithSpecialNeeds, findByLocale, findByPriorityRange, findByOrganisationName, countByKind
  */
 public interface CustomerService {
 
@@ -44,46 +47,6 @@ public interface CustomerService {
      * Find customer by ID.
      */
     Optional<CustomerEntity> findById(UUID id);
-
-    /**
-     * Find customer by customer name.
-     */
-    Optional<CustomerEntity> findByCustomerName(String customerName);
-
-    /**
-     * Find customers by kind.
-     */
-    List<CustomerEntity> findByKind(CustomerKind kind);
-
-    /**
-     * Find customer by PUC number.
-     */
-    Optional<CustomerEntity> findByPucNumber(String pucNumber);
-
-    /**
-     * Find VIP customers.
-     */
-    List<CustomerEntity> findVipCustomers();
-
-    /**
-     * Find customers with special needs.
-     */
-    List<CustomerEntity> findCustomersWithSpecialNeeds();
-
-    /**
-     * Find customers by locale.
-     */
-    List<CustomerEntity> findByLocale(String locale);
-
-    /**
-     * Find customers by priority range.
-     */
-    List<CustomerEntity> findByPriorityRange(Integer minPriority, Integer maxPriority);
-
-    /**
-     * Find customers by organisation name.
-     */
-    List<CustomerEntity> findByOrganisationName(String organisationName);
 
     /**
      * Save customer.
@@ -104,9 +67,4 @@ public interface CustomerService {
      * Count total customers.
      */
     long countCustomers();
-
-    /**
-     * Count customers by kind.
-     */
-    long countByKind(CustomerKind kind);
 }

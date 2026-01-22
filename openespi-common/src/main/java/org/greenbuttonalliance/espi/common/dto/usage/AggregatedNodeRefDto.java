@@ -20,12 +20,16 @@
 package org.greenbuttonalliance.espi.common.dto.usage;
 
 import jakarta.xml.bind.annotation.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * AggregatedNodeRef DTO record for JAXB XML marshalling/unmarshalling.
+ * AggregatedNodeRef DTO class for JAXB XML marshalling/unmarshalling.
  *
  * Represents a reference to an aggregated node in the electrical grid.
  * Used within UsagePoint to specify aggregated pricing/load zones.
@@ -34,70 +38,50 @@ import java.util.List;
  *
  * Part of the NAESB ESPI UsagePoint structure for aggregated node references.
  */
-@XmlAccessorType(XmlAccessType.PROPERTY)
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "AggregatedNodeRef", namespace = "http://naesb.org/espi", propOrder = {
     "anodeType", "ref", "startEffectiveDate", "endEffectiveDate", "pnodeRef"
 })
-public record AggregatedNodeRefDto(
+public class AggregatedNodeRefDto {
 
-    String anodeType,
-    String ref,
-    Long startEffectiveDate,
-    Long endEffectiveDate,
-    List<PnodeRefDto> pnodeRef
-) {
-    
     /**
      * Type of the aggregated node.
      * Indicates the category or classification of the aggregated node.
      */
     @XmlElement(name = "anodeType")
-    public String getAnodeType() {
-        return anodeType;
-    }
-    
+    private String anodeType;
+
     /**
      * Reference to the aggregated node identifier.
      */
     @XmlElement(name = "ref")
-    public String getRef() {
-        return ref;
-    }
-    
+    private String ref;
+
     /**
      * Start effective date for the aggregated node reference validity.
      * Stored as epoch seconds (TimeType in ESPI).
      */
     @XmlElement(name = "startEffectiveDate")
-    public Long getStartEffectiveDate() {
-        return startEffectiveDate;
-    }
-    
+    private Long startEffectiveDate;
+
     /**
      * End effective date for the aggregated node reference validity.
      * Stored as epoch seconds (TimeType in ESPI).
      */
     @XmlElement(name = "endEffectiveDate")
-    public Long getEndEffectiveDate() {
-        return endEffectiveDate;
-    }
-    
+    private Long endEffectiveDate;
+
     /**
      * Pricing node references associated with this aggregated node.
      * Contains the underlying pricing nodes that contribute to the aggregated node.
      * Per ESPI 4.0 XSD (espi.xsd:1597), supports 0 to many pricing node references.
      */
     @XmlElement(name = "pnodeRef")
-    public List<PnodeRefDto> getPnodeRef() {
-        return pnodeRef != null ? pnodeRef : new ArrayList<>();
-    }
-
-    /**
-     * Default constructor for JAXB.
-     */
-    public AggregatedNodeRefDto() {
-        this(null, null, null, null, new ArrayList<>());
-    }
+    private List<PnodeRefDto> pnodeRef;
 
     /**
      * Constructor with aggregated node reference and type.

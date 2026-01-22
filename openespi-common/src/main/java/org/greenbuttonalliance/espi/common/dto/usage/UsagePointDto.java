@@ -28,9 +28,13 @@ import org.greenbuttonalliance.espi.common.dto.SummaryMeasurementDto;
 import jakarta.xml.bind.annotation.*;
 import jakarta.xml.bind.annotation.adapters.HexBinaryAdapter;
 import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
- * UsagePoint DTO record for JAXB XML marshalling/unmarshalling.
+ * UsagePoint DTO class for JAXB XML marshalling/unmarshalling.
  *
  * Represents a logical point on a network at which consumption or production
  * is either physically measured (e.g., metered) or estimated (e.g., unmetered street lights).
@@ -46,169 +50,163 @@ import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
     "ratedPower", "readCycle", "readRoute", "serviceDeliveryRemark",
     "servicePriority", "pnodeRefs", "aggregatedNodeRefs"
 })
-public record UsagePointDto(
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class UsagePointDto {
 
     @XmlTransient
-    String uuid,
+    private String uuid;
 
     @XmlElement(name = "roleFlags", type = String.class)
     @XmlJavaTypeAdapter(HexBinaryAdapter.class)
-    byte[] roleFlags,
+    private byte[] roleFlags;
 
     @XmlElement(name = "ServiceCategory")
-    ServiceCategory serviceCategory,
+    private ServiceCategory serviceCategory;
 
     @XmlElement(name = "status")
-    Short status,
+    private Short status;
 
     @XmlElement(name = "ServiceDeliveryPoint")
-    ServiceDeliveryPointDto serviceDeliveryPoint,
+    private ServiceDeliveryPointDto serviceDeliveryPoint;
 
     /**
      * Lifecycle states of the metering installation with respect to readiness for billing via AMI reads.
      * Per ESPI 4.0 XSD: [extension] AmiBillingReadyKind enum.
      */
     @XmlElement(name = "amiBillingReady")
-    AmiBillingReadyKind amiBillingReady,
+    private AmiBillingReadyKind amiBillingReady;
 
     /**
      * True if there is a reason to suspect that a previous billing may have been performed with erroneous data.
      * Per ESPI 4.0 XSD: [extension] boolean field.
      */
     @XmlElement(name = "checkBilling")
-    Boolean checkBilling,
+    private Boolean checkBilling;
 
     /**
      * State of the usage point with respect to connection to the network.
      * Per ESPI 4.0 XSD: [extension] UsagePointConnectedKind enum.
      */
     @XmlElement(name = "connectionState")
-    UsagePointConnectedKind connectionState,
+    private UsagePointConnectedKind connectionState;
 
     /**
      * Estimated load for the usage point as SummaryMeasurement.
      */
     @XmlElement(name = "estimatedLoad")
-    SummaryMeasurementDto estimatedLoad,
+    private SummaryMeasurementDto estimatedLoad;
 
     /**
      * True if grounded.
      * Per ESPI 4.0 XSD: [extension] boolean field.
      */
     @XmlElement(name = "grounded")
-    Boolean grounded,
+    private Boolean grounded;
 
     /**
      * True if this usage point is a service delivery point.
      * Per ESPI 4.0 XSD: [extension] boolean field.
      */
     @XmlElement(name = "isSdp")
-    Boolean isSdp,
+    private Boolean isSdp;
 
     /**
      * True if this usage point is virtual (no physical location exists).
      * Per ESPI 4.0 XSD: [extension] boolean field.
      */
     @XmlElement(name = "isVirtual")
-    Boolean isVirtual,
+    private Boolean isVirtual;
 
     /**
      * True if minimal or zero usage is expected at this usage point.
      * Per ESPI 4.0 XSD: [extension] boolean field.
      */
     @XmlElement(name = "minimalUsageExpected")
-    Boolean minimalUsageExpected,
+    private Boolean minimalUsageExpected;
 
     /**
      * Nominal service voltage for the usage point as SummaryMeasurement.
      */
     @XmlElement(name = "nominalServiceVoltage")
-    SummaryMeasurementDto nominalServiceVoltage,
+    private SummaryMeasurementDto nominalServiceVoltage;
 
     /**
      * Outage region in which this usage point is located.
      * Per ESPI 4.0 XSD: [extension] String256 field.
      */
     @XmlElement(name = "outageRegion")
-    String outageRegion,
+    private String outageRegion;
 
     /**
      * Phase code indicating number of wires and specific nominal phases.
      * Per ESPI 4.0 XSD: [extension] PhaseCodeKind enum.
      */
     @XmlElement(name = "phaseCode")
-    PhaseCodeKind phaseCode,
+    private PhaseCodeKind phaseCode;
 
     /**
      * Rated current for the usage point as SummaryMeasurement.
      */
     @XmlElement(name = "ratedCurrent")
-    SummaryMeasurementDto ratedCurrent,
+    private SummaryMeasurementDto ratedCurrent;
 
     /**
      * Rated power for the usage point as SummaryMeasurement.
      */
     @XmlElement(name = "ratedPower")
-    SummaryMeasurementDto ratedPower,
+    private SummaryMeasurementDto ratedPower;
 
     /**
      * Cycle day on which the meter will normally be read.
      * Per ESPI 4.0 XSD: [extension] String256 field.
      */
     @XmlElement(name = "readCycle")
-    String readCycle,
+    private String readCycle;
 
     /**
      * Route identifier for meter reading purposes.
      * Per ESPI 4.0 XSD: [extension] String256 field.
      */
     @XmlElement(name = "readRoute")
-    String readRoute,
+    private String readRoute;
 
     /**
      * Remarks about this usage point.
      * Per ESPI 4.0 XSD: [extension] String256 field.
      */
     @XmlElement(name = "serviceDeliveryRemark")
-    String serviceDeliveryRemark,
+    private String serviceDeliveryRemark;
 
     /**
      * Priority of service for this usage point.
      * Per ESPI 4.0 XSD: [extension] String32 field.
      */
     @XmlElement(name = "servicePriority")
-    String servicePriority,
+    private String servicePriority;
 
     /**
      * Array of pricing node references.
      */
     @XmlElement(name = "pnodeRefs")
-    PnodeRefsDto pnodeRefs,
+    private PnodeRefsDto pnodeRefs;
 
     /**
      * Array of aggregated node references.
      */
     @XmlElement(name = "aggregatedNodeRefs")
-    AggregatedNodeRefsDto aggregatedNodeRefs,
+    private AggregatedNodeRefsDto aggregatedNodeRefs;
 
     @XmlTransient
-    Object meterReadings,  // List<MeterReadingDto> - temporarily Object for compilation
+    private Object meterReadings;  // List<MeterReadingDto> - temporarily Object for compilation
 
     @XmlTransient
-    Object usageSummaries, // List<UsageSummaryDto> - temporarily Object for compilation
+    private Object usageSummaries; // List<UsageSummaryDto> - temporarily Object for compilation
 
     @XmlTransient
-    Object electricPowerQualitySummaries // List<ElectricPowerQualitySummaryDto> - temporarily Object for compilation
-
-) {
-
-    /**
-     * Default constructor for JAXB.
-     */
-    public UsagePointDto() {
-        this(null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-             null, null, null, null, null, null, null, null, null, null, null, null, null);
-    }
+    private Object electricPowerQualitySummaries; // List<ElectricPowerQualitySummaryDto> - temporarily Object for compilation
 
     /**
      * Minimal constructor for basic usage point data.
@@ -242,12 +240,12 @@ public record UsagePointDto(
     }
 
     /**
-     * Override roleFlags getter to return cloned array for defensive copying.
+     * Override getRoleFlags to return cloned array for defensive copying.
+     * Lombok @Getter will be overridden by this explicit method.
      *
      * @return cloned byte array or null
      */
-    @Override
-    public byte[] roleFlags() {
+    public byte[] getRoleFlags() {
         return roleFlags != null ? roleFlags.clone() : null;
     }
 
