@@ -22,211 +22,201 @@ package org.greenbuttonalliance.espi.common.dto.customer;
 import org.greenbuttonalliance.espi.common.domain.customer.enums.CustomerKind;
 
 import jakarta.xml.bind.annotation.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.time.OffsetDateTime;
 
 /**
- * Customer DTO record for JAXB XML marshalling/unmarshalling.
- * 
+ * Customer DTO class for JAXB XML marshalling/unmarshalling.
+ *
  * Represents a customer entity containing Personal Identifiable Information (PII)
  * separate from usage data. Supports Atom protocol XML wrapping.
  */
 @XmlRootElement(name = "Customer", namespace = "http://naesb.org/espi/customer")
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "Customer", namespace = "http://naesb.org/espi/customer", propOrder = {
-    "organisationRole", "kind", "specialNeed", "vip", "pucNumber", "status", "priority", "locale", "customerName"
+    "organisation", "kind", "specialNeed", "vip", "pucNumber", "status", "priority", "locale", "customerName"
 })
-public record CustomerDto(
-    
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class CustomerDto {
+
     @XmlTransient
-    String uuid,
-    
-    @XmlElement(name = "OrganisationRole")
-    OrganisationRoleDto organisationRole,
-    
-    @XmlElement(name = "kind")
-    CustomerKind kind,
-    
-    @XmlElement(name = "specialNeed")
-    String specialNeed,
-    
-    @XmlElement(name = "vip")
-    Boolean vip,
-    
-    @XmlElement(name = "pucNumber")
-    String pucNumber,
-    
-    @XmlElement(name = "status")
-    StatusDto status,
-    
-    @XmlElement(name = "priority")
-    PriorityDto priority,
-    
-    @XmlElement(name = "locale")
-    String locale,
-    
-    @XmlElement(name = "customerName")
-    String customerName
-) {
-    
-    /**
-     * Default constructor for JAXB.
-     */
-    public CustomerDto() {
-        this(null, null, null, null, null, null, null, null, null, null);
-    }
-    
-    /**
-     * Minimal constructor for basic customer data.
-     */
-    public CustomerDto(String uuid, CustomerKind kind) {
-        this(uuid, null, kind, null, null, null, null, null, null, null);
-    }
-    
+    private String uuid;
+
+    @XmlElement(name = "Organisation", namespace = "http://naesb.org/espi/customer")
+    private OrganisationDto organisation;
+
+    @XmlElement(name = "kind", namespace = "http://naesb.org/espi/customer")
+    private CustomerKind kind;
+
+    @XmlElement(name = "specialNeed", namespace = "http://naesb.org/espi/customer")
+    private String specialNeed;
+
+    @XmlElement(name = "vip", namespace = "http://naesb.org/espi/customer")
+    private Boolean vip;
+
+    @XmlElement(name = "pucNumber", namespace = "http://naesb.org/espi/customer")
+    private String pucNumber;
+
+    @XmlElement(name = "status", namespace = "http://naesb.org/espi/customer")
+    private StatusDto status;
+
+    @XmlElement(name = "priority", namespace = "http://naesb.org/espi/customer")
+    private PriorityDto priority;
+
+    @XmlElement(name = "locale", namespace = "http://naesb.org/espi/customer")
+    private String locale;
+
+    @XmlElement(name = "customerName", namespace = "http://naesb.org/espi/customer")
+    private String customerName;
+
     /**
      * Embeddable DTO for Status.
      */
     @XmlAccessorType(XmlAccessType.FIELD)
-    public static record StatusDto(
-        @XmlElement(name = "value")
-        String value,
-        
-        @XmlElement(name = "dateTime")
-        OffsetDateTime dateTime,
-        
-        @XmlElement(name = "reason")
-        String reason
-    ) {
-        public StatusDto() {
-            this(null, null, null);
-        }
+    @XmlType(name = "Status", namespace = "http://naesb.org/espi/customer")
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class StatusDto {
+        @XmlElement(name = "value", namespace = "http://naesb.org/espi/customer")
+        private String value;
+
+        @XmlElement(name = "dateTime", namespace = "http://naesb.org/espi/customer")
+        private OffsetDateTime dateTime;
+
+        @XmlElement(name = "reason", namespace = "http://naesb.org/espi/customer")
+        private String reason;
     }
-    
+
     /**
      * Embeddable DTO for Priority.
      */
     @XmlAccessorType(XmlAccessType.FIELD)
-    public static record PriorityDto(
-        @XmlElement(name = "value")
-        Integer value,
-        
-        @XmlElement(name = "rank")
-        Integer rank,
-        
-        @XmlElement(name = "type")
-        String type
-    ) {
-        public PriorityDto() {
-            this(null, null, null);
-        }
+    @XmlType(name = "Priority", namespace = "http://naesb.org/espi/customer")
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class PriorityDto {
+        @XmlElement(name = "value", namespace = "http://naesb.org/espi/customer")
+        private Integer value;
+
+        @XmlElement(name = "rank", namespace = "http://naesb.org/espi/customer")
+        private Integer rank;
+
+        @XmlElement(name = "type", namespace = "http://naesb.org/espi/customer")
+        private String type;
     }
-    
-    /**
-     * Embeddable DTO for OrganisationRole.
-     */
-    @XmlAccessorType(XmlAccessType.FIELD)
-    public static record OrganisationRoleDto(
-        @XmlElement(name = "organisation")
-        OrganisationDto organisation
-    ) {
-        public OrganisationRoleDto() {
-            this(null);
-        }
-    }
-    
+
     /**
      * Embeddable DTO for Organisation.
+     * Field order matches customer.xsd:1096-1125.
      */
     @XmlAccessorType(XmlAccessType.FIELD)
-    public static record OrganisationDto(
-        @XmlElement(name = "organisationName")
-        String organisationName,
-        
-        @XmlElement(name = "streetAddress")
-        StreetAddressDto streetAddress,
-        
-        @XmlElement(name = "postalAddress")
-        StreetAddressDto postalAddress,
-        
-        @XmlElement(name = "phone1")
-        PhoneNumberDto phone1,
-        
-        @XmlElement(name = "phone2")
-        PhoneNumberDto phone2,
-        
-        @XmlElement(name = "electronicAddress")
-        ElectronicAddressDto electronicAddress
-    ) {
-        public OrganisationDto() {
-            this(null, null, null, null, null, null);
-        }
+    @XmlType(name = "Organisation", namespace = "http://naesb.org/espi/customer", propOrder = {
+        "streetAddress", "postalAddress", "phone1", "phone2", "electronicAddress", "organisationName"
+    })
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class OrganisationDto {
+        @XmlElement(name = "streetAddress", namespace = "http://naesb.org/espi/customer")
+        private StreetAddressDto streetAddress;
+
+        @XmlElement(name = "postalAddress", namespace = "http://naesb.org/espi/customer")
+        private StreetAddressDto postalAddress;
+
+        @XmlElement(name = "phone1", namespace = "http://naesb.org/espi/customer")
+        private PhoneNumberDto phone1;
+
+        @XmlElement(name = "phone2", namespace = "http://naesb.org/espi/customer")
+        private PhoneNumberDto phone2;
+
+        @XmlElement(name = "electronicAddress", namespace = "http://naesb.org/espi/customer")
+        private ElectronicAddressDto electronicAddress;
+
+        @XmlElement(name = "organisationName", namespace = "http://naesb.org/espi/customer")
+        private String organisationName;
     }
-    
+
     /**
      * Embeddable DTO for StreetAddress.
      */
     @XmlAccessorType(XmlAccessType.FIELD)
-    public static record StreetAddressDto(
-        @XmlElement(name = "streetDetail")
-        String streetDetail,
-        
-        @XmlElement(name = "townDetail")
-        String townDetail,
-        
-        @XmlElement(name = "stateOrProvince")
-        String stateOrProvince,
-        
-        @XmlElement(name = "postalCode")
-        String postalCode,
-        
-        @XmlElement(name = "country")
-        String country
-    ) {
-        public StreetAddressDto() {
-            this(null, null, null, null, null);
-        }
+    @XmlType(name = "StreetAddress", namespace = "http://naesb.org/espi/customer")
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class StreetAddressDto {
+        @XmlElement(name = "streetDetail", namespace = "http://naesb.org/espi/customer")
+        private String streetDetail;
+
+        @XmlElement(name = "townDetail", namespace = "http://naesb.org/espi/customer")
+        private String townDetail;
+
+        @XmlElement(name = "stateOrProvince", namespace = "http://naesb.org/espi/customer")
+        private String stateOrProvince;
+
+        @XmlElement(name = "postalCode", namespace = "http://naesb.org/espi/customer")
+        private String postalCode;
+
+        @XmlElement(name = "country", namespace = "http://naesb.org/espi/customer")
+        private String country;
     }
-    
+
     /**
      * Embeddable DTO for PhoneNumber.
      */
     @XmlAccessorType(XmlAccessType.FIELD)
-    public static record PhoneNumberDto(
-        @XmlElement(name = "areaCode")
-        String areaCode,
-        
-        @XmlElement(name = "cityCode")
-        String cityCode,
-        
-        @XmlElement(name = "localNumber")
-        String localNumber,
-        
-        @XmlElement(name = "extension")
-        String extension
-    ) {
-        public PhoneNumberDto() {
-            this(null, null, null, null);
-        }
+    @XmlType(name = "PhoneNumber", namespace = "http://naesb.org/espi/customer")
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class PhoneNumberDto {
+        @XmlElement(name = "areaCode", namespace = "http://naesb.org/espi/customer")
+        private String areaCode;
+
+        @XmlElement(name = "cityCode", namespace = "http://naesb.org/espi/customer")
+        private String cityCode;
+
+        @XmlElement(name = "localNumber", namespace = "http://naesb.org/espi/customer")
+        private String localNumber;
+
+        @XmlElement(name = "extension", namespace = "http://naesb.org/espi/customer")
+        private String extension;
     }
-    
+
     /**
      * Embeddable DTO for ElectronicAddress.
      */
     @XmlAccessorType(XmlAccessType.FIELD)
-    public static record ElectronicAddressDto(
-        @XmlElement(name = "email1")
-        String email1,
-        
-        @XmlElement(name = "email2")
-        String email2,
-        
-        @XmlElement(name = "web")
-        String web,
-        
-        @XmlElement(name = "radio")
-        String radio
-    ) {
-        public ElectronicAddressDto() {
-            this(null, null, null, null);
-        }
+    @XmlType(name = "ElectronicAddress", namespace = "http://naesb.org/espi/customer")
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ElectronicAddressDto {
+        @XmlElement(name = "email1", namespace = "http://naesb.org/espi/customer")
+        private String email1;
+
+        @XmlElement(name = "email2", namespace = "http://naesb.org/espi/customer")
+        private String email2;
+
+        @XmlElement(name = "web", namespace = "http://naesb.org/espi/customer")
+        private String web;
+
+        @XmlElement(name = "radio", namespace = "http://naesb.org/espi/customer")
+        private String radio;
     }
 }

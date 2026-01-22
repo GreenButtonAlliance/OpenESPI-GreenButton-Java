@@ -19,7 +19,7 @@
 
 package org.greenbuttonalliance.espi.common.dto.usage;
 
-import org.greenbuttonalliance.espi.common.dto.atom.AtomEntryDto;
+import org.greenbuttonalliance.espi.common.dto.atom.UsageAtomEntryDto;
 import org.greenbuttonalliance.espi.common.dto.atom.AtomFeedDto;
 import org.greenbuttonalliance.espi.common.dto.atom.LinkDto;
 import org.junit.jupiter.api.DisplayName;
@@ -57,9 +57,9 @@ class SubscriptionDtoTest {
         assertThat(dto.getSubscriptionId()).isEqualTo(TEST_SUBSCRIPTION_ID);
         assertThat(dto.getSchemaType()).isEqualTo(SubscriptionDto.SchemaType.ENERGY);
         assertThat(dto.getLinks()).hasSize(1);
-        assertThat(dto.getLinks().get(0).rel()).isEqualTo("self");
-        assertThat(dto.getLinks().get(0).href()).isEqualTo(EXPECTED_SELF_HREF);
-        assertThat(dto.getLinks().get(0).type()).isEqualTo("espi-entry/Subscription");
+        assertThat(dto.getLinks().get(0).getRel()).isEqualTo("self");
+        assertThat(dto.getLinks().get(0).getHref()).isEqualTo(EXPECTED_SELF_HREF);
+        assertThat(dto.getLinks().get(0).getType()).isEqualTo("espi-entry/Subscription");
     }
 
     @Test
@@ -92,13 +92,13 @@ class SubscriptionDtoTest {
         assertThat(dto.getLinks()).hasSize(2);
 
         LinkDto relatedLink = dto.getLinks().stream()
-            .filter(link -> "related".equals(link.rel()))
+            .filter(link -> "related".equals(link.getRel()))
             .findFirst()
             .orElse(null);
 
         assertThat(relatedLink).isNotNull();
-        assertThat(relatedLink.href()).isEqualTo(CERTIFICATION_URL);
-        assertThat(relatedLink.type()).isEqualTo("text/html");
+        assertThat(relatedLink.getHref()).isEqualTo(CERTIFICATION_URL);
+        assertThat(relatedLink.getType()).isEqualTo("text/html");
     }
 
     @Test
@@ -130,13 +130,13 @@ class SubscriptionDtoTest {
     void shouldAddEntriesUsingFluentApi() {
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
 
-        AtomEntryDto usagePointEntry = new AtomEntryDto(
+        UsageAtomEntryDto usagePointEntry = new UsageAtomEntryDto(
             "urn:uuid:test-usage-point",
             "Test Usage Point",
             new UsagePointDto(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)
         );
 
-        AtomEntryDto meterReadingEntry = new AtomEntryDto(
+        UsageAtomEntryDto meterReadingEntry = new UsageAtomEntryDto(
             "urn:uuid:test-meter-reading",
             "Test Meter Reading",
             new MeterReadingDto()
@@ -160,17 +160,13 @@ class SubscriptionDtoTest {
     void shouldAddMultipleEntriesAtOnce() {
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
 
-        List<AtomEntryDto> entries = List.of(
-            new AtomEntryDto("urn:uuid:entry1", "Entry 1", new UsagePointDto(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)),
-            new AtomEntryDto("urn:uuid:entry2", "Entry 2", new MeterReadingDto())
-        );
-
         SubscriptionDto dto = new SubscriptionDto(
             TEST_SUBSCRIPTION_ID,
             SubscriptionDto.SchemaType.ENERGY,
             now,
             now
-        ).withEntries(entries);
+        ).withEntry(new UsageAtomEntryDto("urn:uuid:entry1", "Entry 1", new UsagePointDto(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)))
+         .withEntry(new UsageAtomEntryDto("urn:uuid:entry2", "Entry 2", new MeterReadingDto()));
 
         assertThat(dto.getEntries()).hasSize(2);
     }
@@ -189,11 +185,11 @@ class SubscriptionDtoTest {
 
         AtomFeedDto feed = dto.toAtomFeed();
 
-        assertThat(feed.id()).isEqualTo("urn:uuid:" + TEST_SUBSCRIPTION_ID);
-        assertThat(feed.title()).isEqualTo("Green Button Energy Feed");
-        assertThat(feed.published()).isEqualTo(now);
-        assertThat(feed.updated()).isEqualTo(now);
-        assertThat(feed.links()).hasSize(1);
+        assertThat(feed.getId()).isEqualTo("urn:uuid:" + TEST_SUBSCRIPTION_ID);
+        assertThat(feed.getTitle()).isEqualTo("Green Button Energy Feed");
+        assertThat(feed.getPublished()).isEqualTo(now);
+        assertThat(feed.getUpdated()).isEqualTo(now);
+        assertThat(feed.getLinks()).hasSize(1);
     }
 
     @Test
@@ -210,7 +206,7 @@ class SubscriptionDtoTest {
 
         AtomFeedDto feed = dto.toAtomFeed();
 
-        assertThat(feed.title()).isEqualTo("Green Button Customer Feed");
+        assertThat(feed.getTitle()).isEqualTo("Green Button Customer Feed");
     }
 
     @Test
@@ -218,8 +214,8 @@ class SubscriptionDtoTest {
     void shouldIncludeAllEntriesInAtomFeedDto() {
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
 
-        AtomEntryDto entry1 = new AtomEntryDto("urn:uuid:entry1", "Entry 1", new UsagePointDto(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null));
-        AtomEntryDto entry2 = new AtomEntryDto("urn:uuid:entry2", "Entry 2", new MeterReadingDto());
+        UsageAtomEntryDto entry1 = new UsageAtomEntryDto("urn:uuid:entry1", "Entry 1", new UsagePointDto(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null));
+        UsageAtomEntryDto entry2 = new UsageAtomEntryDto("urn:uuid:entry2", "Entry 2", new MeterReadingDto());
 
         SubscriptionDto dto = new SubscriptionDto(
             TEST_SUBSCRIPTION_ID,
@@ -233,8 +229,8 @@ class SubscriptionDtoTest {
 
         AtomFeedDto feed = dto.toAtomFeed();
 
-        assertThat(feed.entries()).hasSize(2);
-        assertThat(feed.links()).hasSize(2); // self + related
+        assertThat(feed.getEntries()).hasSize(2);
+        assertThat(feed.getLinks()).hasSize(2); // self + related
     }
 
     @Test

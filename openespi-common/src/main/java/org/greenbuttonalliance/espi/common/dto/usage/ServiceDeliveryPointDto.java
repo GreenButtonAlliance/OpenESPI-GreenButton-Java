@@ -20,9 +20,13 @@
 package org.greenbuttonalliance.espi.common.dto.usage;
 
 import jakarta.xml.bind.annotation.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
- * ServiceDeliveryPoint DTO record for JAXB XML marshalling/unmarshalling.
+ * ServiceDeliveryPoint DTO class for JAXB XML marshalling/unmarshalling.
  * 
  * Represents a physical location where energy services are delivered to a customer.
  * This is typically associated with a physical address and represents the endpoint
@@ -31,61 +35,44 @@ import jakarta.xml.bind.annotation.*;
  * ServiceDeliveryPoint is an embedded element within UsagePoint and contains only
  * ESPI business data - no Atom metadata (links, timestamps) as it's not a standalone resource.
  */
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @XmlRootElement(name = "ServiceDeliveryPoint", namespace = "http://naesb.org/espi")
-@XmlAccessorType(XmlAccessType.PROPERTY)
+@XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "ServiceDeliveryPoint", namespace = "http://naesb.org/espi", propOrder = {
     "name", "tariffProfile", "customerAgreement", "tariffRiderRefs"
 })
-public record ServiceDeliveryPointDto(
-
-    String name,
-    String tariffProfile,
-    String customerAgreement,
-    TariffRiderRefsDto tariffRiderRefs
-) {
+public class ServiceDeliveryPointDto {
 
     /**
      * The name is any free human readable and possibly non unique text
      * naming the service delivery point object.
      */
     @XmlElement(name = "name")
-    public String getName() {
-        return name;
-    }
-    
+    private String name;
+
     /**
-     * A schedule of charges; structure associated with Tariff that allows 
+     * A schedule of charges; structure associated with Tariff that allows
      * the definition of complex tariff structures such as step and time of use.
      */
     @XmlElement(name = "tariffProfile")
-    public String getTariffProfile() {
-        return tariffProfile;
-    }
-    
+    private String tariffProfile;
+
     /**
-     * Agreement between the customer and the ServiceSupplier to pay for 
+     * Agreement between the customer and the ServiceSupplier to pay for
      * service at a specific service location.
      */
     @XmlElement(name = "customerAgreement")
-    public String getCustomerAgreement() {
-        return customerAgreement;
-    }
-    
+    private String customerAgreement;
+
     /**
      * List of rate options applied to the base tariff profile.
      * Contains enrollment status and effective dates for each rider.
      */
     @XmlElement(name = "tariffRiderRefs")
-    public TariffRiderRefsDto getTariffRiderRefs() {
-        return tariffRiderRefs;
-    }
-    
-    /**
-     * Default constructor for JAXB.
-     */
-    public ServiceDeliveryPointDto() {
-        this(null, null, null, null);
-    }
+    private TariffRiderRefsDto tariffRiderRefs;
 
     /**
      * Minimal constructor for basic service delivery point data.

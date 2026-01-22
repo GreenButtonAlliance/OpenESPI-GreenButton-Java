@@ -20,11 +20,15 @@
 package org.greenbuttonalliance.espi.common.dto.customer;
 
 import jakarta.xml.bind.annotation.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.OffsetDateTime;
 
 /**
- * StatementRef DTO record for JAXB XML marshalling/unmarshalling.
+ * StatementRef DTO class for JAXB XML marshalling/unmarshalling.
  *
  * Represents a reference to a statement document.
  *
@@ -41,30 +45,26 @@ import java.time.OffsetDateTime;
 @XmlType(name = "StatementRef", namespace = "http://naesb.org/espi/customer", propOrder = {
     "referenceId", "referenceType", "referenceDate", "referenceUrl", "statement"
 })
-public record StatementRefDto(
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class StatementRefDto {
 
     @XmlElement(name = "referenceId")
-    String referenceId,
+    private String referenceId;
 
     @XmlElement(name = "referenceType")
-    String referenceType,
+    private String referenceType;
 
     @XmlElement(name = "referenceDate")
-    OffsetDateTime referenceDate,
+    private OffsetDateTime referenceDate;
 
     @XmlElement(name = "referenceUrl")
-    String referenceUrl,
+    private String referenceUrl;
 
     @XmlElement(name = "Statement")
-    StatementDto statement
-) {
-
-    /**
-     * Default constructor for JAXB.
-     */
-    public StatementRefDto() {
-        this(null, null, null, null, null);
-    }
+    private StatementDto statement;
 
     /**
      * Minimal constructor for basic reference data.

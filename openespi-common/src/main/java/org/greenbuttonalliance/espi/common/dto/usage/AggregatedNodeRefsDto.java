@@ -20,33 +20,34 @@
 package org.greenbuttonalliance.espi.common.dto.usage;
 
 import jakarta.xml.bind.annotation.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 /**
- * AggregatedNodeRefs DTO record for JAXB XML marshalling/unmarshalling.
- * 
+ * AggregatedNodeRefs DTO class for JAXB XML marshalling/unmarshalling.
+ *
  * Represents a collection of aggregated node references for a UsagePoint.
  * Used to specify multiple aggregated pricing/load zones that may apply.
- * 
+ *
  * Follows NAESB ESPI specification for AggregatedNodeRefs complex type.
  */
-@XmlAccessorType(XmlAccessType.PROPERTY)
+@Getter
+@Setter
+@XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "AggregatedNodeRefs", namespace = "http://naesb.org/espi")
-public record AggregatedNodeRefsDto(
-    
-    List<AggregatedNodeRefDto> aggregatedNodeRefs
-) {
-    
+public class AggregatedNodeRefsDto {
+
     /**
      * List of aggregated node references.
      * Each reference contains aggregated node ID and validity period.
      */
     @XmlElement(name = "AggregatedNodeRef")
-    public List<AggregatedNodeRefDto> getAggregatedNodeRefs() {
-        return aggregatedNodeRefs;
-    }
+    private List<AggregatedNodeRefDto> aggregatedNodeRefs;
     
     /**
      * Default constructor for JAXB.
@@ -108,7 +109,7 @@ public record AggregatedNodeRefsDto(
      */
     public List<AggregatedNodeRefDto> getRefsByRef(String ref) {
         return aggregatedNodeRefs.stream()
-            .filter(aggNodeRef -> ref.equals(aggNodeRef.ref()))
+            .filter(aggNodeRef -> ref.equals(aggNodeRef.getRef()))
             .toList();
     }
     
@@ -120,7 +121,7 @@ public record AggregatedNodeRefsDto(
      */
     public boolean hasRef(String ref) {
         return aggregatedNodeRefs.stream()
-            .anyMatch(aggNodeRef -> ref.equals(aggNodeRef.ref()));
+            .anyMatch(aggNodeRef -> ref.equals(aggNodeRef.getRef()));
     }
     
     /**

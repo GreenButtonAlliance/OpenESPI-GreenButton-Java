@@ -19,32 +19,24 @@
 
 package org.greenbuttonalliance.espi.common;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
 import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerEntity;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.MeterEntity;
+import org.greenbuttonalliance.espi.common.domain.customer.entity.Organisation;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.ServiceLocationEntity;
-import org.greenbuttonalliance.espi.common.dto.atom.AtomEntryDto;
+import org.greenbuttonalliance.espi.common.domain.customer.enums.CustomerKind;
+import org.greenbuttonalliance.espi.common.dto.atom.UsageAtomEntryDto;
 import org.greenbuttonalliance.espi.common.dto.usage.UsagePointDto;
 import org.greenbuttonalliance.espi.common.dto.SummaryMeasurementDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
-import tools.jackson.databind.AnnotationIntrospector;
-import tools.jackson.databind.SerializationFeature;
-import tools.jackson.databind.cfg.DateTimeFeature;
-import tools.jackson.databind.introspect.JacksonAnnotationIntrospector;
-import tools.jackson.databind.util.StdDateFormat;
-import tools.jackson.dataformat.xml.XmlAnnotationIntrospector;
-import tools.jackson.dataformat.xml.XmlMapper;
-import tools.jackson.dataformat.xml.XmlWriteFeature;
-import tools.jackson.module.jakarta.xmlbind.JakartaXmlBindAnnotationIntrospector;
-import tools.jackson.module.jakarta.xmlbind.JakartaXmlBindAnnotationModule;
 
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -71,23 +63,14 @@ class MigrationVerificationTest {
     }
 
     @Test
-    @DisplayName("Jackson 3 XML with JAXB annotations should work for DTOs")
-    void jackson3XmlWithJaxbAnnotationsShouldWork() throws Exception {
-        // Production code uses Jackson 3 XmlMapper with JAXB annotation support
-        AnnotationIntrospector intr = XmlAnnotationIntrospector.Pair.instance(
-            new JakartaXmlBindAnnotationIntrospector(),
-            new JacksonAnnotationIntrospector()
-        );
-
-        XmlMapper xmlMapper = XmlMapper.xmlBuilder()
-            .annotationIntrospector(intr)
-            .addModule(new JakartaXmlBindAnnotationModule()
-                .setNonNillableInclusion(JsonInclude.Include.NON_EMPTY))
-            .enable(SerializationFeature.INDENT_OUTPUT)
-            .enable(DateTimeFeature.WRITE_DATES_WITH_ZONE_ID)
-            .disable(XmlWriteFeature.WRITE_NULLS_AS_XSI_NIL)
-            .defaultDateFormat(new StdDateFormat())
-            .build();
+    @DisplayName("JAXB XML with JAXB annotations should work for DTOs")
+    void jaxbXmlWithJaxbAnnotationsShouldWork() throws Exception {
+        // Production code uses Jakarta JAXB Marshaller with JAXB annotation support
+        jakarta.xml.bind.JAXBContext jaxbContext = jakarta.xml.bind.JAXBContext.newInstance(UsageAtomEntryDto.class);
+        jakarta.xml.bind.Marshaller marshaller = jaxbContext.createMarshaller();
+        marshaller.setProperty(jakarta.xml.bind.Marshaller.JAXB_FORMATTED_OUTPUT, true);
+        marshaller.setProperty(jakarta.xml.bind.Marshaller.JAXB_ENCODING, "UTF-8");
+        marshaller.setProperty(jakarta.xml.bind.Marshaller.JAXB_FRAGMENT, true);
 
         // Create a simple DTO with all nulls
         UsagePointDto dto = new UsagePointDto(
@@ -105,7 +88,7 @@ class MigrationVerificationTest {
         // Wrap in Atom entry using full constructor (payload moved directly to AtomEntryDto, no AtomContentDto wrapper)
         java.time.LocalDateTime localDateTime = java.time.LocalDateTime.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS);
         java.time.OffsetDateTime now = localDateTime.atOffset(java.time.ZoneOffset.UTC).toZonedDateTime().toOffsetDateTime();
-        AtomEntryDto entry = new AtomEntryDto(
+        UsageAtomEntryDto entry = new UsageAtomEntryDto(
             "urn:uuid:test-entry",
             "Test Usage Point",
             now,
@@ -114,8 +97,12 @@ class MigrationVerificationTest {
             dto   // content - passed directly (AtomEntryDto now includes AtomContentDto functionality)
         );
 
-        // Marshal using Jackson 3
-        String xml = assertDoesNotThrow(() -> xmlMapper.writeValueAsString(entry));
+        // Marshal using JAXB
+        java.io.StringWriter writer = new java.io.StringWriter();
+        String xml = assertDoesNotThrow(() -> {
+            marshaller.marshal(entry, writer);
+            return writer.toString();
+        });
 
         // Debug: print XML
         System.out.println("Generated XML:");
@@ -209,11 +196,11 @@ class MigrationVerificationTest {
             "/espi/1_1/resource/ReadingType/07" // readingTypeRef
         );
         
-        assertEquals("3", dto.powerOfTenMultiplier());
-        assertEquals(1331784000L, dto.timeStamp());
-        assertEquals("W", dto.uom());
-        assertEquals(5000L, dto.value());
-        assertEquals("/espi/1_1/resource/ReadingType/07", dto.readingTypeRef());
+        assertEquals("3", dto.getPowerOfTenMultiplier());
+        assertEquals(1331784000L, dto.getTimeStamp());
+        assertEquals("W", dto.getUom());
+        assertEquals(5000L, dto.getValue());
+        assertEquals("/espi/1_1/resource/ReadingType/07", dto.getReadingTypeRef());
     }
 
     @Test
@@ -225,7 +212,115 @@ class MigrationVerificationTest {
         // 3. UUID primary key architecture compiles
         // 4. Modern entity structure compiles
         // 5. DTO structure with JAXB annotations compiles
-        
+
         assertTrue(true, "Compilation successful - Spring Boot 3.5 migration core features working");
+    }
+
+    @Test
+    @DisplayName("Customer entity with all embedded objects should work")
+    void customerWithAllEmbeddedObjectsShouldWork() {
+        // Test Customer entity with Organisation embedded object
+        CustomerEntity customer = new CustomerEntity();
+        customer.setCustomerName("Test Customer");
+        customer.setKind(CustomerKind.RESIDENTIAL);
+        customer.setSpecialNeed("Life support");
+        customer.setVip(true);
+        customer.setPucNumber("PUC-12345");
+        customer.setLocale("en-US");
+
+        // Test Organisation embedded object
+        Organisation org = new Organisation();
+        org.setOrganisationName("Test Organisation");
+
+        // Test StreetAddress nested embedded object
+        Organisation.StreetAddress streetAddress = new Organisation.StreetAddress();
+        streetAddress.setStreetDetail("123 Test Street");
+        streetAddress.setTownDetail("Test City");
+        streetAddress.setStateOrProvince("CA");
+        streetAddress.setPostalCode("90000");
+        streetAddress.setCountry("USA");
+        org.setStreetAddress(streetAddress);
+
+        // Test ElectronicAddress nested embedded object
+        Organisation.ElectronicAddress electronicAddress = new Organisation.ElectronicAddress();
+        electronicAddress.setEmail1("test@example.com");
+        electronicAddress.setWeb("https://example.com");
+        org.setElectronicAddress(electronicAddress);
+
+        customer.setOrganisation(org);
+
+        // Test Status embedded object
+        CustomerEntity.Status status = new CustomerEntity.Status();
+        status.setValue("active");
+        status.setDateTime(OffsetDateTime.now());
+        status.setReason("Migration verification test");
+        customer.setStatus(status);
+
+        // Test Priority embedded object
+        CustomerEntity.Priority priority = new CustomerEntity.Priority();
+        priority.setValue(1);
+        priority.setRank(10);
+        priority.setType("high-priority");
+        customer.setPriority(priority);
+
+        // Verify all fields work
+        assertNotNull(customer.getId());
+        assertEquals("Test Customer", customer.getCustomerName());
+        assertEquals(CustomerKind.RESIDENTIAL, customer.getKind());
+        assertEquals("Life support", customer.getSpecialNeed());
+        assertTrue(customer.getVip());
+        assertEquals("PUC-12345", customer.getPucNumber());
+        assertEquals("en-US", customer.getLocale());
+
+        assertNotNull(customer.getOrganisation());
+        assertEquals("Test Organisation", customer.getOrganisation().getOrganisationName());
+        assertNotNull(customer.getOrganisation().getStreetAddress());
+        assertEquals("123 Test Street", customer.getOrganisation().getStreetAddress().getStreetDetail());
+        assertNotNull(customer.getOrganisation().getElectronicAddress());
+        assertEquals("test@example.com", customer.getOrganisation().getElectronicAddress().getEmail1());
+
+        assertNotNull(customer.getStatus());
+        assertEquals("active", customer.getStatus().getValue());
+        assertNotNull(customer.getStatus().getDateTime());
+
+        assertNotNull(customer.getPriority());
+        assertEquals(1, customer.getPriority().getValue());
+        assertEquals(10, customer.getPriority().getRank());
+    }
+
+    @Test
+    @DisplayName("Customer embedded objects should be null-safe")
+    void customerEmbeddedObjectsShouldBeNullSafe() {
+        // Test that Customer can be created with null embedded objects
+        CustomerEntity customer = new CustomerEntity();
+        customer.setCustomerName("Minimal Customer");
+        customer.setOrganisation(null);
+        customer.setStatus(null);
+        customer.setPriority(null);
+
+        assertNotNull(customer.getId());
+        assertEquals("Minimal Customer", customer.getCustomerName());
+        assertNull(customer.getOrganisation());
+        assertNull(customer.getStatus());
+        assertNull(customer.getPriority());
+    }
+
+    @Test
+    @DisplayName("Customer Organisation nested objects should be null-safe")
+    void customerOrganisationNestedObjectsShouldBeNullSafe() {
+        // Test that Organisation can be created with null nested objects
+        CustomerEntity customer = new CustomerEntity();
+        Organisation org = new Organisation();
+        org.setOrganisationName("Minimal Organisation");
+        org.setStreetAddress(null);
+        org.setPostalAddress(null);
+        org.setElectronicAddress(null);
+        customer.setOrganisation(org);
+
+        assertNotNull(customer.getOrganisation());
+        assertEquals("Minimal Organisation", customer.getOrganisation().getOrganisationName());
+        assertNull(customer.getOrganisation().getStreetAddress());
+        assertNull(customer.getOrganisation().getPostalAddress());
+        assertNull(customer.getOrganisation().getElectronicAddress());
     }
 }

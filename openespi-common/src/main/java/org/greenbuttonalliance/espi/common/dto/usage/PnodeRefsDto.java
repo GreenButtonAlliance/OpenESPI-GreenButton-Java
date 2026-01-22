@@ -20,33 +20,34 @@
 package org.greenbuttonalliance.espi.common.dto.usage;
 
 import jakarta.xml.bind.annotation.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 /**
- * PnodeRefs DTO record for JAXB XML marshalling/unmarshalling.
- * 
+ * PnodeRefs DTO class for JAXB XML marshalling/unmarshalling.
+ *
  * Represents a collection of pricing node references for a UsagePoint.
  * Used to specify multiple pricing locations that may apply to energy costs.
- * 
+ *
  * Follows NAESB ESPI specification for PnodeRefs complex type.
  */
-@XmlAccessorType(XmlAccessType.PROPERTY)
+@Getter
+@Setter
+@XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "PnodeRefs", namespace = "http://naesb.org/espi")
-public record PnodeRefsDto(
-    
-    List<PnodeRefDto> pnodeRefs
-) {
-    
+public class PnodeRefsDto {
+
     /**
      * List of pricing node references.
      * Each reference contains pricing node ID and validity period.
      */
     @XmlElement(name = "PnodeRef")
-    public List<PnodeRefDto> getPnodeRefs() {
-        return pnodeRefs;
-    }
+    private List<PnodeRefDto> pnodeRefs;
     
     /**
      * Default constructor for JAXB.
@@ -108,7 +109,7 @@ public record PnodeRefsDto(
      */
     public List<PnodeRefDto> getRefsByRef(String ref) {
         return pnodeRefs.stream()
-            .filter(pnodeRef -> ref.equals(pnodeRef.ref()))
+            .filter(pnodeRef -> ref.equals(pnodeRef.getRef()))
             .toList();
     }
     
@@ -120,7 +121,7 @@ public record PnodeRefsDto(
      */
     public boolean hasRef(String ref) {
         return pnodeRefs.stream()
-            .anyMatch(pnodeRef -> ref.equals(pnodeRef.ref()));
+            .anyMatch(pnodeRef -> ref.equals(pnodeRef.getRef()));
     }
     
     /**

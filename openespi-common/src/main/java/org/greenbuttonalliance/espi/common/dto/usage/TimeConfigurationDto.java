@@ -19,13 +19,17 @@
 
 package org.greenbuttonalliance.espi.common.dto.usage;
 
-import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.xml.bind.annotation.*;
 import jakarta.xml.bind.annotation.adapters.HexBinaryAdapter;
 import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
- * TimeConfiguration DTO record for JAXB XML marshalling/unmarshalling.
+ * TimeConfiguration DTO class for JAXB XML marshalling/unmarshalling.
  *
  * Represents time configuration parameters including timezone offset and
  * daylight saving time rules for energy metering systems.
@@ -43,42 +47,55 @@ import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
     "dstStartRule",
     "tzOffset"
 })
-public record TimeConfigurationDto(
-
-    @XmlTransient
-    @Schema(description = "Internal DTO identifier (not serialized to XML)")
-    Long id,
-
-    @XmlTransient
-    @Schema(description = "Resource identifier (mRID)", example = "550e8400-e29b-41d4-a716-446655440000")
-    String uuid,
-
-    @XmlElement(name = "dstEndRule", type = String.class)
-    @XmlJavaTypeAdapter(HexBinaryAdapter.class)
-    @Schema(description = "Rule to calculate end of daylight savings time in the current year. Result of dstEndRule must be greater than result of dstStartRule.", example = "...")
-    byte[] dstEndRule,
-
-    @XmlElement(name = "dstOffset")
-    @Schema(description = "Daylight savings time offset from local standard time in seconds", example = "3600")
-    Long dstOffset,
-
-    @XmlElement(name = "dstStartRule", type = String.class)
-    @XmlJavaTypeAdapter(HexBinaryAdapter.class)
-    @Schema(description = "Rule to calculate start of daylight savings time in the current year. Result of dstEndRule must be greater than result of dstStartRule.", example = "...")
-    byte[] dstStartRule,
-
-    @XmlElement(name = "tzOffset")
-    @Schema(description = "Local time zone offset from UTC in seconds. Does not include any daylight savings time offsets. Positive values are east of UTC, negative values are west of UTC.", example = "-28800")
-    Long tzOffset
-
-) {
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class TimeConfigurationDto {
 
     /**
-     * Default constructor for JAXB.
+     * Internal DTO identifier (not serialized to XML).
      */
-    public TimeConfigurationDto() {
-        this(null, null, null, null, null, null);
-    }
+    @XmlTransient
+    private Long id;
+
+    /**
+     * Resource identifier (mRID).
+     */
+    @XmlTransient
+    private String uuid;
+
+    /**
+     * Rule to calculate end of daylight savings time in the current year.
+     * Result of dstEndRule must be greater than result of dstStartRule.
+     */
+    @XmlElement(name = "dstEndRule", type = String.class)
+    @XmlJavaTypeAdapter(HexBinaryAdapter.class)
+    @Getter(AccessLevel.NONE)
+    private byte[] dstEndRule;
+
+    /**
+     * Daylight savings time offset from local standard time in seconds.
+     */
+    @XmlElement(name = "dstOffset")
+    private Long dstOffset;
+
+    /**
+     * Rule to calculate start of daylight savings time in the current year.
+     * Result of dstEndRule must be greater than result of dstStartRule.
+     */
+    @XmlElement(name = "dstStartRule", type = String.class)
+    @XmlJavaTypeAdapter(HexBinaryAdapter.class)
+    @Getter(AccessLevel.NONE)
+    private byte[] dstStartRule;
+
+    /**
+     * Local time zone offset from UTC in seconds.
+     * Does not include any daylight savings time offsets.
+     * Positive values are east of UTC, negative values are west of UTC.
+     */
+    @XmlElement(name = "tzOffset")
+    private Long tzOffset;
 
     /**
      * Constructor with timezone offset only.
@@ -99,27 +116,27 @@ public record TimeConfigurationDto(
         this(null, uuid, null, null, null, tzOffset);
     }
 
+    // Custom getters for defensive copying of byte arrays
+
     /**
-     * Override dstEndRule getter to return cloned array for defensive copying.
+     * Gets the dstEndRule with defensive copying.
      *
      * @return cloned byte array or null
      */
-    @Override
-    public byte[] dstEndRule() {
+    public byte[] getDstEndRule() {
         return dstEndRule != null ? dstEndRule.clone() : null;
     }
 
     /**
-     * Override dstStartRule getter to return cloned array for defensive copying.
+     * Gets the dstStartRule with defensive copying.
      *
      * @return cloned byte array or null
      */
-    @Override
-    public byte[] dstStartRule() {
+    public byte[] getDstStartRule() {
         return dstStartRule != null ? dstStartRule.clone() : null;
     }
 
-    // Utility methods (no @XmlTransient needed with FIELD access)
+    // Computed property getters
 
     /**
      * Gets the timezone offset in hours.

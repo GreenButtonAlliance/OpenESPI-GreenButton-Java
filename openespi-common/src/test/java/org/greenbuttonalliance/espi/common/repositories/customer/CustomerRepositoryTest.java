@@ -20,6 +20,7 @@ package org.greenbuttonalliance.espi.common.repositories.customer;
 
 import jakarta.validation.ConstraintViolation;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerEntity;
+import org.greenbuttonalliance.espi.common.domain.customer.entity.Organisation;
 import org.greenbuttonalliance.espi.common.domain.customer.enums.CustomerKind;
 import org.greenbuttonalliance.espi.common.test.BaseRepositoryTest;
 import org.greenbuttonalliance.espi.common.test.TestDataBuilders;
@@ -38,9 +39,11 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
  * Comprehensive test suite for CustomerRepository.
- * 
- * Tests all CRUD operations, 8 custom query methods, relationships,
- * and validation constraints for Customer entities.
+ *
+ * Tests all CRUD operations, relationships, and validation constraints for Customer entities.
+ * Per ESPI 4.0 API specification, only default JpaRepository methods are supported (findById, findAll, save, delete).
+ * Removed tests for: findByCustomerName, findByKind, findByPucNumber, findVipCustomers,
+ * findCustomersWithSpecialNeeds, findByLocale, findByPriorityRange, findByOrganisationName
  */
 @DisplayName("Customer Repository Tests")
 class CustomerRepositoryTest extends BaseRepositoryTest {
@@ -142,247 +145,6 @@ class CustomerRepositoryTest extends BaseRepositoryTest {
     }
 
     @Nested
-    @DisplayName("Custom Query Methods")
-    class CustomQueryMethodsTest {
-
-        @Test
-        @DisplayName("Should find customer by customer name (case insensitive)")
-        void shouldFindCustomerByCustomerNameCaseInsensitive() {
-            // Arrange
-            CustomerEntity customer = TestDataBuilders.createValidCustomer();
-            customer.setCustomerName("ACME Energy Solutions");
-            customerRepository.save(customer);
-            flushAndClear();
-
-            // Act
-            Optional<CustomerEntity> result1 = customerRepository.findByCustomerName("ACME Energy Solutions");
-            Optional<CustomerEntity> result2 = customerRepository.findByCustomerName("acme energy solutions");
-            Optional<CustomerEntity> result3 = customerRepository.findByCustomerName("Acme Energy Solutions");
-
-            // Assert
-            assertThat(result1).isPresent();
-            assertThat(result1.get().getCustomerName()).isEqualTo("ACME Energy Solutions");
-            
-            assertThat(result2).isPresent();
-            assertThat(result2.get().getCustomerName()).isEqualTo("ACME Energy Solutions");
-            
-            assertThat(result3).isPresent();
-            assertThat(result3.get().getCustomerName()).isEqualTo("ACME Energy Solutions");
-        }
-
-        @Test
-        @DisplayName("Should find customers by kind")
-        void shouldFindCustomersByKind() {
-            // Arrange
-            CustomerEntity residential1 = TestDataBuilders.createValidCustomer();
-            residential1.setCustomerName("Residential Customer 1");
-            residential1.setKind(CustomerKind.RESIDENTIAL);
-
-            CustomerEntity residential2 = TestDataBuilders.createValidCustomer();
-            residential2.setCustomerName("Residential Customer 2");
-            residential2.setKind(CustomerKind.RESIDENTIAL);
-
-            CustomerEntity commercial = TestDataBuilders.createValidCustomer();
-            commercial.setCustomerName("Commercial Customer");
-            commercial.setKind(CustomerKind.COMMERCIAL);
-
-            customerRepository.saveAll(List.of(residential1, residential2, commercial));
-            flushAndClear();
-
-            // Act
-            List<CustomerEntity> residentialCustomers = customerRepository.findByKind(CustomerKind.RESIDENTIAL);
-            List<CustomerEntity> commercialCustomers = customerRepository.findByKind(CustomerKind.COMMERCIAL);
-
-            // Assert
-            assertThat(residentialCustomers).hasSize(2);
-            assertThat(residentialCustomers).extracting(CustomerEntity::getCustomerName)
-                    .contains("Residential Customer 1", "Residential Customer 2");
-
-            assertThat(commercialCustomers).hasSize(1);
-            assertThat(commercialCustomers).extracting(CustomerEntity::getCustomerName)
-                    .contains("Commercial Customer");
-        }
-
-        @Test
-        @DisplayName("Should find customer by PUC number")
-        void shouldFindCustomerByPucNumber() {
-            // Arrange
-            CustomerEntity customer = TestDataBuilders.createValidCustomer();
-            customer.setCustomerName("Customer with PUC");
-            customer.setPucNumber("PUC123456789");
-            customerRepository.save(customer);
-            flushAndClear();
-
-            // Act
-            Optional<CustomerEntity> result = customerRepository.findByPucNumber("PUC123456789");
-
-            // Assert
-            assertThat(result).isPresent();
-            assertThat(result.get().getCustomerName()).isEqualTo("Customer with PUC");
-            assertThat(result.get().getPucNumber()).isEqualTo("PUC123456789");
-        }
-
-        @Test
-        @DisplayName("Should find VIP customers")
-        void shouldFindVipCustomers() {
-            // Arrange
-            CustomerEntity vipCustomer1 = TestDataBuilders.createValidCustomer();
-            vipCustomer1.setCustomerName("VIP Customer 1");
-            vipCustomer1.setVip(true);
-
-            CustomerEntity vipCustomer2 = TestDataBuilders.createValidCustomer();
-            vipCustomer2.setCustomerName("VIP Customer 2");
-            vipCustomer2.setVip(true);
-
-            CustomerEntity regularCustomer = TestDataBuilders.createValidCustomer();
-            regularCustomer.setCustomerName("Regular Customer");
-            regularCustomer.setVip(false);
-
-            customerRepository.saveAll(List.of(vipCustomer1, vipCustomer2, regularCustomer));
-            flushAndClear();
-
-            // Act
-            List<CustomerEntity> vipCustomers = customerRepository.findVipCustomers();
-
-            // Assert
-            assertThat(vipCustomers).hasSize(2);
-            assertThat(vipCustomers).extracting(CustomerEntity::getCustomerName)
-                    .contains("VIP Customer 1", "VIP Customer 2");
-            assertThat(vipCustomers).allMatch(CustomerEntity::getVip);
-        }
-
-        @Test
-        @DisplayName("Should find customers with special needs")
-        void shouldFindCustomersWithSpecialNeeds() {
-            // Arrange
-            CustomerEntity specialNeedsCustomer1 = TestDataBuilders.createValidCustomer();
-            specialNeedsCustomer1.setCustomerName("Special Needs Customer 1");
-            specialNeedsCustomer1.setSpecialNeed("Life Support Equipment");
-
-            CustomerEntity specialNeedsCustomer2 = TestDataBuilders.createValidCustomer();
-            specialNeedsCustomer2.setCustomerName("Special Needs Customer 2");
-            specialNeedsCustomer2.setSpecialNeed("Medical Equipment");
-
-            CustomerEntity regularCustomer = TestDataBuilders.createValidCustomer();
-            regularCustomer.setCustomerName("Regular Customer");
-            regularCustomer.setSpecialNeed("NONE");
-
-            CustomerEntity nullSpecialNeedCustomer = TestDataBuilders.createValidCustomer();
-            nullSpecialNeedCustomer.setCustomerName("Null Special Need Customer");
-            nullSpecialNeedCustomer.setSpecialNeed(null);
-
-            customerRepository.saveAll(List.of(specialNeedsCustomer1, specialNeedsCustomer2, regularCustomer, nullSpecialNeedCustomer));
-            flushAndClear();
-
-            // Act
-            List<CustomerEntity> specialNeedsCustomers = customerRepository.findCustomersWithSpecialNeeds();
-
-            // Assert
-            assertThat(specialNeedsCustomers).hasSize(2);
-            assertThat(specialNeedsCustomers).extracting(CustomerEntity::getCustomerName)
-                    .contains("Special Needs Customer 1", "Special Needs Customer 2");
-            assertThat(specialNeedsCustomers).extracting(CustomerEntity::getSpecialNeed)
-                    .contains("Life Support Equipment", "Medical Equipment");
-        }
-
-        @Test
-        @DisplayName("Should find customers by locale")
-        void shouldFindCustomersByLocale() {
-            // Arrange
-            CustomerEntity usCustomer1 = TestDataBuilders.createValidCustomer();
-            usCustomer1.setCustomerName("US Customer 1");
-            usCustomer1.setLocale("en_US");
-
-            CustomerEntity usCustomer2 = TestDataBuilders.createValidCustomer();
-            usCustomer2.setCustomerName("US Customer 2");
-            usCustomer2.setLocale("en_US");
-
-            CustomerEntity frenchCustomer = TestDataBuilders.createValidCustomer();
-            frenchCustomer.setCustomerName("French Customer");
-            frenchCustomer.setLocale("fr_FR");
-
-            customerRepository.saveAll(List.of(usCustomer1, usCustomer2, frenchCustomer));
-            flushAndClear();
-
-            // Act
-            List<CustomerEntity> usCustomers = customerRepository.findByLocale("en_US");
-            List<CustomerEntity> frenchCustomers = customerRepository.findByLocale("fr_FR");
-
-            // Assert
-            assertThat(usCustomers).hasSize(2);
-            assertThat(usCustomers).extracting(CustomerEntity::getCustomerName)
-                    .contains("US Customer 1", "US Customer 2");
-
-            assertThat(frenchCustomers).hasSize(1);
-            assertThat(frenchCustomers).extracting(CustomerEntity::getCustomerName)
-                    .contains("French Customer");
-        }
-
-        @Test
-        @DisplayName("Should find customers by priority range")
-        void shouldFindCustomersByPriorityRange() {
-            // Arrange
-            CustomerEntity highPriorityCustomer = TestDataBuilders.createValidCustomer();
-            highPriorityCustomer.setCustomerName("High Priority Customer");
-            // Note: Priority is an embedded object, so we'll test this conceptually
-            // In a real implementation, you'd need to create Priority objects
-
-            CustomerEntity mediumPriorityCustomer = TestDataBuilders.createValidCustomer();
-            mediumPriorityCustomer.setCustomerName("Medium Priority Customer");
-
-            CustomerEntity lowPriorityCustomer = TestDataBuilders.createValidCustomer();
-            lowPriorityCustomer.setCustomerName("Low Priority Customer");
-
-            customerRepository.saveAll(List.of(highPriorityCustomer, mediumPriorityCustomer, lowPriorityCustomer));
-            flushAndClear();
-
-            // Act
-            List<CustomerEntity> results = customerRepository.findByPriorityRange(1, 10);
-
-            // Assert
-            // Since we don't have actual Priority objects set up, this will return empty
-            // In a real implementation, you'd set up Priority embedded objects
-            assertThat(results).isNotNull();
-        }
-
-        @Test
-        @DisplayName("Should find customers by organisation name")
-        void shouldFindCustomersByOrganisationName() {
-            // Arrange
-            CustomerEntity customer1 = TestDataBuilders.createValidCustomer();
-            customer1.setCustomerName("Customer 1");
-            // Note: Organisation is an embedded object, so we'll test this conceptually
-            // In a real implementation, you'd need to create Organisation objects
-
-            CustomerEntity customer2 = TestDataBuilders.createValidCustomer();
-            customer2.setCustomerName("Customer 2");
-
-            customerRepository.saveAll(List.of(customer1, customer2));
-            flushAndClear();
-
-            // Act
-            List<CustomerEntity> results = customerRepository.findByOrganisationName("ACME Corp");
-
-            // Assert
-            // Since we don't have actual Organisation objects set up, this will return empty
-            // In a real implementation, you'd set up Organisation embedded objects
-            assertThat(results).isNotNull();
-        }
-
-        @Test
-        @DisplayName("Should handle empty results gracefully")
-        void shouldHandleEmptyResultsGracefully() {
-            // Act & Assert
-            assertThat(customerRepository.findByCustomerName("NonExistentCustomer")).isEmpty();
-            assertThat(customerRepository.findByKind(CustomerKind.ENTERPRISE)).isEmpty();
-            assertThat(customerRepository.findByPucNumber("NonExistentPUC")).isEmpty();
-            assertThat(customerRepository.findVipCustomers()).isEmpty();
-            assertThat(customerRepository.findCustomersWithSpecialNeeds()).isEmpty();
-            assertThat(customerRepository.findByLocale("NonExistentLocale")).isEmpty();
-        }
-    }
-
-    @Nested
     @DisplayName("JPA Relationships")
     class RelationshipsTest {
 
@@ -396,7 +158,7 @@ class CustomerRepositoryTest extends BaseRepositoryTest {
             // Act
             CustomerEntity savedCustomer = customerRepository.save(customer);
             flushAndClear();
-            
+
             Optional<CustomerEntity> retrieved = customerRepository.findById(savedCustomer.getId());
 
             // Assert
@@ -424,6 +186,168 @@ class CustomerRepositoryTest extends BaseRepositoryTest {
                 assertThat(retrieved.get().getCustomerAccounts()).isNotNull();
                 assertThat(retrieved.get().getCustomerAccounts()).isEmpty();
             }).doesNotThrowAnyException();
+        }
+    }
+
+    @Nested
+    @DisplayName("Embedded Objects Persistence")
+    class EmbeddedObjectsTest {
+
+        @Test
+        @DisplayName("Should persist and retrieve Organisation embedded object")
+        void shouldPersistAndRetrieveOrganisation() {
+            // Arrange
+            CustomerEntity customer = TestDataBuilders.createValidCustomer();
+            customer.setCustomerName("Customer with Organisation");
+
+            // Set Organisation embedded object
+            Organisation org = new Organisation();
+            org.setOrganisationName("ACME Energy Services");
+
+            Organisation.StreetAddress streetAddress = new Organisation.StreetAddress();
+            streetAddress.setStreetDetail("123 Main Street");
+            streetAddress.setTownDetail("San Francisco");
+            streetAddress.setStateOrProvince("CA");
+            streetAddress.setPostalCode("94102");
+            streetAddress.setCountry("USA");
+            org.setStreetAddress(streetAddress);
+
+            Organisation.StreetAddress postalAddress = new Organisation.StreetAddress();
+            postalAddress.setStreetDetail("PO Box 789");
+            postalAddress.setTownDetail("San Francisco");
+            postalAddress.setStateOrProvince("CA");
+            postalAddress.setPostalCode("94103");
+            postalAddress.setCountry("USA");
+            org.setPostalAddress(postalAddress);
+
+            Organisation.ElectronicAddress electronicAddress = new Organisation.ElectronicAddress();
+            electronicAddress.setEmail1("contact@acme.com");
+            electronicAddress.setEmail2("support@acme.com");
+            electronicAddress.setWeb("https://www.acme.com");
+            org.setElectronicAddress(electronicAddress);
+
+            customer.setOrganisation(org);
+
+            // Act
+            CustomerEntity saved = customerRepository.save(customer);
+            flushAndClear();
+            Optional<CustomerEntity> retrieved = customerRepository.findById(saved.getId());
+
+            // Assert
+            assertThat(retrieved).isPresent();
+            Organisation retrievedOrg = retrieved.get().getOrganisation();
+            assertThat(retrievedOrg).isNotNull();
+            assertThat(retrievedOrg.getOrganisationName()).isEqualTo("ACME Energy Services");
+            assertThat(retrievedOrg.getStreetAddress()).isNotNull();
+            assertThat(retrievedOrg.getStreetAddress().getStreetDetail()).isEqualTo("123 Main Street");
+            assertThat(retrievedOrg.getStreetAddress().getTownDetail()).isEqualTo("San Francisco");
+            assertThat(retrievedOrg.getPostalAddress()).isNotNull();
+            assertThat(retrievedOrg.getPostalAddress().getStreetDetail()).isEqualTo("PO Box 789");
+            assertThat(retrievedOrg.getElectronicAddress()).isNotNull();
+            assertThat(retrievedOrg.getElectronicAddress().getEmail1()).isEqualTo("contact@acme.com");
+        }
+
+        @Test
+        @DisplayName("Should persist and retrieve Status embedded object")
+        void shouldPersistAndRetrieveStatus() {
+            // Arrange
+            CustomerEntity customer = TestDataBuilders.createValidCustomer();
+            customer.setCustomerName("Customer with Status");
+
+            CustomerEntity.Status status = new CustomerEntity.Status();
+            status.setValue("active");
+            status.setDateTime(java.time.OffsetDateTime.now());
+            status.setReason("Account activated");
+            customer.setStatus(status);
+
+            // Act
+            CustomerEntity saved = customerRepository.save(customer);
+            flushAndClear();
+            Optional<CustomerEntity> retrieved = customerRepository.findById(saved.getId());
+
+            // Assert
+            assertThat(retrieved).isPresent();
+            CustomerEntity.Status retrievedStatus = retrieved.get().getStatus();
+            assertThat(retrievedStatus).isNotNull();
+            assertThat(retrievedStatus.getValue()).isEqualTo("active");
+            assertThat(retrievedStatus.getDateTime()).isNotNull();
+            assertThat(retrievedStatus.getReason()).isEqualTo("Account activated");
+        }
+
+        @Test
+        @DisplayName("Should persist and retrieve Priority embedded object")
+        void shouldPersistAndRetrievePriority() {
+            // Arrange
+            CustomerEntity customer = TestDataBuilders.createValidCustomer();
+            customer.setCustomerName("Customer with Priority");
+
+            CustomerEntity.Priority priority = new CustomerEntity.Priority();
+            priority.setValue(1);
+            priority.setRank(10);
+            priority.setType("high-priority");
+            customer.setPriority(priority);
+
+            // Act
+            CustomerEntity saved = customerRepository.save(customer);
+            flushAndClear();
+            Optional<CustomerEntity> retrieved = customerRepository.findById(saved.getId());
+
+            // Assert
+            assertThat(retrieved).isPresent();
+            CustomerEntity.Priority retrievedPriority = retrieved.get().getPriority();
+            assertThat(retrievedPriority).isNotNull();
+            assertThat(retrievedPriority.getValue()).isEqualTo(1);
+            assertThat(retrievedPriority.getRank()).isEqualTo(10);
+            assertThat(retrievedPriority.getType()).isEqualTo("high-priority");
+        }
+
+        @Test
+        @DisplayName("Should persist and retrieve all embedded objects together")
+        void shouldPersistAndRetrieveAllEmbeddedObjects() {
+            // Arrange
+            CustomerEntity customer = TestDataBuilders.createValidCustomer();
+            customer.setCustomerName("Customer with All Embedded Objects");
+            customer.setKind(CustomerKind.COMMERCIAL);
+            customer.setSpecialNeed("Wheelchair access");
+            customer.setVip(true);
+            customer.setPucNumber("PUC-12345");
+            customer.setLocale("en-US");
+
+            // Organisation
+            Organisation org = new Organisation();
+            org.setOrganisationName("Complete Corp");
+            customer.setOrganisation(org);
+
+            // Status
+            CustomerEntity.Status status = new CustomerEntity.Status();
+            status.setValue("active");
+            customer.setStatus(status);
+
+            // Priority
+            CustomerEntity.Priority priority = new CustomerEntity.Priority();
+            priority.setValue(5);
+            customer.setPriority(priority);
+
+            // Act
+            CustomerEntity saved = customerRepository.save(customer);
+            flushAndClear();
+            Optional<CustomerEntity> retrieved = customerRepository.findById(saved.getId());
+
+            // Assert
+            assertThat(retrieved).isPresent();
+            CustomerEntity result = retrieved.get();
+            assertThat(result.getCustomerName()).isEqualTo("Customer with All Embedded Objects");
+            assertThat(result.getKind()).isEqualTo(CustomerKind.COMMERCIAL);
+            assertThat(result.getSpecialNeed()).isEqualTo("Wheelchair access");
+            assertThat(result.getVip()).isTrue();
+            assertThat(result.getPucNumber()).isEqualTo("PUC-12345");
+            assertThat(result.getLocale()).isEqualTo("en-US");
+            assertThat(result.getOrganisation()).isNotNull();
+            assertThat(result.getOrganisation().getOrganisationName()).isEqualTo("Complete Corp");
+            assertThat(result.getStatus()).isNotNull();
+            assertThat(result.getStatus().getValue()).isEqualTo("active");
+            assertThat(result.getPriority()).isNotNull();
+            assertThat(result.getPriority().getValue()).isEqualTo(5);
         }
     }
 

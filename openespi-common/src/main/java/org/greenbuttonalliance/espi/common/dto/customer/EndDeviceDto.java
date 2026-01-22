@@ -22,79 +22,79 @@ package org.greenbuttonalliance.espi.common.dto.customer;
 import org.greenbuttonalliance.espi.common.dto.atom.LinkDto;
 
 import jakarta.xml.bind.annotation.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
- * EndDevice DTO record for JAXB XML marshalling/unmarshalling.
- * 
+ * EndDevice DTO class for JAXB XML marshalling/unmarshalling.
+ *
  * Represents an end device such as a meter or other measurement equipment.
  * Supports Atom protocol XML wrapping.
  */
 @XmlRootElement(name = "EndDevice", namespace = "http://naesb.org/espi/customer")
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "EndDevice", namespace = "http://naesb.org/espi/customer", propOrder = {
-    "id", "uuid", "published", "updated", "selfLink", "upLink", "relatedLinks",
-    "description", "amrSystem", "installCode", "isPan", "installDate", 
+    "published", "updated", "selfLink", "upLink", "relatedLinks",
+    "description", "amrSystem", "installCode", "isPan", "installDate",
     "removedDate", "serialNumber", "serviceLocation"
 })
-public record EndDeviceDto(
-    
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class EndDeviceDto {
+
     @XmlTransient
-    Long id,
-    
+    private Long id;
+
     @XmlAttribute(name = "mRID")
-    String uuid,
-    
+    private String uuid;
+
     @XmlElement(name = "published")
-    OffsetDateTime published,
-    
+    private OffsetDateTime published;
+
     @XmlElement(name = "updated")
-    OffsetDateTime updated,
-    
+    private OffsetDateTime updated;
+
     @XmlElement(name = "link", namespace = "http://www.w3.org/2005/Atom")
     @XmlElementWrapper(name = "links", namespace = "http://www.w3.org/2005/Atom")
-    List<LinkDto> relatedLinks,
-    
+    private List<LinkDto> relatedLinks;
+
     @XmlElement(name = "link", namespace = "http://www.w3.org/2005/Atom")
-    LinkDto selfLink,
-    
+    private LinkDto selfLink;
+
     @XmlElement(name = "link", namespace = "http://www.w3.org/2005/Atom")
-    LinkDto upLink,
-    
+    private LinkDto upLink;
+
     @XmlElement(name = "description")
-    String description,
-    
+    private String description;
+
     @XmlElement(name = "amrSystem")
-    String amrSystem,
-    
+    private String amrSystem;
+
     @XmlElement(name = "installCode")
-    String installCode,
-    
+    private String installCode;
+
     @XmlElement(name = "isPan")
-    Boolean isPan,
-    
+    private Boolean isPan;
+
     @XmlElement(name = "installDate")
-    OffsetDateTime installDate,
-    
+    private OffsetDateTime installDate;
+
     @XmlElement(name = "removedDate")
-    OffsetDateTime removedDate,
-    
+    private OffsetDateTime removedDate;
+
     @XmlElement(name = "serialNumber")
-    String serialNumber,
-    
+    private String serialNumber;
+
     @XmlElement(name = "ServiceLocation")
-    ServiceLocationDto serviceLocation
-) {
-    
-    /**
-     * Default constructor for JAXB.
-     */
-    public EndDeviceDto() {
-        this(null, null, null, null, null, null, null, null,
-             null, null, null, null, null, null, null);
-    }
-    
+    private ServiceLocationDto serviceLocation;
+
     /**
      * Minimal constructor for basic device data.
      */
@@ -102,45 +102,45 @@ public record EndDeviceDto(
         this(null, uuid, null, null, null, null, null, null,
              null, null, null, null, null, serialNumber, null);
     }
-    
+
     /**
      * Gets the self href for this end device.
-     * 
+     *
      * @return self href string
      */
     public String getSelfHref() {
-        return selfLink != null ? selfLink.href() : null;
+        return selfLink != null ? selfLink.getHref() : null;
     }
-    
+
     /**
      * Gets the up href for this end device.
-     * 
+     *
      * @return up href string
      */
     public String getUpHref() {
-        return upLink != null ? upLink.href() : null;
+        return upLink != null ? upLink.getHref() : null;
     }
-    
+
     /**
      * Generates the default self href for an end device.
-     * 
+     *
      * @return default self href
      */
     public String generateSelfHref() {
-        if (uuid != null && serviceLocation != null && serviceLocation.uuid() != null) {
-            return "/espi/1_1/resource/ServiceLocation/" + serviceLocation.uuid() + "/EndDevice/" + uuid;
+        if (uuid != null && serviceLocation != null && serviceLocation.getUuid() != null) {
+            return "/espi/1_1/resource/ServiceLocation/" + serviceLocation.getUuid() + "/EndDevice/" + uuid;
         }
         return uuid != null ? "/espi/1_1/resource/EndDevice/" + uuid : null;
     }
-    
+
     /**
      * Generates the default up href for an end device.
-     * 
+     *
      * @return default up href
      */
     public String generateUpHref() {
-        if (serviceLocation != null && serviceLocation.uuid() != null) {
-            return "/espi/1_1/resource/ServiceLocation/" + serviceLocation.uuid() + "/EndDevice";
+        if (serviceLocation != null && serviceLocation.getUuid() != null) {
+            return "/espi/1_1/resource/ServiceLocation/" + serviceLocation.getUuid() + "/EndDevice";
         }
         return "/espi/1_1/resource/EndDevice";
     }

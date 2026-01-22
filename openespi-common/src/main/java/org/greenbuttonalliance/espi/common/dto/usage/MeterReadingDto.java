@@ -20,9 +20,13 @@
 package org.greenbuttonalliance.espi.common.dto.usage;
 
 import jakarta.xml.bind.annotation.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
- * MeterReading DTO record for JAXB XML marshalling/unmarshalling.
+ * MeterReading DTO class for JAXB XML marshalling/unmarshalling.
  *
  * Represents a meter reading - a set of values obtained from the meter.
  * Per ESPI 4.0 specification, MeterReading extends IdentifiedObject but
@@ -36,22 +40,18 @@ import jakarta.xml.bind.annotation.*;
 @XmlRootElement(name = "MeterReading", namespace = "http://naesb.org/espi")
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "MeterReading", namespace = "http://naesb.org/espi")
-public record MeterReadingDto(
-    
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class MeterReadingDto {
+
     @XmlTransient
-    Long id,
-    
+    private Long id;
+
     @XmlTransient
-    String uuid
-) {
-    
-    /**
-     * Default constructor for JAXB.
-     */
-    public MeterReadingDto() {
-        this(null, null);
-    }
-    
+    private String uuid;
+
     /**
      * Minimal constructor for basic meter reading data.
      */

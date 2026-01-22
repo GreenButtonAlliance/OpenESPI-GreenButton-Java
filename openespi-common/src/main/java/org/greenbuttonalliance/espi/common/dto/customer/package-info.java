@@ -18,22 +18,25 @@
  */
 
 /**
- * ESPI Usage DTOs for Green Button energy usage information exchange.
- * 
- * This package contains Data Transfer Objects (DTOs) for NAESB ESPI usage-related resources
- * including UsagePoint, MeterReading, IntervalBlock, and related energy consumption data.
+ * ESPI Customer DTOs for Green Button customer information exchange.
+ *
+ * This package contains Data Transfer Objects (DTOs) for NAESB ESPI customer-related resources
+ * including Customer, CustomerAccount, ServiceLocation, and related PII data.
  * These DTOs are used for JAXB XML marshalling/unmarshalling in Green Button implementations.
+ *
+ * Customer data contains Personally Identifiable Information (PII) and is defined in a separate
+ * namespace (http://naesb.org/espi/customer) from usage data per NAESB ESPI 4.0 specification.
  */
 @jakarta.xml.bind.annotation.XmlSchema(
-    namespace = "http://naesb.org/espi",
+    namespace = "http://naesb.org/espi/customer",
     elementFormDefault = jakarta.xml.bind.annotation.XmlNsForm.QUALIFIED,
     xmlns = {
-            // Declare Atom with explicit atom prefix for UsageAtomEntryDto
+            // Declare Atom with explicit atom prefix for CustomerAtomEntryDto
             @jakarta.xml.bind.annotation.XmlNs(prefix = "atom", namespaceURI = "http://www.w3.org/2005/Atom"),
-            // ESPI usage namespace uses espi prefix
-            @jakarta.xml.bind.annotation.XmlNs(prefix = "espi", namespaceURI = "http://naesb.org/espi")
+            // Customer namespace uses cust prefix
+            @jakarta.xml.bind.annotation.XmlNs(prefix = "cust", namespaceURI = "http://naesb.org/espi/customer")
     }
 )
-package org.greenbuttonalliance.espi.common.dto.usage;
+package org.greenbuttonalliance.espi.common.dto.customer;
 
 import jakarta.xml.bind.annotation.XmlNs;

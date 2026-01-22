@@ -22,76 +22,76 @@ package org.greenbuttonalliance.espi.common.dto.customer;
 import org.greenbuttonalliance.espi.common.dto.atom.LinkDto;
 
 import jakarta.xml.bind.annotation.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
- * ProgramDateIdMappings DTO record for JAXB XML marshalling/unmarshalling.
- * 
+ * ProgramDateIdMappings DTO class for JAXB XML marshalling/unmarshalling.
+ *
  * Represents mappings between program dates and identifiers.
  * Supports Atom protocol XML wrapping.
  */
 @XmlRootElement(name = "ProgramDateIdMappings", namespace = "http://naesb.org/espi/customer")
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "ProgramDateIdMappings", namespace = "http://naesb.org/espi/customer", propOrder = {
-    "id", "uuid", "published", "updated", "selfLink", "upLink", "relatedLinks",
+    "published", "updated", "selfLink", "upLink", "relatedLinks",
     "description", "programId", "programDate", "mappingId", "mappingType",
     "isActive", "customer"
 })
-public record ProgramDateIdMappingsDto(
-    
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class ProgramDateIdMappingsDto {
+
     @XmlTransient
-    Long id,
-    
+    private Long id;
+
     @XmlAttribute(name = "mRID")
-    String uuid,
-    
+    private String uuid;
+
     @XmlElement(name = "published")
-    OffsetDateTime published,
-    
+    private OffsetDateTime published;
+
     @XmlElement(name = "updated")
-    OffsetDateTime updated,
-    
+    private OffsetDateTime updated;
+
     @XmlElement(name = "link", namespace = "http://www.w3.org/2005/Atom")
     @XmlElementWrapper(name = "links", namespace = "http://www.w3.org/2005/Atom")
-    List<LinkDto> relatedLinks,
-    
+    private List<LinkDto> relatedLinks;
+
     @XmlElement(name = "link", namespace = "http://www.w3.org/2005/Atom")
-    LinkDto selfLink,
-    
+    private LinkDto selfLink;
+
     @XmlElement(name = "link", namespace = "http://www.w3.org/2005/Atom")
-    LinkDto upLink,
-    
+    private LinkDto upLink;
+
     @XmlElement(name = "description")
-    String description,
-    
+    private String description;
+
     @XmlElement(name = "programId")
-    String programId,
-    
+    private String programId;
+
     @XmlElement(name = "programDate")
-    OffsetDateTime programDate,
-    
+    private OffsetDateTime programDate;
+
     @XmlElement(name = "mappingId")
-    String mappingId,
-    
+    private String mappingId;
+
     @XmlElement(name = "mappingType")
-    String mappingType,
-    
+    private String mappingType;
+
     @XmlElement(name = "isActive")
-    Boolean isActive,
-    
+    private Boolean isActive;
+
     @XmlElement(name = "Customer")
-    CustomerDto customer
-) {
-    
-    /**
-     * Default constructor for JAXB.
-     */
-    public ProgramDateIdMappingsDto() {
-        this(null, null, null, null, null, null, null, null,
-             null, null, null, null, null, null);
-    }
-    
+    private CustomerDto customer;
+
     /**
      * Minimal constructor for basic mapping data.
      */
@@ -99,45 +99,45 @@ public record ProgramDateIdMappingsDto(
         this(null, uuid, null, null, null, null, null, null,
              programId, null, mappingId, null, null, null);
     }
-    
+
     /**
      * Gets the self href for this mapping.
-     * 
+     *
      * @return self href string
      */
     public String getSelfHref() {
-        return selfLink != null ? selfLink.href() : null;
+        return selfLink != null ? selfLink.getHref() : null;
     }
-    
+
     /**
      * Gets the up href for this mapping.
-     * 
+     *
      * @return up href string
      */
     public String getUpHref() {
-        return upLink != null ? upLink.href() : null;
+        return upLink != null ? upLink.getHref() : null;
     }
-    
+
     /**
      * Generates the default self href for a program date mapping.
-     * 
+     *
      * @return default self href
      */
     public String generateSelfHref() {
-        if (uuid != null && customer != null && customer.uuid() != null) {
-            return "/espi/1_1/resource/Customer/" + customer.uuid() + "/ProgramDateIdMappings/" + uuid;
+        if (uuid != null && customer != null && customer.getUuid() != null) {
+            return "/espi/1_1/resource/Customer/" + customer.getUuid() + "/ProgramDateIdMappings/" + uuid;
         }
         return uuid != null ? "/espi/1_1/resource/ProgramDateIdMappings/" + uuid : null;
     }
-    
+
     /**
      * Generates the default up href for a program date mapping.
-     * 
+     *
      * @return default up href
      */
     public String generateUpHref() {
-        if (customer != null && customer.uuid() != null) {
-            return "/espi/1_1/resource/Customer/" + customer.uuid() + "/ProgramDateIdMappings";
+        if (customer != null && customer.getUuid() != null) {
+            return "/espi/1_1/resource/Customer/" + customer.getUuid() + "/ProgramDateIdMappings";
         }
         return "/espi/1_1/resource/ProgramDateIdMappings";
     }

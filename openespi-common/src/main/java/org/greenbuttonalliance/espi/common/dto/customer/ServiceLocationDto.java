@@ -22,79 +22,79 @@ package org.greenbuttonalliance.espi.common.dto.customer;
 import org.greenbuttonalliance.espi.common.dto.atom.LinkDto;
 
 import jakarta.xml.bind.annotation.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
- * ServiceLocation DTO record for JAXB XML marshalling/unmarshalling.
- * 
+ * ServiceLocation DTO class for JAXB XML marshalling/unmarshalling.
+ *
  * Represents a physical location where utility services are delivered.
  * Supports Atom protocol XML wrapping.
  */
 @XmlRootElement(name = "ServiceLocation", namespace = "http://naesb.org/espi/customer")
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "ServiceLocation", namespace = "http://naesb.org/espi/customer", propOrder = {
-    "id", "uuid", "published", "updated", "selfLink", "upLink", "relatedLinks",
+    "published", "updated", "selfLink", "upLink", "relatedLinks",
     "description", "accessMethod", "needsInspection", "siteAccessProblem",
     "positionAddress", "geoInfoReference", "direction", "customerAgreement"
 })
-public record ServiceLocationDto(
-    
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class ServiceLocationDto {
+
     @XmlTransient
-    Long id,
-    
+    private Long id;
+
     @XmlAttribute(name = "mRID")
-    String uuid,
-    
+    private String uuid;
+
     @XmlElement(name = "published")
-    OffsetDateTime published,
-    
+    private OffsetDateTime published;
+
     @XmlElement(name = "updated")
-    OffsetDateTime updated,
-    
+    private OffsetDateTime updated;
+
     @XmlElement(name = "link", namespace = "http://www.w3.org/2005/Atom")
     @XmlElementWrapper(name = "links", namespace = "http://www.w3.org/2005/Atom")
-    List<LinkDto> relatedLinks,
-    
+    private List<LinkDto> relatedLinks;
+
     @XmlElement(name = "link", namespace = "http://www.w3.org/2005/Atom")
-    LinkDto selfLink,
-    
+    private LinkDto selfLink;
+
     @XmlElement(name = "link", namespace = "http://www.w3.org/2005/Atom")
-    LinkDto upLink,
-    
+    private LinkDto upLink;
+
     @XmlElement(name = "description")
-    String description,
-    
+    private String description;
+
     @XmlElement(name = "accessMethod")
-    String accessMethod,
-    
+    private String accessMethod;
+
     @XmlElement(name = "needsInspection")
-    Boolean needsInspection,
-    
+    private Boolean needsInspection;
+
     @XmlElement(name = "siteAccessProblem")
-    String siteAccessProblem,
-    
+    private String siteAccessProblem;
+
     @XmlElement(name = "positionAddress")
-    String positionAddress,
-    
+    private String positionAddress;
+
     @XmlElement(name = "geoInfoReference")
-    String geoInfoReference,
-    
+    private String geoInfoReference;
+
     @XmlElement(name = "direction")
-    String direction,
-    
+    private String direction;
+
     @XmlElement(name = "CustomerAgreement")
-    CustomerAgreementDto customerAgreement
-) {
-    
-    /**
-     * Default constructor for JAXB.
-     */
-    public ServiceLocationDto() {
-        this(null, null, null, null, null, null, null, null,
-             null, null, null, null, null, null, null);
-    }
-    
+    private CustomerAgreementDto customerAgreement;
+
     /**
      * Minimal constructor for basic location data.
      */
@@ -102,45 +102,45 @@ public record ServiceLocationDto(
         this(null, uuid, null, null, null, null, null, null,
              null, null, null, positionAddress, null, null, null);
     }
-    
+
     /**
      * Gets the self href for this service location.
-     * 
+     *
      * @return self href string
      */
     public String getSelfHref() {
-        return selfLink != null ? selfLink.href() : null;
+        return selfLink != null ? selfLink.getHref() : null;
     }
-    
+
     /**
      * Gets the up href for this service location.
-     * 
+     *
      * @return up href string
      */
     public String getUpHref() {
-        return upLink != null ? upLink.href() : null;
+        return upLink != null ? upLink.getHref() : null;
     }
-    
+
     /**
      * Generates the default self href for a service location.
-     * 
+     *
      * @return default self href
      */
     public String generateSelfHref() {
-        if (uuid != null && customerAgreement != null && customerAgreement.uuid() != null) {
-            return "/espi/1_1/resource/CustomerAgreement/" + customerAgreement.uuid() + "/ServiceLocation/" + uuid;
+        if (uuid != null && customerAgreement != null && customerAgreement.getUuid() != null) {
+            return "/espi/1_1/resource/CustomerAgreement/" + customerAgreement.getUuid() + "/ServiceLocation/" + uuid;
         }
         return uuid != null ? "/espi/1_1/resource/ServiceLocation/" + uuid : null;
     }
-    
+
     /**
      * Generates the default up href for a service location.
-     * 
+     *
      * @return default up href
      */
     public String generateUpHref() {
-        if (customerAgreement != null && customerAgreement.uuid() != null) {
-            return "/espi/1_1/resource/CustomerAgreement/" + customerAgreement.uuid() + "/ServiceLocation";
+        if (customerAgreement != null && customerAgreement.getUuid() != null) {
+            return "/espi/1_1/resource/CustomerAgreement/" + customerAgreement.getUuid() + "/ServiceLocation";
         }
         return "/espi/1_1/resource/ServiceLocation";
     }

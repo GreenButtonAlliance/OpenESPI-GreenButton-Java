@@ -21,17 +21,25 @@ package org.greenbuttonalliance.espi.common.dto.usage;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.xml.bind.annotation.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
- * Authorization DTO record for JAXB XML marshalling/unmarshalling.
+ * Authorization DTO class for JAXB XML marshalling/unmarshalling.
  *
  * Represents OAuth 2.0 authorization for third-party access to Green Button data.
  * Complies with NAESB ESPI 4.0 XSD specification.
  *
  * @see <a href="https://www.naesb.org/ESPI_Standards.asp">NAESB ESPI 4.0</a>
  */
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @XmlRootElement(name = "Authorization", namespace = "http://naesb.org/espi")
-@XmlAccessorType(XmlAccessType.PROPERTY)
+@XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "Authorization", namespace = "http://naesb.org/espi", propOrder = {
     "authorizedPeriod",     // ESPI 4.0 XSD sequence
     "publishedPeriod",
@@ -47,121 +55,112 @@ import jakarta.xml.bind.annotation.*;
     "authorizationUri",
     "customerResourceURI"   // NEW - PII subscription URI
 })
-public record AuthorizationDto(
+public class AuthorizationDto {
 
     // UUID (not in XSD - internal use only)
     @XmlTransient
-    String uuid,
+    private String uuid;
 
     // XSD-compliant fields (in order)
 
     @Schema(description = "Period during which this authorization is valid",
             example = "{\"start\": 1704067200, \"duration\": 31536000}")
-    DateTimeIntervalDto authorizedPeriod,
+    private DateTimeIntervalDto authorizedPeriod;
 
     @Schema(description = "Period during which data was published",
             example = "{\"start\": 1704067200, \"duration\": 31536000}")
-    DateTimeIntervalDto publishedPeriod,
+    private DateTimeIntervalDto publishedPeriod;
 
     @Schema(description = "Authorization status (1=ACTIVE, 2=REVOKED, 3=EXPIRED, 4=PENDING)",
             example = "1")
-    Short status,
+    private Short status;
 
     @Schema(description = "Expiration timestamp (epoch seconds)",
             example = "1735689600")
-    Long expiresIn,
+    private Long expiresIn;
 
     @Schema(description = "OAuth2 grant type",
             example = "authorization_code",
             allowableValues = {"authorization_code", "client_credentials", "refresh_token"})
-    String grantType,
+    private String grantType;
 
     @Schema(description = "OAuth2 scope defining permissions",
             example = "FB=1_3_4_5_13_14_39;IntervalDuration=3600",
             required = true)
-    String scope,
+    private String scope;
 
     @Schema(description = "OAuth2 token type",
             example = "Bearer",
             allowableValues = {"Bearer"})
-    String tokenType,
+    private String tokenType;
 
     @Schema(description = "OAuth2 error code if authorization failed",
             example = "invalid_grant")
-    String error,
+    private String error;
 
     @Schema(description = "Human-readable error description",
             example = "The provided authorization grant is invalid")
-    String errorDescription,
+    private String errorDescription;
 
     @Schema(description = "URI with more information about the error",
             example = "https://example.com/oauth/errors/invalid_grant")
-    String errorUri,
+    private String errorUri;
 
     @Schema(description = "URI for accessing the authorized energy usage resource",
             example = "https://api.example.com/espi/1_1/resource/Batch/Subscription/12345",
             required = true)
-    String resourceURI,
+    private String resourceURI;
 
     @Schema(description = "URI for managing this authorization",
             example = "https://api.example.com/espi/1_1/resource/Authorization/67890",
             required = true)
-    String authorizationUri,
+    private String authorizationUri;
 
     @Schema(description = "URI for accessing PII data the Third Party is authorized to access. Points to PII resource subscription endpoint with different namespace than resourceURI.",
             example = "https://api.example.com/customer/espi/1_1/resource/Batch/RetailCustomer/12345")
-    String customerResourceURI,
+    private String customerResourceURI;
 
     // OAuth2 implementation fields (not in ESPI XSD - marked as @XmlTransient)
 
     @XmlTransient
     @Schema(description = "OAuth2 access token (not included in XML for security)",
             example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
-    String accessToken,
+    private String accessToken;
 
     @XmlTransient
     @Schema(description = "OAuth2 refresh token (not included in XML for security)",
             example = "def50200...")
-    String refreshToken,
+    private String refreshToken;
 
     @XmlTransient
     @Schema(description = "OAuth2 authorization code (temporary, not in XML)",
             example = "abc123xyz")
-    String authorizationCode,
+    private String authorizationCode;
 
     @XmlTransient
     @Schema(description = "OAuth2 state parameter for CSRF protection (not in ESPI XSD)",
             example = "xyz789")
-    String state,
+    private String state;
 
     @XmlTransient
     @Schema(description = "OAuth2 response type (not in ESPI XSD)",
             example = "code")
-    String responseType,
+    private String responseType;
 
     @XmlTransient
     @Schema(description = "Third party application identifier (not in ESPI XSD)",
             example = "ThirdPartyApp")
-    String thirdParty,
+    private String thirdParty;
 
     @XmlTransient
     @Schema(description = "Application information ID (relationship, not in XSD)",
             example = "550e8400-e29b-41d4-a716-446655440000")
-    String applicationInformationId,
+    private String applicationInformationId;
 
     @XmlTransient
     @Schema(description = "Retail customer ID (relationship, not in XSD for privacy)",
             example = "660e8400-e29b-41d4-a716-446655440000")
-    String retailCustomerId
-) {
-
-    /**
-     * Default constructor for JAXB.
-     */
-    public AuthorizationDto() {
-        this(null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-             null, null, null, null, null, null, null, null);
-    }
+    private String retailCustomerId;
 
     /**
      * Constructor for basic authorization (XSD-compliant fields only).
@@ -172,45 +171,6 @@ public record AuthorizationDto(
     }
 
     // JAXB property accessors for XSD-compliant fields (in propOrder sequence)
-
-    @XmlElement(name = "authorizedPeriod", namespace = "http://naesb.org/espi")
-    public DateTimeIntervalDto getAuthorizedPeriod() { return authorizedPeriod; }
-
-    @XmlElement(name = "publishedPeriod", namespace = "http://naesb.org/espi")
-    public DateTimeIntervalDto getPublishedPeriod() { return publishedPeriod; }
-
-    @XmlElement(name = "status", namespace = "http://naesb.org/espi", required = true)
-    public Short getStatus() { return status; }
-
-    @XmlElement(name = "expires_at", namespace = "http://naesb.org/espi", required = true)
-    public Long getExpiresIn() { return expiresIn; }
-
-    @XmlElement(name = "grant_type", namespace = "http://naesb.org/espi")
-    public String getGrantType() { return grantType; }
-
-    @XmlElement(name = "scope", namespace = "http://naesb.org/espi", required = true)
-    public String getScope() { return scope; }
-
-    @XmlElement(name = "token_type", namespace = "http://naesb.org/espi", required = true)
-    public String getTokenType() { return tokenType; }
-
-    @XmlElement(name = "error", namespace = "http://naesb.org/espi")
-    public String getError() { return error; }
-
-    @XmlElement(name = "error_description", namespace = "http://naesb.org/espi")
-    public String getErrorDescription() { return errorDescription; }
-
-    @XmlElement(name = "error_uri", namespace = "http://naesb.org/espi")
-    public String getErrorUri() { return errorUri; }
-
-    @XmlElement(name = "resourceURI", namespace = "http://naesb.org/espi", required = true)
-    public String getResourceURI() { return resourceURI; }
-
-    @XmlElement(name = "authorizationURI", namespace = "http://naesb.org/espi", required = true)
-    public String getAuthorizationUri() { return authorizationUri; }
-
-    @XmlElement(name = "customerResourceURI", namespace = "http://naesb.org/espi")
-    public String getCustomerResourceURI() { return customerResourceURI; }
 
     // OAuth2 implementation field accessors (marked @XmlTransient, not in XML output)
 

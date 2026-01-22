@@ -22,83 +22,83 @@ package org.greenbuttonalliance.espi.common.dto.customer;
 import org.greenbuttonalliance.espi.common.dto.atom.LinkDto;
 
 import jakarta.xml.bind.annotation.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
- * Statement DTO record for JAXB XML marshalling/unmarshalling.
- * 
+ * Statement DTO class for JAXB XML marshalling/unmarshalling.
+ *
  * Represents a billing statement or document for a customer agreement.
  * Supports Atom protocol XML wrapping.
  */
 @XmlRootElement(name = "Statement", namespace = "http://naesb.org/espi/customer")
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "Statement", namespace = "http://naesb.org/espi/customer", propOrder = {
-    "id", "uuid", "published", "updated", "selfLink", "upLink", "relatedLinks",
+    "published", "updated", "selfLink", "upLink", "relatedLinks",
     "description", "createdDateTime", "lastModifiedDateTime", "revisionNumber",
     "subject", "docStatus", "type", "customerAgreement", "statementRefs"
 })
-public record StatementDto(
-    
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class StatementDto {
+
     @XmlTransient
-    Long id,
-    
+    private Long id;
+
     @XmlAttribute(name = "mRID")
-    String uuid,
-    
+    private String uuid;
+
     @XmlElement(name = "published")
-    OffsetDateTime published,
-    
+    private OffsetDateTime published;
+
     @XmlElement(name = "updated")
-    OffsetDateTime updated,
-    
+    private OffsetDateTime updated;
+
     @XmlElement(name = "link", namespace = "http://www.w3.org/2005/Atom")
     @XmlElementWrapper(name = "links", namespace = "http://www.w3.org/2005/Atom")
-    List<LinkDto> relatedLinks,
-    
+    private List<LinkDto> relatedLinks;
+
     @XmlElement(name = "link", namespace = "http://www.w3.org/2005/Atom")
-    LinkDto selfLink,
-    
+    private LinkDto selfLink;
+
     @XmlElement(name = "link", namespace = "http://www.w3.org/2005/Atom")
-    LinkDto upLink,
-    
+    private LinkDto upLink;
+
     @XmlElement(name = "description")
-    String description,
-    
+    private String description;
+
     @XmlElement(name = "createdDateTime")
-    OffsetDateTime createdDateTime,
-    
+    private OffsetDateTime createdDateTime;
+
     @XmlElement(name = "lastModifiedDateTime")
-    OffsetDateTime lastModifiedDateTime,
-    
+    private OffsetDateTime lastModifiedDateTime;
+
     @XmlElement(name = "revisionNumber")
-    String revisionNumber,
-    
+    private String revisionNumber;
+
     @XmlElement(name = "subject")
-    String subject,
-    
+    private String subject;
+
     @XmlElement(name = "docStatus")
-    String docStatus,
-    
+    private String docStatus;
+
     @XmlElement(name = "type")
-    String type,
-    
+    private String type;
+
     @XmlElement(name = "CustomerAgreement")
-    CustomerAgreementDto customerAgreement,
-    
+    private CustomerAgreementDto customerAgreement;
+
     @XmlElement(name = "StatementRef")
     @XmlElementWrapper(name = "StatementRefs")
-    List<StatementRefDto> statementRefs
-) {
-    
-    /**
-     * Default constructor for JAXB.
-     */
-    public StatementDto() {
-        this(null, null, null, null, null, null, null, null,
-             null, null, null, null, null, null, null, null);
-    }
-    
+    private List<StatementRefDto> statementRefs;
+
     /**
      * Minimal constructor for basic statement data.
      */
@@ -106,45 +106,45 @@ public record StatementDto(
         this(null, uuid, null, null, null, null, null, null,
              null, null, null, subject, null, null, null, null);
     }
-    
+
     /**
      * Gets the self href for this statement.
-     * 
+     *
      * @return self href string
      */
     public String getSelfHref() {
-        return selfLink != null ? selfLink.href() : null;
+        return selfLink != null ? selfLink.getHref() : null;
     }
-    
+
     /**
      * Gets the up href for this statement.
-     * 
+     *
      * @return up href string
      */
     public String getUpHref() {
-        return upLink != null ? upLink.href() : null;
+        return upLink != null ? upLink.getHref() : null;
     }
-    
+
     /**
      * Generates the default self href for a statement.
-     * 
+     *
      * @return default self href
      */
     public String generateSelfHref() {
-        if (uuid != null && customerAgreement != null && customerAgreement.uuid() != null) {
-            return "/espi/1_1/resource/CustomerAgreement/" + customerAgreement.uuid() + "/Statement/" + uuid;
+        if (uuid != null && customerAgreement != null && customerAgreement.getUuid() != null) {
+            return "/espi/1_1/resource/CustomerAgreement/" + customerAgreement.getUuid() + "/Statement/" + uuid;
         }
         return uuid != null ? "/espi/1_1/resource/Statement/" + uuid : null;
     }
-    
+
     /**
      * Generates the default up href for a statement.
-     * 
+     *
      * @return default up href
      */
     public String generateUpHref() {
-        if (customerAgreement != null && customerAgreement.uuid() != null) {
-            return "/espi/1_1/resource/CustomerAgreement/" + customerAgreement.uuid() + "/Statement";
+        if (customerAgreement != null && customerAgreement.getUuid() != null) {
+            return "/espi/1_1/resource/CustomerAgreement/" + customerAgreement.getUuid() + "/Statement";
         }
         return "/espi/1_1/resource/Statement";
     }

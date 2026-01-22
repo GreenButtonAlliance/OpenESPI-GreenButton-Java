@@ -20,63 +20,63 @@
 package org.greenbuttonalliance.espi.common.dto.atom;
 
 import jakarta.xml.bind.annotation.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
- * Link DTO record for Atom protocol links.
- * 
+ * Link DTO class for Atom protocol links.
+ *
  * Represents an Atom link with rel and href attributes for XML marshalling/unmarshalling.
  * Used in resource relationships and navigation.
  */
 @XmlRootElement(name = "link", namespace = "http://www.w3.org/2005/Atom")
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "LinkType", namespace = "http://www.w3.org/2005/Atom")
-public record LinkDto(
-    
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class LinkDto {
+
     @XmlAttribute(name = "rel")
-    String rel,
-    
+    private String rel;
+
     @XmlAttribute(name = "href")
-    String href,
-    
+    private String href;
+
     @XmlAttribute(name = "type")
-    String type
-) {
-    
-    /**
-     * Default constructor for JAXB.
-     */
-    public LinkDto() {
-        this(null, null, null);
-    }
-    
+    private String type;
+
     /**
      * Constructor for basic rel and href.
      */
     public LinkDto(String rel, String href) {
         this(rel, href, null);
     }
-    
+
     /**
      * Creates a self link.
      */
     public static LinkDto self(String href) {
         return new LinkDto("self", href, "application/atom+xml");
     }
-    
+
     /**
      * Creates an up link.
      */
     public static LinkDto up(String href) {
         return new LinkDto("up", href, "application/atom+xml");
     }
-    
+
     /**
      * Creates a related link.
      */
     public static LinkDto related(String href) {
         return new LinkDto("related", href, "application/atom+xml");
     }
-    
+
     /**
      * Creates an alternate link.
      */

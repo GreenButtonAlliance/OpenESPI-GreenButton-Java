@@ -19,50 +19,40 @@
 
 package org.greenbuttonalliance.espi.common.dto.usage;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBException;
+import jakarta.xml.bind.Marshaller;
+import jakarta.xml.bind.Unmarshaller;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import tools.jackson.databind.AnnotationIntrospector;
-import tools.jackson.databind.SerializationFeature;
-import tools.jackson.databind.cfg.DateTimeFeature;
-import tools.jackson.databind.introspect.JacksonAnnotationIntrospector;
-import tools.jackson.databind.util.StdDateFormat;
-import tools.jackson.dataformat.xml.XmlAnnotationIntrospector;
-import tools.jackson.dataformat.xml.XmlMapper;
-import tools.jackson.dataformat.xml.XmlWriteFeature;
-import tools.jackson.module.jakarta.xmlbind.JakartaXmlBindAnnotationIntrospector;
-import tools.jackson.module.jakarta.xmlbind.JakartaXmlBindAnnotationModule;
+
+import java.io.StringReader;
+import java.io.StringWriter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * XML marshalling/unmarshalling tests for TimeConfigurationDto.
- * Verifies Jackson 3 XmlMapper processes JAXB annotations correctly for ESPI 4.0 schema compliance.
+ * Verifies JAXB processes annotations correctly for ESPI 4.0 schema compliance.
  */
 @DisplayName("TimeConfigurationDto XML Marshalling Tests")
 class TimeConfigurationDtoTest {
 
-    private XmlMapper xmlMapper;
+    private Marshaller marshaller;
+    private Unmarshaller unmarshaller;
 
     @BeforeEach
-    void setUp() {
-        // Initialize Jackson 3 XmlMapper with JAXB annotation support
-        AnnotationIntrospector intr = XmlAnnotationIntrospector.Pair.instance(
-            new JakartaXmlBindAnnotationIntrospector(),
-            new JacksonAnnotationIntrospector()
-        );
+    void setUp() throws JAXBException {
+        // Initialize Jakarta JAXB Marshaller for TimeConfigurationDto
+        JAXBContext jaxbContext = JAXBContext.newInstance(TimeConfigurationDto.class);
+        marshaller = jaxbContext.createMarshaller();
+        marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+        marshaller.setProperty(Marshaller.JAXB_ENCODING, "UTF-8");
+        marshaller.setProperty(Marshaller.JAXB_FRAGMENT, true);
 
-        xmlMapper = XmlMapper.xmlBuilder()
-            .annotationIntrospector(intr)
-            .addModule(new JakartaXmlBindAnnotationModule()
-                .setNonNillableInclusion(JsonInclude.Include.NON_EMPTY))
-            .enable(SerializationFeature.INDENT_OUTPUT)
-            .enable(DateTimeFeature.WRITE_DATES_WITH_ZONE_ID)
-            .disable(XmlWriteFeature.WRITE_NULLS_AS_XSI_NIL)
-            .defaultDateFormat(new StdDateFormat())
-            .build();
+        unmarshaller = jaxbContext.createUnmarshaller();
     }
 
     @Test
@@ -78,8 +68,10 @@ class TimeConfigurationDtoTest {
             -28800L  // tzOffset (UTC-8 in seconds)
         );
 
-        // Marshal to XML using Jackson 3
-        String xml = xmlMapper.writeValueAsString(timeConfig);
+        // Marshal to XML using JAXB
+        StringWriter writer = new StringWriter();
+        marshaller.marshal(timeConfig, writer);
+        String xml = writer.toString();
 
         // Verify XML structure
         assertThat(xml).contains("TimeConfiguration");
@@ -104,18 +96,20 @@ class TimeConfigurationDtoTest {
             -18000L  // tzOffset (UTC-5)
         );
 
-        // Marshal to XML using Jackson 3
-        String xml = xmlMapper.writeValueAsString(original);
+        // Marshal to XML using JAXB
+        StringWriter writer = new StringWriter();
+        marshaller.marshal(original, writer);
+        String xml = writer.toString();
 
-        // Unmarshal back from XML using Jackson 3
-        TimeConfigurationDto roundTrip = xmlMapper.readValue(xml, TimeConfigurationDto.class);
+        // Unmarshal back from XML using JAXB
+        TimeConfigurationDto roundTrip = (TimeConfigurationDto) unmarshaller.unmarshal(new StringReader(xml));
 
         // Verify data integrity survived round trip
         // Note: uuid is @XmlTransient (handled by Atom wrapper), so it won't survive round trip
-        assertThat(roundTrip.tzOffset()).isEqualTo(original.tzOffset());
-        assertThat(roundTrip.dstOffset()).isEqualTo(original.dstOffset());
-        assertThat(roundTrip.dstStartRule()).isEqualTo(original.dstStartRule());
-        assertThat(roundTrip.dstEndRule()).isEqualTo(original.dstEndRule());
+        assertThat(roundTrip.getTzOffset()).isEqualTo(original.getTzOffset());
+        assertThat(roundTrip.getDstOffset()).isEqualTo(original.getDstOffset());
+        assertThat(roundTrip.getDstStartRule()).isEqualTo(original.getDstStartRule());
+        assertThat(roundTrip.getDstEndRule()).isEqualTo(original.getDstEndRule());
     }
 
     @Test
@@ -131,8 +125,10 @@ class TimeConfigurationDtoTest {
             7200L  // tzOffset (UTC+2)
         );
 
-        // Marshal to XML using Jackson 3
-        String xml = xmlMapper.writeValueAsString(simple);
+        // Marshal to XML using JAXB
+        StringWriter writer = new StringWriter();
+        marshaller.marshal(simple, writer);
+        String xml = writer.toString();
 
         // Verify XML structure
         assertThat(xml).contains("TimeConfiguration");
@@ -142,14 +138,14 @@ class TimeConfigurationDtoTest {
         assertThat(xml).doesNotContain("dstStartRule");
         assertThat(xml).doesNotContain("dstEndRule");
 
-        // Unmarshal back using Jackson 3
-        TimeConfigurationDto roundTrip = xmlMapper.readValue(xml, TimeConfigurationDto.class);
+        // Unmarshal back using JAXB
+        TimeConfigurationDto roundTrip = (TimeConfigurationDto) unmarshaller.unmarshal(new StringReader(xml));
 
         // Verify data integrity
-        assertThat(roundTrip.tzOffset()).isEqualTo(simple.tzOffset());
-        assertThat(roundTrip.dstOffset()).isNull();
-        assertThat(roundTrip.dstStartRule()).isNull();
-        assertThat(roundTrip.dstEndRule()).isNull();
+        assertThat(roundTrip.getTzOffset()).isEqualTo(simple.getTzOffset());
+        assertThat(roundTrip.getDstOffset()).isNull();
+        assertThat(roundTrip.getDstStartRule()).isNull();
+        assertThat(roundTrip.getDstEndRule()).isNull();
     }
 
     @Test
@@ -158,15 +154,17 @@ class TimeConfigurationDtoTest {
         // Create empty TimeConfiguration
         TimeConfigurationDto empty = new TimeConfigurationDto();
 
-        // Marshal to XML using Jackson 3
-        String xml = xmlMapper.writeValueAsString(empty);
+        // Marshal to XML using JAXB
+        StringWriter writer = new StringWriter();
+        marshaller.marshal(empty, writer);
+        String xml = writer.toString();
 
         // Should still contain basic structure
         assertThat(xml).contains("TimeConfiguration");
         assertThat(xml).contains("http://naesb.org/espi");
 
-        // Unmarshal back using Jackson 3
-        TimeConfigurationDto roundTrip = xmlMapper.readValue(xml, TimeConfigurationDto.class);
+        // Unmarshal back using JAXB
+        TimeConfigurationDto roundTrip = (TimeConfigurationDto) unmarshaller.unmarshal(new StringReader(xml));
 
         // Should not throw exceptions
         assertThat(roundTrip).isNotNull();
@@ -185,8 +183,10 @@ class TimeConfigurationDtoTest {
             -28800L  // tzOffset
         );
 
-        // Marshal to XML using Jackson 3
-        String xml = xmlMapper.writeValueAsString(timeConfig);
+        // Marshal to XML using JAXB
+        StringWriter writer = new StringWriter();
+        marshaller.marshal(timeConfig, writer);
+        String xml = writer.toString();
 
         // Verify namespace declarations
         assertThat(xml).contains("xmlns");
@@ -216,9 +216,9 @@ class TimeConfigurationDtoTest {
             originalEndRule, 3600L, originalStartRule, -18000L
         );
 
-        // Get byte arrays via accessors (should be cloned)
-        byte[] retrievedStartRule = timeConfig.dstStartRule();
-        byte[] retrievedEndRule = timeConfig.dstEndRule();
+        // Get byte arrays via getters (should be cloned)
+        byte[] retrievedStartRule = timeConfig.getDstStartRule();
+        byte[] retrievedEndRule = timeConfig.getDstEndRule();
 
         // Verify arrays are equal but not same instance
         assertArrayEquals(originalStartRule, retrievedStartRule, "Start rule content should match");
@@ -228,7 +228,7 @@ class TimeConfigurationDtoTest {
 
         // Modifying retrieved arrays should not affect original
         retrievedStartRule[0] = (byte) 0xFF;
-        assertNotEquals(retrievedStartRule[0], timeConfig.dstStartRule()[0],
+        assertNotEquals(retrievedStartRule[0], timeConfig.getDstStartRule()[0],
                        "Modifying cloned array should not affect original");
     }
 

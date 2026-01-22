@@ -20,69 +20,56 @@
 package org.greenbuttonalliance.espi.common.dto.usage;
 
 import jakarta.xml.bind.annotation.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
- * PnodeRef DTO record for JAXB XML marshalling/unmarshalling.
- * 
+ * PnodeRef DTO class for JAXB XML marshalling/unmarshalling.
+ *
  * Represents a reference to a pricing node in the electrical grid.
  * Used within UsagePoint to specify pricing locations for energy costs.
- * 
+ *
  * Part of the NAESB ESPI UsagePoint structure for pricing node references.
  */
-@XmlAccessorType(XmlAccessType.PROPERTY)
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "PnodeRef", namespace = "http://naesb.org/espi", propOrder = {
     "apnodeType", "ref", "startEffectiveDate", "endEffectiveDate"
 })
-public record PnodeRefDto(
-    
-    String apnodeType,
-    String ref,
-    Long startEffectiveDate,
-    Long endEffectiveDate
-) {
-    
+public class PnodeRefDto {
+
     /**
      * Type of the aggregated pricing node.
      * Indicates the category or classification of the pricing node.
      */
     @XmlElement(name = "apnodeType")
-    public String getApnodeType() {
-        return apnodeType;
-    }
-    
+    private String apnodeType;
+
     /**
      * Reference to the pricing node identifier.
      */
     @XmlElement(name = "ref")
-    public String getRef() {
-        return ref;
-    }
-    
+    private String ref;
+
     /**
      * Start effective date for the pricing node reference validity.
      * Stored as epoch seconds (TimeType in ESPI).
      */
     @XmlElement(name = "startEffectiveDate")
-    public Long getStartEffectiveDate() {
-        return startEffectiveDate;
-    }
-    
+    private Long startEffectiveDate;
+
     /**
      * End effective date for the pricing node reference validity.
      * Stored as epoch seconds (TimeType in ESPI).
      */
     @XmlElement(name = "endEffectiveDate")
-    public Long getEndEffectiveDate() {
-        return endEffectiveDate;
-    }
-    
-    /**
-     * Default constructor for JAXB.
-     */
-    public PnodeRefDto() {
-        this(null, null, null, null);
-    }
-    
+    private Long endEffectiveDate;
+
     /**
      * Constructor with pricing node reference and type.
      */

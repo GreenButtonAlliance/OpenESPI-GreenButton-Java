@@ -20,35 +20,36 @@
 package org.greenbuttonalliance.espi.common.dto.usage;
 
 import jakarta.xml.bind.annotation.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 /**
- * TariffRiderRefs DTO record for JAXB XML marshalling/unmarshalling.
- * 
+ * TariffRiderRefs DTO class for JAXB XML marshalling/unmarshalling.
+ *
  * Represents a collection of tariff rider references containing rate options
- * applied to the base tariff profile. Used within ServiceDeliveryPoint to 
+ * applied to the base tariff profile. Used within ServiceDeliveryPoint to
  * describe customer-specific billing arrangements and rate riders.
- * 
+ *
  * Follows NAESB ESPI specification for TariffRiderRefs complex type.
  */
-@XmlAccessorType(XmlAccessType.PROPERTY)
+@Getter
+@Setter
+@XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "TariffRiderRefs", namespace = "http://naesb.org/espi")
-public record TariffRiderRefsDto(
-    
-    List<TariffRiderRefDto> tariffRiderRefs
-) {
-    
+public class TariffRiderRefsDto {
+
     /**
      * List of tariff rider references.
      * Each rider contains riderType, enrollmentStatus, and effectiveDate.
      * Supports multiple rate options per service delivery point.
      */
     @XmlElement(name = "TariffRiderRef")
-    public List<TariffRiderRefDto> getTariffRiderRefs() {
-        return tariffRiderRefs;
-    }
+    private List<TariffRiderRefDto> tariffRiderRefs;
     
     /**
      * Default constructor for JAXB.
@@ -110,32 +111,32 @@ public record TariffRiderRefsDto(
      */
     public List<TariffRiderRefDto> getRidersByStatus(String status) {
         return tariffRiderRefs.stream()
-            .filter(rider -> status.equals(rider.enrollmentStatus()))
+            .filter(rider -> status.equals(rider.getEnrollmentStatus()))
             .toList();
     }
-    
+
     /**
      * Gets tariff riders by rider type.
-     * 
+     *
      * @param riderType rider type to filter by
      * @return list of tariff riders with matching type
      */
     public List<TariffRiderRefDto> getRidersByType(String riderType) {
         return tariffRiderRefs.stream()
-            .filter(rider -> riderType.equals(rider.riderType()))
+            .filter(rider -> riderType.equals(rider.getRiderType()))
             .toList();
     }
-    
+
     /**
      * Checks if a specific rider type is enrolled.
-     * 
+     *
      * @param riderType rider type to check
      * @return true if rider type is enrolled
      */
     public boolean hasEnrolledRider(String riderType) {
         return tariffRiderRefs.stream()
-            .anyMatch(rider -> riderType.equals(rider.riderType()) && 
-                              "ENROLLED".equals(rider.enrollmentStatus()));
+            .anyMatch(rider -> riderType.equals(rider.getRiderType()) &&
+                              "ENROLLED".equals(rider.getEnrollmentStatus()));
     }
     
     /**

@@ -86,7 +86,7 @@ public interface TariffRiderRefMapper {
         if (refsDto == null) {
             return null;
         }
-        return toEntityList(refsDto.tariffRiderRefs());
+        return toEntityList(refsDto.getTariffRiderRefs());
     }
 
     /**
