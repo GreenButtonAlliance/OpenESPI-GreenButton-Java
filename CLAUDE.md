@@ -4,16 +4,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-OpenESPI-GreenButton-Java is a monorepo implementation of the NAESB Energy Services Provider Interface (ESPI) 4.0 specification for Green Button energy data standards. The project has been migrated to Java 21, Jakarta EE 9+, and Spring Boot 3.5.
+OpenESPI-GreenButton-Java is a monorepo implementation of the NAESB Energy Services Provider Interface (ESPI) 4.0 specification for Green Button energy data standards. The project has been migrated to Java 25, Jakarta EE 10+, and Spring Boot 4.0.
 
 ## Build and Test Commands
 
 ### Build All Modules
 ```bash
-# From repository root
+# From repository root - builds all modules (common, datacustodian, thirdparty, authserver)
 mvn clean install
 
-# Build only fully-migrated Spring Boot 3.5 modules (excludes thirdparty)
+# Build only core modules (common, datacustodian, thirdparty) - omits authserver
 mvn clean install -Pspring-boot-only
 ```
 
@@ -43,7 +43,7 @@ cd openespi-datacustodian && mvn spring-boot:run -Dspring-boot.run.profiles=dev-
 # Authorization Server
 cd openespi-authserver && mvn spring-boot:run
 
-# Third Party (when migration complete)
+# Third Party
 cd openespi-thirdparty && mvn spring-boot:run
 ```
 
@@ -122,7 +122,7 @@ REST controllers are in `openespi-datacustodian/src/main/java/org/greenbuttonall
 - **web/custodian/** - Data custodian-specific endpoints
 - **web/customer/** - Retail customer portal endpoints
 
-Note: Many REST controllers have `.disabled` extension during the Spring Boot 3.5 migration. They need to be re-enabled and tested after core functionality is validated.
+Note: Many REST controllers have `.disabled` extension during the Spring Boot 4.0 migration. They need to be re-enabled and tested after core functionality is validated.
 
 ### DTO and Mapping Layer
 The project uses MapStruct for entity-to-DTO mappings:
@@ -158,15 +158,15 @@ IMPORTANT: When adding/modifying entities, ensure Flyway migration scripts are u
 
 ## Key Technologies
 
-### Spring Boot 3.5 Stack
-- **Spring Boot**: 3.5.0
-- **Spring Security**: 6.x (OAuth2 Resource Server and Client)
-- **Spring Data JPA**: 3.x with Hibernate 6.x
+### Spring Boot 4.0 Stack
+- **Spring Boot**: 4.0.1
+- **Spring Security**: 7.x (OAuth2 Resource Server and Client)
+- **Spring Data JPA**: 4.x with Hibernate 7.x
 - **Spring Authorization Server**: Latest (for openespi-authserver only)
 
 ### Persistence
-- **JPA/Hibernate**: 6.x with Jakarta Persistence API
-- **UUID Primary Keys**: All entities use UUID instead of Long IDs
+- **JPA/Hibernate**: 7.x with Jakarta Persistence API 3.2
+- **UUID Primary Keys**: All entities use UUID Version 5 instead of Long IDs
 - **Flyway**: Database migration management
 - **HikariCP**: Connection pooling
 
@@ -178,8 +178,8 @@ IMPORTANT: When adding/modifying entities, ensure Flyway migration scripts are u
 
 ### Build Tools
 - **Maven**: 3.9+
-- **MapStruct**: 1.6.0 for DTO mapping
-- **Lombok**: 1.18.34 for reducing boilerplate
+- **MapStruct**: 1.6.3 for DTO mapping
+- **Lombok**: 1.18.42 for reducing boilerplate
 
 ## ESPI 4.0 Compliance
 
@@ -259,25 +259,30 @@ ESPI uses Atom XML feeds for data exchange. Key patterns:
 
 ## Migration Status
 
-The codebase is actively being migrated to Spring Boot 3.5. Key migration achievements:
-- Java 21 upgrade complete across all modules
-- Jakarta EE 9+ migration complete (javax → jakarta namespace)
-- Spring Boot 3.5 migration complete for common, datacustodian, authserver
-- UUID primary keys migrated from Long IDs
-- OAuth2 modernized with Spring Security 6.x patterns
+The codebase has been migrated to Spring Boot 4.0.1 and Java 25. Key migration achievements:
+- Java 25 upgrade complete across all modules
+- Jakarta EE 10+ migration complete (javax → jakarta namespace)
+- Spring Boot 4.0.1 migration complete for common, datacustodian, authserver
+- UUID Version 5 primary keys migrated from Long IDs
+- OAuth2 modernized with Spring Security 7.x patterns
 - RestTemplate replaced with WebClient
+- Spring Data JPA 4.x with Hibernate 7.x
 
 ### Known Issues
 Check migration status documents for current issues:
-- `2025-07-15_Claude_Code_Spring_Boot_3.5_Migration_Plan.md` - Overall migration plan
-- `openespi-common/SPRING_BOOT_3.5_MIGRATION_STATUS.md` - Common module status
+- `2025-07-15_Claude_Code_Spring_Boot_3.5_Migration_Plan.md` - Historical migration plan
+- `openespi-common/SPRING_BOOT_3.5_MIGRATION_STATUS.md` - Historical common module status
 - `openespi-authserver/MIGRATION_ROADMAP.md` - Auth server status
 
-## Future Updates
+## Current Technology Stack
 
-Planned technology upgrades:
-- **Java 25**: Upgrade from Java 21 to Java 25 LTS when released
-- **Spring Boot 4.0**: Migrate from Spring Boot 3.5 to Spring Boot 4.0
+Current versions:
+- **Java**: 25
+- **Spring Boot**: 4.0.1
+- **Spring Security**: 7.x
+- **Spring Data JPA**: 4.x
+- **Hibernate**: 7.x
+- **Jakarta EE**: 10+
 
 ## OAuth2 Security
 
@@ -297,7 +302,7 @@ The system implements OAuth2 authorization code flow:
 ## Troubleshooting
 
 ### Build Failures
-- Ensure Java 21 is installed: `java -version`
+- Ensure Java 25 is installed: `java -version`
 - Clean build: `mvn clean install`
 - Check for profile-specific issues: review active Spring profile
 
@@ -322,7 +327,7 @@ The system implements OAuth2 authorization code flow:
 
 - **README.md** - Project overview and quick start
 - **BRANCH_STRATEGY.md** - Git workflow and branching strategy
-- **2025-07-15_Claude_Code_Spring_Boot_3.5_Migration_Plan.md** - Migration status
+- **2025-07-15_Claude_Code_Spring_Boot_3.5_Migration_Plan.md** - Historical migration status (Spring Boot 3.5 to 4.0)
 - **openespi-common/CONTRIBUTING.md** - Contribution guidelines
 - **openespi-authserver/DEPLOYMENT_GUIDE.md** - Production deployment
 - **openespi-authserver/CERTIFICATE_AUTHENTICATION.md** - Client certificate auth

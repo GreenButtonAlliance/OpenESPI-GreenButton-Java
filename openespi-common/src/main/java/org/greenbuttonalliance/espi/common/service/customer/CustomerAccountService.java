@@ -27,9 +27,10 @@ import java.util.UUID;
 
 /**
  * Service interface for CustomerAccount management.
- * 
+ *
  * Handles business logic for customer account operations including billing,
  * payment tracking, and account status management.
+ * Per Phase 18 guidelines, only ID-based operations on indexed fields are supported.
  */
 public interface CustomerAccountService {
 
@@ -39,49 +40,9 @@ public interface CustomerAccountService {
     List<CustomerAccountEntity> findAll();
 
     /**
-     * Find customer account by ID.
-     */
-    Optional<CustomerAccountEntity> findById(UUID id);
-
-    /**
      * Find customer account by UUID.
      */
-    Optional<CustomerAccountEntity> findByUuid(String uuid);
-
-    /**
-     * Find customer account by account ID.
-     */
-    Optional<CustomerAccountEntity> findByAccountId(String accountId);
-
-    /**
-     * Find customer accounts by billing cycle.
-     */
-    List<CustomerAccountEntity> findByBillingCycle(String billingCycle);
-
-    /**
-     * Find pre-pay accounts.
-     */
-    List<CustomerAccountEntity> findPrePayAccounts();
-
-    /**
-     * Find accounts with budget billing.
-     */
-    List<CustomerAccountEntity> findBudgetBillAccounts();
-
-    /**
-     * Find customer accounts by contact info organisation ID.
-     */
-    List<CustomerAccountEntity> findByContactInfo(String contactInfo);
-
-    /**
-     * Find customer accounts by last bill amount greater than specified value.
-     */
-    List<CustomerAccountEntity> findByLastBillAmountGreaterThan(Long amount);
-
-    /**
-     * Find customer accounts by title containing text.
-     */
-    List<CustomerAccountEntity> findByTitleContaining(String title);
+    Optional<CustomerAccountEntity> findById(UUID id);
 
     /**
      * Save customer account.
@@ -89,27 +50,12 @@ public interface CustomerAccountService {
     CustomerAccountEntity save(CustomerAccountEntity customerAccount);
 
     /**
-     * Delete customer account by ID.
+     * Check if customer account exists by UUID.
      */
-    void deleteById(UUID id);
-
-    /**
-     * Check if account exists by account ID.
-     */
-    boolean existsByAccountId(String accountId);
+    boolean existsById(UUID id);
 
     /**
      * Count total customer accounts.
      */
-    long countCustomerAccounts();
-
-    /**
-     * Count pre-pay accounts.
-     */
-    long countPrePayAccounts();
-
-    /**
-     * Count accounts with budget billing.
-     */
-    long countBudgetBillAccounts();
+    long count();
 }

@@ -42,22 +42,33 @@ import java.util.Objects;
  */
 @Entity
 @Table(name = "customer_accounts")
-@AttributeOverrides({
-    // Resolve any potential column conflicts by ensuring unique column names  
-    @AttributeOverride(name = "upLink.rel", column = @Column(name = "customer_account_up_link_rel")),
-    @AttributeOverride(name = "upLink.href", column = @Column(name = "customer_account_up_link_href")),
-    @AttributeOverride(name = "upLink.type", column = @Column(name = "customer_account_up_link_type")),
-    @AttributeOverride(name = "selfLink.rel", column = @Column(name = "customer_account_self_link_rel")),
-    @AttributeOverride(name = "selfLink.href", column = @Column(name = "customer_account_self_link_href")),
-    @AttributeOverride(name = "selfLink.type", column = @Column(name = "customer_account_self_link_type"))
-})
+// Resolve any potential column conflicts by ensuring unique column names
+@AttributeOverride(name = "upLink.rel", column = @Column(name = "customer_account_up_link_rel"))
+@AttributeOverride(name = "upLink.href", column = @Column(name = "customer_account_up_link_href"))
+@AttributeOverride(name = "upLink.type", column = @Column(name = "customer_account_up_link_type"))
+@AttributeOverride(name = "selfLink.rel", column = @Column(name = "customer_account_self_link_rel"))
+@AttributeOverride(name = "selfLink.href", column = @Column(name = "customer_account_self_link_href"))
+@AttributeOverride(name = "selfLink.type", column = @Column(name = "customer_account_self_link_type"))
 @Getter
 @Setter
 @NoArgsConstructor
 public class CustomerAccountEntity extends IdentifiedObject {
 
     // Document fields (previously inherited from Document superclass)
-    
+    // Field order matches customer.xsd Document type definition (lines 819-872)
+
+    /**
+     * Type of this document.
+     */
+    @Column(name = "document_type", length = 256)
+    private String type;
+
+    /**
+     * Name of the author of this document.
+     */
+    @Column(name = "author_name", length = 256)
+    private String authorName;
+
     /**
      * Date and time that this document was created.
      */
@@ -77,6 +88,12 @@ public class CustomerAccountEntity extends IdentifiedObject {
     private String revisionNumber;
 
     /**
+     * Electronic address for the document.
+     */
+    @Embedded
+    private Organisation.ElectronicAddress electronicAddress;
+
+    /**
      * Subject of this document, intended for this document to be found by a search engine.
      */
     @Column(name = "subject", length = 256)
@@ -89,10 +106,10 @@ public class CustomerAccountEntity extends IdentifiedObject {
     private String title;
 
     /**
-     * Type of this document.
+     * Status of this document.
      */
-    @Column(name = "document_type", length = 256)
-    private String type;
+    @Embedded
+    private Status docStatus;
 
     // CustomerAccount specific fields
 
@@ -123,11 +140,26 @@ public class CustomerAccountEntity extends IdentifiedObject {
     private List<AccountNotification> notifications;
 
     /**
-     * [extension] Customer contact information used to identify individual 
+     * [extension] Customer contact information used to identify individual
      * responsible for billing and payment of CustomerAccount.
      */
-    @Column(name = "contact_name", length = 256)
-    private String contactInfo;
+    @Embedded
+    @AttributeOverride(name = "organisationName", column = @Column(name = "organisation_name"))
+    @AttributeOverride(name = "streetAddress.streetDetail", column = @Column(name = "street_detail"))
+    @AttributeOverride(name = "streetAddress.townDetail", column = @Column(name = "town_detail"))
+    @AttributeOverride(name = "streetAddress.stateOrProvince", column = @Column(name = "state_or_province"))
+    @AttributeOverride(name = "streetAddress.postalCode", column = @Column(name = "postal_code"))
+    @AttributeOverride(name = "streetAddress.country", column = @Column(name = "country"))
+    @AttributeOverride(name = "postalAddress.streetDetail", column = @Column(name = "postal_street_detail"))
+    @AttributeOverride(name = "postalAddress.townDetail", column = @Column(name = "postal_town_detail"))
+    @AttributeOverride(name = "postalAddress.stateOrProvince", column = @Column(name = "postal_state_or_province"))
+    @AttributeOverride(name = "postalAddress.postalCode", column = @Column(name = "postal_postal_code"))
+    @AttributeOverride(name = "postalAddress.country", column = @Column(name = "postal_country"))
+    @AttributeOverride(name = "electronicAddress.email1", column = @Column(name = "contact_email1"))
+    @AttributeOverride(name = "electronicAddress.email2", column = @Column(name = "contact_email2"))
+    @AttributeOverride(name = "electronicAddress.web", column = @Column(name = "contact_web"))
+    @AttributeOverride(name = "electronicAddress.radio", column = @Column(name = "contact_radio"))
+    private Organisation contactInfo;
 
     /**
      * [extension] Customer account identifier
@@ -154,8 +186,8 @@ public class CustomerAccountEntity extends IdentifiedObject {
     public final boolean equals(Object o) {
         if (this == o) return true;
         if (o == null) return false;
-        Class<?> oEffectiveClass = o instanceof HibernateProxy ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
-        Class<?> thisEffectiveClass = this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
+        Class<?> oEffectiveClass = o instanceof HibernateProxy hibernateProxy ? hibernateProxy.getHibernateLazyInitializer().getPersistentClass() : o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy hibernateProxy ? hibernateProxy.getHibernateLazyInitializer().getPersistentClass() : this.getClass();
         if (thisEffectiveClass != oEffectiveClass) return false;
         CustomerAccountEntity that = (CustomerAccountEntity) o;
         return getId() != null && Objects.equals(getId(), that.getId());
@@ -163,19 +195,22 @@ public class CustomerAccountEntity extends IdentifiedObject {
 
     @Override
     public final int hashCode() {
-        return this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
+        return this instanceof HibernateProxy hibernateProxy ? hibernateProxy.getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName() + "(" +
                 "id = " + getId() + ", " +
+                "type = " + getType() + ", " +
+                "authorName = " + getAuthorName() + ", " +
                 "createdDateTime = " + getCreatedDateTime() + ", " +
                 "lastModifiedDateTime = " + getLastModifiedDateTime() + ", " +
                 "revisionNumber = " + getRevisionNumber() + ", " +
+                "electronicAddress = " + getElectronicAddress() + ", " +
                 "subject = " + getSubject() + ", " +
                 "title = " + getTitle() + ", " +
-                "type = " + getType() + ", " +
+                "docStatus = " + getDocStatus() + ", " +
                 "billingCycle = " + getBillingCycle() + ", " +
                 "budgetBill = " + getBudgetBill() + ", " +
                 "lastBillAmount = " + getLastBillAmount() + ", " +

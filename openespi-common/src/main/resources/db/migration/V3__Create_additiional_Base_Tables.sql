@@ -244,7 +244,9 @@ CREATE TABLE customer_agreement_future_status
 -- Indexes for customer_agreement_future_status table
 CREATE INDEX idx_customer_agreement_future_status ON customer_agreement_future_status (customer_agreement_id);
 
--- Customer Account Table (with isPrePay field from V7 migration)
+-- Customer Account Table
+-- Per customer.xsd CustomerAccount (lines 118-158) and Document base type (lines 819-872)
+-- Phase 18: Schema compliance with all Document fields
 CREATE TABLE customer_accounts
 (
     id               CHAR(36) PRIMARY KEY ,
@@ -259,32 +261,61 @@ CREATE TABLE customer_accounts
     customer_account_self_link_href   VARCHAR(1024),
     customer_account_self_link_type   VARCHAR(255),
 
-    -- Document fields
+    -- Document fields (customer.xsd lines 819-872) - field order matches XSD
+    document_type              VARCHAR(256),
+    author_name                VARCHAR(256),
     created_date_time          TIMESTAMP,
     last_modified_date_time    TIMESTAMP,
     revision_number            VARCHAR(256),
+    -- Document.electronicAddress embedded object
+    email1                     VARCHAR(256),
+    email2                     VARCHAR(256),
+    web                        VARCHAR(256),
+    radio                      VARCHAR(256),
     subject                    VARCHAR(256),
     title                      VARCHAR(256),
-    document_type              VARCHAR(256),
+    -- Document.docStatus embedded object
+    status_value               VARCHAR(256),
+    status_date_time           TIMESTAMP,
+    status_reason              VARCHAR(512),
 
-    -- Customer account specific fields
-    contact_name               VARCHAR(256),
+    -- CustomerAccount specific fields (customer.xsd lines 118-158)
+    billing_cycle              VARCHAR(50),
+    budget_bill                VARCHAR(255),
+    last_bill_amount           BIGINT,
+    -- notifications collection mapped to customer_account_notifications table below
+    -- contactInfo Organisation embedded object
+    -- contactInfo.streetAddress
+    street_detail              VARCHAR(256),
+    town_detail                VARCHAR(256),
+    state_or_province          VARCHAR(256),
+    postal_code                VARCHAR(256),
+    country                    VARCHAR(256),
+    -- contactInfo.postalAddress
+    postal_street_detail       VARCHAR(256),
+    postal_town_detail         VARCHAR(256),
+    postal_state_or_province   VARCHAR(256),
+    postal_postal_code         VARCHAR(256),
+    postal_country             VARCHAR(256),
+    -- contactInfo.electronicAddress
+    contact_email1             VARCHAR(256),
+    contact_email2             VARCHAR(256),
+    contact_web                VARCHAR(256),
+    contact_radio              VARCHAR(256),
+    -- contactInfo.organisationName
+    organisation_name          VARCHAR(256),
     account_id                 VARCHAR(256),
-    account_number   VARCHAR(100),
-    account_kind     VARCHAR(50),
-    budget_bill      VARCHAR(255),
-    billing_cycle    VARCHAR(50),
-    last_bill_amount BIGINT,
-    is_pre_pay       BOOLEAN              DEFAULT FALSE,
+
+    -- Extension fields not in customer.xsd
+    is_pre_pay                 BOOLEAN              DEFAULT FALSE,
 
     -- Foreign key to customer
-    customer_id      CHAR(36),
+    customer_id                CHAR(36),
 
     FOREIGN KEY (customer_id) REFERENCES customers (id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_customer_account_number ON customer_accounts (account_number);
-CREATE INDEX idx_customer_account_kind ON customer_accounts (account_kind);
+-- Indexes - Per Phase 18 guidelines, only ID-based indexes
 CREATE INDEX idx_customer_account_customer_id ON customer_accounts (customer_id);
 CREATE INDEX idx_customer_account_created ON customer_accounts (created);
 CREATE INDEX idx_customer_account_updated ON customer_accounts (updated);

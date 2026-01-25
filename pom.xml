@@ -93,13 +93,13 @@
     </properties>
     
     <profiles>
-        <!-- Build only fully-migrated Spring Boot 4 modules -->
+        <!-- Build only core Spring Boot 4 modules (omits authserver) -->
         <profile>
             <id>spring-boot-only</id>
             <modules>
                 <module>openespi-common</module>
                 <module>openespi-datacustodian</module>
-                <module>openespi-authserver</module>
+                <module>openespi-thirdparty</module>
             </modules>
         </profile>
         <!-- Integration Tests Profile -->
@@ -329,7 +329,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-site-plugin</artifactId>
-                <!--                <version>3.3</version>-->
                 <dependencies>
                     <dependency>
                         <groupId>org.apache.maven.wagon</groupId>

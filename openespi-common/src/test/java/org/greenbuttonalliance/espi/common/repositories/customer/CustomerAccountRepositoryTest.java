@@ -20,6 +20,8 @@ package org.greenbuttonalliance.espi.common.repositories.customer;
 
 import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerAccountEntity;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerEntity;
+import org.greenbuttonalliance.espi.common.domain.customer.entity.Organisation;
+import org.greenbuttonalliance.espi.common.domain.customer.entity.Status;
 import org.greenbuttonalliance.espi.common.test.BaseRepositoryTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -27,17 +29,17 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Comprehensive test suite for CustomerAccountRepository.
- * 
- * Tests all CRUD operations, 7 custom query methods, account management field testing,
+ * Phase 18: CustomerAccount schema compliance testing.
+ *
+ * Tests CRUD operations, Document field persistence, Organisation embedded objects,
  * Customer relationship testing, and IdentifiedObject base functionality.
  */
 @DisplayName("CustomerAccount Repository Tests")
@@ -62,23 +64,61 @@ class CustomerAccountRepositoryTest extends BaseRepositoryTest {
     }
 
     /**
-     * Creates a valid CustomerAccountEntity for testing.
+     * Creates a valid CustomerAccountEntity with all Document fields for testing.
+     * Phase 18: Includes all Document base class fields per customer.xsd.
      */
     private CustomerAccountEntity createValidCustomerAccount() {
         CustomerAccountEntity account = new CustomerAccountEntity();
+
+        // IdentifiedObject fields
         account.setDescription("Test Customer Account - " + faker.lorem().sentence(3));
-        account.setTitle("Customer Account " + faker.number().digits(6));
-        account.setSubject("Billing Account");
+
+        // Document fields (customer.xsd lines 819-872)
         account.setType("BILLING");
-        account.setAccountId("ACCT-" + faker.number().digits(8));
-        account.setBillingCycle("MONTHLY");
-        account.setBudgetBill("STANDARD");
-        account.setLastBillAmount(faker.number().numberBetween(5000L, 50000L)); // $50-$500
-        account.setContactInfo(faker.name().fullName());
-        account.setIsPrePay(false);
+        account.setAuthorName(faker.name().fullName());
         account.setCreatedDateTime(randomOffsetDateTime());
         account.setLastModifiedDateTime(randomOffsetDateTime());
         account.setRevisionNumber("1.0");
+
+        // Document.electronicAddress
+        Organisation.ElectronicAddress electronicAddress = new Organisation.ElectronicAddress();
+        electronicAddress.setEmail1(faker.internet().emailAddress());
+        electronicAddress.setEmail2(faker.internet().emailAddress());
+        electronicAddress.setWeb(faker.internet().url());
+        account.setElectronicAddress(electronicAddress);
+
+        account.setSubject("Billing Account");
+        account.setTitle("Customer Account " + faker.number().digits(6));
+
+        // Document.docStatus
+        Status docStatus = new Status();
+        docStatus.setValue("ACTIVE");
+        docStatus.setDateTime(randomOffsetDateTime());
+        docStatus.setReason("Account in good standing");
+        account.setDocStatus(docStatus);
+
+        // CustomerAccount specific fields (customer.xsd lines 118-158)
+        account.setBillingCycle("MONTHLY");
+        account.setBudgetBill("STANDARD");
+        account.setLastBillAmount(faker.number().numberBetween(5000L, 50000L));
+
+        // contactInfo Organisation embedded object
+        Organisation contactInfo = new Organisation();
+        contactInfo.setOrganisationName(faker.company().name());
+        Organisation.StreetAddress streetAddress = new Organisation.StreetAddress();
+        streetAddress.setStreetDetail(faker.address().streetAddress());
+        streetAddress.setTownDetail(faker.address().city());
+        streetAddress.setStateOrProvince(faker.address().stateAbbr());
+        streetAddress.setPostalCode(faker.address().zipCode());
+        streetAddress.setCountry("USA");
+        contactInfo.setStreetAddress(streetAddress);
+        account.setContactInfo(contactInfo);
+
+        account.setAccountId("ACCT-" + faker.number().digits(8));
+
+        // Extension fields
+        account.setIsPrePay(false);
+
         return account;
     }
 
@@ -91,7 +131,7 @@ class CustomerAccountRepositoryTest extends BaseRepositoryTest {
 
         CustomerAccountEntity account = createValidCustomerAccount();
         account.setCustomer(savedCustomer);
-        
+
         return account;
     }
 
@@ -104,21 +144,32 @@ class CustomerAccountRepositoryTest extends BaseRepositoryTest {
         void shouldSaveAndRetrieveCustomerAccountSuccessfully() {
             // Arrange
             CustomerAccountEntity account = createCompleteTestSetup();
-            account.setDescription("Test Customer Account for CRUD");
-            account.setTitle("CRUD Test Account");
 
             // Act
-            CustomerAccountEntity saved = customerAccountRepository.save(account);
-            flushAndClear();
+            CustomerAccountEntity saved = persistAndFlush(account);
             Optional<CustomerAccountEntity> retrieved = customerAccountRepository.findById(saved.getId());
 
             // Assert
-            assertThat(saved).isNotNull();
-            assertThat(saved.getId()).isNotNull();
             assertThat(retrieved).isPresent();
-            assertThat(retrieved.get().getDescription()).isEqualTo("Test Customer Account for CRUD");
-            assertThat(retrieved.get().getTitle()).isEqualTo("CRUD Test Account");
+            assertThat(retrieved.get().getId()).isEqualTo(saved.getId());
+            assertThat(retrieved.get().getAccountId()).isEqualTo(saved.getAccountId());
+            assertThat(retrieved.get().getBillingCycle()).isEqualTo(saved.getBillingCycle());
+        }
+
+        @Test
+        @DisplayName("Should save customer account with customer relationship")
+        void shouldSaveCustomerAccountWithCustomerRelationship() {
+            // Arrange
+            CustomerAccountEntity account = createCompleteTestSetup();
+
+            // Act
+            CustomerAccountEntity saved = persistAndFlush(account);
+            Optional<CustomerAccountEntity> retrieved = customerAccountRepository.findById(saved.getId());
+
+            // Assert
+            assertThat(retrieved).isPresent();
             assertThat(retrieved.get().getCustomer()).isNotNull();
+            assertThat(retrieved.get().getCustomer().getId()).isEqualTo(saved.getCustomer().getId());
         }
 
         @Test
@@ -127,20 +178,19 @@ class CustomerAccountRepositoryTest extends BaseRepositoryTest {
             // Arrange
             CustomerAccountEntity account = createCompleteTestSetup();
             CustomerAccountEntity saved = persistAndFlush(account);
+            UUID savedId = saved.getId();
 
             // Act
-            saved.setDescription("Updated Customer Account Description");
-            saved.setLastBillAmount(25000L); // $250.00
             saved.setBillingCycle("QUARTERLY");
-            CustomerAccountEntity updated = customerAccountRepository.save(saved);
+            saved.setLastBillAmount(25000L);
+            customerAccountRepository.save(saved);
             flushAndClear();
 
             // Assert
-            Optional<CustomerAccountEntity> retrieved = customerAccountRepository.findById(updated.getId());
+            Optional<CustomerAccountEntity> retrieved = customerAccountRepository.findById(savedId);
             assertThat(retrieved).isPresent();
-            assertThat(retrieved.get().getDescription()).isEqualTo("Updated Customer Account Description");
-            assertThat(retrieved.get().getLastBillAmount()).isEqualTo(25000L);
             assertThat(retrieved.get().getBillingCycle()).isEqualTo("QUARTERLY");
+            assertThat(retrieved.get().getLastBillAmount()).isEqualTo(25000L);
         }
 
         @Test
@@ -164,11 +214,9 @@ class CustomerAccountRepositoryTest extends BaseRepositoryTest {
         @DisplayName("Should find all customer accounts")
         void shouldFindAllCustomerAccounts() {
             // Arrange
+            long initialCount = customerAccountRepository.count();
             CustomerAccountEntity account1 = createCompleteTestSetup();
-            account1.setTitle("First Account");
             CustomerAccountEntity account2 = createCompleteTestSetup();
-            account2.setTitle("Second Account");
-            
             persistAndFlush(account1);
             persistAndFlush(account2);
 
@@ -177,9 +225,24 @@ class CustomerAccountRepositoryTest extends BaseRepositoryTest {
 
             // Assert
             assertThat(allAccounts).hasSizeGreaterThanOrEqualTo(2);
-            assertThat(allAccounts)
-                .extracting(CustomerAccountEntity::getTitle)
-                .contains("First Account", "Second Account");
+            long finalCount = customerAccountRepository.count();
+            assertThat(finalCount).isEqualTo(initialCount + 2);
+        }
+
+        @Test
+        @DisplayName("Should check if customer account exists")
+        void shouldCheckIfCustomerAccountExists() {
+            // Arrange
+            CustomerAccountEntity account = createCompleteTestSetup();
+            CustomerAccountEntity saved = persistAndFlush(account);
+
+            // Act
+            boolean exists = customerAccountRepository.existsById(saved.getId());
+            boolean notExists = customerAccountRepository.existsById(UUID.randomUUID());
+
+            // Assert
+            assertThat(exists).isTrue();
+            assertThat(notExists).isFalse();
         }
 
         @Test
@@ -189,7 +252,6 @@ class CustomerAccountRepositoryTest extends BaseRepositoryTest {
             long initialCount = customerAccountRepository.count();
             CustomerAccountEntity account1 = createCompleteTestSetup();
             CustomerAccountEntity account2 = createCompleteTestSetup();
-            
             persistAndFlush(account1);
             persistAndFlush(account2);
 
@@ -202,251 +264,169 @@ class CustomerAccountRepositoryTest extends BaseRepositoryTest {
     }
 
     @Nested
-    @DisplayName("Custom Query Methods")
-    class CustomQueryMethodsTest {
+    @DisplayName("Document Field Persistence")
+    class DocumentFieldPersistenceTest {
 
         @Test
-        @DisplayName("Should find customer account by account ID")
-        void shouldFindCustomerAccountByAccountId() {
+        @DisplayName("Should persist all Document base fields correctly")
+        void shouldPersistAllDocumentBaseFieldsCorrectly() {
             // Arrange
             CustomerAccountEntity account = createCompleteTestSetup();
-            account.setAccountId("UNIQUE-ACCOUNT-12345");
+            OffsetDateTime createdTime = OffsetDateTime.now().minusDays(5).truncatedTo(java.time.temporal.ChronoUnit.MICROS);
+            OffsetDateTime modifiedTime = OffsetDateTime.now().minusDays(1).truncatedTo(java.time.temporal.ChronoUnit.MICROS);
+
+            account.setType("PAYMENT");
+            account.setAuthorName("System Administrator");
+            account.setCreatedDateTime(createdTime);
+            account.setLastModifiedDateTime(modifiedTime);
+            account.setRevisionNumber("2.5");
+            account.setSubject("Payment Account Management");
+            account.setTitle("Payment Account #98765");
+
+            // Act
             CustomerAccountEntity saved = persistAndFlush(account);
-
-            // Act
-            Optional<CustomerAccountEntity> found = customerAccountRepository.findByAccountId("UNIQUE-ACCOUNT-12345");
+            flushAndClear();
+            Optional<CustomerAccountEntity> retrieved = customerAccountRepository.findById(saved.getId());
 
             // Assert
-            assertThat(found).isPresent();
-            assertThat(found.get().getId()).isEqualTo(saved.getId());
-            assertThat(found.get().getAccountId()).isEqualTo("UNIQUE-ACCOUNT-12345");
+            assertThat(retrieved).isPresent();
+            CustomerAccountEntity found = retrieved.get();
+            assertThat(found.getType()).isEqualTo("PAYMENT");
+            assertThat(found.getAuthorName()).isEqualTo("System Administrator");
+            assertThat(found.getCreatedDateTime()).isEqualTo(createdTime);
+            assertThat(found.getLastModifiedDateTime()).isEqualTo(modifiedTime);
+            assertThat(found.getRevisionNumber()).isEqualTo("2.5");
+            assertThat(found.getSubject()).isEqualTo("Payment Account Management");
+            assertThat(found.getTitle()).isEqualTo("Payment Account #98765");
         }
 
         @Test
-        @DisplayName("Should find customer accounts by billing cycle")
-        void shouldFindCustomerAccountsByBillingCycle() {
-            // Arrange
-            CustomerAccountEntity account1 = createCompleteTestSetup();
-            account1.setBillingCycle("MONTHLY");
-            CustomerAccountEntity account2 = createCompleteTestSetup();
-            account2.setBillingCycle("MONTHLY");
-            CustomerAccountEntity account3 = createCompleteTestSetup();
-            account3.setBillingCycle("QUARTERLY");
-            
-            persistAndFlush(account1);
-            persistAndFlush(account2);
-            persistAndFlush(account3);
-
-            // Act
-            List<CustomerAccountEntity> monthlyAccounts = customerAccountRepository.findByBillingCycle("MONTHLY");
-
-            // Assert
-            assertThat(monthlyAccounts).hasSize(2);
-            assertThat(monthlyAccounts).extracting(CustomerAccountEntity::getBillingCycle)
-                .allMatch(cycle -> cycle.equals("MONTHLY"));
-        }
-
-        @Test
-        @DisplayName("Should find pre-pay accounts")
-        void shouldFindPrePayAccounts() {
-            // Arrange
-            CustomerAccountEntity account1 = createCompleteTestSetup();
-            account1.setIsPrePay(true);
-            CustomerAccountEntity account2 = createCompleteTestSetup();
-            account2.setIsPrePay(true);
-            CustomerAccountEntity account3 = createCompleteTestSetup();
-            account3.setIsPrePay(false);
-            
-            persistAndFlush(account1);
-            persistAndFlush(account2);
-            persistAndFlush(account3);
-
-            // Act
-            List<CustomerAccountEntity> prePayAccounts = customerAccountRepository.findPrePayAccounts();
-
-            // Assert
-            assertThat(prePayAccounts).hasSize(2);
-            assertThat(prePayAccounts).extracting(CustomerAccountEntity::getIsPrePay)
-                .allMatch(isPrePay -> isPrePay.equals(true));
-        }
-
-        @Test
-        @DisplayName("Should find budget bill accounts")
-        void shouldFindBudgetBillAccounts() {
-            // Arrange
-            CustomerAccountEntity account1 = createCompleteTestSetup();
-            account1.setBudgetBill("BUDGET_PLAN_A");
-            CustomerAccountEntity account2 = createCompleteTestSetup();
-            account2.setBudgetBill("BUDGET_PLAN_B");
-            CustomerAccountEntity account3 = createCompleteTestSetup();
-            account3.setBudgetBill(null);
-            CustomerAccountEntity account4 = createCompleteTestSetup();
-            account4.setBudgetBill("");
-            
-            persistAndFlush(account1);
-            persistAndFlush(account2);
-            persistAndFlush(account3);
-            persistAndFlush(account4);
-
-            // Act
-            List<CustomerAccountEntity> budgetAccounts = customerAccountRepository.findBudgetBillAccounts();
-
-            // Assert
-            assertThat(budgetAccounts).hasSize(2);
-            assertThat(budgetAccounts).extracting(CustomerAccountEntity::getBudgetBill)
-                .allMatch(budget -> budget != null && !budget.isEmpty());
-        }
-
-        @Test
-        @DisplayName("Should find customer accounts by contact info")
-        void shouldFindCustomerAccountsByContactInfo() {
-            // Arrange
-            CustomerAccountEntity account1 = createCompleteTestSetup();
-            account1.setContactInfo("John Smith");
-            CustomerAccountEntity account2 = createCompleteTestSetup();
-            account2.setContactInfo("John Smith");
-            CustomerAccountEntity account3 = createCompleteTestSetup();
-            account3.setContactInfo("Jane Doe");
-            
-            persistAndFlush(account1);
-            persistAndFlush(account2);
-            persistAndFlush(account3);
-
-            // Act
-            List<CustomerAccountEntity> johnSmithAccounts = customerAccountRepository.findByContactInfo("John Smith");
-
-            // Assert
-            assertThat(johnSmithAccounts).hasSize(2);
-            assertThat(johnSmithAccounts).extracting(CustomerAccountEntity::getContactInfo)
-                .allMatch(contact -> contact.equals("John Smith"));
-        }
-
-        @Test
-        @DisplayName("Should find customer accounts by last bill amount greater than")
-        void shouldFindCustomerAccountsByLastBillAmountGreaterThan() {
-            // Arrange
-            CustomerAccountEntity account1 = createCompleteTestSetup();
-            account1.setLastBillAmount(10000L); // $100.00
-            CustomerAccountEntity account2 = createCompleteTestSetup();
-            account2.setLastBillAmount(20000L); // $200.00
-            CustomerAccountEntity account3 = createCompleteTestSetup();
-            account3.setLastBillAmount(5000L); // $50.00
-            
-            persistAndFlush(account1);
-            persistAndFlush(account2);
-            persistAndFlush(account3);
-
-            // Act
-            List<CustomerAccountEntity> highBillAccounts = customerAccountRepository.findByLastBillAmountGreaterThan(15000L);
-
-            // Assert
-            assertThat(highBillAccounts).hasSize(1);
-            assertThat(highBillAccounts.get(0).getLastBillAmount()).isEqualTo(20000L);
-        }
-
-        @Test
-        @DisplayName("Should find customer accounts by title containing text")
-        void shouldFindCustomerAccountsByTitleContaining() {
-            // Arrange
-            CustomerAccountEntity account1 = createCompleteTestSetup();
-            account1.setTitle("Residential Account Primary");
-            CustomerAccountEntity account2 = createCompleteTestSetup();
-            account2.setTitle("Commercial Account Secondary");
-            CustomerAccountEntity account3 = createCompleteTestSetup();
-            account3.setTitle("Industrial Service");
-            
-            persistAndFlush(account1);
-            persistAndFlush(account2);
-            persistAndFlush(account3);
-
-            // Act
-            List<CustomerAccountEntity> accountsWithAccount = customerAccountRepository.findByTitleContaining("Account");
-
-            // Assert
-            assertThat(accountsWithAccount).hasSize(2);
-            assertThat(accountsWithAccount).extracting(CustomerAccountEntity::getTitle)
-                .allMatch(title -> title.toLowerCase().contains("account"));
-        }
-
-        @Test
-        @DisplayName("Should return empty results when no matches found")
-        void shouldReturnEmptyResultsWhenNoMatchesFound() {
+        @DisplayName("Should persist Document electronicAddress embedded object")
+        void shouldPersistDocumentElectronicAddressEmbeddedObject() {
             // Arrange
             CustomerAccountEntity account = createCompleteTestSetup();
-            account.setAccountId("EXISTING-ACCOUNT");
-            persistAndFlush(account);
+            Organisation.ElectronicAddress electronicAddress = new Organisation.ElectronicAddress();
+            electronicAddress.setEmail1("primary@example.com");
+            electronicAddress.setEmail2("secondary@example.com");
+            electronicAddress.setWeb("https://www.example.com");
+            electronicAddress.setRadio("FM-101.5");
+            account.setElectronicAddress(electronicAddress);
 
             // Act
-            Optional<CustomerAccountEntity> notFound = customerAccountRepository.findByAccountId("NON-EXISTENT");
-            List<CustomerAccountEntity> emptyList = customerAccountRepository.findByBillingCycle("NON-EXISTENT-CYCLE");
+            CustomerAccountEntity saved = persistAndFlush(account);
+            flushAndClear();
+            Optional<CustomerAccountEntity> retrieved = customerAccountRepository.findById(saved.getId());
 
             // Assert
-            assertThat(notFound).isEmpty();
-            assertThat(emptyList).isEmpty();
+            assertThat(retrieved).isPresent();
+            CustomerAccountEntity found = retrieved.get();
+            assertThat(found.getElectronicAddress()).isNotNull();
+            assertThat(found.getElectronicAddress().getEmail1()).isEqualTo("primary@example.com");
+            assertThat(found.getElectronicAddress().getEmail2()).isEqualTo("secondary@example.com");
+            assertThat(found.getElectronicAddress().getWeb()).isEqualTo("https://www.example.com");
+            assertThat(found.getElectronicAddress().getRadio()).isEqualTo("FM-101.5");
+        }
+
+        @Test
+        @DisplayName("Should persist Document docStatus embedded object")
+        void shouldPersistDocumentDocStatusEmbeddedObject() {
+            // Arrange
+            CustomerAccountEntity account = createCompleteTestSetup();
+            Status docStatus = new Status();
+            docStatus.setValue("SUSPENDED");
+            OffsetDateTime statusTime = OffsetDateTime.now().minusDays(2).truncatedTo(java.time.temporal.ChronoUnit.MICROS);
+            docStatus.setDateTime(statusTime);
+            docStatus.setReason("Payment overdue");
+            account.setDocStatus(docStatus);
+
+            // Act
+            CustomerAccountEntity saved = persistAndFlush(account);
+            flushAndClear();
+            Optional<CustomerAccountEntity> retrieved = customerAccountRepository.findById(saved.getId());
+
+            // Assert
+            assertThat(retrieved).isPresent();
+            CustomerAccountEntity found = retrieved.get();
+            assertThat(found.getDocStatus()).isNotNull();
+            assertThat(found.getDocStatus().getValue()).isEqualTo("SUSPENDED");
+            assertThat(found.getDocStatus().getDateTime()).isEqualTo(statusTime);
+            assertThat(found.getDocStatus().getReason()).isEqualTo("Payment overdue");
         }
     }
 
     @Nested
-    @DisplayName("Account Management Field Testing")
-    class AccountManagementFieldTest {
+    @DisplayName("CustomerAccount Field Persistence")
+    class CustomerAccountFieldPersistenceTest {
 
         @Test
-        @DisplayName("Should persist all document fields correctly")
-        void shouldPersistAllDocumentFieldsCorrectly() {
-            // Arrange
-            CustomerAccountEntity account = createCompleteTestSetup();
-
-            //truncate nanos because of diff between macOS and Windoz
-            OffsetDateTime createdTime = OffsetDateTime.now().minusDays(1).truncatedTo(ChronoUnit.MICROS);
-            OffsetDateTime modifiedTime = OffsetDateTime.now().truncatedTo(ChronoUnit.MICROS);
-            
-            account.setCreatedDateTime(createdTime);
-            account.setLastModifiedDateTime(modifiedTime);
-            account.setRevisionNumber("2.1");
-            account.setSubject("Billing Account Subject");
-            account.setTitle("Primary Billing Account");
-            account.setType("RESIDENTIAL_BILLING");
-
-            // Act
-            CustomerAccountEntity saved = persistAndFlush(account);
-
-            // Assert
-            Optional<CustomerAccountEntity> retrieved = customerAccountRepository.findById(saved.getId());
-            assertThat(retrieved).isPresent();
-            CustomerAccountEntity entity = retrieved.get();
-            assertThat(entity.getCreatedDateTime()).isEqualTo(createdTime);
-            assertThat(entity.getLastModifiedDateTime()).isEqualTo(modifiedTime);
-            assertThat(entity.getRevisionNumber()).isEqualTo("2.1");
-            assertThat(entity.getSubject()).isEqualTo("Billing Account Subject");
-            assertThat(entity.getTitle()).isEqualTo("Primary Billing Account");
-            assertThat(entity.getType()).isEqualTo("RESIDENTIAL_BILLING");
-        }
-
-        @Test
-        @DisplayName("Should persist all customer account specific fields correctly")
+        @DisplayName("Should persist all CustomerAccount specific fields correctly")
         void shouldPersistAllCustomerAccountSpecificFieldsCorrectly() {
             // Arrange
             CustomerAccountEntity account = createCompleteTestSetup();
-            account.setBillingCycle("SEMI_ANNUAL");
-            account.setBudgetBill("LEVEL_PAY_PLAN");
-            account.setLastBillAmount(35000L); // $350.00
-            account.setContactInfo("Jane Smith - Primary Contact");
-            account.setAccountId("ACCT-SPECIAL-999888");
+            account.setBillingCycle("QUARTERLY");
+            account.setBudgetBill("PREMIUM");
+            account.setLastBillAmount(35000L);
+            account.setAccountId("ACCT-SPECIAL-12345");
             account.setIsPrePay(true);
 
             // Act
             CustomerAccountEntity saved = persistAndFlush(account);
+            flushAndClear();
+            Optional<CustomerAccountEntity> retrieved = customerAccountRepository.findById(saved.getId());
 
             // Assert
-            Optional<CustomerAccountEntity> retrieved = customerAccountRepository.findById(saved.getId());
             assertThat(retrieved).isPresent();
-            CustomerAccountEntity entity = retrieved.get();
-            assertThat(entity.getBillingCycle()).isEqualTo("SEMI_ANNUAL");
-            assertThat(entity.getBudgetBill()).isEqualTo("LEVEL_PAY_PLAN");
-            assertThat(entity.getLastBillAmount()).isEqualTo(35000L);
-            assertThat(entity.getContactInfo()).isEqualTo("Jane Smith - Primary Contact");
-            assertThat(entity.getAccountId()).isEqualTo("ACCT-SPECIAL-999888");
-            assertThat(entity.getIsPrePay()).isTrue();
+            CustomerAccountEntity found = retrieved.get();
+            assertThat(found.getBillingCycle()).isEqualTo("QUARTERLY");
+            assertThat(found.getBudgetBill()).isEqualTo("PREMIUM");
+            assertThat(found.getLastBillAmount()).isEqualTo(35000L);
+            assertThat(found.getAccountId()).isEqualTo("ACCT-SPECIAL-12345");
+            assertThat(found.getIsPrePay()).isTrue();
+        }
+
+        @Test
+        @DisplayName("Should persist contactInfo Organisation embedded object")
+        void shouldPersistContactInfoOrganisationEmbeddedObject() {
+            // Arrange
+            CustomerAccountEntity account = createCompleteTestSetup();
+
+            Organisation contactInfo = new Organisation();
+            contactInfo.setOrganisationName("ACME Corporation");
+
+            Organisation.StreetAddress streetAddress = new Organisation.StreetAddress();
+            streetAddress.setStreetDetail("123 Main Street");
+            streetAddress.setTownDetail("Springfield");
+            streetAddress.setStateOrProvince("IL");
+            streetAddress.setPostalCode("62701");
+            streetAddress.setCountry("USA");
+            contactInfo.setStreetAddress(streetAddress);
+
+            Organisation.ElectronicAddress electronicAddress = new Organisation.ElectronicAddress();
+            electronicAddress.setEmail1("contact@acme.com");
+            electronicAddress.setWeb("https://www.acme.com");
+            contactInfo.setElectronicAddress(electronicAddress);
+
+            account.setContactInfo(contactInfo);
+
+            // Act
+            CustomerAccountEntity saved = persistAndFlush(account);
+            flushAndClear();
+            Optional<CustomerAccountEntity> retrieved = customerAccountRepository.findById(saved.getId());
+
+            // Assert
+            assertThat(retrieved).isPresent();
+            CustomerAccountEntity found = retrieved.get();
+            assertThat(found.getContactInfo()).isNotNull();
+            assertThat(found.getContactInfo().getOrganisationName()).isEqualTo("ACME Corporation");
+            assertThat(found.getContactInfo().getStreetAddress()).isNotNull();
+            assertThat(found.getContactInfo().getStreetAddress().getStreetDetail()).isEqualTo("123 Main Street");
+            assertThat(found.getContactInfo().getStreetAddress().getTownDetail()).isEqualTo("Springfield");
+            assertThat(found.getContactInfo().getStreetAddress().getStateOrProvince()).isEqualTo("IL");
+            assertThat(found.getContactInfo().getStreetAddress().getPostalCode()).isEqualTo("62701");
+            assertThat(found.getContactInfo().getStreetAddress().getCountry()).isEqualTo("USA");
+            assertThat(found.getContactInfo().getElectronicAddress()).isNotNull();
+            assertThat(found.getContactInfo().getElectronicAddress().getEmail1()).isEqualTo("contact@acme.com");
+            assertThat(found.getContactInfo().getElectronicAddress().getWeb()).isEqualTo("https://www.acme.com");
         }
 
         @Test
@@ -454,38 +434,25 @@ class CustomerAccountRepositoryTest extends BaseRepositoryTest {
         void shouldHandleNullOptionalFieldsCorrectly() {
             // Arrange
             CustomerAccountEntity account = createCompleteTestSetup();
-            account.setCreatedDateTime(null);
-            account.setLastModifiedDateTime(null);
-            account.setRevisionNumber(null);
-            account.setSubject(null);
-            account.setTitle(null);
-            account.setType(null);
-            account.setBillingCycle(null);
             account.setBudgetBill(null);
             account.setLastBillAmount(null);
+            account.setElectronicAddress(null);
+            account.setDocStatus(null);
             account.setContactInfo(null);
-            account.setAccountId(null);
-            account.setIsPrePay(null);
 
             // Act
             CustomerAccountEntity saved = persistAndFlush(account);
+            flushAndClear();
+            Optional<CustomerAccountEntity> retrieved = customerAccountRepository.findById(saved.getId());
 
             // Assert
-            Optional<CustomerAccountEntity> retrieved = customerAccountRepository.findById(saved.getId());
             assertThat(retrieved).isPresent();
-            CustomerAccountEntity entity = retrieved.get();
-            assertThat(entity.getCreatedDateTime()).isNull();
-            assertThat(entity.getLastModifiedDateTime()).isNull();
-            assertThat(entity.getRevisionNumber()).isNull();
-            assertThat(entity.getSubject()).isNull();
-            assertThat(entity.getTitle()).isNull();
-            assertThat(entity.getType()).isNull();
-            assertThat(entity.getBillingCycle()).isNull();
-            assertThat(entity.getBudgetBill()).isNull();
-            assertThat(entity.getLastBillAmount()).isNull();
-            assertThat(entity.getContactInfo()).isNull();
-            assertThat(entity.getAccountId()).isNull();
-            assertThat(entity.getIsPrePay()).isNull();
+            CustomerAccountEntity found = retrieved.get();
+            assertThat(found.getBudgetBill()).isNull();
+            assertThat(found.getLastBillAmount()).isNull();
+            assertThat(found.getElectronicAddress()).isNull();
+            assertThat(found.getDocStatus()).isNull();
+            assertThat(found.getContactInfo()).isNull();
         }
     }
 
@@ -497,16 +464,23 @@ class CustomerAccountRepositoryTest extends BaseRepositoryTest {
         @DisplayName("Should maintain Customer relationship")
         void shouldMaintainCustomerRelationship() {
             // Arrange
-            CustomerAccountEntity account = createCompleteTestSetup();
+            CustomerEntity customer = createValidCustomer();
+            customer.setCustomerName("Test Corporation");
+            CustomerEntity savedCustomer = persistAndFlush(customer);
+
+            CustomerAccountEntity account = createValidCustomerAccount();
+            account.setCustomer(savedCustomer);
+            CustomerAccountEntity savedAccount = persistAndFlush(account);
 
             // Act
-            CustomerAccountEntity saved = persistAndFlush(account);
+            flushAndClear();
+            Optional<CustomerAccountEntity> retrieved = customerAccountRepository.findById(savedAccount.getId());
 
             // Assert
-            Optional<CustomerAccountEntity> retrieved = customerAccountRepository.findById(saved.getId());
             assertThat(retrieved).isPresent();
             assertThat(retrieved.get().getCustomer()).isNotNull();
-            assertThat(retrieved.get().getCustomer().getId()).isEqualTo(account.getCustomer().getId());
+            assertThat(retrieved.get().getCustomer().getId()).isEqualTo(savedCustomer.getId());
+            assertThat(retrieved.get().getCustomer().getCustomerName()).isEqualTo("Test Corporation");
         }
 
         @Test
@@ -515,14 +489,15 @@ class CustomerAccountRepositoryTest extends BaseRepositoryTest {
             // Arrange
             CustomerAccountEntity account = createCompleteTestSetup();
             CustomerAccountEntity saved = persistAndFlush(account);
-
-            // Act - Clear persistence context to test lazy loading
             flushAndClear();
+
+            // Act
             Optional<CustomerAccountEntity> retrieved = customerAccountRepository.findById(saved.getId());
 
             // Assert
             assertThat(retrieved).isPresent();
-            // Access the customer to trigger lazy loading
+            assertThat(retrieved.get().getCustomer()).isNotNull();
+            // Access lazy-loaded property
             assertThat(retrieved.get().getCustomer().getCustomerName()).isNotNull();
         }
 
@@ -535,9 +510,10 @@ class CustomerAccountRepositoryTest extends BaseRepositoryTest {
 
             // Act
             CustomerAccountEntity saved = persistAndFlush(account);
+            flushAndClear();
+            Optional<CustomerAccountEntity> retrieved = customerAccountRepository.findById(saved.getId());
 
             // Assert
-            Optional<CustomerAccountEntity> retrieved = customerAccountRepository.findById(saved.getId());
             assertThat(retrieved).isPresent();
             assertThat(retrieved.get().getCustomer()).isNull();
         }
@@ -552,20 +528,23 @@ class CustomerAccountRepositoryTest extends BaseRepositoryTest {
         void shouldInheritIdentifiedObjectFunctionality() {
             // Arrange
             CustomerAccountEntity account = createCompleteTestSetup();
+            account.setDescription("Test Description for Account");
+            java.time.LocalDateTime publishedTime = java.time.LocalDateTime.now().minusDays(10).truncatedTo(java.time.temporal.ChronoUnit.MICROS);
+            account.setPublished(publishedTime);
 
             // Act
-            CustomerAccountEntity saved = customerAccountRepository.save(account);
+            CustomerAccountEntity saved = persistAndFlush(account);
             flushAndClear();
+            Optional<CustomerAccountEntity> retrieved = customerAccountRepository.findById(saved.getId());
 
             // Assert
-            Optional<CustomerAccountEntity> retrieved = customerAccountRepository.findById(saved.getId());
             assertThat(retrieved).isPresent();
-            
-            CustomerAccountEntity entity = retrieved.get();
-            assertThat(entity.getId()).isNotNull();
-            assertThat(entity.getCreated()).isNotNull();
-            assertThat(entity.getUpdated()).isNotNull();
-            assertThat(entity.getDescription()).isNotNull();
+            CustomerAccountEntity found = retrieved.get();
+            assertThat(found.getId()).isNotNull();
+            assertThat(found.getDescription()).isEqualTo("Test Description for Account");
+            assertThat(found.getPublished()).isEqualTo(publishedTime);
+            assertThat(found.getCreated()).isNotNull();
+            assertThat(found.getUpdated()).isNotNull();
         }
 
         @Test
@@ -574,23 +553,18 @@ class CustomerAccountRepositoryTest extends BaseRepositoryTest {
             // Arrange
             CustomerAccountEntity account = createCompleteTestSetup();
             CustomerAccountEntity saved = persistAndFlush(account);
-            
-            // Wait a moment to ensure timestamp difference
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+            java.time.LocalDateTime originalUpdated = saved.getUpdated();
+            UUID savedId = saved.getId();
 
             // Act
-            saved.setDescription("Updated Description");
-            CustomerAccountEntity updated = customerAccountRepository.save(saved);
+            saved.setBillingCycle("ANNUAL");
+            customerAccountRepository.save(saved);
             flushAndClear();
 
             // Assert
-            Optional<CustomerAccountEntity> retrieved = customerAccountRepository.findById(updated.getId());
+            Optional<CustomerAccountEntity> retrieved = customerAccountRepository.findById(savedId);
             assertThat(retrieved).isPresent();
-            assertThat(retrieved.get().getUpdated()).isAfter(retrieved.get().getCreated());
+            assertThat(retrieved.get().getUpdated()).isAfter(originalUpdated);
         }
 
         @Test
@@ -601,14 +575,13 @@ class CustomerAccountRepositoryTest extends BaseRepositoryTest {
             CustomerAccountEntity account2 = createCompleteTestSetup();
 
             // Act
-            CustomerAccountEntity saved1 = customerAccountRepository.save(account1);
-            CustomerAccountEntity saved2 = customerAccountRepository.save(account2);
-            flushAndClear();
+            CustomerAccountEntity saved1 = persistAndFlush(account1);
+            CustomerAccountEntity saved2 = persistAndFlush(account2);
 
             // Assert
-            assertThat(saved1.getId()).isNotEqualTo(saved2.getId());
             assertThat(saved1.getId()).isNotNull();
             assertThat(saved2.getId()).isNotNull();
+            assertThat(saved1.getId()).isNotEqualTo(saved2.getId());
         }
 
         @Test
@@ -616,22 +589,16 @@ class CustomerAccountRepositoryTest extends BaseRepositoryTest {
         void shouldHandleEqualsAndHashCodeCorrectly() {
             // Arrange
             CustomerAccountEntity account1 = createCompleteTestSetup();
-            CustomerAccountEntity account2 = createCompleteTestSetup();
-            
             CustomerAccountEntity saved1 = persistAndFlush(account1);
+
+            CustomerAccountEntity account2 = createCompleteTestSetup();
             CustomerAccountEntity saved2 = persistAndFlush(account2);
 
             // Act & Assert
-            assertThat(saved1).isNotEqualTo(saved2);
-            // Note: Hibernate proxy-aware hashCode implementation returns class hashCode for different entities
-            // This is expected behavior for entities with different IDs
-            
-            // Same entity should be equal to itself
-            assertThat(saved1).isEqualTo(saved1);
-            assertThat(saved1.hashCode()).isEqualTo(saved1.hashCode());
-            
-            // Different entities with different IDs should not be equal
-            assertThat(saved1.getId()).isNotEqualTo(saved2.getId());
+            assertThat(saved1)
+                .isEqualTo(saved1)
+                .isNotEqualTo(saved2)
+                .hasSameHashCodeAs(saved1);
         }
 
         @Test
@@ -639,18 +606,17 @@ class CustomerAccountRepositoryTest extends BaseRepositoryTest {
         void shouldGenerateMeaningfulToStringRepresentation() {
             // Arrange
             CustomerAccountEntity account = createCompleteTestSetup();
-            account.setAccountId("ACCT-12345");
-            account.setTitle("Test Account");
+            account.setAccountId("TEST-ACCOUNT-123");
             CustomerAccountEntity saved = persistAndFlush(account);
 
             // Act
             String toString = saved.toString();
 
             // Assert
-            assertThat(toString).contains("CustomerAccountEntity");
-            assertThat(toString).contains("id = " + saved.getId());
-            assertThat(toString).contains("accountId = ACCT-12345");
-            assertThat(toString).contains("title = Test Account");
+            assertThat(toString)
+                .contains("CustomerAccountEntity")
+                .contains("id")
+                .contains("accountId");
         }
     }
 }

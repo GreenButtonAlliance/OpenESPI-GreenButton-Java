@@ -25,7 +25,6 @@ import org.greenbuttonalliance.espi.common.mapper.BaseMapperUtils;
 import org.greenbuttonalliance.espi.common.mapper.DateTimeMapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
 
 /**
  * MapStruct mapper for converting between CustomerAccountEntity and CustomerAccountDto.
@@ -33,49 +32,80 @@ import org.mapstruct.MappingTarget;
  * Handles the conversion between the JPA entity used for persistence and the DTO
  * used for JAXB XML marshalling in the Green Button API.
  * <p>
- * Maps only customer.xsd CustomerAccount fields. IdentifiedObject fields are NOT part of
- * the customer.xsd CustomerAccount definition and are handled by AtomFeedDto/AtomEntryDto.
+ * Maps customer.xsd CustomerAccount fields including Document base fields.
+ * Per customer.xsd lines 118-158 (CustomerAccount) and 819-872 (Document base type).
  */
 @Mapper(componentModel = "spring", uses = {
     DateTimeMapper.class,
-    BaseMapperUtils.class
+    BaseMapperUtils.class,
+    ElectronicAddressMapper.class,
+    OrganisationMapper.class,
+    StatusMapper.class,
+    AccountNotificationMapper.class
 })
 public interface CustomerAccountMapper {
 
     /**
      * Converts a CustomerAccountEntity to a CustomerAccountDto.
-     * Maps only customer.xsd CustomerAccount fields.
+     * Maps all Document fields and CustomerAccount-specific fields per customer.xsd.
      *
      * @param entity the customer account entity
      * @return the customer account DTO
      */
-    @Mapping(target = "id", ignore = true) // IdentifiedObject field handled by Atom layer
-    @Mapping(target = "accountId", source = "accountId")
-    @Mapping(target = "accountNumber", ignore = true) // Not in entity
-    @Mapping(target = "budgetBill", source = "budgetBill")
+    @Mapping(target = "uuid", source = "id")
+    // Document fields
+    @Mapping(target = "type", source = "type")
+    @Mapping(target = "authorName", source = "authorName")
+    @Mapping(target = "createdDateTime", source = "createdDateTime")
+    @Mapping(target = "lastModifiedDateTime", source = "lastModifiedDateTime")
+    @Mapping(target = "revisionNumber", source = "revisionNumber")
+    @Mapping(target = "electronicAddress", source = "electronicAddress")
+    @Mapping(target = "subject", source = "subject")
+    @Mapping(target = "title", source = "title")
+    @Mapping(target = "docStatus", source = "docStatus")
+    // CustomerAccount fields
     @Mapping(target = "billingCycle", source = "billingCycle")
+    @Mapping(target = "budgetBill", source = "budgetBill")
     @Mapping(target = "lastBillAmount", source = "lastBillAmount")
-    @Mapping(target = "transactionDate", ignore = true) // Not in entity
-    @Mapping(target = "isPrePay", source = "isPrePay")
-    @Mapping(target = "customer", ignore = true) // Relationship handled separately
-    @Mapping(target = "customerAgreements", ignore = true) // Relationship handled separately
+    @Mapping(target = "notifications", source = "notifications")
+    @Mapping(target = "contactInfo", source = "contactInfo")
+    @Mapping(target = "accountId", source = "accountId")
     CustomerAccountDto toDto(CustomerAccountEntity entity);
 
     /**
      * Converts a CustomerAccountDto to a CustomerAccountEntity.
-     * Maps only customer.xsd CustomerAccount fields.
+     * Maps all Document fields and CustomerAccount-specific fields per customer.xsd.
      *
      * @param dto the customer account DTO
      * @return the customer account entity
      */
-    @Mapping(target = "id", ignore = true) // IdentifiedObject field handled by Atom layer
-    @Mapping(target = "accountId", source = "accountId")
-    @Mapping(target = "budgetBill", source = "budgetBill")
+    @Mapping(target = "id", source = "uuid")
+    // Document fields
+    @Mapping(target = "type", source = "type")
+    @Mapping(target = "authorName", source = "authorName")
+    @Mapping(target = "createdDateTime", source = "createdDateTime")
+    @Mapping(target = "lastModifiedDateTime", source = "lastModifiedDateTime")
+    @Mapping(target = "revisionNumber", source = "revisionNumber")
+    @Mapping(target = "electronicAddress", source = "electronicAddress")
+    @Mapping(target = "subject", source = "subject")
+    @Mapping(target = "title", source = "title")
+    @Mapping(target = "docStatus", source = "docStatus")
+    // CustomerAccount fields
     @Mapping(target = "billingCycle", source = "billingCycle")
+    @Mapping(target = "budgetBill", source = "budgetBill")
     @Mapping(target = "lastBillAmount", source = "lastBillAmount")
-    @Mapping(target = "isPrePay", source = "isPrePay")
-    @Mapping(target = "notifications", ignore = true) // Relationship handled separately
-    @Mapping(target = "contactInfo", ignore = true) // Relationship handled separately
+    @Mapping(target = "notifications", source = "notifications")
+    @Mapping(target = "contactInfo", source = "contactInfo")
+    @Mapping(target = "accountId", source = "accountId")
+    // Entity-only fields not in DTO
+    @Mapping(target = "isPrePay", ignore = true) // Not in customer.xsd CustomerAccount
+    @Mapping(target = "customer", ignore = true) // Relationship handled separately
+    // IdentifiedObject fields (inherited) - handled by Atom layer
+    @Mapping(target = "description", ignore = true)
+    @Mapping(target = "created", ignore = true)
+    @Mapping(target = "updated", ignore = true)
+    @Mapping(target = "published", ignore = true)
+    @Mapping(target = "selfLink", ignore = true)
+    @Mapping(target = "upLink", ignore = true)
     CustomerAccountEntity toEntity(CustomerAccountDto dto);
-
 }

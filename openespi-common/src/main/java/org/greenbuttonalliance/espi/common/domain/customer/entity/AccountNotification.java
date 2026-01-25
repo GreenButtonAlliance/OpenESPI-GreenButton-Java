@@ -19,13 +19,16 @@
 
 package org.greenbuttonalliance.espi.common.domain.customer.entity;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.greenbuttonalliance.espi.common.domain.customer.enums.NotificationMethodKind;
 
-import jakarta.persistence.*;
+import java.io.Serializable;
 import java.time.OffsetDateTime;
 
 /**
@@ -38,7 +41,7 @@ import java.time.OffsetDateTime;
 @Data
 @NoArgsConstructor
 @ToString
-public class AccountNotification {
+public class AccountNotification implements Serializable {
 
     /**
      * Method by which the customer was notified.
@@ -64,11 +67,4 @@ public class AccountNotification {
      */
     @Column(name = "customer_notification_kind", length = 256)
     private String customerNotificationKind;
-
-    /**
-     * Customer account this notification belongs to
-     * Note: This should be handled at the Entity level, not in an Embeddable
-     */
-    // @Embedded - Removed as this creates circular reference issues
-    // private CustomerAccountEntity customerAccount;
 }
