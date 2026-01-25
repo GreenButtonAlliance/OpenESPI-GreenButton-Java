@@ -22,6 +22,7 @@ package org.greenbuttonalliance.espi.common.service.customer.impl;
 import lombok.RequiredArgsConstructor;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerAccountEntity;
 import org.greenbuttonalliance.espi.common.repositories.customer.CustomerAccountRepository;
+import org.greenbuttonalliance.espi.common.service.EspiIdGeneratorService;
 import org.greenbuttonalliance.espi.common.service.customer.CustomerAccountService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,9 +33,10 @@ import java.util.UUID;
 
 /**
  * Service implementation for CustomerAccount management.
- * 
+ *
  * Provides business logic for customer account operations including billing,
  * payment tracking, and account status management.
+ * Per Phase 18 guidelines, only ID-based operations on indexed fields are supported.
  */
 @Service
 @Transactional
@@ -42,6 +44,7 @@ import java.util.UUID;
 public class CustomerAccountServiceImpl implements CustomerAccountService {
 
     private final CustomerAccountRepository customerAccountRepository;
+    private final EspiIdGeneratorService espiIdGeneratorService;
 
     @Override
     @Transactional(readOnly = true)
@@ -56,88 +59,28 @@ public class CustomerAccountServiceImpl implements CustomerAccountService {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public Optional<CustomerAccountEntity> findByUuid(String uuid) {
-        return customerAccountRepository.findById(UUID.fromString(uuid));
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<CustomerAccountEntity> findByAccountId(String accountId) {
-        return customerAccountRepository.findByAccountId(accountId);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<CustomerAccountEntity> findByBillingCycle(String billingCycle) {
-        return customerAccountRepository.findByBillingCycle(billingCycle);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<CustomerAccountEntity> findPrePayAccounts() {
-        return customerAccountRepository.findPrePayAccounts();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<CustomerAccountEntity> findBudgetBillAccounts() {
-        return customerAccountRepository.findBudgetBillAccounts();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<CustomerAccountEntity> findByContactInfo(String contactInfo) {
-        return customerAccountRepository.findByContactInfo(contactInfo);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<CustomerAccountEntity> findByLastBillAmountGreaterThan(Long amount) {
-        return customerAccountRepository.findByLastBillAmountGreaterThan(amount);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<CustomerAccountEntity> findByTitleContaining(String title) {
-        return customerAccountRepository.findByTitleContaining(title);
-    }
-
-    @Override
     public CustomerAccountEntity save(CustomerAccountEntity customerAccount) {
-        // Generate UUID if not present
+        // Generate UUID v5 if not present
         if (customerAccount.getId() == null) {
-            customerAccount.setId(UUID.randomUUID());
+            // Generate UUID v5 using accountId as the name component
+            String nameComponent = customerAccount.getAccountId() != null
+                ? customerAccount.getAccountId()
+                : "CustomerAccount-" + System.currentTimeMillis();
+            UUID uuid5 = espiIdGeneratorService.generateSubscriptionId("CustomerAccount", nameComponent);
+            customerAccount.setId(uuid5);
         }
         return customerAccountRepository.save(customerAccount);
     }
 
     @Override
-    public void deleteById(UUID id) {
-        customerAccountRepository.deleteById(id);
+    @Transactional(readOnly = true)
+    public boolean existsById(UUID id) {
+        return customerAccountRepository.existsById(id);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public boolean existsByAccountId(String accountId) {
-        return customerAccountRepository.findByAccountId(accountId).isPresent();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public long countCustomerAccounts() {
+    public long count() {
         return customerAccountRepository.count();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public long countPrePayAccounts() {
-        return customerAccountRepository.findPrePayAccounts().size();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public long countBudgetBillAccounts() {
-        return customerAccountRepository.findBudgetBillAccounts().size();
     }
 }

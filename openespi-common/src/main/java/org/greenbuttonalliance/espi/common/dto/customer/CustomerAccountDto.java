@@ -19,13 +19,12 @@
 
 package org.greenbuttonalliance.espi.common.dto.customer;
 
-import org.greenbuttonalliance.espi.common.dto.atom.LinkDto;
-
 import jakarta.xml.bind.annotation.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.greenbuttonalliance.espi.common.domain.customer.enums.NotificationMethodKind;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -33,15 +32,20 @@ import java.util.List;
 /**
  * CustomerAccount DTO class for JAXB XML marshalling/unmarshalling.
  *
- * Represents a customer account with billing and payment information.
- * Supports Atom protocol XML wrapping.
+ * Assignment of a group of products and services purchased by the customer through a
+ * customer agreement, used as a mechanism for customer billing and payment.
+ * It contains common information from the various types of customer agreements to
+ * create billings (invoices) for a customer and receive payment.
+ *
+ * Extends Document type. Field order matches customer.xsd CustomerAccount definition (lines 118-158)
+ * and Document base type (lines 819-872).
  */
 @XmlRootElement(name = "CustomerAccount", namespace = "http://naesb.org/espi/customer")
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "CustomerAccount", namespace = "http://naesb.org/espi/customer", propOrder = {
-    "published", "updated", "selfLink", "upLink", "relatedLinks",
-    "description", "accountId", "accountNumber", "budgetBill", "billingCycle",
-    "lastBillAmount", "transactionDate", "isPrePay", "customer", "customerAgreements"
+    "type", "authorName", "createdDateTime", "lastModifiedDateTime", "revisionNumber",
+    "electronicAddress", "subject", "title", "docStatus",
+    "billingCycle", "budgetBill", "lastBillAmount", "notifications", "contactInfo", "accountId"
 })
 @Getter
 @Setter
@@ -50,105 +54,173 @@ import java.util.List;
 public class CustomerAccountDto {
 
     @XmlTransient
-    private Long id;
-
-    @XmlAttribute(name = "mRID")
     private String uuid;
 
-    @XmlElement(name = "published")
-    private OffsetDateTime published;
+    // ========== Document fields (customer.xsd lines 819-872) ==========
 
-    @XmlElement(name = "updated")
-    private OffsetDateTime updated;
+    /**
+     * Type of this document.
+     */
+    @XmlElement(name = "type", namespace = "http://naesb.org/espi/customer")
+    private String type;
 
-    @XmlElement(name = "link", namespace = "http://www.w3.org/2005/Atom")
-    @XmlElementWrapper(name = "links", namespace = "http://www.w3.org/2005/Atom")
-    private List<LinkDto> relatedLinks;
+    /**
+     * Name of the author of this document.
+     */
+    @XmlElement(name = "authorName", namespace = "http://naesb.org/espi/customer")
+    private String authorName;
 
-    @XmlElement(name = "link", namespace = "http://www.w3.org/2005/Atom")
-    private LinkDto selfLink;
+    /**
+     * Date and time that this document was created.
+     */
+    @XmlElement(name = "createdDateTime", namespace = "http://naesb.org/espi/customer")
+    private OffsetDateTime createdDateTime;
 
-    @XmlElement(name = "link", namespace = "http://www.w3.org/2005/Atom")
-    private LinkDto upLink;
+    /**
+     * Date and time that this document was last modified.
+     */
+    @XmlElement(name = "lastModifiedDateTime", namespace = "http://naesb.org/espi/customer")
+    private OffsetDateTime lastModifiedDateTime;
 
-    @XmlElement(name = "description")
-    private String description;
+    /**
+     * Revision number for this document.
+     */
+    @XmlElement(name = "revisionNumber", namespace = "http://naesb.org/espi/customer")
+    private String revisionNumber;
 
-    @XmlElement(name = "accountId")
-    private String accountId;
+    /**
+     * Electronic address for the document.
+     */
+    @XmlElement(name = "electronicAddress", namespace = "http://naesb.org/espi/customer")
+    private CustomerDto.ElectronicAddressDto electronicAddress;
 
-    @XmlElement(name = "accountNumber")
-    private String accountNumber;
+    /**
+     * Subject of this document, intended for this document to be found by a search engine.
+     */
+    @XmlElement(name = "subject", namespace = "http://naesb.org/espi/customer")
+    private String subject;
 
-    @XmlElement(name = "budgetBill")
-    private String budgetBill;
+    /**
+     * Title of this document.
+     */
+    @XmlElement(name = "title", namespace = "http://naesb.org/espi/customer")
+    private String title;
 
-    @XmlElement(name = "billingCycle")
+    /**
+     * Status of this document.
+     */
+    @XmlElement(name = "docStatus", namespace = "http://naesb.org/espi/customer")
+    private StatusDto docStatus;
+
+    // ========== CustomerAccount fields (customer.xsd lines 118-158) ==========
+
+    /**
+     * Cycle day on which the associated customer account will normally be billed,
+     * used to determine when to produce the billing.
+     */
+    @XmlElement(name = "billingCycle", namespace = "http://naesb.org/espi/customer")
     private String billingCycle;
 
-    @XmlElement(name = "lastBillAmount")
+    /**
+     * Budget bill code.
+     */
+    @XmlElement(name = "budgetBill", namespace = "http://naesb.org/espi/customer")
+    private String budgetBill;
+
+    /**
+     * The last amount that will be billed to the customer prior to shut off of the account.
+     */
+    @XmlElement(name = "lastBillAmount", namespace = "http://naesb.org/espi/customer")
     private Long lastBillAmount;
 
-    @XmlElement(name = "transactionDate")
-    private OffsetDateTime transactionDate;
-
-    @XmlElement(name = "isPrePay")
-    private Boolean isPrePay;
-
-    @XmlElement(name = "Customer")
-    private CustomerDto customer;
-
-    @XmlElement(name = "CustomerAgreement")
-    @XmlElementWrapper(name = "CustomerAgreements")
-    private List<CustomerAgreementDto> customerAgreements;
+    /**
+     * Set of customer account notifications.
+     */
+    @XmlElement(name = "AccountNotification", namespace = "http://naesb.org/espi/customer")
+    @XmlElementWrapper(name = "notifications", namespace = "http://naesb.org/espi/customer")
+    private List<AccountNotificationDto> notifications;
 
     /**
-     * Minimal constructor for basic account data.
+     * [extension] Customer contact information used to identify individual
+     * responsible for billing and payment of CustomerAccount.
      */
-    public CustomerAccountDto(String uuid, String accountNumber) {
-        this(null, uuid, null, null, null, null, null, null,
-             null, accountNumber, null, null, null, null, null, null, null);
+    @XmlElement(name = "contactInfo", namespace = "http://naesb.org/espi/customer")
+    private CustomerDto.OrganisationDto contactInfo;
+
+    /**
+     * [extension] Customer account identifier.
+     */
+    @XmlElement(name = "accountId", namespace = "http://naesb.org/espi/customer")
+    private String accountId;
+
+    /**
+     * Nested DTO for Status information.
+     * Matches customer.xsd Status type (lines 1149-1173).
+     * XML type name is "DocStatus" to avoid conflict with CustomerDto.StatusDto.
+     */
+    @XmlAccessorType(XmlAccessType.FIELD)
+    @XmlType(name = "DocStatus", namespace = "http://naesb.org/espi/customer", propOrder = {
+        "value", "dateTime", "reason"
+    })
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class StatusDto {
+        /**
+         * Status value.
+         */
+        @XmlElement(name = "value", namespace = "http://naesb.org/espi/customer")
+        private String value;
+
+        /**
+         * Date and time status was last changed.
+         */
+        @XmlElement(name = "dateTime", namespace = "http://naesb.org/espi/customer")
+        private OffsetDateTime dateTime;
+
+        /**
+         * Reason for status change.
+         */
+        @XmlElement(name = "reason", namespace = "http://naesb.org/espi/customer")
+        private String reason;
     }
 
     /**
-     * Gets the self href for this customer account.
-     *
-     * @return self href string
+     * Nested DTO for AccountNotification information.
+     * [extension] Customer action notification (e.g., delinquency, move in, move out).
      */
-    public String getSelfHref() {
-        return selfLink != null ? selfLink.getHref() : null;
-    }
+    @XmlAccessorType(XmlAccessType.FIELD)
+    @XmlType(name = "AccountNotification", namespace = "http://naesb.org/espi/customer", propOrder = {
+        "methodKind", "time", "note", "customerNotificationKind"
+    })
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class AccountNotificationDto {
+        /**
+         * Method by which the customer was notified.
+         */
+        @XmlElement(name = "methodKind", namespace = "http://naesb.org/espi/customer")
+        private NotificationMethodKind methodKind;
 
-    /**
-     * Gets the up href for this customer account.
-     *
-     * @return up href string
-     */
-    public String getUpHref() {
-        return upLink != null ? upLink.getHref() : null;
-    }
+        /**
+         * Time/date of notification.
+         */
+        @XmlElement(name = "time", namespace = "http://naesb.org/espi/customer")
+        private OffsetDateTime time;
 
-    /**
-     * Generates the default self href for a customer account.
-     *
-     * @return default self href
-     */
-    public String generateSelfHref() {
-        if (uuid != null && customer != null && customer.getUuid() != null) {
-            return "/espi/1_1/resource/Customer/" + customer.getUuid() + "/CustomerAccount/" + uuid;
-        }
-        return uuid != null ? "/espi/1_1/resource/CustomerAccount/" + uuid : null;
-    }
+        /**
+         * Annotation of the reason for the notification.
+         */
+        @XmlElement(name = "note", namespace = "http://naesb.org/espi/customer")
+        private String note;
 
-    /**
-     * Generates the default up href for a customer account.
-     *
-     * @return default up href
-     */
-    public String generateUpHref() {
-        if (customer != null && customer.getUuid() != null) {
-            return "/espi/1_1/resource/Customer/" + customer.getUuid() + "/CustomerAccount";
-        }
-        return "/espi/1_1/resource/CustomerAccount";
+        /**
+         * Type of customer notification (delinquency, move in, move out ...).
+         */
+        @XmlElement(name = "customerNotificationKind", namespace = "http://naesb.org/espi/customer")
+        private String customerNotificationKind;
     }
 }

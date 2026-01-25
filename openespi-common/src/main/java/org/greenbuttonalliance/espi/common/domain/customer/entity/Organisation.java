@@ -24,6 +24,8 @@ import jakarta.persistence.Embeddable;
 import jakarta.persistence.Embedded;
 import lombok.*;
 
+import java.io.Serializable;
+
 /**
  * Embeddable class for Organisation information.
  * 
@@ -35,7 +37,7 @@ import lombok.*;
 @Setter
 @NoArgsConstructor
 @ToString
-public class Organisation {
+public class Organisation implements Serializable {
 
     /**
      * Organisation name (replaces deprecated 'name' field)
@@ -70,7 +72,7 @@ public class Organisation {
     @Embeddable
     @Data
     @NoArgsConstructor
-    public static class StreetAddress {
+    public static class StreetAddress implements Serializable {
         @Column(name = "street_detail", length = 256)
         private String streetDetail;
         
@@ -95,7 +97,7 @@ public class Organisation {
     @Embeddable
     @Data
     @NoArgsConstructor
-    public static class ElectronicAddress {
+    public static class ElectronicAddress implements Serializable {
         @Column(name = "email1", length = 256)
         private String email1;
         

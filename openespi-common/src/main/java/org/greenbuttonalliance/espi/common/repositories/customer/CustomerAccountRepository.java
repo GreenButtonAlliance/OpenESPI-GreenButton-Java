@@ -21,61 +21,19 @@ package org.greenbuttonalliance.espi.common.repositories.customer;
 
 import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerAccountEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
  * Spring Data JPA repository for CustomerAccount entities.
  * <p>
  * Manages customer billing and payment account data with proper PII separation.
+ * Per Phase 18 guidelines, only ID-based queries on indexed fields are supported.
+ * All queries use the primary key (UUID) provided by JpaRepository.
  */
 @Repository
 public interface CustomerAccountRepository extends JpaRepository<CustomerAccountEntity, UUID> {
-
-    /**
-     * Find customer account by account ID.
-     */
-    @Query("SELECT ca FROM CustomerAccountEntity ca WHERE ca.accountId = :accountId")
-    Optional<CustomerAccountEntity> findByAccountId(@Param("accountId") String accountId);
-
-    /**
-     * Find customer accounts by billing cycle.
-     */
-    @Query("SELECT ca FROM CustomerAccountEntity ca WHERE ca.billingCycle = :billingCycle")
-    List<CustomerAccountEntity> findByBillingCycle(@Param("billingCycle") String billingCycle);
-
-    /**
-     * Find customer accounts that are pre-pay.
-     */
-    @Query("SELECT ca FROM CustomerAccountEntity ca WHERE ca.isPrePay = true")
-    List<CustomerAccountEntity> findPrePayAccounts();
-
-    /**
-     * Find customer accounts with budget billing.
-     */
-    @Query("SELECT ca FROM CustomerAccountEntity ca WHERE ca.budgetBill IS NOT NULL AND ca.budgetBill != ''")
-    List<CustomerAccountEntity> findBudgetBillAccounts();
-
-    /**
-     * Find customer accounts by contact info (now simplified to String).
-     */
-    @Query("SELECT ca FROM CustomerAccountEntity ca WHERE ca.contactInfo = :contactInfo")
-    List<CustomerAccountEntity> findByContactInfo(@Param("contactInfo") String contactInfo);
-
-    /**
-     * Find customer accounts with last bill amount greater than specified value.
-     */
-    @Query("SELECT ca FROM CustomerAccountEntity ca WHERE ca.lastBillAmount > :amount")
-    List<CustomerAccountEntity> findByLastBillAmountGreaterThan(@Param("amount") Long amount);
-
-    /**
-     * Find customer accounts by title (from Document base class).
-     */
-    @Query("SELECT ca FROM CustomerAccountEntity ca WHERE UPPER(ca.title) LIKE UPPER(CONCAT('%', :title, '%'))")
-    List<CustomerAccountEntity> findByTitleContaining(@Param("title") String title);
+    // All query methods inherited from JpaRepository use the primary key UUID index
+    // findById(UUID id), findAll(), save(), delete(), etc.
 }
