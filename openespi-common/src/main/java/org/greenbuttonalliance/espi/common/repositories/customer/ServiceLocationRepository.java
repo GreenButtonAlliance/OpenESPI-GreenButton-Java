@@ -32,54 +32,41 @@ import java.util.UUID;
  * Spring Data JPA repository for ServiceLocationEntity entities.
  * <p>
  * Manages real estate location data including addresses, access methods, and service delivery points.
+ * <p>
+ * Only contains queries on indexed fields to ensure efficient database access.
+ * Removed non-indexed queries in Phase 23 cleanup (findLocationsThatNeedInspection,
+ * findLocationsWithAccessProblems, findByMainAddressStreetContaining, findByDirectionContaining,
+ * findByPhone1AreaCode).
  */
 @Repository
 public interface ServiceLocationRepository extends JpaRepository<ServiceLocationEntity, UUID> {
 
     /**
      * Find service locations by outage block.
+     * Outage block is indexed for efficient lookups.
+     *
+     * @param outageBlock the outage block identifier
+     * @return list of service locations in the outage block
      */
     @Query("SELECT sl FROM ServiceLocationEntity sl WHERE sl.outageBlock = :outageBlock")
     List<ServiceLocationEntity> findByOutageBlock(@Param("outageBlock") String outageBlock);
 
     /**
-     * Find service locations that need inspection.
-     */
-    @Query("SELECT sl FROM ServiceLocationEntity sl WHERE sl.needsInspection = true")
-    List<ServiceLocationEntity> findLocationsThatNeedInspection();
-
-    /**
-     * Find service locations with access problems.
-     */
-    @Query("SELECT sl FROM ServiceLocationEntity sl WHERE sl.siteAccessProblem IS NOT NULL AND sl.siteAccessProblem != ''")
-    List<ServiceLocationEntity> findLocationsWithAccessProblems();
-
-    /**
-     * Find service locations by main street address.
-     */
-    @Query("SELECT sl FROM ServiceLocationEntity sl WHERE UPPER(sl.mainAddress.streetDetail) LIKE UPPER(CONCAT('%', :street, '%'))")
-    List<ServiceLocationEntity> findByMainAddressStreetContaining(@Param("street") String street);
-
-    /**
-     * Find service locations by direction.
-     */
-    @Query("SELECT sl FROM ServiceLocationEntity sl WHERE UPPER(sl.direction) LIKE UPPER(CONCAT('%', :direction, '%'))")
-    List<ServiceLocationEntity> findByDirectionContaining(@Param("direction") String direction);
-
-    /**
      * Find service locations by location type.
+     * Type is indexed for efficient classification lookups.
+     *
+     * @param type the location type classification
+     * @return list of service locations of the given type
      */
     @Query("SELECT sl FROM ServiceLocationEntity sl WHERE sl.type = :type")
     List<ServiceLocationEntity> findByType(@Param("type") String type);
 
     /**
-     * Find service locations by phone area code.
-     */
-    @Query("SELECT sl FROM ServiceLocationEntity sl JOIN sl.phoneNumbers pn WHERE pn.areaCode = :areaCode")
-    List<ServiceLocationEntity> findByPhone1AreaCode(@Param("areaCode") String areaCode);
-
-    /**
      * Find service locations by geo info reference.
+     * Geo info reference is indexed for efficient geographic lookups.
+     *
+     * @param geoInfoReference the geographical information reference
+     * @return list of service locations with the given geo info reference
      */
     @Query("SELECT sl FROM ServiceLocationEntity sl WHERE sl.geoInfoReference = :geoInfoReference")
     List<ServiceLocationEntity> findByGeoInfoReference(@Param("geoInfoReference") String geoInfoReference);

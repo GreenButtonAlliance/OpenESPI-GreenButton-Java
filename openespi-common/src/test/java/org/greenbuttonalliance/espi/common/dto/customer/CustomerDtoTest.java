@@ -273,12 +273,12 @@ class CustomerDtoTest {
             "PO Box 456", "Springfield", "IL", "62702", "USA"
         );
 
-        CustomerDto.PhoneNumberDto phone1 = new CustomerDto.PhoneNumberDto(
-            "217", null, "555-1234", null
+        CustomerDto.TelephoneNumberDto phone1 = new CustomerDto.TelephoneNumberDto(
+            "1", "217", null, "555-1234", null, null, null, null
         );
 
-        CustomerDto.PhoneNumberDto phone2 = new CustomerDto.PhoneNumberDto(
-            "217", null, "555-5678", "101"
+        CustomerDto.TelephoneNumberDto phone2 = new CustomerDto.TelephoneNumberDto(
+            "1", "217", null, "555-5678", "101", null, null, null
         );
 
         CustomerDto.ElectronicAddressDto electronicAddress = new CustomerDto.ElectronicAddressDto(
@@ -289,10 +289,11 @@ class CustomerDtoTest {
             streetAddress, postalAddress, phone1, phone2, electronicAddress, "ACME Energy Services"
         );
 
-        CustomerDto.StatusDto status = new CustomerDto.StatusDto(
+        StatusDto status = new StatusDto(
             "ACTIVE",
             OffsetDateTime.of(2025, 1, 15, 10, 30, 0, 0, ZoneOffset.UTC),
-            "Account in good standing"
+            "Account in good standing",
+            null
         );
 
         CustomerDto.PriorityDto priority = new CustomerDto.PriorityDto(5, 1, "STANDARD");

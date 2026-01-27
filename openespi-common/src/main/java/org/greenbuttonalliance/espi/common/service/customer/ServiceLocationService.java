@@ -54,34 +54,9 @@ public interface ServiceLocationService {
     List<ServiceLocationEntity> findByOutageBlock(String outageBlock);
 
     /**
-     * Find service locations that need inspection.
-     */
-    List<ServiceLocationEntity> findLocationsThatNeedInspection();
-
-    /**
-     * Find service locations with access problems.
-     */
-    List<ServiceLocationEntity> findLocationsWithAccessProblems();
-
-    /**
-     * Find service locations by main address street.
-     */
-    List<ServiceLocationEntity> findByMainAddressStreetContaining(String street);
-
-    /**
-     * Find service locations by direction.
-     */
-    List<ServiceLocationEntity> findByDirectionContaining(String direction);
-
-    /**
      * Find service locations by type.
      */
     List<ServiceLocationEntity> findByType(String type);
-
-    /**
-     * Find service locations by phone area code.
-     */
-    List<ServiceLocationEntity> findByPhone1AreaCode(String areaCode);
 
     /**
      * Find service locations by geo info reference.
@@ -112,14 +87,4 @@ public interface ServiceLocationService {
      * Count total service locations.
      */
     long countServiceLocationEntitys();
-
-    /**
-     * Count locations needing inspection.
-     */
-    long countLocationsNeedingInspection();
-
-    /**
-     * Count locations with access problems.
-     */
-    long countLocationsWithAccessProblems();
 }

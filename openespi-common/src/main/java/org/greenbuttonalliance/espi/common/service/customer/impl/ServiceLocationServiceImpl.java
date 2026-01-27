@@ -68,38 +68,8 @@ public class ServiceLocationServiceImpl implements ServiceLocationService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ServiceLocationEntity> findLocationsThatNeedInspection() {
-        return serviceLocationRepository.findLocationsThatNeedInspection();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<ServiceLocationEntity> findLocationsWithAccessProblems() {
-        return serviceLocationRepository.findLocationsWithAccessProblems();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<ServiceLocationEntity> findByMainAddressStreetContaining(String street) {
-        return serviceLocationRepository.findByMainAddressStreetContaining(street);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<ServiceLocationEntity> findByDirectionContaining(String direction) {
-        return serviceLocationRepository.findByDirectionContaining(direction);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public List<ServiceLocationEntity> findByType(String type) {
         return serviceLocationRepository.findByType(type);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<ServiceLocationEntity> findByPhone1AreaCode(String areaCode) {
-        return serviceLocationRepository.findByPhone1AreaCode(areaCode);
     }
 
     @Override
@@ -148,17 +118,5 @@ public class ServiceLocationServiceImpl implements ServiceLocationService {
     @Transactional(readOnly = true)
     public long countServiceLocationEntitys() {
         return serviceLocationRepository.count();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public long countLocationsNeedingInspection() {
-        return serviceLocationRepository.findLocationsThatNeedInspection().size();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public long countLocationsWithAccessProblems() {
-        return serviceLocationRepository.findLocationsWithAccessProblems().size();
     }
 }

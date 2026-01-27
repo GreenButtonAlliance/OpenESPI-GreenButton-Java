@@ -56,28 +56,52 @@ public class PhoneNumberEntity {
     private UUID id;
 
     /**
-     * Area code for phone number.
+     * Country code (per customer.xsd TelephoneNumber).
      */
-    @Column(name = "area_code", length = 10)
+    @Column(name = "country_code", length = 256)
+    private String countryCode;
+
+    /**
+     * Area or region code (per customer.xsd TelephoneNumber).
+     */
+    @Column(name = "area_code", length = 256)
     private String areaCode;
 
     /**
-     * City code for phone number.
+     * City code (per customer.xsd TelephoneNumber).
      */
-    @Column(name = "city_code", length = 10)
+    @Column(name = "city_code", length = 256)
     private String cityCode;
 
     /**
-     * Local number for phone number.
+     * Main (local) part of this telephone number (per customer.xsd TelephoneNumber).
      */
-    @Column(name = "local_number", length = 20)
+    @Column(name = "local_number", length = 256)
     private String localNumber;
 
     /**
-     * Extension for phone number.
+     * Extension for this telephone number (per customer.xsd TelephoneNumber "ext" element).
      */
-    @Column(name = "extension", length = 10)
+    @Column(name = "extension", length = 256)
     private String extension;
+
+    /**
+     * Dial out code, for instance to call outside an enterprise (per customer.xsd TelephoneNumber).
+     */
+    @Column(name = "dial_out", length = 256)
+    private String dialOut;
+
+    /**
+     * Prefix used when calling an international number (per customer.xsd TelephoneNumber).
+     */
+    @Column(name = "international_prefix", length = 256)
+    private String internationalPrefix;
+
+    /**
+     * Phone number according to ITU E.164 (per customer.xsd TelephoneNumber).
+     */
+    @Column(name = "itu_phone", length = 256)
+    private String ituPhone;
 
     /**
      * Type of phone number (PRIMARY, SECONDARY, etc.).

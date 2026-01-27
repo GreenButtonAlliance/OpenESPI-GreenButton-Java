@@ -23,9 +23,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
 import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
-import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.proxy.HibernateProxy;
 
 import java.util.List;
@@ -43,7 +41,8 @@ import java.util.Objects;
 @Getter
 @Setter
 @NoArgsConstructor
-public class ServiceLocationEntity extends IdentifiedObject {
+public class
+ServiceLocationEntity extends IdentifiedObject {
 
     // Location fields (previously inherited from Location superclass)
     
@@ -58,52 +57,66 @@ public class ServiceLocationEntity extends IdentifiedObject {
      * Main address of the location.
      */
     @Embedded
-    @AttributeOverrides({
-        @AttributeOverride(name = "streetDetail", column = @Column(name = "main_street_detail")),
-        @AttributeOverride(name = "townDetail", column = @Column(name = "main_town_detail")),
-        @AttributeOverride(name = "stateOrProvince", column = @Column(name = "main_state_or_province")),
-        @AttributeOverride(name = "postalCode", column = @Column(name = "main_postal_code")),
-        @AttributeOverride(name = "country", column = @Column(name = "main_country"))
-    })
+    @AttributeOverride(name = "streetDetail", column = @Column(name = "main_street_detail"))
+    @AttributeOverride(name = "townDetail", column = @Column(name = "main_town_detail"))
+    @AttributeOverride(name = "stateOrProvince", column = @Column(name = "main_state_or_province"))
+    @AttributeOverride(name = "postalCode", column = @Column(name = "main_postal_code"))
+    @AttributeOverride(name = "country", column = @Column(name = "main_country"))
     private Organisation.StreetAddress mainAddress;
 
     /**
      * Secondary address of the location. For example, PO Box address may have different ZIP code than that in the 'mainAddress'.
      */
     @Embedded
-    @AttributeOverrides({
-        @AttributeOverride(name = "streetDetail", column = @Column(name = "secondary_street_detail")),
-        @AttributeOverride(name = "townDetail", column = @Column(name = "secondary_town_detail")),
-        @AttributeOverride(name = "stateOrProvince", column = @Column(name = "secondary_state_or_province")),
-        @AttributeOverride(name = "postalCode", column = @Column(name = "secondary_postal_code")),
-        @AttributeOverride(name = "country", column = @Column(name = "secondary_country"))
-    })
+    @AttributeOverride(name = "streetDetail", column = @Column(name = "secondary_street_detail"))
+    @AttributeOverride(name = "townDetail", column = @Column(name = "secondary_town_detail"))
+    @AttributeOverride(name = "stateOrProvince", column = @Column(name = "secondary_state_or_province"))
+    @AttributeOverride(name = "postalCode", column = @Column(name = "secondary_postal_code"))
+    @AttributeOverride(name = "country", column = @Column(name = "secondary_country"))
     private Organisation.StreetAddress secondaryAddress;
 
     /**
-     * Phone numbers associated with this service location.
-     * Uses separate PhoneNumberEntity table to avoid JPA mapping conflicts.
+     * Primary phone number for this service location.
+     * Per customer.xsd Location.phone1 (TelephoneNumber type, lines 1428-1478).
      */
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    @JoinColumn(name = "parent_entity_uuid", referencedColumnName = "id")
-    @SQLRestriction("parent_entity_type = 'ServiceLocationEntity'")
-    @ToString.Exclude
-    private List<PhoneNumberEntity> phoneNumbers;
+    @Embedded
+    @AttributeOverride(name = "countryCode", column = @Column(name = "phone1_country_code"))
+    @AttributeOverride(name = "areaCode", column = @Column(name = "phone1_area_code"))
+    @AttributeOverride(name = "cityCode", column = @Column(name = "phone1_city_code"))
+    @AttributeOverride(name = "localNumber", column = @Column(name = "phone1_local_number"))
+    @AttributeOverride(name = "ext", column = @Column(name = "phone1_ext"))
+    @AttributeOverride(name = "dialOut", column = @Column(name = "phone1_dial_out"))
+    @AttributeOverride(name = "internationalPrefix", column = @Column(name = "phone1_international_prefix"))
+    @AttributeOverride(name = "ituPhone", column = @Column(name = "phone1_itu_phone"))
+    private Organisation.TelephoneNumber phone1;
+
+    /**
+     * Secondary phone number for this service location.
+     * Per customer.xsd Location.phone2 (TelephoneNumber type, lines 1428-1478).
+     */
+    @Embedded
+    @AttributeOverride(name = "countryCode", column = @Column(name = "phone2_country_code"))
+    @AttributeOverride(name = "areaCode", column = @Column(name = "phone2_area_code"))
+    @AttributeOverride(name = "cityCode", column = @Column(name = "phone2_city_code"))
+    @AttributeOverride(name = "localNumber", column = @Column(name = "phone2_local_number"))
+    @AttributeOverride(name = "ext", column = @Column(name = "phone2_ext"))
+    @AttributeOverride(name = "dialOut", column = @Column(name = "phone2_dial_out"))
+    @AttributeOverride(name = "internationalPrefix", column = @Column(name = "phone2_international_prefix"))
+    @AttributeOverride(name = "ituPhone", column = @Column(name = "phone2_itu_phone"))
+    private Organisation.TelephoneNumber phone2;
 
     /**
      * Electronic address.
      */
     @Embedded
-    @AttributeOverrides({
-        @AttributeOverride(name = "lan", column = @Column(name = "electronic_lan")),
-        @AttributeOverride(name = "mac", column = @Column(name = "electronic_mac")),
-        @AttributeOverride(name = "email1", column = @Column(name = "electronic_email1")),
-        @AttributeOverride(name = "email2", column = @Column(name = "electronic_email2")),
-        @AttributeOverride(name = "web", column = @Column(name = "electronic_web")),
-        @AttributeOverride(name = "radio", column = @Column(name = "electronic_radio")),
-        @AttributeOverride(name = "userID", column = @Column(name = "electronic_user_id")),
-        @AttributeOverride(name = "password", column = @Column(name = "electronic_password"))
-    })
+    @AttributeOverride(name = "lan", column = @Column(name = "electronic_lan"))
+    @AttributeOverride(name = "mac", column = @Column(name = "electronic_mac"))
+    @AttributeOverride(name = "email1", column = @Column(name = "electronic_email1"))
+    @AttributeOverride(name = "email2", column = @Column(name = "electronic_email2"))
+    @AttributeOverride(name = "web", column = @Column(name = "electronic_web"))
+    @AttributeOverride(name = "radio", column = @Column(name = "electronic_radio"))
+    @AttributeOverride(name = "userID", column = @Column(name = "electronic_user_id"))
+    @AttributeOverride(name = "password", column = @Column(name = "electronic_password"))
     private Organisation.ElectronicAddress electronicAddress;
 
     /**
@@ -122,12 +135,11 @@ public class ServiceLocationEntity extends IdentifiedObject {
      * Status of this location.
      */
     @Embedded
-    @AttributeOverrides({
-        @AttributeOverride(name = "value", column = @Column(name = "status_value")),
-        @AttributeOverride(name = "dateTime", column = @Column(name = "status_date_time")),
-        @AttributeOverride(name = "reason", column = @Column(name = "status_reason"))
-    })
-    private CustomerEntity.Status status;
+    @AttributeOverride(name = "value", column = @Column(name = "status_value"))
+    @AttributeOverride(name = "dateTime", column = @Column(name = "status_date_time"))
+    @AttributeOverride(name = "remark", column = @Column(name = "status_remark"))
+    @AttributeOverride(name = "reason", column = @Column(name = "status_reason"))
+    private Status status;
 
     // WorkLocation fields (WorkLocation is simply a Location specialized for work activities - no additional fields)
 
@@ -148,18 +160,31 @@ public class ServiceLocationEntity extends IdentifiedObject {
     private String siteAccessProblem;
 
     /**
-     * True if inspection is needed of facilities at this service location. This could be requested by a customer, 
+     * True if inspection is needed of facilities at this service location. This could be requested by a customer,
      * due to suspected tampering, environmental concerns (e.g., a fire in the vicinity), or to correct incompatible data.
      */
     @Column(name = "needs_inspection")
     private Boolean needsInspection;
 
     /**
-     * All usage points delivering service (of the same type) to this service location.
-     * TODO: Create UsagePointsEntity and enable this relationship
+     * Collection of UsagePoint resource href URLs (cross-stream reference from customer.xsd to usage.xsd).
+     * Stores the Atom self-link href URLs for UsagePoint resources, NOT Atom link elements.
+     * Each string is the UsagePoint's atom:link[@rel='self']/@href value.
+     *
+     * Per ESPI 4.0 customer.xsd lines 1106-1111: UsagePoints element contains sequence of UsagePoint elements,
+     * where each UsagePoint is of type xs:anyURI.
+     *
+     * Example: ["https://api.example.com/espi/1_1/resource/UsagePoint/12345",
+     *           "https://api.example.com/espi/1_1/resource/UsagePoint/67890"]
+     *
+     * ServiceLocation exists in PII data stream, UsagePoint exists in non-PII data stream.
+     * This collection provides cross-stream references without violating data separation.
      */
-    // @OneToMany(mappedBy = "serviceLocation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    // private List<UsagePointsEntity> usagePoints;
+    @ElementCollection
+    @CollectionTable(name = "service_location_usage_point_hrefs",
+                     joinColumns = @JoinColumn(name = "service_location_id"))
+    @Column(name = "usage_point_href", length = 512)
+    private List<String> usagePointHrefs;
 
     /**
      * [extension] Outage Block Identifier
@@ -215,6 +240,7 @@ public class ServiceLocationEntity extends IdentifiedObject {
                 "accessMethod = " + getAccessMethod() + ", " +
                 "siteAccessProblem = " + getSiteAccessProblem() + ", " +
                 "needsInspection = " + getNeedsInspection() + ", " +
+                "usagePointHrefs = " + getUsagePointHrefs() + ", " +
                 "outageBlock = " + getOutageBlock() + ", " +
                 "description = " + getDescription() + ", " +
                 "created = " + getCreated() + ", " +

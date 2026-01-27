@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="GreenButtonDataStyleSheet.xslt"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <id>urn:uuid:test-feed</id>
+  <title>Test Feed</title>
+  <published>2026-01-18T12:17:12Z</published>
+  <updated>2026-01-18T12:17:12Z</updated>
+  <entry xmlns:espi="http://naesb.org/espi">
+    <id>urn:uuid:FE9A61BB-6913-52D4-88BE-9634A218EF53</id>
+    <title>Interval Block</title>
+    <published>2026-01-18T12:17:12Z</published>
+    <updated>2026-01-18T12:17:12Z</updated>
+    <link rel="self" href="/espi/1_1/resource/RetailCustomer/9B6C7066/UsagePoint/5446AF3F/MeterReading/01/IntervalBlock/173"/>
+    <link rel="up" href="/espi/1_1/resource/RetailCustomer/9B6C7066/UsagePoint/5446AF3F/MeterReading/01/IntervalBlock"/>
+    <content>
+      <espi:IntervalBlock>
+        <interval xmlns="">
+          <start>1330578000</start>
+          <duration>86400</duration>
+        </interval>
+        <IntervalReading xmlns="">
+          <cost>974</cost>
+          <ReadingQuality>
+            <quality>8</quality>
+          </ReadingQuality>
+          <timePeriod>
+            <start>1330578000</start>
+            <duration>900</duration>
+          </timePeriod>
+          <value>282</value>
+        </IntervalReading>
+        <IntervalReading xmlns="">
+          <cost>965</cost>
+          <ReadingQuality>
+            <quality>7</quality>
+          </ReadingQuality>
+          <timePeriod>
+            <start>1330578900</start>
+            <duration>900</duration>
+          </timePeriod>
+          <value>323</value>
+        </IntervalReading>
+        <IntervalReading xmlns="">
+          <cost>884</cost>
+          <timePeriod>
+            <start>1330579800</start>
+            <duration>900</duration>
+          </timePeriod>
+          <value>294</value>
+        </IntervalReading>
+        <IntervalReading xmlns="">
+          <cost>995</cost>
+          <timePeriod>
+            <start>1330580700</start>
+            <duration>900</duration>
+          </timePeriod>
+          <value>331</value>
+        </IntervalReading>
+      </espi:IntervalBlock>
+    </content>
+  </entry>
+</feed>

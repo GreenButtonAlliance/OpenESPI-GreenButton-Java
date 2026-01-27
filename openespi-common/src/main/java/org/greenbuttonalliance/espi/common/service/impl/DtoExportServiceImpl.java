@@ -264,6 +264,7 @@ public class DtoExportServiceImpl implements DtoExportService {
             org.greenbuttonalliance.espi.common.dto.customer.ServiceLocationDto.class,
             org.greenbuttonalliance.espi.common.dto.customer.StatementDto.class,
             org.greenbuttonalliance.espi.common.dto.customer.StatementRefDto.class,
+            org.greenbuttonalliance.espi.common.dto.customer.StatusDto.class,
 
             // Dynamic class parameter
             dtoClass
