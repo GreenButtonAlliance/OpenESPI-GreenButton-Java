@@ -59,10 +59,14 @@ public class ServiceSupplierEntity extends IdentifiedObject {
         @AttributeOverride(name = "postalAddress.stateOrProvince", column = @Column(name = "supplier_postal_state_or_province")),
         @AttributeOverride(name = "postalAddress.postalCode", column = @Column(name = "supplier_postal_postal_code")),
         @AttributeOverride(name = "postalAddress.country", column = @Column(name = "supplier_postal_country")),
+        @AttributeOverride(name = "electronicAddress.lan", column = @Column(name = "supplier_lan")),
+        @AttributeOverride(name = "electronicAddress.mac", column = @Column(name = "supplier_mac")),
         @AttributeOverride(name = "electronicAddress.email1", column = @Column(name = "supplier_email1")),
         @AttributeOverride(name = "electronicAddress.email2", column = @Column(name = "supplier_email2")),
         @AttributeOverride(name = "electronicAddress.web", column = @Column(name = "supplier_web")),
-        @AttributeOverride(name = "electronicAddress.radio", column = @Column(name = "supplier_radio"))
+        @AttributeOverride(name = "electronicAddress.radio", column = @Column(name = "supplier_radio")),
+        @AttributeOverride(name = "electronicAddress.userID", column = @Column(name = "supplier_user_id")),
+        @AttributeOverride(name = "electronicAddress.password", column = @Column(name = "supplier_password"))
     })
     private Organisation organisation;
 

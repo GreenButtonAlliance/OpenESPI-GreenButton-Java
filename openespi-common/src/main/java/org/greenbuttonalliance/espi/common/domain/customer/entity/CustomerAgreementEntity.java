@@ -32,15 +32,21 @@ import java.util.Objects;
 
 /**
  * Pure JPA/Hibernate entity for CustomerAgreement without JAXB concerns.
- * 
- * Agreement between the customer and the service supplier to pay for service at a specific service location. 
- * It records certain billing information about the type of service provided at the service location and is 
+ *
+ * Agreement between the customer and the service supplier to pay for service at a specific service location.
+ * It records certain billing information about the type of service provided at the service location and is
  * used during charge creation to determine the type of service.
- * 
+ *
  * This is an actual ESPI resource entity that extends IdentifiedObject directly.
  */
 @Entity
 @Table(name = "customer_agreements")
+@AttributeOverride(name = "upLink.rel", column = @Column(name = "customer_agreement_up_link_rel"))
+@AttributeOverride(name = "upLink.href", column = @Column(name = "customer_agreement_up_link_href"))
+@AttributeOverride(name = "upLink.type", column = @Column(name = "customer_agreement_up_link_type"))
+@AttributeOverride(name = "selfLink.rel", column = @Column(name = "customer_agreement_self_link_rel"))
+@AttributeOverride(name = "selfLink.href", column = @Column(name = "customer_agreement_self_link_href"))
+@AttributeOverride(name = "selfLink.type", column = @Column(name = "customer_agreement_self_link_type"))
 @Getter
 @Setter
 @NoArgsConstructor
@@ -48,7 +54,20 @@ import java.util.Objects;
 public class CustomerAgreementEntity extends IdentifiedObject {
 
     // Document fields (previously inherited from Document superclass)
-    
+    // Field order matches customer.xsd Document type definition (lines 819-872)
+
+    /**
+     * Type of this document.
+     */
+    @Column(name = "document_type", length = 256)
+    private String type;
+
+    /**
+     * Name of the author of this document.
+     */
+    @Column(name = "author_name", length = 256)
+    private String authorName;
+
     /**
      * Date and time that this document was created.
      */
@@ -68,6 +87,20 @@ public class CustomerAgreementEntity extends IdentifiedObject {
     private String revisionNumber;
 
     /**
+     * Electronic address for the document.
+     */
+    @Embedded
+    @AttributeOverride(name = "lan", column = @Column(name = "doc_lan"))
+    @AttributeOverride(name = "mac", column = @Column(name = "doc_mac"))
+    @AttributeOverride(name = "email1", column = @Column(name = "doc_email1"))
+    @AttributeOverride(name = "email2", column = @Column(name = "doc_email2"))
+    @AttributeOverride(name = "web", column = @Column(name = "doc_web"))
+    @AttributeOverride(name = "radio", column = @Column(name = "doc_radio"))
+    @AttributeOverride(name = "userID", column = @Column(name = "doc_user_id"))
+    @AttributeOverride(name = "password", column = @Column(name = "doc_password"))
+    private Organisation.ElectronicAddress electronicAddress;
+
+    /**
      * Subject of this document, intended for this document to be found by a search engine.
      */
     @Column(name = "subject", length = 256)
@@ -80,13 +113,35 @@ public class CustomerAgreementEntity extends IdentifiedObject {
     private String title;
 
     /**
-     * Type of this document.
+     * Status of this document.
      */
-    @Column(name = "type", length = 256)
-    private String type;
+    @Embedded
+    @AttributeOverride(name = "value", column = @Column(name = "doc_status_value"))
+    @AttributeOverride(name = "dateTime", column = @Column(name = "doc_status_date_time"))
+    @AttributeOverride(name = "remark", column = @Column(name = "doc_status_remark"))
+    @AttributeOverride(name = "reason", column = @Column(name = "doc_status_reason"))
+    private Status docStatus;
+
+    /**
+     * Status of subject matter (e.g., Agreement, Work) this document represents.
+     * For status of the document itself, use 'docStatus' attribute.
+     */
+    @Embedded
+    @AttributeOverride(name = "value", column = @Column(name = "status_value"))
+    @AttributeOverride(name = "dateTime", column = @Column(name = "status_date_time"))
+    @AttributeOverride(name = "remark", column = @Column(name = "status_remark"))
+    @AttributeOverride(name = "reason", column = @Column(name = "status_reason"))
+    private Status status;
+
+    /**
+     * Free text comment.
+     */
+    @Column(name = "comment", length = 256)
+    private String comment;
 
     // Agreement fields (previously inherited from Agreement superclass)
-    
+    // Field order matches customer.xsd Agreement type definition (lines 622-660)
+
     /**
      * Date this agreement was consummated among associated persons and/or organisations.
      */
@@ -97,9 +152,12 @@ public class CustomerAgreementEntity extends IdentifiedObject {
      * Date and time interval this agreement is valid (from going into effect to termination).
      */
     @Embedded
+    @AttributeOverride(name = "start", column = @Column(name = "validity_start"))
+    @AttributeOverride(name = "duration", column = @Column(name = "validity_duration"))
     private DateTimeInterval validityInterval;
 
     // CustomerAgreement specific fields
+    // Field order matches customer.xsd CustomerAgreement type definition (lines 159-260)
 
     /**
      * Load management code.
@@ -144,12 +202,11 @@ public class CustomerAgreementEntity extends IdentifiedObject {
      */
     @ElementCollection
     @CollectionTable(name = "customer_agreement_future_status", joinColumns = @JoinColumn(name = "customer_agreement_id"))
-    @AttributeOverrides({
-        @AttributeOverride(name = "value", column = @Column(name = "status_value")),
-        @AttributeOverride(name = "dateTime", column = @Column(name = "status_date_time")),
-        @AttributeOverride(name = "reason", column = @Column(name = "status_reason"))
-    })
-    private List<CustomerEntity.Status> futureStatus;
+    @AttributeOverride(name = "value", column = @Column(name = "status_value"))
+    @AttributeOverride(name = "dateTime", column = @Column(name = "status_date_time"))
+    @AttributeOverride(name = "remark", column = @Column(name = "status_remark"))
+    @AttributeOverride(name = "reason", column = @Column(name = "status_reason"))
+    private List<Status> futureStatus;
 
     /**
      * [extension] Customer agreement identifier
@@ -161,8 +218,8 @@ public class CustomerAgreementEntity extends IdentifiedObject {
     public final boolean equals(Object o) {
         if (this == o) return true;
         if (o == null) return false;
-        Class<?> oEffectiveClass = o instanceof HibernateProxy ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
-        Class<?> thisEffectiveClass = this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
+        Class<?> oEffectiveClass = o instanceof HibernateProxy hibernateProxy ? hibernateProxy.getHibernateLazyInitializer().getPersistentClass() : o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy hibernateProxy ? hibernateProxy.getHibernateLazyInitializer().getPersistentClass() : this.getClass();
         if (thisEffectiveClass != oEffectiveClass) return false;
         CustomerAgreementEntity that = (CustomerAgreementEntity) o;
         return getId() != null && Objects.equals(getId(), that.getId());
@@ -170,19 +227,24 @@ public class CustomerAgreementEntity extends IdentifiedObject {
 
     @Override
     public final int hashCode() {
-        return this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
+        return this instanceof HibernateProxy hibernateProxy ? hibernateProxy.getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName() + "(" +
                 "id = " + getId() + ", " +
+                "type = " + getType() + ", " +
+                "authorName = " + getAuthorName() + ", " +
                 "createdDateTime = " + getCreatedDateTime() + ", " +
                 "lastModifiedDateTime = " + getLastModifiedDateTime() + ", " +
                 "revisionNumber = " + getRevisionNumber() + ", " +
+                "electronicAddress = " + getElectronicAddress() + ", " +
                 "subject = " + getSubject() + ", " +
                 "title = " + getTitle() + ", " +
-                "type = " + getType() + ", " +
+                "docStatus = " + getDocStatus() + ", " +
+                "status = " + getStatus() + ", " +
+                "comment = " + getComment() + ", " +
                 "signDate = " + getSignDate() + ", " +
                 "validityInterval = " + getValidityInterval() + ", " +
                 "loadMgmt = " + getLoadMgmt() + ", " +

@@ -144,6 +144,36 @@ public class EspiIdGeneratorService {
     }
 
     /**
+     * Generates a deterministic NAESB ESPI compliant UUID5 for any entity type.
+     *
+     * This method creates a deterministic UUID5 based on the entity type and natural key.
+     * The same entityType and naturalKey will always produce the same UUID, ensuring
+     * idempotency for entity creation and updates.
+     *
+     * @param entityType the type of entity (e.g., "CustomerAccount", "CustomerAgreement")
+     * @param naturalKey the natural key or business identifier (e.g., accountId, agreementId)
+     * @return a deterministic UUID5 identifier for the entity
+     * @throws IllegalArgumentException if entityType or naturalKey is null or empty
+     */
+    public UUID generateEntityId(String entityType, String naturalKey) {
+        if (entityType == null || entityType.trim().isEmpty()) {
+            throw new IllegalArgumentException("entityType cannot be null or empty");
+        }
+        if (naturalKey == null || naturalKey.trim().isEmpty()) {
+            throw new IllegalArgumentException("naturalKey cannot be null or empty");
+        }
+
+        // Build the deterministic name string (no timestamps - purely deterministic)
+        String name = entityType.trim() + ":" + naturalKey.trim();
+
+        try {
+            return generateUUID5(ESPI_NAMESPACE, name);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-1 algorithm not available", e);
+        }
+    }
+
+    /**
      * Generates a NAESB ESPI compliant UUID5 for a Subscription entity.
      *
      * The UUID5 is generated from clientId + username + current timestamp to ensure

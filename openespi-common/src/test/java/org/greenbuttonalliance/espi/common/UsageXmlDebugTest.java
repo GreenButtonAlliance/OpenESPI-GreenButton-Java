@@ -75,7 +75,7 @@ class UsageXmlDebugTest {
                 org.greenbuttonalliance.espi.common.dto.usage.ServiceDeliveryPointDto.class,
                 org.greenbuttonalliance.espi.common.dto.usage.ReadingQualityDto.class,
                 org.greenbuttonalliance.espi.common.dto.usage.IntervalReadingDto.class,
-                org.greenbuttonalliance.espi.common.dto.usage.DateTimeIntervalDto.class
+                org.greenbuttonalliance.espi.common.dto.common.DateTimeIntervalDto.class
         );
     }
 

@@ -282,7 +282,7 @@ class CustomerDtoTest {
         );
 
         CustomerDto.ElectronicAddressDto electronicAddress = new CustomerDto.ElectronicAddressDto(
-            "customer@example.com", "support@example.com", "https://www.example.com", null
+            null, null, "customer@example.com", "support@example.com", "https://www.example.com", null, null, null
         );
 
         CustomerDto.OrganisationDto organisation = new CustomerDto.OrganisationDto(

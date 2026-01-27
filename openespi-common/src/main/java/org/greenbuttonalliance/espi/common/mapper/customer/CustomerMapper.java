@@ -162,20 +162,28 @@ public interface CustomerMapper extends BaseMapperUtils {
     default CustomerDto.ElectronicAddressDto mapElectronicAddress(Organisation.ElectronicAddress address) {
         if (address == null) return null;
         return new CustomerDto.ElectronicAddressDto(
+            address.getLan(),
+            address.getMac(),
             address.getEmail1(),
             address.getEmail2(),
             address.getWeb(),
-            address.getRadio()
+            address.getRadio(),
+            address.getUserID(),
+            address.getPassword()
         );
     }
 
     default Organisation.ElectronicAddress mapElectronicAddressFromDto(CustomerDto.ElectronicAddressDto dto) {
         if (dto == null) return null;
         Organisation.ElectronicAddress address = new Organisation.ElectronicAddress();
+        address.setLan(dto.getLan());
+        address.setMac(dto.getMac());
         address.setEmail1(dto.getEmail1());
         address.setEmail2(dto.getEmail2());
         address.setWeb(dto.getWeb());
         address.setRadio(dto.getRadio());
+        address.setUserID(dto.getUserID());
+        address.setPassword(dto.getPassword());
         return address;
     }
 

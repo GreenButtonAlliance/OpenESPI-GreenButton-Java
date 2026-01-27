@@ -132,10 +132,15 @@ CREATE TABLE customers
     customer_postal_state_or_province    VARCHAR(255),
     customer_postal_postal_code          VARCHAR(255),
     customer_postal_country              VARCHAR(255),
+    -- Organisation.electronicAddress (customer.xsd lines 886-936)
+    customer_lan                         VARCHAR(255),
+    customer_mac                         VARCHAR(255),
     customer_email1                      VARCHAR(255),
     customer_email2                      VARCHAR(255),
     customer_web                         VARCHAR(255),
     customer_radio                       VARCHAR(255),
+    customer_user_id                     VARCHAR(255),
+    customer_password                    VARCHAR(255),
 
     -- Status embedded object columns
     status_value                         VARCHAR(256),
@@ -187,27 +192,48 @@ CREATE TABLE customer_agreements
     created                    TIMESTAMP NOT NULL,
     updated                    TIMESTAMP NOT NULL,
     published                  TIMESTAMP,
-    up_link_rel                VARCHAR(255),
-    up_link_href               VARCHAR(1024),
-    up_link_type               VARCHAR(255),
-    self_link_rel              VARCHAR(255),
-    self_link_href             VARCHAR(1024),
-    self_link_type             VARCHAR(255),
+    customer_agreement_up_link_rel                VARCHAR(255),
+    customer_agreement_up_link_href               VARCHAR(1024),
+    customer_agreement_up_link_type               VARCHAR(255),
+    customer_agreement_self_link_rel              VARCHAR(255),
+    customer_agreement_self_link_href             VARCHAR(1024),
+    customer_agreement_self_link_type             VARCHAR(255),
 
-    -- Document fields
+    -- Document fields (customer.xsd lines 819-885) - field order matches XSD
+    document_type              VARCHAR(256),
+    author_name                VARCHAR(256),
     created_date_time          TIMESTAMP,
     last_modified_date_time    TIMESTAMP,
     revision_number            VARCHAR(256),
+    -- Document.electronicAddress embedded object (customer.xsd lines 886-936)
+    doc_lan                    VARCHAR(256),
+    doc_mac                    VARCHAR(256),
+    doc_email1                 VARCHAR(256),
+    doc_email2                 VARCHAR(256),
+    doc_web                    VARCHAR(256),
+    doc_radio                  VARCHAR(256),
+    doc_user_id                VARCHAR(256),
+    doc_password               VARCHAR(256),
     subject                    VARCHAR(256),
     title                      VARCHAR(256),
-    type                       VARCHAR(256),
+    -- Document.docStatus embedded object (customer.xsd lines 1254-1284)
+    doc_status_value           VARCHAR(256),
+    doc_status_date_time       TIMESTAMP,
+    doc_status_remark          VARCHAR(256),
+    doc_status_reason          VARCHAR(256),
+    -- Document.status embedded object (customer.xsd lines 1254-1284)
+    status_value               VARCHAR(256),
+    status_date_time           TIMESTAMP,
+    status_remark              VARCHAR(256),
+    status_reason              VARCHAR(256),
+    comment                    VARCHAR(256),
 
-    -- Agreement fields
+    -- Agreement fields (customer.xsd lines 622-642)
     sign_date                  TIMESTAMP,
-    start                      BIGINT,
-    duration                   BIGINT,
+    validity_start             BIGINT,
+    validity_duration          BIGINT,
 
-    -- Customer agreement specific fields
+    -- Customer agreement specific fields (customer.xsd lines 159-209)
     load_mgmt                  VARCHAR(256),
     is_pre_pay                 BOOLEAN,
     shut_off_date_time         TIMESTAMP,
@@ -237,6 +263,7 @@ CREATE TABLE customer_agreement_future_status
     customer_agreement_id CHAR(36) NOT NULL,
     status_value          VARCHAR(256),
     status_date_time      TIMESTAMP,
+    status_remark         VARCHAR(256),
     status_reason         VARCHAR(256),
     FOREIGN KEY (customer_agreement_id) REFERENCES customer_agreements (id) ON DELETE CASCADE
 );
@@ -267,17 +294,22 @@ CREATE TABLE customer_accounts
     created_date_time          TIMESTAMP,
     last_modified_date_time    TIMESTAMP,
     revision_number            VARCHAR(256),
-    -- Document.electronicAddress embedded object
-    email1                     VARCHAR(256),
-    email2                     VARCHAR(256),
-    web                        VARCHAR(256),
-    radio                      VARCHAR(256),
+    -- Document.electronicAddress embedded object (customer.xsd lines 886-936)
+    doc_lan                    VARCHAR(256),
+    doc_mac                    VARCHAR(256),
+    doc_email1                 VARCHAR(256),
+    doc_email2                 VARCHAR(256),
+    doc_web                    VARCHAR(256),
+    doc_radio                  VARCHAR(256),
+    doc_user_id                VARCHAR(256),
+    doc_password               VARCHAR(256),
     subject                    VARCHAR(256),
     title                      VARCHAR(256),
-    -- Document.docStatus embedded object
-    status_value               VARCHAR(256),
-    status_date_time           TIMESTAMP,
-    status_reason              VARCHAR(512),
+    -- Document.docStatus embedded object (customer.xsd lines 1254-1284)
+    doc_status_value           VARCHAR(256),
+    doc_status_date_time       TIMESTAMP,
+    doc_status_remark          VARCHAR(512),
+    doc_status_reason          VARCHAR(512),
 
     -- CustomerAccount specific fields (customer.xsd lines 118-158)
     billing_cycle              VARCHAR(50),
@@ -297,11 +329,15 @@ CREATE TABLE customer_accounts
     postal_state_or_province   VARCHAR(256),
     postal_postal_code         VARCHAR(256),
     postal_country             VARCHAR(256),
-    -- contactInfo.electronicAddress
+    -- contactInfo.electronicAddress (customer.xsd lines 886-936)
+    contact_lan                VARCHAR(256),
+    contact_mac                VARCHAR(256),
     contact_email1             VARCHAR(256),
     contact_email2             VARCHAR(256),
     contact_web                VARCHAR(256),
     contact_radio              VARCHAR(256),
+    contact_user_id            VARCHAR(256),
+    contact_password           VARCHAR(256),
     -- contactInfo.organisationName
     organisation_name          VARCHAR(256),
     account_id                 VARCHAR(256),
@@ -422,10 +458,15 @@ CREATE TABLE end_devices
     lot_number           VARCHAR(100),
     purchase_price       BIGINT,
     critical             BOOLEAN              DEFAULT FALSE,
+    -- ElectronicAddress (customer.xsd lines 886-936)
+    end_device_lan       VARCHAR(255),
+    end_device_mac       VARCHAR(255),
     end_device_email1    VARCHAR(255),
     end_device_email2    VARCHAR(255),
     end_device_web       VARCHAR(255),
     end_device_radio     VARCHAR(255),
+    end_device_user_id   VARCHAR(255),
+    end_device_password  VARCHAR(255),
     installation_date    TIMESTAMP,
     manufactured_date    TIMESTAMP,
     purchase_date        TIMESTAMP,
@@ -594,11 +635,15 @@ CREATE TABLE service_locations
     secondary_postal_code VARCHAR(255),
     secondary_country   VARCHAR(255),
 
-    -- Electronic address embedded object columns
+    -- Electronic address embedded object columns (customer.xsd lines 886-936)
+    electronic_lan      VARCHAR(255),
+    electronic_mac      VARCHAR(255),
     electronic_email1   VARCHAR(255),
     electronic_email2   VARCHAR(255),
     electronic_web      VARCHAR(255),
     electronic_radio    VARCHAR(255),
+    electronic_user_id  VARCHAR(255),
+    electronic_password VARCHAR(255),
 
     -- Status embedded object columns
     status_value        VARCHAR(256),
@@ -663,10 +708,14 @@ CREATE TABLE service_suppliers
     supplier_postal_state_or_province VARCHAR(255),
     supplier_postal_postal_code  VARCHAR(255),
     supplier_postal_country      VARCHAR(255),
+    supplier_lan                 VARCHAR(256),
+    supplier_mac                 VARCHAR(256),
     supplier_email1              VARCHAR(255),
     supplier_email2              VARCHAR(255),
     supplier_web                 VARCHAR(255),
-    supplier_radio               VARCHAR(255)
+    supplier_radio               VARCHAR(255),
+    supplier_user_id             VARCHAR(256),
+    supplier_password            VARCHAR(256)
 );
 
 CREATE INDEX idx_service_supplier_kind ON service_suppliers (kind);

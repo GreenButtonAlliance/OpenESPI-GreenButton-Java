@@ -17,7 +17,7 @@
  *
  */
 
-package org.greenbuttonalliance.espi.common.dto.usage;
+package org.greenbuttonalliance.espi.common.dto.common;
 
 import jakarta.xml.bind.annotation.*;
 import lombok.AllArgsConstructor;
@@ -35,9 +35,9 @@ import java.time.ZoneOffset;
  * Represents a time interval with start and duration.
  * Used in various Green Button resources for time-based data.
  */
-@XmlRootElement(name = "DateTimeInterval", namespace = "http://naesb.org/espi")
+@XmlRootElement(name = "DateTimeInterval")
 @XmlAccessorType(XmlAccessType.FIELD)
-@XmlType(name = "DateTimeInterval", namespace = "http://naesb.org/espi", propOrder = {
+@XmlType(name = "DateTimeInterval", propOrder = {
     "start", "duration"
 })
 @Getter
@@ -46,10 +46,10 @@ import java.time.ZoneOffset;
 @AllArgsConstructor
 public class DateTimeIntervalDto {
 
-    @XmlElement(name = "start", namespace = "http://naesb.org/espi")
+    @XmlElement(name = "start")
     private Long start;
 
-    @XmlElement(name = "duration", namespace = "http://naesb.org/espi")
+    @XmlElement(name = "duration")
     private Long duration;
 
     /**

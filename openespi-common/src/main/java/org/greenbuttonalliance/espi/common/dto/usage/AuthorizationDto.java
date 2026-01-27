@@ -19,6 +19,8 @@
 
 package org.greenbuttonalliance.espi.common.dto.usage;
 
+import org.greenbuttonalliance.espi.common.dto.common.DateTimeIntervalDto;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.xml.bind.annotation.*;
 import lombok.AllArgsConstructor;
