@@ -53,8 +53,14 @@ public class Status implements Serializable {
     private OffsetDateTime dateTime;
 
     /**
+     * Pertinent information regarding the current value, as free form text.
+     */
+    @Column(name = "status_remark", length = 256)
+    private String remark;
+
+    /**
      * Reason for status change.
      */
-    @Column(name = "status_reason", length = 512)
+    @Column(name = "status_reason", length = 256)
     private String reason;
 }

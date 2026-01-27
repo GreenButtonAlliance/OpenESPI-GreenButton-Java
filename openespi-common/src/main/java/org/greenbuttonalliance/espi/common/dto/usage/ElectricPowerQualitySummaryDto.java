@@ -24,7 +24,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.greenbuttonalliance.espi.common.dto.usage.DateTimeIntervalDto;
+import org.greenbuttonalliance.espi.common.dto.common.DateTimeIntervalDto;
 
 /**
  * ElectricPowerQualitySummary DTO class for JAXB XML marshalling/unmarshalling.

@@ -21,6 +21,7 @@ package org.greenbuttonalliance.espi.common.dto.atom;
 
 import jakarta.xml.bind.annotation.*;
 import lombok.NoArgsConstructor;
+import org.greenbuttonalliance.espi.common.dto.common.DateTimeIntervalDto;
 import org.greenbuttonalliance.espi.common.dto.usage.*;
 
 import java.time.OffsetDateTime;

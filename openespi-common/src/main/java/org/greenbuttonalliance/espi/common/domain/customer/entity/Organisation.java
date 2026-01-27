@@ -92,22 +92,35 @@ public class Organisation implements Serializable {
     // PhoneNumber embeddable class removed - using separate PhoneNumberEntity table instead
 
     /**
-     * Embeddable class for ElectronicAddress
+     * Embeddable class for ElectronicAddress.
+     * Per customer.xsd ElectronicAddress type (lines 886-936).
      */
     @Embeddable
     @Data
     @NoArgsConstructor
     public static class ElectronicAddress implements Serializable {
+        @Column(name = "lan", length = 256)
+        private String lan;
+
+        @Column(name = "mac", length = 256)
+        private String mac;
+
         @Column(name = "email1", length = 256)
         private String email1;
-        
+
         @Column(name = "email2", length = 256)
         private String email2;
-        
+
         @Column(name = "web", length = 256)
         private String web;
-        
+
         @Column(name = "radio", length = 256)
         private String radio;
+
+        @Column(name = "user_id", length = 256)
+        private String userID;
+
+        @Column(name = "password", length = 256)
+        private String password;
     }
 }

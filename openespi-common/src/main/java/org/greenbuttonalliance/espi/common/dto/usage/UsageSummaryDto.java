@@ -19,6 +19,8 @@
 
 package org.greenbuttonalliance.espi.common.dto.usage;
 
+import org.greenbuttonalliance.espi.common.dto.common.DateTimeIntervalDto;
+
 import org.greenbuttonalliance.espi.common.dto.BillingChargeSourceDto;
 import org.greenbuttonalliance.espi.common.dto.SummaryMeasurementDto;
 import org.greenbuttonalliance.espi.common.dto.atom.LinkDto;

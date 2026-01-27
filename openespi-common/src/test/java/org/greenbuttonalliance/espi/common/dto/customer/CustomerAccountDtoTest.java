@@ -206,19 +206,20 @@ class CustomerAccountDtoTest {
 
     private CustomerAccountDto createFullCustomerAccountDto() {
         CustomerDto.ElectronicAddressDto electronicAddress = new CustomerDto.ElectronicAddressDto(
-            "billing@example.com", "support@example.com", "https://www.example.com", null
+            null, null, "billing@example.com", "support@example.com", "https://www.example.com", null, null, null
         );
 
         CustomerAccountDto.StatusDto docStatus = new CustomerAccountDto.StatusDto(
             "ACTIVE",
             OffsetDateTime.of(2025, 1, 15, 10, 0, 0, 0, ZoneOffset.UTC),
+            null,
             "Account in good standing"
         );
 
         CustomerDto.OrganisationDto contactInfo = new CustomerDto.OrganisationDto(
             new CustomerDto.StreetAddressDto("123 Main St", "Springfield", "IL", "62701", "USA"),
             null, null, null,
-            new CustomerDto.ElectronicAddressDto("contact@acme.com", null, "https://acme.com", null),
+            new CustomerDto.ElectronicAddressDto(null, null, "contact@acme.com", null, "https://acme.com", null, null, null),
             "ACME Corporation"
         );
 

@@ -246,7 +246,7 @@ public class DtoExportServiceImpl implements DtoExportService {
             org.greenbuttonalliance.espi.common.dto.usage.ServiceDeliveryPointDto.class,
             org.greenbuttonalliance.espi.common.dto.usage.ReadingQualityDto.class,
             org.greenbuttonalliance.espi.common.dto.usage.IntervalReadingDto.class,
-            org.greenbuttonalliance.espi.common.dto.usage.DateTimeIntervalDto.class,
+            org.greenbuttonalliance.espi.common.dto.common.DateTimeIntervalDto.class,
             org.greenbuttonalliance.espi.common.dto.usage.TariffRiderRefDto.class,
             org.greenbuttonalliance.espi.common.dto.usage.TariffRiderRefsDto.class,
             org.greenbuttonalliance.espi.common.dto.usage.PnodeRefDto.class,

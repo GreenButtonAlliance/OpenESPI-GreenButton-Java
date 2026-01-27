@@ -95,10 +95,14 @@ public class ServiceLocationEntity extends IdentifiedObject {
      */
     @Embedded
     @AttributeOverrides({
+        @AttributeOverride(name = "lan", column = @Column(name = "electronic_lan")),
+        @AttributeOverride(name = "mac", column = @Column(name = "electronic_mac")),
         @AttributeOverride(name = "email1", column = @Column(name = "electronic_email1")),
         @AttributeOverride(name = "email2", column = @Column(name = "electronic_email2")),
         @AttributeOverride(name = "web", column = @Column(name = "electronic_web")),
-        @AttributeOverride(name = "radio", column = @Column(name = "electronic_radio"))
+        @AttributeOverride(name = "radio", column = @Column(name = "electronic_radio")),
+        @AttributeOverride(name = "userID", column = @Column(name = "electronic_user_id")),
+        @AttributeOverride(name = "password", column = @Column(name = "electronic_password"))
     })
     private Organisation.ElectronicAddress electronicAddress;
 

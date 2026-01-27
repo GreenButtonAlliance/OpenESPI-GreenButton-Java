@@ -88,10 +88,14 @@ public abstract class Location implements Serializable {
      */
     @Embedded
     @AttributeOverrides({
+        @AttributeOverride(name = "lan", column = @Column(name = "location_lan")),
+        @AttributeOverride(name = "mac", column = @Column(name = "location_mac")),
         @AttributeOverride(name = "email1", column = @Column(name = "location_email1")),
         @AttributeOverride(name = "email2", column = @Column(name = "location_email2")),
         @AttributeOverride(name = "web", column = @Column(name = "location_web")),
-        @AttributeOverride(name = "radio", column = @Column(name = "location_radio"))
+        @AttributeOverride(name = "radio", column = @Column(name = "location_radio")),
+        @AttributeOverride(name = "userID", column = @Column(name = "location_user_id")),
+        @AttributeOverride(name = "password", column = @Column(name = "location_password"))
     })
     private Organisation.ElectronicAddress electronicAddress;
 

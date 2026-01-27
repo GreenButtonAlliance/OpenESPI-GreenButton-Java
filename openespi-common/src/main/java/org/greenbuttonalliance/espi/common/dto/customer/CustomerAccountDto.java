@@ -160,7 +160,7 @@ public class CustomerAccountDto {
      */
     @XmlAccessorType(XmlAccessType.FIELD)
     @XmlType(name = "DocStatus", namespace = "http://naesb.org/espi/customer", propOrder = {
-        "value", "dateTime", "reason"
+        "value", "dateTime", "remark", "reason"
     })
     @Getter
     @Setter
@@ -178,6 +178,12 @@ public class CustomerAccountDto {
          */
         @XmlElement(name = "dateTime", namespace = "http://naesb.org/espi/customer")
         private OffsetDateTime dateTime;
+
+        /**
+         * Remark.
+         */
+        @XmlElement(name = "remark", namespace = "http://naesb.org/espi/customer")
+        private String remark;
 
         /**
          * Reason for status change.

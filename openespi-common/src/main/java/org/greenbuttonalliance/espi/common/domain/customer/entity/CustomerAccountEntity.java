@@ -91,6 +91,14 @@ public class CustomerAccountEntity extends IdentifiedObject {
      * Electronic address for the document.
      */
     @Embedded
+    @AttributeOverride(name = "lan", column = @Column(name = "doc_lan"))
+    @AttributeOverride(name = "mac", column = @Column(name = "doc_mac"))
+    @AttributeOverride(name = "email1", column = @Column(name = "doc_email1"))
+    @AttributeOverride(name = "email2", column = @Column(name = "doc_email2"))
+    @AttributeOverride(name = "web", column = @Column(name = "doc_web"))
+    @AttributeOverride(name = "radio", column = @Column(name = "doc_radio"))
+    @AttributeOverride(name = "userID", column = @Column(name = "doc_user_id"))
+    @AttributeOverride(name = "password", column = @Column(name = "doc_password"))
     private Organisation.ElectronicAddress electronicAddress;
 
     /**
@@ -109,6 +117,10 @@ public class CustomerAccountEntity extends IdentifiedObject {
      * Status of this document.
      */
     @Embedded
+    @AttributeOverride(name = "value", column = @Column(name = "doc_status_value"))
+    @AttributeOverride(name = "dateTime", column = @Column(name = "doc_status_date_time"))
+    @AttributeOverride(name = "remark", column = @Column(name = "doc_status_remark"))
+    @AttributeOverride(name = "reason", column = @Column(name = "doc_status_reason"))
     private Status docStatus;
 
     // CustomerAccount specific fields
@@ -155,10 +167,14 @@ public class CustomerAccountEntity extends IdentifiedObject {
     @AttributeOverride(name = "postalAddress.stateOrProvince", column = @Column(name = "postal_state_or_province"))
     @AttributeOverride(name = "postalAddress.postalCode", column = @Column(name = "postal_postal_code"))
     @AttributeOverride(name = "postalAddress.country", column = @Column(name = "postal_country"))
+    @AttributeOverride(name = "electronicAddress.lan", column = @Column(name = "contact_lan"))
+    @AttributeOverride(name = "electronicAddress.mac", column = @Column(name = "contact_mac"))
     @AttributeOverride(name = "electronicAddress.email1", column = @Column(name = "contact_email1"))
     @AttributeOverride(name = "electronicAddress.email2", column = @Column(name = "contact_email2"))
     @AttributeOverride(name = "electronicAddress.web", column = @Column(name = "contact_web"))
     @AttributeOverride(name = "electronicAddress.radio", column = @Column(name = "contact_radio"))
+    @AttributeOverride(name = "electronicAddress.userID", column = @Column(name = "contact_user_id"))
+    @AttributeOverride(name = "electronicAddress.password", column = @Column(name = "contact_password"))
     private Organisation contactInfo;
 
     /**

@@ -82,10 +82,14 @@ class CustomerDtoMarshallingTest {
         );
 
         CustomerDto.ElectronicAddressDto electronicAddress = new CustomerDto.ElectronicAddressDto(
+            null,                        // lan
+            null,                        // mac
             "customer@example.com",      // email1
             "billing@example.com",       // email2
             "https://customer.example.com",  // web
-            null                         // radio
+            null,                        // radio
+            null,                        // userID
+            null                         // password
         );
 
         CustomerDto.StreetAddressDto streetAddress = new CustomerDto.StreetAddressDto(
