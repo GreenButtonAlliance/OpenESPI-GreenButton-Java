@@ -27,6 +27,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.io.Serializable;
 import java.time.OffsetDateTime;
 
 /**
@@ -79,23 +80,6 @@ public class CustomerDto {
     /**
      * Embeddable DTO for Status.
      */
-    @XmlAccessorType(XmlAccessType.FIELD)
-    @XmlType(name = "Status", namespace = "http://naesb.org/espi/customer")
-    @Getter
-    @Setter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class StatusDto {
-        @XmlElement(name = "value", namespace = "http://naesb.org/espi/customer")
-        private String value;
-
-        @XmlElement(name = "dateTime", namespace = "http://naesb.org/espi/customer")
-        private OffsetDateTime dateTime;
-
-        @XmlElement(name = "reason", namespace = "http://naesb.org/espi/customer")
-        private String reason;
-    }
-
     /**
      * Embeddable DTO for Priority.
      */
@@ -136,10 +120,10 @@ public class CustomerDto {
         private StreetAddressDto postalAddress;
 
         @XmlElement(name = "phone1", namespace = "http://naesb.org/espi/customer")
-        private PhoneNumberDto phone1;
+        private TelephoneNumberDto phone1;
 
         @XmlElement(name = "phone2", namespace = "http://naesb.org/espi/customer")
-        private PhoneNumberDto phone2;
+        private TelephoneNumberDto phone2;
 
         @XmlElement(name = "electronicAddress", namespace = "http://naesb.org/espi/customer")
         private ElectronicAddressDto electronicAddress;
@@ -177,13 +161,23 @@ public class CustomerDto {
     /**
      * Embeddable DTO for PhoneNumber.
      */
+    /**
+     * TelephoneNumber DTO nested class.
+     * Per customer.xsd TelephoneNumber type (lines 1428-1478).
+     * 8 fields per ESPI 4.0 specification.
+     */
     @XmlAccessorType(XmlAccessType.FIELD)
-    @XmlType(name = "PhoneNumber", namespace = "http://naesb.org/espi/customer")
+    @XmlType(name = "TelephoneNumber", namespace = "http://naesb.org/espi/customer", propOrder = {
+        "countryCode", "areaCode", "cityCode", "localNumber", "ext", "dialOut", "internationalPrefix", "ituPhone"
+    })
     @Getter
     @Setter
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class PhoneNumberDto {
+    public static class TelephoneNumberDto implements Serializable {
+        @XmlElement(name = "countryCode", namespace = "http://naesb.org/espi/customer")
+        private String countryCode;
+
         @XmlElement(name = "areaCode", namespace = "http://naesb.org/espi/customer")
         private String areaCode;
 
@@ -193,8 +187,17 @@ public class CustomerDto {
         @XmlElement(name = "localNumber", namespace = "http://naesb.org/espi/customer")
         private String localNumber;
 
-        @XmlElement(name = "extension", namespace = "http://naesb.org/espi/customer")
-        private String extension;
+        @XmlElement(name = "ext", namespace = "http://naesb.org/espi/customer")
+        private String ext;
+
+        @XmlElement(name = "dialOut", namespace = "http://naesb.org/espi/customer")
+        private String dialOut;
+
+        @XmlElement(name = "internationalPrefix", namespace = "http://naesb.org/espi/customer")
+        private String internationalPrefix;
+
+        @XmlElement(name = "ituPhone", namespace = "http://naesb.org/espi/customer")
+        private String ituPhone;
     }
 
     /**

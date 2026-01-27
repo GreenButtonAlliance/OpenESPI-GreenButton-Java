@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="GreenButtonDataStyleSheet.xslt"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <id>urn:uuid:feed-id</id>
+  <title>Customer Feed</title>
+  <published>2026-01-18T00:23:31Z</published>
+  <updated>2026-01-18T00:23:31Z</updated>
+  <entry xmlns:cust="http://naesb.org/espi/customer">
+    <id>urn:uuid:550e8400-e29b-51d4-a716-446655440000</id>
+    <title>ACME Energy Services Customer</title>
+    <published>2026-01-18T00:23:31Z</published>
+    <updated>2026-01-18T00:23:31Z</updated>
+    <content>
+      <cust:Customer>
+        <wstxns1:Organisation xmlns:wstxns1="http://naesb.org/espi/customer">
+          <wstxns1:streetAddress>
+            <wstxns1:streetDetail>123 Main Street</wstxns1:streetDetail>
+            <wstxns1:townDetail>Springfield</wstxns1:townDetail>
+            <wstxns1:stateOrProvince>IL</wstxns1:stateOrProvince>
+            <wstxns1:postalCode>62701</wstxns1:postalCode>
+            <wstxns1:country>USA</wstxns1:country>
+          </wstxns1:streetAddress>
+          <wstxns1:postalAddress>
+            <wstxns1:streetDetail>PO Box 456</wstxns1:streetDetail>
+            <wstxns1:townDetail>Springfield</wstxns1:townDetail>
+            <wstxns1:stateOrProvince>IL</wstxns1:stateOrProvince>
+            <wstxns1:postalCode>62702</wstxns1:postalCode>
+            <wstxns1:country>USA</wstxns1:country>
+          </wstxns1:postalAddress>
+          <wstxns1:phone1>
+            <wstxns1:areaCode>217</wstxns1:areaCode>
+            <wstxns1:localNumber>555-1234</wstxns1:localNumber>
+          </wstxns1:phone1>
+          <wstxns1:phone2>
+            <wstxns1:areaCode>217</wstxns1:areaCode>
+            <wstxns1:localNumber>555-5678</wstxns1:localNumber>
+            <wstxns1:extension>101</wstxns1:extension>
+          </wstxns1:phone2>
+          <wstxns1:electronicAddress>
+            <wstxns1:email1>customer@example.com</wstxns1:email1>
+            <wstxns1:email2>support@example.com</wstxns1:email2>
+            <wstxns1:web>https://www.example.com</wstxns1:web>
+          </wstxns1:electronicAddress>
+          <wstxns1:organisationName>ACME Energy Services</wstxns1:organisationName>
+        </wstxns1:Organisation>
+        <wstxns2:kind xmlns:wstxns2="http://naesb.org/espi/customer">RESIDENTIAL</wstxns2:kind>
+        <wstxns3:specialNeed xmlns:wstxns3="http://naesb.org/espi/customer">Life support required</wstxns3:specialNeed>
+        <wstxns4:vip xmlns:wstxns4="http://naesb.org/espi/customer">true</wstxns4:vip>
+        <wstxns5:pucNumber xmlns:wstxns5="http://naesb.org/espi/customer">PUC-12345</wstxns5:pucNumber>
+        <wstxns6:status xmlns:wstxns6="http://naesb.org/espi/customer">
+          <wstxns6:value>ACTIVE</wstxns6:value>
+          <wstxns6:dateTime>2025-01-15T10:30:00Z</wstxns6:dateTime>
+          <wstxns6:reason>Account in good standing</wstxns6:reason>
+        </wstxns6:status>
+        <wstxns7:priority xmlns:wstxns7="http://naesb.org/espi/customer">
+          <wstxns7:value>5</wstxns7:value>
+          <wstxns7:rank>1</wstxns7:rank>
+          <wstxns7:type>STANDARD</wstxns7:type>
+        </wstxns7:priority>
+        <wstxns8:locale xmlns:wstxns8="http://naesb.org/espi/customer">en_US</wstxns8:locale>
+        <wstxns9:customerName xmlns:wstxns9="http://naesb.org/espi/customer">John Smith</wstxns9:customerName>
+      </cust:Customer>
+    </content>
+  </entry>
+</feed>

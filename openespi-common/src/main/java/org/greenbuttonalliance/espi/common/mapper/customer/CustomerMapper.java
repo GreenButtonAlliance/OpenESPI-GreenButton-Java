@@ -102,8 +102,8 @@ public interface CustomerMapper extends BaseMapperUtils {
         List<PhoneNumberEntity> phoneNumbers = entity.getPhoneNumbers();
 
         // Extract phone numbers by type
-        CustomerDto.PhoneNumberDto phone1 = extractPhoneByType(phoneNumbers, PhoneNumberEntity.PhoneType.PRIMARY);
-        CustomerDto.PhoneNumberDto phone2 = extractPhoneByType(phoneNumbers, PhoneNumberEntity.PhoneType.SECONDARY);
+        CustomerDto.TelephoneNumberDto phone1 = extractPhoneByType(phoneNumbers, PhoneNumberEntity.PhoneType.PRIMARY);
+        CustomerDto.TelephoneNumberDto phone2 = extractPhoneByType(phoneNumbers, PhoneNumberEntity.PhoneType.SECONDARY);
 
         // Constructor order: streetAddress, postalAddress, phone1, phone2, electronicAddress, organisationName
         return new CustomerDto.OrganisationDto(
@@ -188,17 +188,22 @@ public interface CustomerMapper extends BaseMapperUtils {
     }
 
     // Helper method to extract phone number by type
-    default CustomerDto.PhoneNumberDto extractPhoneByType(List<PhoneNumberEntity> phoneNumbers, PhoneNumberEntity.PhoneType type) {
+    // Maps PhoneNumberEntity (old 4-field format) to TelephoneNumberDto (new 8-field format)
+    default CustomerDto.TelephoneNumberDto extractPhoneByType(List<PhoneNumberEntity> phoneNumbers, PhoneNumberEntity.PhoneType type) {
         if (phoneNumbers == null) return null;
-        
+
         return phoneNumbers.stream()
             .filter(phone -> phone.getPhoneType() == type)
             .findFirst()
-            .map(phone -> new CustomerDto.PhoneNumberDto(
-                phone.getAreaCode(),
-                phone.getCityCode(),
-                phone.getLocalNumber(),
-                phone.getExtension()
+            .map(phone -> new CustomerDto.TelephoneNumberDto(
+                phone.getCountryCode(),      // 1. countryCode
+                phone.getAreaCode(),          // 2. areaCode
+                phone.getCityCode(),          // 3. cityCode
+                phone.getLocalNumber(),       // 4. localNumber
+                phone.getExtension(),         // 5. ext (mapped from extension)
+                phone.getDialOut(),           // 6. dialOut
+                phone.getInternationalPrefix(), // 7. internationalPrefix
+                phone.getItuPhone()           // 8. ituPhone
             ))
             .orElse(null);
     }

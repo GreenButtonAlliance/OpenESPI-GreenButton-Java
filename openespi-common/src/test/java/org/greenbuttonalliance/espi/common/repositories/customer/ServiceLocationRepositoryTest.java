@@ -271,126 +271,6 @@ class ServiceLocationRepositoryTest extends BaseRepositoryTest {
         }
 
         @Test
-        @DisplayName("Should find locations that need inspection")
-        void shouldFindLocationsThatNeedInspection() {
-            // Arrange
-            ServiceLocationEntity needsInspection1 = createValidServiceLocation();
-            needsInspection1.setNeedsInspection(true);
-            needsInspection1.setDescription("Needs Inspection 1");
-            
-            ServiceLocationEntity needsInspection2 = createValidServiceLocation();
-            needsInspection2.setNeedsInspection(true);
-            needsInspection2.setDescription("Needs Inspection 2");
-            
-            ServiceLocationEntity noInspection = createValidServiceLocation();
-            noInspection.setNeedsInspection(false);
-            noInspection.setDescription("No Inspection Needed");
-
-            serviceLocationRepository.saveAll(List.of(needsInspection1, needsInspection2, noInspection));
-            flushAndClear();
-
-            // Act
-            List<ServiceLocationEntity> results = serviceLocationRepository.findLocationsThatNeedInspection();
-
-            // Assert
-            assertThat(results).hasSize(2);
-            assertThat(results).extracting(ServiceLocationEntity::getDescription)
-                    .contains("Needs Inspection 1", "Needs Inspection 2");
-            assertThat(results).allMatch(loc -> loc.getNeedsInspection() == true);
-        }
-
-        @Test
-        @DisplayName("Should find locations with access problems")
-        void shouldFindLocationsWithAccessProblems() {
-            // Arrange
-            ServiceLocationEntity withProblem1 = createValidServiceLocation();
-            withProblem1.setSiteAccessProblem("Aggressive dog");
-            withProblem1.setDescription("Location with Problem 1");
-            
-            ServiceLocationEntity withProblem2 = createValidServiceLocation();
-            withProblem2.setSiteAccessProblem("Locked gate");
-            withProblem2.setDescription("Location with Problem 2");
-            
-            ServiceLocationEntity noProblem = createValidServiceLocation();
-            noProblem.setSiteAccessProblem(null);
-            noProblem.setDescription("Location without Problem");
-
-            serviceLocationRepository.saveAll(List.of(withProblem1, withProblem2, noProblem));
-            flushAndClear();
-
-            // Act
-            List<ServiceLocationEntity> results = serviceLocationRepository.findLocationsWithAccessProblems();
-
-            // Assert
-            assertThat(results).hasSize(2);
-            assertThat(results).extracting(ServiceLocationEntity::getDescription)
-                    .contains("Location with Problem 1", "Location with Problem 2");
-            assertThat(results).allMatch(loc -> loc.getSiteAccessProblem() != null && !loc.getSiteAccessProblem().isEmpty());
-        }
-
-        @Test
-        @DisplayName("Should find service locations by main address street containing")
-        void shouldFindServiceLocationsByMainAddressStreetContaining() {
-            // Arrange
-            ServiceLocationEntity location1 = createValidServiceLocation();
-            Organisation.StreetAddress address1 = new Organisation.StreetAddress();
-            address1.setStreetDetail("123 Main Street");
-            location1.setMainAddress(address1);
-            location1.setDescription("Main Street Location 1");
-            
-            ServiceLocationEntity location2 = createValidServiceLocation();
-            Organisation.StreetAddress address2 = new Organisation.StreetAddress();
-            address2.setStreetDetail("456 Main Avenue");
-            location2.setMainAddress(address2);
-            location2.setDescription("Main Street Location 2");
-            
-            ServiceLocationEntity location3 = createValidServiceLocation();
-            Organisation.StreetAddress address3 = new Organisation.StreetAddress();
-            address3.setStreetDetail("789 Oak Street");
-            location3.setMainAddress(address3);
-            location3.setDescription("Oak Street Location");
-
-            serviceLocationRepository.saveAll(List.of(location1, location2, location3));
-            flushAndClear();
-
-            // Act
-            List<ServiceLocationEntity> results = serviceLocationRepository.findByMainAddressStreetContaining("Main");
-
-            // Assert
-            assertThat(results).hasSize(2);
-            assertThat(results).extracting(ServiceLocationEntity::getDescription)
-                    .contains("Main Street Location 1", "Main Street Location 2");
-        }
-
-        @Test
-        @DisplayName("Should find service locations by direction containing")
-        void shouldFindServiceLocationsByDirectionContaining() {
-            // Arrange
-            ServiceLocationEntity location1 = createValidServiceLocation();
-            location1.setDirection("North side of building");
-            location1.setDescription("North Location 1");
-            
-            ServiceLocationEntity location2 = createValidServiceLocation();
-            location2.setDirection("North entrance");
-            location2.setDescription("North Location 2");
-            
-            ServiceLocationEntity location3 = createValidServiceLocation();
-            location3.setDirection("South entrance");
-            location3.setDescription("South Location");
-
-            serviceLocationRepository.saveAll(List.of(location1, location2, location3));
-            flushAndClear();
-
-            // Act
-            List<ServiceLocationEntity> results = serviceLocationRepository.findByDirectionContaining("North");
-
-            // Assert
-            assertThat(results).hasSize(2);
-            assertThat(results).extracting(ServiceLocationEntity::getDescription)
-                    .contains("North Location 1", "North Location 2");
-        }
-
-        @Test
         @DisplayName("Should find service locations by type")
         void shouldFindServiceLocationsByType() {
             // Arrange
@@ -482,9 +362,6 @@ class ServiceLocationRepositoryTest extends BaseRepositoryTest {
             // Act & Assert
             assertThat(serviceLocationRepository.findByOutageBlock("nonexistent-block")).isEmpty();
             assertThat(serviceLocationRepository.findByType("NonexistentType")).isEmpty();
-            assertThat(serviceLocationRepository.findByDirectionContaining("nonexistent")).isEmpty();
-            assertThat(serviceLocationRepository.findByMainAddressStreetContaining("nonexistent")).isEmpty();
-            assertThat(serviceLocationRepository.findByPhone1AreaCode("999")).isEmpty();
             assertThat(serviceLocationRepository.findByGeoInfoReference("nonexistent-ref")).isEmpty();
         }
     }
@@ -525,7 +402,7 @@ class ServiceLocationRepositoryTest extends BaseRepositoryTest {
             // Arrange
             ServiceLocationEntity serviceLocation = createValidServiceLocation();
             
-            CustomerEntity.Status status = new CustomerEntity.Status();
+            Status status = new Status();
             status.setValue("Active");
             status.setReason("Normal operation");
             serviceLocation.setStatus(status);

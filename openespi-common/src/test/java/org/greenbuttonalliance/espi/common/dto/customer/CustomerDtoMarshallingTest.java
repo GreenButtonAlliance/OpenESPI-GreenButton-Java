@@ -55,10 +55,11 @@ class CustomerDtoMarshallingTest {
     @DisplayName("Should marshal Customer with all fields populated")
     void shouldMarshalCustomerWithAllFields() {
         // Arrange - Create comprehensive CustomerDto with all fields
-        CustomerDto.StatusDto status = new CustomerDto.StatusDto(
+        StatusDto status = new StatusDto(
             "active",
             OffsetDateTime.now(),
-            "New account created"
+            "New account created",
+            null
         );
 
         CustomerDto.PriorityDto priority = new CustomerDto.PriorityDto(
@@ -67,17 +68,25 @@ class CustomerDtoMarshallingTest {
             "high-priority"  // type
         );
 
-        CustomerDto.PhoneNumberDto phone1 = new CustomerDto.PhoneNumberDto(
+        CustomerDto.TelephoneNumberDto phone1 = new CustomerDto.TelephoneNumberDto(
+            "1",        // countryCode
             "415",      // areaCode
             "555",      // cityCode
             "1234",     // localNumber
-            "100"       // extension
+            "100",      // ext
+            null,       // dialOut
+            null,       // internationalPrefix
+            null        // ituPhone
         );
 
-        CustomerDto.PhoneNumberDto phone2 = new CustomerDto.PhoneNumberDto(
+        CustomerDto.TelephoneNumberDto phone2 = new CustomerDto.TelephoneNumberDto(
+            "1",
             "415",
             "555",
             "5678",
+            null,
+            null,
+            null,
             null
         );
 

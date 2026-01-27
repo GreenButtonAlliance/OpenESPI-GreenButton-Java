@@ -645,10 +645,31 @@ CREATE TABLE service_locations
     electronic_user_id  VARCHAR(255),
     electronic_password VARCHAR(255),
 
-    -- Status embedded object columns
+    -- Status embedded object columns (customer.xsd Status type - 4 fields)
     status_value        VARCHAR(256),
     status_date_time    TIMESTAMP,
+    status_remark       VARCHAR(256),
     status_reason       VARCHAR(256),
+
+    -- Phone1 embedded object columns (customer.xsd TelephoneNumber type - 8 fields)
+    phone1_country_code VARCHAR(256),
+    phone1_area_code    VARCHAR(256),
+    phone1_city_code    VARCHAR(256),
+    phone1_local_number VARCHAR(256),
+    phone1_ext          VARCHAR(256),
+    phone1_dial_out     VARCHAR(256),
+    phone1_international_prefix VARCHAR(256),
+    phone1_itu_phone    VARCHAR(256),
+
+    -- Phone2 embedded object columns (customer.xsd TelephoneNumber type - 8 fields)
+    phone2_country_code VARCHAR(256),
+    phone2_area_code    VARCHAR(256),
+    phone2_city_code    VARCHAR(256),
+    phone2_local_number VARCHAR(256),
+    phone2_ext          VARCHAR(256),
+    phone2_dial_out     VARCHAR(256),
+    phone2_international_prefix VARCHAR(256),
+    phone2_itu_phone    VARCHAR(256),
 
     -- Service location specific fields
     access_method       VARCHAR(256),
@@ -666,6 +687,7 @@ CREATE INDEX idx_service_location_updated ON service_locations (updated);
 
 
 -- Related Links Table for Service Locations
+-- Stores Atom <link rel="related"> elements per NAESB ESPI 4.0 REQ.21.4.3.1.1.6
 CREATE TABLE service_location_related_links
 (
     service_location_id CHAR(36) NOT NULL,
@@ -674,6 +696,19 @@ CREATE TABLE service_location_related_links
 );
 
 CREATE INDEX idx_service_location_related_links ON service_location_related_links (service_location_id);
+
+
+-- UsagePoint Hrefs Table for Service Locations
+-- Cross-stream references from customer.xsd to usage.xsd
+-- Stores UsagePoint atom:link[@rel='self']/@href URLs per customer.xsd lines 1106-1111
+CREATE TABLE service_location_usage_point_hrefs
+(
+    service_location_id CHAR(36) NOT NULL,
+    usage_point_href    VARCHAR(512),
+    FOREIGN KEY (service_location_id) REFERENCES service_locations (id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_service_location_usage_point_hrefs ON service_location_usage_point_hrefs (service_location_id);
 
 
 -- Service Supplier Table
