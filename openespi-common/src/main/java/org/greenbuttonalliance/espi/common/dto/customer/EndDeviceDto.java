@@ -72,12 +72,6 @@ import java.time.OffsetDateTime;
 @AllArgsConstructor
 public class EndDeviceDto implements Serializable {
 
-    @XmlTransient
-    private Long id;
-
-    @XmlAttribute(name = "mRID")
-    private String uuid;
-
     // ==================== Asset fields (12) ====================
 
     /**
