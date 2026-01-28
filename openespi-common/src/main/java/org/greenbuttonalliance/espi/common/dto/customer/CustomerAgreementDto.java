@@ -100,7 +100,7 @@ public class CustomerAgreementDto {
      * Electronic address for the document.
      */
     @XmlElement(name = "electronicAddress", namespace = "http://naesb.org/espi/customer")
-    private CustomerDto.ElectronicAddressDto electronicAddress;
+    private ElectronicAddressDto electronicAddress;
 
     /**
      * Subject of this document, intended for this document to be found by a search engine.

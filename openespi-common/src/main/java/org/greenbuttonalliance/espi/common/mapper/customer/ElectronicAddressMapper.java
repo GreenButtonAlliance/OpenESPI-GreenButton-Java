@@ -20,7 +20,7 @@
 package org.greenbuttonalliance.espi.common.mapper.customer;
 
 import org.greenbuttonalliance.espi.common.domain.customer.entity.Organisation;
-import org.greenbuttonalliance.espi.common.dto.customer.CustomerDto;
+import org.greenbuttonalliance.espi.common.dto.customer.ElectronicAddressDto;
 import org.mapstruct.Mapper;
 
 /**
@@ -35,7 +35,7 @@ public interface ElectronicAddressMapper {
      * @param entity the electronic address entity
      * @return the electronic address DTO
      */
-    CustomerDto.ElectronicAddressDto toDto(Organisation.ElectronicAddress entity);
+    ElectronicAddressDto toDto(Organisation.ElectronicAddress entity);
 
     /**
      * Converts an ElectronicAddress DTO to an entity.
@@ -43,5 +43,5 @@ public interface ElectronicAddressMapper {
      * @param dto the electronic address DTO
      * @return the electronic address entity
      */
-    Organisation.ElectronicAddress toEntity(CustomerDto.ElectronicAddressDto dto);
+    Organisation.ElectronicAddress toEntity(ElectronicAddressDto dto);
 }

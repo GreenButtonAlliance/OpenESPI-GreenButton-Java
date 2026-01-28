@@ -199,42 +199,4 @@ public class CustomerDto {
         @XmlElement(name = "ituPhone", namespace = "http://naesb.org/espi/customer")
         private String ituPhone;
     }
-
-    /**
-     * Embeddable DTO for ElectronicAddress.
-     * Per customer.xsd ElectronicAddress type (lines 886-936).
-     */
-    @XmlAccessorType(XmlAccessType.FIELD)
-    @XmlType(name = "ElectronicAddress", namespace = "http://naesb.org/espi/customer", propOrder = {
-        "lan", "mac", "email1", "email2", "web", "radio", "userID", "password"
-    })
-    @Getter
-    @Setter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class ElectronicAddressDto {
-        @XmlElement(name = "lan", namespace = "http://naesb.org/espi/customer")
-        private String lan;
-
-        @XmlElement(name = "mac", namespace = "http://naesb.org/espi/customer")
-        private String mac;
-
-        @XmlElement(name = "email1", namespace = "http://naesb.org/espi/customer")
-        private String email1;
-
-        @XmlElement(name = "email2", namespace = "http://naesb.org/espi/customer")
-        private String email2;
-
-        @XmlElement(name = "web", namespace = "http://naesb.org/espi/customer")
-        private String web;
-
-        @XmlElement(name = "radio", namespace = "http://naesb.org/espi/customer")
-        private String radio;
-
-        @XmlElement(name = "userID", namespace = "http://naesb.org/espi/customer")
-        private String userID;
-
-        @XmlElement(name = "password", namespace = "http://naesb.org/espi/customer")
-        private String password;
-    }
 }

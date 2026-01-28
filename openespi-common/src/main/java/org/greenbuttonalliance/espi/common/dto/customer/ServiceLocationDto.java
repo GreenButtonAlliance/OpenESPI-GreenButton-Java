@@ -92,7 +92,7 @@ public class ServiceLocationDto implements Serializable {
      * Electronic address (email, web, etc.).
      */
     @XmlElement(name = "electronicAddress", namespace = "http://naesb.org/espi/customer")
-    private CustomerDto.ElectronicAddressDto electronicAddress;
+    private ElectronicAddressDto electronicAddress;
 
     /**
      * Reference to geographical information source, often external to the utility.

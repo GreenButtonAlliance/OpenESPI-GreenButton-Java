@@ -139,12 +139,11 @@ public class EndDeviceEntity extends IdentifiedObject {
      * Status of this asset.
      */
     @Embedded
-    @AttributeOverrides({
-        @AttributeOverride(name = "value", column = @Column(name = "status_value")),
-        @AttributeOverride(name = "dateTime", column = @Column(name = "status_date_time")),
-        @AttributeOverride(name = "reason", column = @Column(name = "status_reason"))
-    })
-    private CustomerEntity.Status status;
+    @AttributeOverride(name = "value", column = @Column(name = "status_value"))
+    @AttributeOverride(name = "dateTime", column = @Column(name = "status_date_time"))
+    @AttributeOverride(name = "remark", column = @Column(name = "status_remark"))
+    @AttributeOverride(name = "reason", column = @Column(name = "status_reason"))
+    private Status status;
 
     // AssetContainer fields (AssetContainer is simply an Asset that can contain other assets - no additional fields)
 
@@ -174,4 +173,20 @@ public class EndDeviceEntity extends IdentifiedObject {
      */
     @Column(name = "amr_system", length = 256)
     private String amrSystem;
+
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null) return false;
+        Class<?> oEffectiveClass = o instanceof org.hibernate.proxy.HibernateProxy ? ((org.hibernate.proxy.HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
+        Class<?> thisEffectiveClass = this instanceof org.hibernate.proxy.HibernateProxy ? ((org.hibernate.proxy.HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
+        if (thisEffectiveClass != oEffectiveClass) return false;
+        EndDeviceEntity that = (EndDeviceEntity) o;
+        return getId() != null && java.util.Objects.equals(getId(), that.getId());
+    }
+
+    @Override
+    public final int hashCode() {
+        return this instanceof org.hibernate.proxy.HibernateProxy ? ((org.hibernate.proxy.HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
+    }
 }
