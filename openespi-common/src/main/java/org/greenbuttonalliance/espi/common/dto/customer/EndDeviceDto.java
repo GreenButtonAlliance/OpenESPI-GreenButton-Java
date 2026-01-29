@@ -19,129 +19,156 @@
 
 package org.greenbuttonalliance.espi.common.dto.customer;
 
-import org.greenbuttonalliance.espi.common.dto.atom.LinkDto;
-
 import jakarta.xml.bind.annotation.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
-import java.util.List;
 
 /**
- * EndDevice DTO class for JAXB XML marshalling/unmarshalling.
+ * EndDevice DTO for ESPI 4.0 customer.xsd schema compliance.
+ * Per customer.xsd lines 210-242.
  *
- * Represents an end device such as a meter or other measurement equipment.
- * Supports Atom protocol XML wrapping.
+ * EndDevice is an ESPI Resource that inherits from IdentifiedObject.
+ * Asset fields are embedded inline (Asset inherits from Object in ESPI standard).
+ *
+ * Asset that performs one or more end device functions. One type of end device is a meter
+ * which can perform metering, load management, connect/disconnect, accounting functions, etc.
+ * Some end devices, such as ones monitoring and controlling air conditioners, refrigerators, pool pumps
+ * may be connected to a meter. All end devices may have communication capability defined by the associated
+ * communication function(s). An end device may be owned by a consumer, a service provider, utility or otherwise.
+ *
+ * This DTO contains ONLY the 16 XSD elements from customer.xsd:
+ * - 12 Asset elements: type, utcNumber, serialNumber, lotNumber, purchasePrice, critical,
+ *   electronicAddress (8 fields), lifecycle (2 fields), acceptanceTest (4 fields),
+ *   initialCondition, initialLossOfLife, status (4 fields)
+ * - 4 EndDevice elements: isVirtual, isPan, installCode, amrSystem
+ *
+ * Complex types with nested fields:
+ * - electronicAddress: ElectronicAddressDto (8 fields: lan, mac, email1, email2, web, radio, userID, password)
+ * - lifecycle: LifecycleDateDto (2 fields: manufacturedDate, installationDate)
+ * - acceptanceTest: AcceptanceTestDto (4 fields: dateTime, success, type, remark)
+ * - status: StatusDto (4 fields: value, dateTime, remark, reason)
+ *
+ * Atom protocol fields (id, published, updated, links) are handled by CustomerAtomEntryDto wrapper.
  */
 @XmlRootElement(name = "EndDevice", namespace = "http://naesb.org/espi/customer")
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "EndDevice", namespace = "http://naesb.org/espi/customer", propOrder = {
-    "published", "updated", "selfLink", "upLink", "relatedLinks",
-    "description", "amrSystem", "installCode", "isPan", "installDate",
-    "removedDate", "serialNumber", "serviceLocation"
+    // Asset fields (12)
+    "type", "utcNumber", "serialNumber", "lotNumber", "purchasePrice", "critical",
+    "electronicAddress", "lifecycle", "acceptanceTest", "initialCondition",
+    "initialLossOfLife", "status",
+    // EndDevice fields (4)
+    "isVirtual", "isPan", "installCode", "amrSystem"
 })
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class EndDeviceDto {
+public class EndDeviceDto implements Serializable {
 
-    @XmlTransient
-    private Long id;
+    // ==================== Asset fields (12) ====================
 
-    @XmlAttribute(name = "mRID")
-    private String uuid;
+    /**
+     * Utility-specific classification of Asset and its subtypes.
+     */
+    @XmlElement(name = "type", namespace = "http://naesb.org/espi/customer")
+    private String type;
 
-    @XmlElement(name = "published")
-    private OffsetDateTime published;
+    /**
+     * Uniquely tracked commodity (UTC) number.
+     */
+    @XmlElement(name = "utcNumber", namespace = "http://naesb.org/espi/customer")
+    private String utcNumber;
 
-    @XmlElement(name = "updated")
-    private OffsetDateTime updated;
-
-    @XmlElement(name = "link", namespace = "http://www.w3.org/2005/Atom")
-    @XmlElementWrapper(name = "links", namespace = "http://www.w3.org/2005/Atom")
-    private List<LinkDto> relatedLinks;
-
-    @XmlElement(name = "link", namespace = "http://www.w3.org/2005/Atom")
-    private LinkDto selfLink;
-
-    @XmlElement(name = "link", namespace = "http://www.w3.org/2005/Atom")
-    private LinkDto upLink;
-
-    @XmlElement(name = "description")
-    private String description;
-
-    @XmlElement(name = "amrSystem")
-    private String amrSystem;
-
-    @XmlElement(name = "installCode")
-    private String installCode;
-
-    @XmlElement(name = "isPan")
-    private Boolean isPan;
-
-    @XmlElement(name = "installDate")
-    private OffsetDateTime installDate;
-
-    @XmlElement(name = "removedDate")
-    private OffsetDateTime removedDate;
-
-    @XmlElement(name = "serialNumber")
+    /**
+     * Serial number of this asset.
+     */
+    @XmlElement(name = "serialNumber", namespace = "http://naesb.org/espi/customer")
     private String serialNumber;
 
-    @XmlElement(name = "ServiceLocation")
-    private ServiceLocationDto serviceLocation;
+    /**
+     * Lot number for this asset.
+     */
+    @XmlElement(name = "lotNumber", namespace = "http://naesb.org/espi/customer")
+    private String lotNumber;
 
     /**
-     * Minimal constructor for basic device data.
+     * Purchase price of asset.
      */
-    public EndDeviceDto(String uuid, String serialNumber) {
-        this(null, uuid, null, null, null, null, null, null,
-             null, null, null, null, null, serialNumber, null);
-    }
+    @XmlElement(name = "purchasePrice", namespace = "http://naesb.org/espi/customer")
+    private Long purchasePrice;
 
     /**
-     * Gets the self href for this end device.
-     *
-     * @return self href string
+     * True if asset is considered critical for some reason.
      */
-    public String getSelfHref() {
-        return selfLink != null ? selfLink.getHref() : null;
-    }
+    @XmlElement(name = "critical", namespace = "http://naesb.org/espi/customer")
+    private Boolean critical;
 
     /**
-     * Gets the up href for this end device.
-     *
-     * @return up href string
+     * Electronic address (complex type with 8 fields).
      */
-    public String getUpHref() {
-        return upLink != null ? upLink.getHref() : null;
-    }
+    @XmlElement(name = "electronicAddress", namespace = "http://naesb.org/espi/customer")
+    private ElectronicAddressDto electronicAddress;
 
     /**
-     * Generates the default self href for an end device.
-     *
-     * @return default self href
+     * Lifecycle dates for this asset (complex type with 2 fields).
      */
-    public String generateSelfHref() {
-        if (uuid != null && serviceLocation != null && serviceLocation.getUuid() != null) {
-            return "/espi/1_1/resource/ServiceLocation/" + serviceLocation.getUuid() + "/EndDevice/" + uuid;
-        }
-        return uuid != null ? "/espi/1_1/resource/EndDevice/" + uuid : null;
-    }
+    @XmlElement(name = "lifecycle", namespace = "http://naesb.org/espi/customer")
+    private LifecycleDateDto lifecycle;
 
     /**
-     * Generates the default up href for an end device.
-     *
-     * @return default up href
+     * Information on acceptance test (complex type with 4 fields).
      */
-    public String generateUpHref() {
-        if (serviceLocation != null && serviceLocation.getUuid() != null) {
-            return "/espi/1_1/resource/ServiceLocation/" + serviceLocation.getUuid() + "/EndDevice";
-        }
-        return "/espi/1_1/resource/EndDevice";
-    }
+    @XmlElement(name = "acceptanceTest", namespace = "http://naesb.org/espi/customer")
+    private AcceptanceTestDto acceptanceTest;
+
+    /**
+     * Condition of asset in inventory or at time of installation.
+     */
+    @XmlElement(name = "initialCondition", namespace = "http://naesb.org/espi/customer")
+    private String initialCondition;
+
+    /**
+     * Percentage of expected life for the asset when it was new; zero for new devices.
+     */
+    @XmlElement(name = "initialLossOfLife", namespace = "http://naesb.org/espi/customer")
+    private BigDecimal initialLossOfLife;
+
+    /**
+     * Status of this asset (complex type with 4 fields).
+     */
+    @XmlElement(name = "status", namespace = "http://naesb.org/espi/customer")
+    private StatusDto status;
+
+    // ==================== EndDevice fields (4) ====================
+
+    /**
+     * If true, there is no physical device (e.g., virtual meter for aggregation).
+     */
+    @XmlElement(name = "isVirtual", namespace = "http://naesb.org/espi/customer")
+    private Boolean isVirtual;
+
+    /**
+     * If true, this is a premises area network (PAN) device.
+     */
+    @XmlElement(name = "isPan", namespace = "http://naesb.org/espi/customer")
+    private Boolean isPan;
+
+    /**
+     * Installation code.
+     */
+    @XmlElement(name = "installCode", namespace = "http://naesb.org/espi/customer")
+    private String installCode;
+
+    /**
+     * Automated meter reading (AMR) or other communication system.
+     */
+    @XmlElement(name = "amrSystem", namespace = "http://naesb.org/espi/customer")
+    private String amrSystem;
 }

@@ -480,6 +480,7 @@ CREATE TABLE end_devices
     initial_loss_of_life DECIMAL(5, 2),
     status_value         VARCHAR(256),
     status_date_time     TIMESTAMP,
+    status_remark        VARCHAR(256),
     status_reason        VARCHAR(256),
     is_virtual           BOOLEAN              DEFAULT FALSE,
     is_pan               BOOLEAN              DEFAULT FALSE,

@@ -49,7 +49,6 @@ public interface ReadingTypeMapper {
      * @param entity the reading type entity
      * @return the reading type DTO
      */
-    @Mapping(target = "id", ignore = true) // IdentifiedObject field handled by Atom layer
     @Mapping(target = "argument", source = "argument")
     ReadingTypeDto toDto(ReadingTypeEntity entity);
 

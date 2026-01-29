@@ -60,10 +60,6 @@ import java.util.List;
 @AllArgsConstructor
 public class CustomerAgreementDto {
 
-    // UUID identifier (mRID attribute) - from IdentifiedObject
-    @XmlAttribute(name = "mRID")
-    private String uuid;
-
     // ==================== Document fields (customer.xsd lines 819-885) ====================
 
     /**
@@ -100,7 +96,7 @@ public class CustomerAgreementDto {
      * Electronic address for the document.
      */
     @XmlElement(name = "electronicAddress", namespace = "http://naesb.org/espi/customer")
-    private CustomerDto.ElectronicAddressDto electronicAddress;
+    private ElectronicAddressDto electronicAddress;
 
     /**
      * Subject of this document, intended for this document to be found by a search engine.

@@ -51,17 +51,7 @@ import org.greenbuttonalliance.espi.common.dto.ReadingInterharmonicDto;
     "measuringPeriod", "argument"
 })
 public class ReadingTypeDto {
-    
-    @XmlTransient
-    private Long id;
 
-   @XmlTransient
-   // @XmlAttribute(name = "mRID")
-    private String uuid;
-
-    @XmlTransient
-    private String description;
-    
     /**
      * Accumulation behavior describing how readings accumulate over time.
      * 
@@ -312,33 +302,6 @@ public class ReadingTypeDto {
     @XmlElement(name = "argument")
     private RationalNumberDto argument;
 
-    /**
-     * Constructor with basic identification.
-     *
-     * @param id the database identifier
-     * @param uuid the unique resource identifier
-     * @param description human-readable description
-     */
-    public ReadingTypeDto(Long id, String uuid, String description) {
-        this(id, uuid, description, null, null, null, null, null, null, null, null, 
-             null, null, null, null, null, null, null, null, null, null);
-    }
-    
-    /**
-     * Constructor with essential measurement characteristics.
-     * 
-     * @param id the database identifier
-     * @param uuid the unique resource identifier
-     * @param description human-readable description
-     * @param commodity the commodity being measured
-     * @param kind the kind of measurement
-     * @param uom the unit of measure
-     */
-    public ReadingTypeDto(Long id, String uuid, String description, String commodity, String kind, String uom) {
-        this(id, uuid, description, null, commodity, null, null, null, null, null, 
-             null, kind, null, null, null, uom, null, null, null, null, null);
-    }
-    
     /**
      * Checks if this reading type represents energy measurements.
      * 

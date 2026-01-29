@@ -48,7 +48,6 @@ public interface MeterReadingMapper {
      * @param entity the meter reading entity
      * @return the meter reading DTO
      */
-    @Mapping(target = "id", ignore = true) // IdentifiedObject field handled by Atom layer
     MeterReadingDto toDto(MeterReadingEntity entity);
 
     /**

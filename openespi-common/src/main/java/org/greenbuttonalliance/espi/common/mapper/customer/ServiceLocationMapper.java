@@ -42,7 +42,8 @@ import java.util.stream.Collectors;
  * used for JAXB XML marshalling in the Green Button API.
  */
 @Mapper(componentModel = "spring", uses = {
-    DateTimeMapper.class
+    DateTimeMapper.class,
+    ElectronicAddressMapper.class
 })
 public interface ServiceLocationMapper {
 
@@ -53,8 +54,6 @@ public interface ServiceLocationMapper {
      * @param entity the service location entity
      * @return the service location DTO
      */
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "uuid", source = "id")
     @Mapping(target = "type", source = "type")
     @Mapping(target = "mainAddress", source = "mainAddress")
     @Mapping(target = "secondaryAddress", source = "secondaryAddress")
@@ -79,7 +78,6 @@ public interface ServiceLocationMapper {
      * @param dto the service location DTO
      * @return the service location entity
      */
-    @Mapping(target = "id", source = "uuid")
     @Mapping(target = "type", source = "type")
     @Mapping(target = "mainAddress", source = "mainAddress")
     @Mapping(target = "secondaryAddress", source = "secondaryAddress")
@@ -164,40 +162,6 @@ public interface ServiceLocationMapper {
             dto.getInternationalPrefix(),
             dto.getItuPhone()
         );
-    }
-
-    /**
-     * Maps Organisation.ElectronicAddress entity to CustomerDto.ElectronicAddressDto.
-     */
-    default CustomerDto.ElectronicAddressDto mapElectronic(Organisation.ElectronicAddress address) {
-        if (address == null) return null;
-        return new CustomerDto.ElectronicAddressDto(
-            address.getLan(),
-            address.getMac(),
-            address.getEmail1(),
-            address.getEmail2(),
-            address.getWeb(),
-            address.getRadio(),
-            address.getUserID(),
-            address.getPassword()
-        );
-    }
-
-    /**
-     * Maps CustomerDto.ElectronicAddressDto to Organisation.ElectronicAddress entity.
-     */
-    default Organisation.ElectronicAddress mapElectronic(CustomerDto.ElectronicAddressDto dto) {
-        if (dto == null) return null;
-        Organisation.ElectronicAddress address = new Organisation.ElectronicAddress();
-        address.setLan(dto.getLan());
-        address.setMac(dto.getMac());
-        address.setEmail1(dto.getEmail1());
-        address.setEmail2(dto.getEmail2());
-        address.setWeb(dto.getWeb());
-        address.setRadio(dto.getRadio());
-        address.setUserID(dto.getUserID());
-        address.setPassword(dto.getPassword());
-        return address;
     }
 
     /**

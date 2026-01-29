@@ -60,12 +60,6 @@ import java.util.List;
 })
 public class UsageSummaryDto {
 
-    @XmlTransient
-    private Long id;
-
-    @XmlAttribute(name = "mRID")
-    private String uuid;
-
     @XmlElement(name = "billingPeriod")
     private DateTimeIntervalDto billingPeriod;
 
@@ -144,22 +138,4 @@ public class UsageSummaryDto {
      * @param uuid the resource identifier (mRID)
      * @param statusTimeStamp the status timestamp (required)
      */
-    public UsageSummaryDto(String uuid, Long statusTimeStamp) {
-        this(null, uuid, null, null, null, null, null, null,
-             null, null, null, null, null, null, null, null,
-             null, null, null, null, statusTimeStamp, null, null, null, null, null);
-    }
-
-    /**
-     * Constructor with billing period and status timestamp.
-     *
-     * @param uuid the resource identifier (mRID)
-     * @param billingPeriod the billing period
-     * @param statusTimeStamp the status timestamp (required)
-     */
-    public UsageSummaryDto(String uuid, DateTimeIntervalDto billingPeriod, Long statusTimeStamp) {
-        this(null, uuid, billingPeriod, null, null, null, null, null,
-             null, null, null, null, null, null, null, null,
-             null, null, null, null, statusTimeStamp, null, null, null, null, null);
-    }
 }

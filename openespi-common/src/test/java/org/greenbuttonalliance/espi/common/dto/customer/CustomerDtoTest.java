@@ -23,6 +23,7 @@ import org.greenbuttonalliance.espi.common.domain.customer.enums.CustomerKind;
 import org.greenbuttonalliance.espi.common.dto.atom.CustomerAtomEntryDto;
 import org.greenbuttonalliance.espi.common.dto.atom.AtomFeedDto;
 import org.greenbuttonalliance.espi.common.service.impl.DtoExportServiceImpl;
+import org.greenbuttonalliance.espi.common.dto.customer.ElectronicAddressDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -205,7 +206,6 @@ class CustomerDtoTest {
         );
 
         CustomerDto customer = new CustomerDto(
-            "550e8400-e29b-51d4-a716-446655440002",
             organisation,
             CustomerKind.ENTERPRISE,
             null, null, null, null, null, null, null
@@ -281,7 +281,7 @@ class CustomerDtoTest {
             "1", "217", null, "555-5678", "101", null, null, null
         );
 
-        CustomerDto.ElectronicAddressDto electronicAddress = new CustomerDto.ElectronicAddressDto(
+        ElectronicAddressDto electronicAddress = new ElectronicAddressDto(
             null, null, "customer@example.com", "support@example.com", "https://www.example.com", null, null, null
         );
 
@@ -299,7 +299,6 @@ class CustomerDtoTest {
         CustomerDto.PriorityDto priority = new CustomerDto.PriorityDto(5, 1, "STANDARD");
 
         return new CustomerDto(
-            "550e8400-e29b-51d4-a716-446655440000",
             organisation,
             CustomerKind.RESIDENTIAL,
             "Life support required",
@@ -318,7 +317,6 @@ class CustomerDtoTest {
         );
 
         return new CustomerDto(
-            "test-uuid",
             organisation,
             CustomerKind.RESIDENTIAL,
             null, null, null, null, null, null, "Test Name"

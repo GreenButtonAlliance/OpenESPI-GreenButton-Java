@@ -21,11 +21,11 @@ package org.greenbuttonalliance.espi.common.test;
 import net.datafaker.Faker;
 import org.greenbuttonalliance.espi.common.domain.common.DateTimeInterval;
 import org.greenbuttonalliance.espi.common.domain.common.ServiceCategory;
-import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerEntity;
-import org.greenbuttonalliance.espi.common.domain.customer.entity.StatementEntity;
+import org.greenbuttonalliance.espi.common.domain.customer.entity.*;
 import org.greenbuttonalliance.espi.common.domain.customer.enums.CustomerKind;
 import org.greenbuttonalliance.espi.common.domain.usage.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -322,5 +322,61 @@ public class TestDataBuilders {
     public static LocalDateTime randomLocalDateTime() {
         return faker.timeAndDate().past(365, java.util.concurrent.TimeUnit.DAYS)
                 .atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
+    }
+
+    /**
+     * Creates a valid CustomerAccountEntity for testing.
+     */
+    public static CustomerAccountEntity createValidCustomerAccount() {
+        CustomerAccountEntity account = new CustomerAccountEntity();
+        account.setDescription(faker.lorem().sentence(4, 8));
+        account.setType("Residential Account");
+        account.setBillingCycle(String.valueOf(faker.number().numberBetween(1, 31)));
+        account.setBudgetBill("Standard");
+        account.setAccountId("ACCT-" + faker.number().digits(10));
+        account.setIsPrePay(false);
+        return account;
+    }
+
+    /**
+     * Creates a valid ServiceLocationEntity for testing.
+     */
+    public static ServiceLocationEntity createValidServiceLocation() {
+        ServiceLocationEntity location = new ServiceLocationEntity();
+        location.setDescription(faker.lorem().sentence(4, 8));
+        location.setType("Residential");
+        location.setAccessMethod("Front door key in lockbox");
+        location.setNeedsInspection(false);
+        location.setOutageBlock("BLOCK-" + faker.number().digits(6));
+        return location;
+    }
+
+    /**
+     * Creates a valid CustomerAgreementEntity for testing.
+     */
+    public static CustomerAgreementEntity createValidCustomerAgreement() {
+        CustomerAgreementEntity agreement = new CustomerAgreementEntity();
+        agreement.setDescription(faker.lorem().sentence(4, 8));
+        agreement.setType("Service Agreement");
+        agreement.setSignDate(OffsetDateTime.now().minusDays(faker.number().numberBetween(1, 365)));
+        agreement.setIsPrePay(false);
+        agreement.setCurrency("USD");
+        agreement.setAgreementId("AGR-" + faker.number().digits(10));
+        return agreement;
+    }
+
+    /**
+     * Creates a valid EndDeviceEntity for testing.
+     */
+    public static EndDeviceEntity createValidEndDevice() {
+        EndDeviceEntity endDevice = new EndDeviceEntity();
+        endDevice.setDescription(faker.lorem().sentence(4, 8));
+        endDevice.setType("Electric Meter");
+        endDevice.setSerialNumber("SN-" + faker.number().digits(12));
+        endDevice.setUtcNumber("UTC-" + faker.number().digits(8));
+        endDevice.setIsVirtual(false);
+        endDevice.setIsPan(false);
+        endDevice.setAmrSystem("AMR-" + faker.lorem().word());
+        return endDevice;
     }
 }

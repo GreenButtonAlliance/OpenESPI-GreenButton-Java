@@ -23,6 +23,7 @@ import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerEntity
 import org.greenbuttonalliance.espi.common.domain.customer.entity.Organisation;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.PhoneNumberEntity;
 import org.greenbuttonalliance.espi.common.dto.customer.CustomerDto;
+import org.greenbuttonalliance.espi.common.dto.customer.ElectronicAddressDto;
 import org.greenbuttonalliance.espi.common.mapper.BaseIdentifiedObjectMapper;
 import org.greenbuttonalliance.espi.common.mapper.BaseMapperUtils;
 import org.greenbuttonalliance.espi.common.mapper.DateTimeMapper;
@@ -43,7 +44,8 @@ import java.util.List;
  * used for JAXB XML marshalling in the Green Button API.
  */
 @Mapper(componentModel = "spring", uses = {
-    DateTimeMapper.class
+    DateTimeMapper.class,
+    ElectronicAddressMapper.class
 })
 public interface CustomerMapper extends BaseMapperUtils {
 
@@ -159,9 +161,14 @@ public interface CustomerMapper extends BaseMapperUtils {
         return address;
     }
 
-    default CustomerDto.ElectronicAddressDto mapElectronicAddress(Organisation.ElectronicAddress address) {
+    /**
+     * Helper method for mapping electronic address in custom Organisation mapping.
+     * Delegates to simple field-to-field copy since ElectronicAddressMapper
+     * is not directly accessible from default interface methods.
+     */
+    default ElectronicAddressDto mapElectronicAddress(Organisation.ElectronicAddress address) {
         if (address == null) return null;
-        return new CustomerDto.ElectronicAddressDto(
+        return new ElectronicAddressDto(
             address.getLan(),
             address.getMac(),
             address.getEmail1(),
@@ -173,7 +180,12 @@ public interface CustomerMapper extends BaseMapperUtils {
         );
     }
 
-    default Organisation.ElectronicAddress mapElectronicAddressFromDto(CustomerDto.ElectronicAddressDto dto) {
+    /**
+     * Helper method for mapping electronic address from DTO in custom Organisation mapping.
+     * Delegates to simple field-to-field copy since ElectronicAddressMapper
+     * is not directly accessible from default interface methods.
+     */
+    default Organisation.ElectronicAddress mapElectronicAddressFromDto(ElectronicAddressDto dto) {
         if (dto == null) return null;
         Organisation.ElectronicAddress address = new Organisation.ElectronicAddress();
         address.setLan(dto.getLan());

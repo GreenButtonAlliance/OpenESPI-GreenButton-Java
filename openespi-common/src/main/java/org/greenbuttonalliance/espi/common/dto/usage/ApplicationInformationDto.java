@@ -96,10 +96,6 @@ import lombok.Setter;
 })
 public class ApplicationInformationDto {
 
-    // Internal UUID (not in XSD)
-    @XmlTransient
-    private String uuid;
-
     // 1. dataCustodianId - Required
     private String dataCustodianId;
 

@@ -60,8 +60,6 @@ class TimeConfigurationDtoTest {
     void shouldMarshalTimeConfigurationWithRealisticData() throws Exception {
         // Create TimeConfigurationDto with Pacific Time (UTC-8)
         TimeConfigurationDto timeConfig = new TimeConfigurationDto(
-            null, // id (transient)
-            "urn:uuid:550e8400-e29b-51d4-a716-446655440000", // uuid (Version-5)
             new byte[]{0x01, 0x0B, 0x05, 0x00, 0x02, 0x00}, // dstEndRule (Nov 1st, 2am)
             3600L, // dstOffset (1 hour in seconds)
             new byte[]{0x01, 0x03, 0x02, 0x00, 0x02, 0x00}, // dstStartRule (Mar 2nd, 2am)
@@ -88,8 +86,6 @@ class TimeConfigurationDtoTest {
     void shouldPerformRoundTripMarshallingForTimeConfiguration() throws Exception {
         // Create original TimeConfiguration with Eastern Time (UTC-5)
         TimeConfigurationDto original = new TimeConfigurationDto(
-            null, // id
-            "urn:uuid:550e8400-e29b-51d4-a716-446655440001", // uuid (Version-5)
             new byte[]{0x01, 0x0B, 0x01, 0x00, 0x02, 0x00}, // dstEndRule
             3600L, // dstOffset
             new byte[]{0x01, 0x03, 0x08, 0x00, 0x02, 0x00}, // dstStartRule
@@ -117,8 +113,6 @@ class TimeConfigurationDtoTest {
     void shouldHandleTimeConfigurationWithOnlyTimezoneOffset() throws Exception {
         // Create TimeConfiguration with only timezone offset (no DST)
         TimeConfigurationDto simple = new TimeConfigurationDto(
-            null, // id
-            "urn:uuid:550e8400-e29b-51d4-a716-446655440002", // uuid (Version-5)
             null, // dstEndRule
             null, // dstOffset
             null, // dstStartRule
@@ -175,8 +169,6 @@ class TimeConfigurationDtoTest {
     void shouldIncludeProperXmlNamespacesAndElementOrder() throws Exception {
         // Create TimeConfiguration with all fields
         TimeConfigurationDto timeConfig = new TimeConfigurationDto(
-            null,
-            "urn:uuid:550e8400-e29b-51d4-a716-446655440003", // uuid (Version-5)
             new byte[]{0x01}, // dstEndRule
             3600L, // dstOffset
             new byte[]{0x01}, // dstStartRule
@@ -212,7 +204,6 @@ class TimeConfigurationDtoTest {
 
         // Create TimeConfiguration
         TimeConfigurationDto timeConfig = new TimeConfigurationDto(
-            null, "urn:uuid:clone-test",
             originalEndRule, 3600L, originalStartRule, -18000L
         );
 
@@ -245,7 +236,7 @@ class TimeConfigurationDtoTest {
         TimeConfigurationDto utc = new TimeConfigurationDto(0L); // UTC
         assertEquals(0.0, utc.getTzOffsetInHours(), 0.01, "UTC should be 0 hours");
 
-        TimeConfigurationDto noOffset = new TimeConfigurationDto(null, null, null, null, null, null);
+        TimeConfigurationDto noOffset = new TimeConfigurationDto(null, null, null, null);
         assertNull(noOffset.getTzOffsetInHours(), "Null offset should return null hours");
     }
 
@@ -253,12 +244,12 @@ class TimeConfigurationDtoTest {
     @DisplayName("Should calculate DST offset in hours correctly")
     void shouldCalculateDstOffsetInHoursCorrectly() {
         TimeConfigurationDto oneHourDst = new TimeConfigurationDto(
-            null, null, null, 3600L, null, -18000L
+            null, 3600L, null, -18000L
         );
         assertEquals(1.0, oneHourDst.getDstOffsetInHours(), 0.01, "3600 seconds should be 1 hour");
 
         TimeConfigurationDto halfHourDst = new TimeConfigurationDto(
-            null, null, null, 1800L, null, -18000L
+            null, 1800L, null, -18000L
         );
         assertEquals(0.5, halfHourDst.getDstOffsetInHours(), 0.01, "1800 seconds should be 0.5 hours");
 
@@ -271,7 +262,7 @@ class TimeConfigurationDtoTest {
     void shouldCalculateEffectiveOffsetIncludingDst() {
         // Pacific Time: UTC-8 + DST 1 hour = UTC-7
         TimeConfigurationDto pacificDst = new TimeConfigurationDto(
-            null, null, null, 3600L, null, -28800L
+            null, 3600L, null, -28800L
         );
         assertEquals(-25200L, pacificDst.getEffectiveOffset(), "UTC-8 + 1hr DST should be -25200 seconds");
         assertEquals(-7.0, pacificDst.getEffectiveOffsetInHours(), 0.01, "Effective offset should be -7 hours");
@@ -287,7 +278,6 @@ class TimeConfigurationDtoTest {
     void shouldDetectDstRulesPresenceCorrectly() {
         // With DST rules
         TimeConfigurationDto withDstRules = new TimeConfigurationDto(
-            null, null,
             new byte[]{0x01}, 3600L, new byte[]{0x01}, -28800L
         );
         assertTrue(withDstRules.hasDstRules(), "Should detect DST rules when present");
@@ -298,7 +288,6 @@ class TimeConfigurationDtoTest {
 
         // Empty DST rules
         TimeConfigurationDto emptyDstRules = new TimeConfigurationDto(
-            null, null,
             new byte[]{}, 3600L, new byte[]{}, -28800L
         );
         assertFalse(emptyDstRules.hasDstRules(), "Should not detect empty DST rules");
@@ -309,13 +298,13 @@ class TimeConfigurationDtoTest {
     void shouldDetectDstActiveStatusCorrectly() {
         // DST active
         TimeConfigurationDto dstActive = new TimeConfigurationDto(
-            null, null, null, 3600L, null, -28800L
+            null, 3600L, null, -28800L
         );
         assertTrue(dstActive.isDstActive(), "Should detect active DST when offset is non-zero");
 
         // DST inactive
         TimeConfigurationDto dstInactive = new TimeConfigurationDto(
-            null, null, null, 0L, null, -28800L
+            null, 0L, null, -28800L
         );
         assertFalse(dstInactive.isDstActive(), "Should not detect active DST when offset is zero");
 

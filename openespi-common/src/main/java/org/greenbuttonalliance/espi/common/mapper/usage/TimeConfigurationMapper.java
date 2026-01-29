@@ -49,7 +49,6 @@ public interface TimeConfigurationMapper extends BaseIdentifiedObjectMapper {
      * @param entity the time configuration entity
      * @return the time configuration DTO
      */
-    @Mapping(target = "id", ignore = true) // IdentifiedObject field handled by Atom layer
     TimeConfigurationDto toDto(TimeConfigurationEntity entity);
 
     /**

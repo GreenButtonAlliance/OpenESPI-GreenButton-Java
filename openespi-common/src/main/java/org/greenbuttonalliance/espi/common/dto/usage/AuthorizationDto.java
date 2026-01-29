@@ -59,10 +59,6 @@ import lombok.Setter;
 })
 public class AuthorizationDto {
 
-    // UUID (not in XSD - internal use only)
-    @XmlTransient
-    private String uuid;
-
     // XSD-compliant fields (in order)
 
     @Schema(description = "Period during which this authorization is valid",
@@ -164,19 +160,10 @@ public class AuthorizationDto {
             example = "660e8400-e29b-41d4-a716-446655440000")
     private String retailCustomerId;
 
-    /**
-     * Constructor for basic authorization (XSD-compliant fields only).
-     */
-    public AuthorizationDto(String scope, Short status, String resourceURI, String authorizationUri) {
-        this(null, null, null, status, null, null, scope, null, null, null, null,
-             resourceURI, authorizationUri, null, null, null, null, null, null, null, null, null);
-    }
-
     // JAXB property accessors for XSD-compliant fields (in propOrder sequence)
 
     // OAuth2 implementation field accessors (marked @XmlTransient, not in XML output)
 
-    public String getUuid() { return uuid; }
     public String getAccessToken() { return accessToken; }
     public String getRefreshToken() { return refreshToken; }
     public String getAuthorizationCode() { return authorizationCode; }

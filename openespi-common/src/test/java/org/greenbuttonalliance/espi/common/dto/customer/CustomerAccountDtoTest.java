@@ -22,6 +22,7 @@ package org.greenbuttonalliance.espi.common.dto.customer;
 import org.greenbuttonalliance.espi.common.dto.atom.AtomFeedDto;
 import org.greenbuttonalliance.espi.common.dto.atom.CustomerAtomEntryDto;
 import org.greenbuttonalliance.espi.common.service.impl.DtoExportServiceImpl;
+import org.greenbuttonalliance.espi.common.dto.customer.ElectronicAddressDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -205,7 +206,7 @@ class CustomerAccountDtoTest {
     // Helper methods
 
     private CustomerAccountDto createFullCustomerAccountDto() {
-        CustomerDto.ElectronicAddressDto electronicAddress = new CustomerDto.ElectronicAddressDto(
+        ElectronicAddressDto electronicAddress = new ElectronicAddressDto(
             null, null, "billing@example.com", "support@example.com", "https://www.example.com", null, null, null
         );
 
@@ -219,12 +220,11 @@ class CustomerAccountDtoTest {
         CustomerDto.OrganisationDto contactInfo = new CustomerDto.OrganisationDto(
             new CustomerDto.StreetAddressDto("123 Main St", "Springfield", "IL", "62701", "USA"),
             null, null, null,
-            new CustomerDto.ElectronicAddressDto(null, null, "contact@acme.com", null, "https://acme.com", null, null, null),
+            new ElectronicAddressDto(null, null, "contact@acme.com", null, "https://acme.com", null, null, null),
             "ACME Corporation"
         );
 
         return new CustomerAccountDto(
-            "550e8400-e29b-51d4-a716-446655440000",
             "BILLING",
             "Billing System",
             OffsetDateTime.of(2025, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC),
@@ -245,7 +245,6 @@ class CustomerAccountDtoTest {
 
     private CustomerAccountDto createMinimalCustomerAccountDto() {
         return new CustomerAccountDto(
-            "test-uuid",
             null, null, null, null, null, null, null, null, null,
             null, null, null, null, null, "ACCT-MIN"
         );

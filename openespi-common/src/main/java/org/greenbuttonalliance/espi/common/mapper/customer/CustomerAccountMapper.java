@@ -52,7 +52,6 @@ public interface CustomerAccountMapper {
      * @param entity the customer account entity
      * @return the customer account DTO
      */
-    @Mapping(target = "uuid", source = "id")
     // Document fields
     @Mapping(target = "type", source = "type")
     @Mapping(target = "authorName", source = "authorName")
@@ -79,7 +78,6 @@ public interface CustomerAccountMapper {
      * @param dto the customer account DTO
      * @return the customer account entity
      */
-    @Mapping(target = "id", source = "uuid")
     // Document fields
     @Mapping(target = "type", source = "type")
     @Mapping(target = "authorName", source = "authorName")

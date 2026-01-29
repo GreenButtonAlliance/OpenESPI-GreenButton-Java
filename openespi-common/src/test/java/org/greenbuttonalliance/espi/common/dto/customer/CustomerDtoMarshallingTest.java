@@ -22,6 +22,7 @@ package org.greenbuttonalliance.espi.common.dto.customer;
 import org.greenbuttonalliance.espi.common.domain.customer.enums.CustomerKind;
 import org.greenbuttonalliance.espi.common.dto.atom.CustomerAtomEntryDto;
 import org.greenbuttonalliance.espi.common.service.impl.CustomerExportService;
+import org.greenbuttonalliance.espi.common.dto.customer.ElectronicAddressDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -90,7 +91,7 @@ class CustomerDtoMarshallingTest {
             null
         );
 
-        CustomerDto.ElectronicAddressDto electronicAddress = new CustomerDto.ElectronicAddressDto(
+        ElectronicAddressDto electronicAddress = new ElectronicAddressDto(
             null,                        // lan
             null,                        // mac
             "customer@example.com",      // email1
@@ -127,7 +128,6 @@ class CustomerDtoMarshallingTest {
         );
 
         CustomerDto customer = new CustomerDto(
-            "urn:uuid:550e8400-e29b-51d4-a716-446655440000",  // uuid
             organisation,
             CustomerKind.RESIDENTIAL,
             "Wheelchair access required",  // specialNeed
@@ -248,7 +248,6 @@ class CustomerDtoMarshallingTest {
     void shouldMarshalCustomerWithMinimalFields() {
         // Arrange - Create minimal CustomerDto (only customerName required)
         CustomerDto customer = new CustomerDto(
-            "urn:uuid:550e8400-e29b-51d4-a716-446655440010",
             null,  // organisation
             null,  // kind
             null,  // specialNeed
@@ -282,7 +281,6 @@ class CustomerDtoMarshallingTest {
     void shouldUseCustPrefixForAllElements() {
         // Arrange
         CustomerDto customer = new CustomerDto(
-            "urn:uuid:test-prefix",
             null,
             CustomerKind.COMMERCIAL,
             "Test special need",
