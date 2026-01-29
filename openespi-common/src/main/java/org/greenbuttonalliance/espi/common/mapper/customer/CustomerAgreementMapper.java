@@ -52,7 +52,6 @@ public interface CustomerAgreementMapper {
      * @param entity the customer agreement entity
      * @return the customer agreement DTO
      */
-    @Mapping(target = "uuid", source = "id")
     // Document fields (11)
     @Mapping(target = "type", source = "type")
     @Mapping(target = "authorName", source = "authorName")
@@ -84,7 +83,6 @@ public interface CustomerAgreementMapper {
      * @param dto the customer agreement DTO
      * @return the customer agreement entity
      */
-    @Mapping(target = "id", source = "uuid")
     // Document fields (11)
     @Mapping(target = "type", source = "type")
     @Mapping(target = "authorName", source = "authorName")

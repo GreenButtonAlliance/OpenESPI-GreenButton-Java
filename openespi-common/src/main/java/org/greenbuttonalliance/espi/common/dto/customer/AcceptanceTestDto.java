@@ -23,10 +23,12 @@ import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlElement;
 import jakarta.xml.bind.annotation.XmlType;
+import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.greenbuttonalliance.espi.common.utils.OffsetDateTimeAdapter;
 
 import java.io.Serializable;
 import java.time.OffsetDateTime;
@@ -54,6 +56,7 @@ import java.time.OffsetDateTime;
 public class AcceptanceTestDto implements Serializable {
 
     @XmlElement(name = "dateTime", namespace = "http://naesb.org/espi/customer")
+    @XmlJavaTypeAdapter(OffsetDateTimeAdapter.class)
     private OffsetDateTime dateTime;
 
     @XmlElement(name = "success", namespace = "http://naesb.org/espi/customer")

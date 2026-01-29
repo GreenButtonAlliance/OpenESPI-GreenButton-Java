@@ -51,46 +51,12 @@ import java.util.List;
 @AllArgsConstructor
 public class IntervalBlockDto {
 
-    @XmlTransient
-    private Long id;
-
-    @XmlTransient
-    private String uuid;
-
     @XmlElement(name = "interval", namespace = "http://naesb.org/espi")
     private DateTimeIntervalDto interval;
 
     @XmlElement(name = "IntervalReading", namespace = "http://naesb.org/espi")
     private List<IntervalReadingDto> intervalReadings;
 
-    /**
-     * Convenience constructor for creating interval block with uuid, interval, and readings.
-     *
-     * @param uuid the resource identifier
-     * @param interval the time interval
-     * @param intervalReadings the list of readings
-     */
-    public IntervalBlockDto(String uuid, DateTimeIntervalDto interval, List<IntervalReadingDto> intervalReadings) {
-        this(null, uuid, interval, intervalReadings);
-    }
-
-    /**
-     * Generates the default self href for an interval block.
-     *
-     * @return default self href
-     */
-    public String generateSelfHref() {
-        return uuid != null ? "/espi/1_1/resource/IntervalBlock/" + uuid : null;
-    }
-
-    /**
-     * Generates the default up href for an interval block.
-     *
-     * @return default up href
-     */
-    public String generateUpHref() {
-        return "/espi/1_1/resource/IntervalBlock";
-    }
 
     /**
      * Gets the total number of interval readings.

@@ -22,6 +22,7 @@ package org.greenbuttonalliance.espi.common.dto.customer;
 import org.greenbuttonalliance.espi.common.dto.atom.AtomFeedDto;
 import org.greenbuttonalliance.espi.common.dto.atom.CustomerAtomEntryDto;
 import org.greenbuttonalliance.espi.common.service.impl.DtoExportServiceImpl;
+import org.greenbuttonalliance.espi.common.dto.customer.ElectronicAddressDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -311,7 +312,7 @@ class ServiceLocationDtoTest {
             "1", "312", "773", "555-2000", "200", "9", "011", "+1-312-555-2000"
         );
 
-        CustomerDto.ElectronicAddressDto electronicAddress = new CustomerDto.ElectronicAddressDto(
+        ElectronicAddressDto electronicAddress = new ElectronicAddressDto(
             "192.168.1.100", "00:11:22:33:44:55", "meter@example.com", "support@example.com",
             "https://meter.example.com", "VHF-123", "meter_user", null
         );
@@ -340,8 +341,6 @@ class ServiceLocationDtoTest {
         );
 
         return new ServiceLocationDto(
-            null, // id
-            "650e8400-e29b-51d4-a716-446655440000", // uuid
             "COMMERCIAL", // type
             mainAddress,
             secondaryAddress,
@@ -365,8 +364,6 @@ class ServiceLocationDtoTest {
      */
     private ServiceLocationDto createMinimalServiceLocationDto() {
         return new ServiceLocationDto(
-            null, // id
-            "650e8400-e29b-51d4-a716-446655440099", // uuid
             null, null, null, null, null, null, null, null, null, null,
             null, null, null, null, null
         );

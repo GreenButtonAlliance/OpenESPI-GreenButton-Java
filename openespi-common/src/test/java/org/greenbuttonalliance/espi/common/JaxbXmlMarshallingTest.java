@@ -63,7 +63,6 @@ class JaxbXmlMarshallingTest {
     void shouldMarshalUsagePointWithRealisticData() throws Exception {
         // Create a UsagePointDto with realistic ESPI data
         UsagePointDto usagePoint = new UsagePointDto(
-            "urn:uuid:test-usage-point",
             new byte[]{0x01, 0x04}, // Electricity consumer role flags
             null, // serviceCategory
             (short) 1, // Active status
@@ -95,7 +94,6 @@ class JaxbXmlMarshallingTest {
     void shouldPerformRoundTripMarshallingForUsagePoint() throws Exception {
         // Create original UsagePoint with comprehensive data
         UsagePointDto originalUsagePoint = new UsagePointDto(
-            "urn:uuid:commercial-gas-point",
             new byte[]{0x02, 0x08}, // Gas consumer role flags
             null, // serviceCategory
             (short) 1, // Active status
@@ -129,7 +127,6 @@ class JaxbXmlMarshallingTest {
     void shouldHandleEmptyUsagePointWithoutErrors() throws Exception {
         // Create empty UsagePoint
         UsagePointDto empty = new UsagePointDto(
-            null, // uuid
             null, // roleFlags
             null, // serviceCategory
             null, // status
@@ -166,7 +163,6 @@ class JaxbXmlMarshallingTest {
     void shouldHandleNullValuesGracefully() throws Exception {
         // Create UsagePoint with some null values
         UsagePointDto withNulls = new UsagePointDto(
-            "urn:uuid:test-nulls",
             null, // Null role flags
             null, // serviceCategory
             (short) 1, // Non-null status
@@ -200,7 +196,6 @@ class JaxbXmlMarshallingTest {
     void shouldIncludeProperXmlNamespaces() throws Exception {
         // Create UsagePoint
         UsagePointDto usagePoint = new UsagePointDto(
-            "urn:uuid:test-namespaces",
             null, // roleFlags
             null, // serviceCategory
             null, // status
@@ -234,7 +229,6 @@ class JaxbXmlMarshallingTest {
     void shouldMarshalSpecialCharactersCorrectly() throws Exception {
         // Create UsagePoint with special characters in description (will be in Atom title)
         UsagePointDto usagePoint = new UsagePointDto(
-            "urn:uuid:test-special-chars",
             null, // roleFlags
             null, // serviceCategory
             null, // status
@@ -273,7 +267,6 @@ class JaxbXmlMarshallingTest {
     void shouldNotThrowExceptionsDuringMarshalling() {
         // Create UsagePoint
         UsagePointDto usagePoint = new UsagePointDto(
-            "urn:uuid:test-no-exceptions",
             null, // roleFlags
             null, // serviceCategory
             null, // status

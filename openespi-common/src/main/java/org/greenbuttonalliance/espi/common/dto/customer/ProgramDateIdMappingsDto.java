@@ -117,28 +117,4 @@ public class ProgramDateIdMappingsDto {
     public String getUpHref() {
         return upLink != null ? upLink.getHref() : null;
     }
-
-    /**
-     * Generates the default self href for a program date mapping.
-     *
-     * @return default self href
-     */
-    public String generateSelfHref() {
-        if (uuid != null && customer != null && customer.getUuid() != null) {
-            return "/espi/1_1/resource/Customer/" + customer.getUuid() + "/ProgramDateIdMappings/" + uuid;
-        }
-        return uuid != null ? "/espi/1_1/resource/ProgramDateIdMappings/" + uuid : null;
-    }
-
-    /**
-     * Generates the default up href for a program date mapping.
-     *
-     * @return default up href
-     */
-    public String generateUpHref() {
-        if (customer != null && customer.getUuid() != null) {
-            return "/espi/1_1/resource/Customer/" + customer.getUuid() + "/ProgramDateIdMappings";
-        }
-        return "/espi/1_1/resource/ProgramDateIdMappings";
-    }
 }

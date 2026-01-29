@@ -47,9 +47,6 @@ import java.time.OffsetDateTime;
 @AllArgsConstructor
 public class CustomerDto {
 
-    @XmlTransient
-    private String uuid;
-
     @XmlElement(name = "Organisation", namespace = "http://naesb.org/espi/customer")
     private OrganisationDto organisation;
 

@@ -132,28 +132,4 @@ public class MeterDto {
     public String getUpHref() {
         return upLink != null ? upLink.getHref() : null;
     }
-
-    /**
-     * Generates the default self href for a meter.
-     *
-     * @return default self href
-     */
-    public String generateSelfHref() {
-        if (uuid != null && serviceLocation != null && serviceLocation.getUuid() != null) {
-            return "/espi/1_1/resource/ServiceLocation/" + serviceLocation.getUuid() + "/Meter/" + uuid;
-        }
-        return uuid != null ? "/espi/1_1/resource/Meter/" + uuid : null;
-    }
-
-    /**
-     * Generates the default up href for a meter.
-     *
-     * @return default up href
-     */
-    public String generateUpHref() {
-        if (serviceLocation != null && serviceLocation.getUuid() != null) {
-            return "/espi/1_1/resource/ServiceLocation/" + serviceLocation.getUuid() + "/Meter";
-        }
-        return "/espi/1_1/resource/Meter";
-    }
 }

@@ -103,7 +103,6 @@ class CustomerXmlDebugTest {
     void shouldDeclareCustomerNamespaceOnly() throws Exception {
         // Arrange
         CustomerDto customer = new CustomerDto(
-            "urn:uuid:550e8400-e29b-51d4-a716-446655440001",  // uuid
             null,  // organisation
             null,  // kind
             "Wheelchair access required",  // specialNeed - add actual value to force namespace usage
@@ -154,7 +153,6 @@ class CustomerXmlDebugTest {
     void shouldUseCustPrefixForCustomer() throws Exception {
         // Arrange
         CustomerDto customer = new CustomerDto(
-            "urn:uuid:550e8400-e29b-51d4-a716-446655440003",  // uuid
             null,  // organisation
             null,  // kind
             null,  // specialNeed
@@ -183,7 +181,6 @@ class CustomerXmlDebugTest {
     void shouldUseAtomAsDefaultNamespace() throws Exception {
         // Arrange
         CustomerDto customer = new CustomerDto(
-            "urn:uuid:550e8400-e29b-51d4-a716-446655440005",  // uuid
             null,  // organisation
             null,  // kind
             null,  // specialNeed
@@ -220,7 +217,6 @@ class CustomerXmlDebugTest {
     void debugCompleteCustomerDomainXml() throws Exception {
         // Arrange
         CustomerDto customer = new CustomerDto(
-            "urn:uuid:550e8400-e29b-51d4-a716-446655440007",  // uuid
             null,  // organisation
             null,  // kind
             "Hearing impaired",  // specialNeed

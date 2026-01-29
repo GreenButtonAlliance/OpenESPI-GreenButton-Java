@@ -50,12 +50,6 @@ import java.util.List;
 @AllArgsConstructor
 public class ServiceLocationDto implements Serializable {
 
-    @XmlTransient
-    private String id;
-
-    @XmlAttribute(name = "mRID")
-    private String uuid;
-
     // Location fields (inherited from Location → WorkLocation → ServiceLocation)
 
     /**

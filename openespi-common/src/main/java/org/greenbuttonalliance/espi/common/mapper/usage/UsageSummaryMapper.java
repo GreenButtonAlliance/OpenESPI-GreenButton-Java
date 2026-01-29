@@ -55,7 +55,6 @@ public interface UsageSummaryMapper {
      * @param entity the usage summary entity
      * @return the usage summary DTO
      */
-    @Mapping(target = "id", ignore = true) // IdentifiedObject field handled by Atom layer
     @Mapping(target = "billingPeriod", source = "billingPeriod")
     @Mapping(target = "billLastPeriod", source = "billLastPeriod")
     @Mapping(target = "billToDate", source = "billToDate")

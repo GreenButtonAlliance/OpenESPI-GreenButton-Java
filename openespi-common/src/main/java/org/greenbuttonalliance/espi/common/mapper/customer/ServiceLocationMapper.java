@@ -54,8 +54,6 @@ public interface ServiceLocationMapper {
      * @param entity the service location entity
      * @return the service location DTO
      */
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "uuid", source = "id")
     @Mapping(target = "type", source = "type")
     @Mapping(target = "mainAddress", source = "mainAddress")
     @Mapping(target = "secondaryAddress", source = "secondaryAddress")
@@ -80,7 +78,6 @@ public interface ServiceLocationMapper {
      * @param dto the service location DTO
      * @return the service location entity
      */
-    @Mapping(target = "id", source = "uuid")
     @Mapping(target = "type", source = "type")
     @Mapping(target = "mainAddress", source = "mainAddress")
     @Mapping(target = "secondaryAddress", source = "secondaryAddress")

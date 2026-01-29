@@ -74,7 +74,6 @@ class MigrationVerificationTest {
 
         // Create a simple DTO with all nulls
         UsagePointDto dto = new UsagePointDto(
-            null, // uuid
             null, // roleFlags
             null, // serviceCategory
             null, // status

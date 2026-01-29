@@ -60,10 +60,6 @@ import java.util.List;
 @AllArgsConstructor
 public class CustomerAgreementDto {
 
-    // UUID identifier (mRID attribute) - from IdentifiedObject
-    @XmlAttribute(name = "mRID")
-    private String uuid;
-
     // ==================== Document fields (customer.xsd lines 819-885) ====================
 
     /**

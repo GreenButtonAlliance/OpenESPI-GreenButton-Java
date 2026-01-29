@@ -124,28 +124,4 @@ public class StatementDto {
     public String getUpHref() {
         return upLink != null ? upLink.getHref() : null;
     }
-
-    /**
-     * Generates the default self href for a statement.
-     *
-     * @return default self href
-     */
-    public String generateSelfHref() {
-        if (uuid != null && customerAgreement != null && customerAgreement.getUuid() != null) {
-            return "/espi/1_1/resource/CustomerAgreement/" + customerAgreement.getUuid() + "/Statement/" + uuid;
-        }
-        return uuid != null ? "/espi/1_1/resource/Statement/" + uuid : null;
-    }
-
-    /**
-     * Generates the default up href for a statement.
-     *
-     * @return default up href
-     */
-    public String generateUpHref() {
-        if (customerAgreement != null && customerAgreement.getUuid() != null) {
-            return "/espi/1_1/resource/CustomerAgreement/" + customerAgreement.getUuid() + "/Statement";
-        }
-        return "/espi/1_1/resource/Statement";
-    }
 }

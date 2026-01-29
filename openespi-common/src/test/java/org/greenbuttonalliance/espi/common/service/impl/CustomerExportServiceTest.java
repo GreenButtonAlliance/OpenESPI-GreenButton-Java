@@ -54,7 +54,6 @@ class CustomerExportServiceTest {
     void shouldDeclareCustomerNamespaceOnly() {
         // Arrange
         CustomerDto customer = new CustomerDto(
-            "urn:uuid:550e8400-e29b-51d4-a716-446655440001",  // uuid
             null,  // organisation
             null,  // kind
             "Wheelchair access required",  // specialNeed
@@ -108,7 +107,6 @@ class CustomerExportServiceTest {
     void shouldUseAtomPrefixForAtomElements() {
         // Arrange
         CustomerDto customer = new CustomerDto(
-            "urn:uuid:550e8400-e29b-51d4-a716-446655440003",  // uuid
             null,  // organisation
             null,  // kind
             null,  // specialNeed
@@ -159,7 +157,6 @@ class CustomerExportServiceTest {
     void shouldUseCustPrefixForCustomer() {
         // Arrange
         CustomerDto customer = new CustomerDto(
-            "urn:uuid:550e8400-e29b-51d4-a716-446655440005",  // uuid
             null,  // organisation
             null,  // kind
             null,  // specialNeed
@@ -191,7 +188,6 @@ class CustomerExportServiceTest {
     void shouldProduceValidEspiXmlStructure() {
         // Arrange
         CustomerDto customer = new CustomerDto(
-            "urn:uuid:550e8400-e29b-51d4-a716-446655440007",  // uuid
             null,  // organisation
             null,  // kind
             "Hearing impaired",  // specialNeed

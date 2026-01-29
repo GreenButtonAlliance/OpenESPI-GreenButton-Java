@@ -109,7 +109,6 @@ class UsageXmlDebugTest {
     void shouldDeclareEspiNamespaceOnly() throws Exception {
         // Arrange
         UsagePointDto usagePoint = new UsagePointDto(
-            "urn:uuid:550e8400-e29b-51d4-a716-446655440010",
             new byte[]{0x01},
             null, (short) 1,
             null, null, null, null, null,
@@ -158,7 +157,6 @@ class UsageXmlDebugTest {
     void shouldUseEspiPrefixForUsagePoint() throws Exception {
         // Arrange
         UsagePointDto usagePoint = new UsagePointDto(
-            "urn:uuid:550e8400-e29b-51d4-a716-446655440012",
             new byte[]{0x02},
             null, (short) 1,
             null, null, null, null, null,
@@ -187,7 +185,6 @@ class UsageXmlDebugTest {
     void shouldUseAtomAsDefaultNamespace() throws Exception {
         // Arrange
         UsagePointDto usagePoint = new UsagePointDto(
-            "urn:uuid:550e8400-e29b-51d4-a716-446655440014",
             new byte[]{0x03},
             null, (short) 1,
             null, null, null, null, null,
@@ -222,7 +219,6 @@ class UsageXmlDebugTest {
     void debugCompleteUsageDomainXml() throws Exception {
         // Arrange
         UsagePointDto usagePoint = new UsagePointDto(
-            "urn:uuid:debug-usage",
             new byte[]{0x01, 0x02},  // roleFlags
             null,  // serviceCategory
             (short) 1,  // status

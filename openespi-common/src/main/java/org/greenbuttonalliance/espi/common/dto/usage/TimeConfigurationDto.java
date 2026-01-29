@@ -54,18 +54,6 @@ import lombok.Setter;
 public class TimeConfigurationDto {
 
     /**
-     * Internal DTO identifier (not serialized to XML).
-     */
-    @XmlTransient
-    private Long id;
-
-    /**
-     * Resource identifier (mRID).
-     */
-    @XmlTransient
-    private String uuid;
-
-    /**
      * Rule to calculate end of daylight savings time in the current year.
      * Result of dstEndRule must be greater than result of dstStartRule.
      */
@@ -103,17 +91,7 @@ public class TimeConfigurationDto {
      * @param tzOffset the timezone offset in seconds from UTC
      */
     public TimeConfigurationDto(Long tzOffset) {
-        this(null, null, null, null, null, tzOffset);
-    }
-
-    /**
-     * Constructor with UUID and timezone offset.
-     *
-     * @param uuid the resource identifier
-     * @param tzOffset the timezone offset in seconds from UTC
-     */
-    public TimeConfigurationDto(String uuid, Long tzOffset) {
-        this(null, uuid, null, null, null, tzOffset);
+        this(null, null, null, tzOffset);
     }
 
     // Custom getters for defensive copying of byte arrays

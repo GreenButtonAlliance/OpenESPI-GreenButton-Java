@@ -23,6 +23,7 @@ import org.greenbuttonalliance.espi.common.dto.atom.AtomFeedDto;
 import org.greenbuttonalliance.espi.common.dto.atom.CustomerAtomEntryDto;
 import org.greenbuttonalliance.espi.common.dto.common.DateTimeIntervalDto;
 import org.greenbuttonalliance.espi.common.service.impl.DtoExportServiceImpl;
+import org.greenbuttonalliance.espi.common.dto.customer.ElectronicAddressDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -228,7 +229,7 @@ class CustomerAgreementDtoTest {
         // Arrange
         OffsetDateTime now = OffsetDateTime.of(2025, 1, 26, 10, 30, 0, 0, ZoneOffset.UTC);
 
-        CustomerDto.ElectronicAddressDto electronicAddress = new CustomerDto.ElectronicAddressDto(
+        ElectronicAddressDto electronicAddress = new ElectronicAddressDto(
             "192.168.1.1",
             "00:11:22:33:44:55",
             "primary@utility.com",
@@ -240,7 +241,6 @@ class CustomerAgreementDtoTest {
         );
 
         CustomerAgreementDto customerAgreement = new CustomerAgreementDto(
-            "test-uuid",
             "SERVICE",
             "Author",
             now, now,
@@ -288,7 +288,7 @@ class CustomerAgreementDtoTest {
     // Helper methods
 
     private CustomerAgreementDto createFullCustomerAgreementDto() {
-        CustomerDto.ElectronicAddressDto electronicAddress = new CustomerDto.ElectronicAddressDto(
+        ElectronicAddressDto electronicAddress = new ElectronicAddressDto(
             "10.0.0.1",
             "AA:BB:CC:DD:EE:FF",
             "service@utility.com",
@@ -320,7 +320,6 @@ class CustomerAgreementDtoTest {
         );
 
         return new CustomerAgreementDto(
-            "650e8400-e29b-51d4-a716-446655440000",
             "SERVICE_AGREEMENT",
             "Utility Service Dept",
             OffsetDateTime.of(2024, 12, 15, 0, 0, 0, 0, ZoneOffset.UTC),
@@ -345,7 +344,6 @@ class CustomerAgreementDtoTest {
 
     private CustomerAgreementDto createMinimalCustomerAgreementDto() {
         return new CustomerAgreementDto(
-            "test-uuid",
             null, null, null, null, null, null, null, null, null, null, null,
             null, null, null, null, null, null, null, "AGR-MIN"
         );

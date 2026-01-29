@@ -56,9 +56,6 @@ import lombok.Setter;
 @AllArgsConstructor
 public class UsagePointDto {
 
-    @XmlTransient
-    private String uuid;
-
     @XmlElement(name = "roleFlags", type = String.class)
     @XmlJavaTypeAdapter(HexBinaryAdapter.class)
     private byte[] roleFlags;
@@ -209,37 +206,6 @@ public class UsagePointDto {
     private Object electricPowerQualitySummaries; // List<ElectricPowerQualitySummaryDto> - temporarily Object for compilation
 
     /**
-     * Minimal constructor for basic usage point data.
-     *
-     * @param uuid the resource identifier
-     * @param serviceCategory the service category
-     */
-    public UsagePointDto(String uuid, ServiceCategory serviceCategory) {
-        this(uuid, null, serviceCategory, null, null, null, null, null, null, null, null, null, null,
-             null, null, null, null, null, null, null, null, null, null, null, null, null, null);
-    }
-
-    /**
-     * Constructor with core ESPI elements.
-     *
-     * @param uuid the resource identifier
-     * @param serviceCategory the service category
-     * @param estimatedLoad estimated load measurement
-     * @param nominalServiceVoltage nominal voltage measurement
-     * @param ratedCurrent rated current measurement
-     * @param ratedPower rated power measurement
-     * @param serviceDeliveryPoint service delivery point details
-     */
-    public UsagePointDto(String uuid, ServiceCategory serviceCategory,
-                        SummaryMeasurementDto estimatedLoad, SummaryMeasurementDto nominalServiceVoltage,
-                        SummaryMeasurementDto ratedCurrent, SummaryMeasurementDto ratedPower,
-                        ServiceDeliveryPointDto serviceDeliveryPoint) {
-        this(uuid, null, serviceCategory, null, serviceDeliveryPoint, null, null, null, estimatedLoad,
-             null, null, null, null, nominalServiceVoltage, null, null, ratedCurrent, ratedPower,
-             null, null, null, null, null, null, null, null, null);
-    }
-
-    /**
      * Override getRoleFlags to return cloned array for defensive copying.
      * Lombok @Getter will be overridden by this explicit method.
      *
@@ -250,24 +216,6 @@ public class UsagePointDto {
     }
 
     // Utility methods (no @XmlTransient needed with FIELD access)
-
-    /**
-     * Generates the default self href for a usage point.
-     *
-     * @return default self href
-     */
-    public String generateSelfHref() {
-        return uuid != null ? "/espi/1_1/resource/UsagePoint/" + uuid : null;
-    }
-
-    /**
-     * Generates the default up href for a usage point.
-     *
-     * @return default up href
-     */
-    public String generateUpHref() {
-        return "/espi/1_1/resource/UsagePoint";
-    }
 
     /**
      * Gets the total number of meter readings.

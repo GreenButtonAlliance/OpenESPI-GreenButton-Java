@@ -21,37 +21,33 @@ package org.greenbuttonalliance.espi.common.domain.customer.enums;
 
 /**
  * Enumeration for NotificationMethodKind values.
- * 
+ * Per ESPI 4.0 customer.xsd lines 1961-1996.
+ *
  * Method by which the customer was notified.
  */
 public enum NotificationMethodKind {
     /**
-     * Email notification
+     * Contacted by phone by customer service representative.
+     */
+    CALL,
+
+    /**
+     * Trouble reported by email.
      */
     EMAIL,
-    
+
     /**
-     * Phone call notification
-     */
-    PHONE,
-    
-    /**
-     * SMS/Text message notification
-     */
-    SMS,
-    
-    /**
-     * Letter/Mail notification
+     * Trouble reported by letter.
      */
     LETTER,
-    
+
     /**
-     * In-person notification
+     * Trouble reported by other means.
      */
-    IN_PERSON,
-    
+    OTHER,
+
     /**
-     * Other notification method
+     * Trouble reported through interactive voice response system.
      */
-    OTHER
+    IVR
 }

@@ -54,7 +54,6 @@ class UsageExportServiceTest {
     void shouldDeclareEspiNamespaceOnly() {
         // Arrange
         UsagePointDto usagePoint = new UsagePointDto(
-            "urn:uuid:550e8400-e29b-51d4-a716-446655440010",
             new byte[]{0x01},
             null, (short) 1,
             null, null, null, null, null,
@@ -106,7 +105,6 @@ class UsageExportServiceTest {
     void shouldUseAtomPrefixForAtomElements() {
         // Arrange
         UsagePointDto usagePoint = new UsagePointDto(
-            "urn:uuid:550e8400-e29b-51d4-a716-446655440012",
             new byte[]{0x02},
             null, (short) 1,
             null, null, null, null, null,
@@ -155,7 +153,6 @@ class UsageExportServiceTest {
     void shouldUseEspiPrefixForUsagePoint() {
         // Arrange
         UsagePointDto usagePoint = new UsagePointDto(
-            "urn:uuid:550e8400-e29b-51d4-a716-446655440014",
             new byte[]{0x03},
             null, (short) 1,
             null, null, null, null, null,
@@ -187,7 +184,6 @@ class UsageExportServiceTest {
     void shouldProduceValidEspiXmlStructure() {
         // Arrange
         UsagePointDto usagePoint = new UsagePointDto(
-            "urn:uuid:debug-usage",
             new byte[]{0x01, 0x02},  // roleFlags
             null,  // serviceCategory
             (short) 1,  // status

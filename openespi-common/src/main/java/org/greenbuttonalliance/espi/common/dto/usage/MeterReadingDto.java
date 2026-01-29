@@ -43,19 +43,5 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
 public class MeterReadingDto {
-
-    @XmlTransient
-    private Long id;
-
-    @XmlTransient
-    private String uuid;
-
-    /**
-     * Minimal constructor for basic meter reading data.
-     */
-    public MeterReadingDto(String uuid) {
-        this(null, uuid);
-    }
 }

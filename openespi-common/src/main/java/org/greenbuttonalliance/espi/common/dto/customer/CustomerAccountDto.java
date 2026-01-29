@@ -53,9 +53,6 @@ import java.util.List;
 @AllArgsConstructor
 public class CustomerAccountDto {
 
-    @XmlTransient
-    private String uuid;
-
     // ========== Document fields (customer.xsd lines 819-872) ==========
 
     /**

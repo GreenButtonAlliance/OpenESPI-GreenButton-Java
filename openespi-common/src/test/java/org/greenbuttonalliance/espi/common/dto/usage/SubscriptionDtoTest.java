@@ -133,7 +133,7 @@ class SubscriptionDtoTest {
         UsageAtomEntryDto usagePointEntry = new UsageAtomEntryDto(
             "urn:uuid:test-usage-point",
             "Test Usage Point",
-            new UsagePointDto(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)
+            new UsagePointDto(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)
         );
 
         UsageAtomEntryDto meterReadingEntry = new UsageAtomEntryDto(
@@ -165,7 +165,7 @@ class SubscriptionDtoTest {
             SubscriptionDto.SchemaType.ENERGY,
             now,
             now
-        ).withEntry(new UsageAtomEntryDto("urn:uuid:entry1", "Entry 1", new UsagePointDto(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)))
+        ).withEntry(new UsageAtomEntryDto("urn:uuid:entry1", "Entry 1", new UsagePointDto(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)))
          .withEntry(new UsageAtomEntryDto("urn:uuid:entry2", "Entry 2", new MeterReadingDto()));
 
         assertThat(dto.getEntries()).hasSize(2);
@@ -214,7 +214,7 @@ class SubscriptionDtoTest {
     void shouldIncludeAllEntriesInAtomFeedDto() {
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
 
-        UsageAtomEntryDto entry1 = new UsageAtomEntryDto("urn:uuid:entry1", "Entry 1", new UsagePointDto(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null));
+        UsageAtomEntryDto entry1 = new UsageAtomEntryDto("urn:uuid:entry1", "Entry 1", new UsagePointDto(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null));
         UsageAtomEntryDto entry2 = new UsageAtomEntryDto("urn:uuid:entry2", "Entry 2", new MeterReadingDto());
 
         SubscriptionDto dto = new SubscriptionDto(

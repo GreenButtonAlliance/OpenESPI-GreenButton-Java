@@ -51,7 +51,6 @@ public interface ElectricPowerQualitySummaryMapper {
      * @param entity the electric power quality summary entity
      * @return the electric power quality summary DTO
      */
-    @Mapping(target = "id", ignore = true) // IdentifiedObject field handled by Atom layer
     @Mapping(target = "usagePointId", source = "usagePoint.id", qualifiedByName = "uuidToLong")
     ElectricPowerQualitySummaryDto toDto(ElectricPowerQualitySummaryEntity entity);
 

@@ -120,7 +120,7 @@ class SubscriptionMapperTest {
 
         // Using Arrays.asList for polymorphic list creation
         List<AtomEntryDto> entries = java.util.Arrays.asList(
-            new UsageAtomEntryDto("urn:uuid:entry1", "Usage Point", new UsagePointDto(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)),
+            new UsageAtomEntryDto("urn:uuid:entry1", "Usage Point", new UsagePointDto(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)),
             new UsageAtomEntryDto("urn:uuid:entry2", "Meter Reading", new MeterReadingDto())
         );
 

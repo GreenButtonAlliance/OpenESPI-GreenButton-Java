@@ -51,7 +51,6 @@ public interface IntervalBlockMapper {
      * @param entity the interval block entity
      * @return the interval block DTO
      */
-    @Mapping(target = "id", ignore = true) // IdentifiedObject field handled by Atom layer
     @Mapping(target = "interval", source = "interval")
     @Mapping(target = "intervalReadings", source = "intervalReadings")
     IntervalBlockDto toDto(IntervalBlockEntity entity);

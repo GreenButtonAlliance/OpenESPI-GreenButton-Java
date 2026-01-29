@@ -49,12 +49,6 @@ import org.greenbuttonalliance.espi.common.dto.common.DateTimeIntervalDto;
 @AllArgsConstructor
 public class ElectricPowerQualitySummaryDto {
 
-    @XmlTransient
-    private Long id;
-
-    @XmlAttribute(name = "mRID")
-    private String uuid;
-    
     /**
      * Flicker PLT (Long-term) measurement.
      * Represents long-term flicker severity as per IEC 61000-4-15.
@@ -180,16 +174,6 @@ public class ElectricPowerQualitySummaryDto {
     @XmlTransient
     private Long usagePointId;
 
-    /**
-     * Constructor with basic identification.
-     *
-     * @param id the database identifier
-     * @param uuid the unique resource identifier
-     */
-    public ElectricPowerQualitySummaryDto(Long id, String uuid) {
-        this(id, uuid, null, null, null, null, null, null, null, null, null,
-             null, null, null, null, null, null);
-    }
     
     /**
      * Checks if this summary contains voltage quality measurements.
