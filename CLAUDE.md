@@ -230,6 +230,10 @@ ESPI uses Atom XML feeds for data exchange. Key patterns:
 - All tests must pass before committing: `mvn test`
 - Run tests for affected module and its dependents: `mvn test -pl <module> -am`
 - Integration tests should pass before PR merge: `mvn verify -Pfull-integration`
+- **IMPORTANT**: Use AssertJ chained assertions - combine all assertions for a single object into one assertion chain
+  - Good: `assertThat(retrieved).isPresent().hasValueSatisfying(device -> assertThat(device).extracting(...).containsExactly(...))`
+  - Bad: Multiple separate `assertThat()` statements for the same object
+  - This improves readability and provides better failure messages
 
 ### Common Development Patterns
 
