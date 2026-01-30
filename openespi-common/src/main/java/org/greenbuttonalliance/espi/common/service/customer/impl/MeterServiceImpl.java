@@ -20,8 +20,10 @@
 package org.greenbuttonalliance.espi.common.service.customer.impl;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.MeterEntity;
 import org.greenbuttonalliance.espi.common.repositories.customer.MeterRepository;
+import org.greenbuttonalliance.espi.common.service.EspiIdGeneratorService;
 import org.greenbuttonalliance.espi.common.service.customer.MeterService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,129 +34,62 @@ import java.util.UUID;
 
 /**
  * Service implementation for Meter management.
- * 
- * Provides business logic for physical metering device operations.
+ * <p>
+ * Per ESPI 4.0 compliance: Uses UUID v5 generation (NO random fallback).
+ * Provides ONLY 6 CRUD methods.
  */
 @Service
-@Transactional
+@Slf4j
 @RequiredArgsConstructor
 public class MeterServiceImpl implements MeterService {
 
-    private final MeterRepository meterRepository;
+    private final MeterRepository repository;
+    private final EspiIdGeneratorService idGenerator;
+
+    @Override
+    @Transactional
+    public MeterEntity save(MeterEntity meter) {
+        if (meter.getId() == null) {
+            // ❌ NO random UUID fallback - ESPI requires UUID v5
+            if (meter.getSerialNumber() == null) {
+                throw new IllegalArgumentException(
+                    "SerialNumber is required for Meter UUID generation");
+            }
+            UUID deterministicId = idGenerator.generateEntityId(
+                "Meter", meter.getSerialNumber());
+            meter.setId(deterministicId);
+            log.debug("Generated UUID v5 for Meter: {}", deterministicId);
+        }
+        return repository.save(meter);
+    }
 
     @Override
     @Transactional(readOnly = true)
     public List<MeterEntity> findAll() {
-        return meterRepository.findAll();
+        return repository.findAll();
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<MeterEntity> findById(UUID id) {
-        return meterRepository.findById(id);
+        return repository.findById(id);
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public Optional<MeterEntity> findByUuid(String uuid) {
-        return meterRepository.findById(UUID.fromString(uuid));
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<MeterEntity> findBySerialNumber(String serialNumber) {
-        return meterRepository.findBySerialNumber(serialNumber);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<MeterEntity> findByFormNumber(String formNumber) {
-        return meterRepository.findByFormNumber(formNumber);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<MeterEntity> findByUtcNumber(String utcNumber) {
-        return meterRepository.findByUtcNumber(utcNumber);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<MeterEntity> findVirtualMeters() {
-        return meterRepository.findVirtualMeters();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<MeterEntity> findPhysicalMeters() {
-        return meterRepository.findPhysicalMeters();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<MeterEntity> findPanDevices() {
-        return meterRepository.findPanDevices();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<MeterEntity> findByAmrSystem(String amrSystem) {
-        return meterRepository.findByAmrSystem(amrSystem);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<MeterEntity> findByInstallCode(String installCode) {
-        return meterRepository.findByInstallCode(installCode);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<MeterEntity> findByIntervalLengthGreaterThan(Long seconds) {
-        return meterRepository.findByIntervalLengthGreaterThan(seconds);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<MeterEntity> findCriticalMeters() {
-        return meterRepository.findCriticalMeters();
-    }
-
-    @Override
-    public MeterEntity save(MeterEntity meter) {
-        // Generate UUID if not present
-        if (meter.getId() == null) {
-            meter.setId(UUID.randomUUID());
-        }
-        return meterRepository.save(meter);
-    }
-
-    @Override
+    @Transactional
     public void deleteById(UUID id) {
-        meterRepository.deleteById(id);
+        repository.deleteById(id);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public boolean existsBySerialNumber(String serialNumber) {
-        return meterRepository.findBySerialNumber(serialNumber).isPresent();
+    public boolean existsById(UUID id) {
+        return repository.existsById(id);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public long countMeters() {
-        return meterRepository.count();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public long countVirtualMeters() {
-        return meterRepository.findVirtualMeters().size();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public long countPhysicalMeters() {
-        return meterRepository.findPhysicalMeters().size();
+    public long count() {
+        return repository.count();
     }
 }

@@ -19,8 +19,17 @@
 package org.greenbuttonalliance.espi.common.repositories.integration;
 
 import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerEntity;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.StreetAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.TelephoneNumber;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.Organisation;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.StreetAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.TelephoneNumber;
 import org.greenbuttonalliance.espi.common.domain.customer.enums.CustomerKind;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.StreetAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.TelephoneNumber;
 import org.greenbuttonalliance.espi.common.repositories.customer.CustomerRepository;
 import org.greenbuttonalliance.espi.common.test.BaseTestContainersTest;
 import org.greenbuttonalliance.espi.common.test.TestDataBuilders;
@@ -86,7 +95,7 @@ class CustomerPostgreSQLIntegrationTest extends BaseTestContainersTest {
             Organisation org = new Organisation();
             org.setOrganisationName("PostgreSQL Test Services");
 
-            Organisation.StreetAddress streetAddress = new Organisation.StreetAddress();
+            StreetAddress streetAddress = new StreetAddress();
             streetAddress.setStreetDetail("789 PostgreSQL Boulevard");
             streetAddress.setTownDetail("Postgres City");
             streetAddress.setStateOrProvince("WA");
@@ -94,7 +103,7 @@ class CustomerPostgreSQLIntegrationTest extends BaseTestContainersTest {
             streetAddress.setCountry("USA");
             org.setStreetAddress(streetAddress);
 
-            Organisation.ElectronicAddress electronicAddress = new Organisation.ElectronicAddress();
+            ElectronicAddress electronicAddress = new ElectronicAddress();
             electronicAddress.setEmail1("postgres@test.com");
             electronicAddress.setWeb("https://postgres.test.com");
             org.setElectronicAddress(electronicAddress);
@@ -248,7 +257,7 @@ class CustomerPostgreSQLIntegrationTest extends BaseTestContainersTest {
             Organisation org = new Organisation();
             org.setOrganisationName("Complete PostgreSQL Corporation");
 
-            Organisation.StreetAddress streetAddress = new Organisation.StreetAddress();
+            StreetAddress streetAddress = new StreetAddress();
             streetAddress.setStreetDetail("321 PostgreSQL Drive");
             streetAddress.setTownDetail("Postgres Town");
             streetAddress.setStateOrProvince("OR");
@@ -256,7 +265,7 @@ class CustomerPostgreSQLIntegrationTest extends BaseTestContainersTest {
             streetAddress.setCountry("USA");
             org.setStreetAddress(streetAddress);
 
-            Organisation.StreetAddress postalAddress = new Organisation.StreetAddress();
+            StreetAddress postalAddress = new StreetAddress();
             postalAddress.setStreetDetail("PO Box 777");
             postalAddress.setTownDetail("Postgres Town");
             postalAddress.setStateOrProvince("OR");
@@ -264,7 +273,7 @@ class CustomerPostgreSQLIntegrationTest extends BaseTestContainersTest {
             postalAddress.setCountry("USA");
             org.setPostalAddress(postalAddress);
 
-            Organisation.ElectronicAddress electronicAddress = new Organisation.ElectronicAddress();
+            ElectronicAddress electronicAddress = new ElectronicAddress();
             electronicAddress.setEmail1("contact@postgres.test");
             electronicAddress.setEmail2("support@postgres.test");
             electronicAddress.setWeb("https://postgres.test");

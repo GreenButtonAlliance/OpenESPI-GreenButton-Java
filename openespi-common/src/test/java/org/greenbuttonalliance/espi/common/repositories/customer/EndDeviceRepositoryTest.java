@@ -21,6 +21,7 @@ package org.greenbuttonalliance.espi.common.repositories.customer;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.Asset;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.EndDeviceEntity;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.Organisation;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.Status;
 import org.greenbuttonalliance.espi.common.test.BaseRepositoryTest;
 import org.junit.jupiter.api.DisplayName;
@@ -295,7 +296,7 @@ class EndDeviceRepositoryTest extends BaseRepositoryTest {
         @DisplayName("Should persist electronic address correctly")
         void shouldPersistElectronicAddressCorrectly() {
             // Arrange
-            Organisation.ElectronicAddress electronicAddress = new Organisation.ElectronicAddress();
+            ElectronicAddress electronicAddress = new ElectronicAddress();
             electronicAddress.setLan("192.168.1.100");
             electronicAddress.setMac("00:1A:2B:3C:4D:5E");
             electronicAddress.setEmail1("meter@utility.com");
@@ -315,10 +316,10 @@ class EndDeviceRepositoryTest extends BaseRepositoryTest {
                     .hasValueSatisfying(device -> assertThat(device.getElectronicAddress())
                             .isNotNull()
                             .extracting(
-                                    Organisation.ElectronicAddress::getLan,
-                                    Organisation.ElectronicAddress::getMac,
-                                    Organisation.ElectronicAddress::getEmail1,
-                                    Organisation.ElectronicAddress::getWeb
+                                    ElectronicAddress::getLan,
+                                    ElectronicAddress::getMac,
+                                    ElectronicAddress::getEmail1,
+                                    ElectronicAddress::getWeb
                             )
                             .containsExactly("192.168.1.100", "00:1A:2B:3C:4D:5E",
                                     "meter@utility.com", "https://meter.utility.com"));

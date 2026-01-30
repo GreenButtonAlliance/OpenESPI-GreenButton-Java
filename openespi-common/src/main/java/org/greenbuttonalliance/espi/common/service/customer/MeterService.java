@@ -27,104 +27,56 @@ import java.util.UUID;
 
 /**
  * Service interface for Meter management.
- * 
- * Handles physical metering device operations including serial numbers,
- * form numbers, AMR systems, and device characteristics.
+ * <p>
+ * Per ESPI 4.0 compliance: ONLY 6 CRUD methods (no custom queries).
+ * Handles physical metering device operations.
  */
 public interface MeterService {
 
     /**
      * Find all meters.
+     *
+     * @return list of all meters
      */
     List<MeterEntity> findAll();
 
     /**
      * Find meter by ID.
+     *
+     * @param id meter UUID
+     * @return optional meter entity
      */
     Optional<MeterEntity> findById(UUID id);
 
     /**
-     * Find meter by UUID.
-     */
-    Optional<MeterEntity> findByUuid(String uuid);
-
-    /**
-     * Find meter by serial number.
-     */
-    Optional<MeterEntity> findBySerialNumber(String serialNumber);
-
-    /**
-     * Find meters by form number.
-     */
-    List<MeterEntity> findByFormNumber(String formNumber);
-
-    /**
-     * Find meters by UTC number.
-     */
-    List<MeterEntity> findByUtcNumber(String utcNumber);
-
-    /**
-     * Find virtual meters.
-     */
-    List<MeterEntity> findVirtualMeters();
-
-    /**
-     * Find physical meters.
-     */
-    List<MeterEntity> findPhysicalMeters();
-
-    /**
-     * Find PAN devices.
-     */
-    List<MeterEntity> findPanDevices();
-
-    /**
-     * Find meters by AMR system.
-     */
-    List<MeterEntity> findByAmrSystem(String amrSystem);
-
-    /**
-     * Find meters by install code.
-     */
-    List<MeterEntity> findByInstallCode(String installCode);
-
-    /**
-     * Find meters with interval length greater than specified seconds.
-     */
-    List<MeterEntity> findByIntervalLengthGreaterThan(Long seconds);
-
-    /**
-     * Find critical meters.
-     */
-    List<MeterEntity> findCriticalMeters();
-
-    /**
-     * Save meter.
+     * Save meter with UUID v5 generation.
+     * If meter.id is null, generates deterministic UUID v5 from serialNumber.
+     *
+     * @param meter meter entity to save
+     * @return saved meter entity
+     * @throws IllegalArgumentException if serialNumber is null when ID generation is needed
      */
     MeterEntity save(MeterEntity meter);
 
     /**
      * Delete meter by ID.
+     *
+     * @param id meter UUID to delete
      */
     void deleteById(UUID id);
 
     /**
-     * Check if meter exists by serial number.
+     * Check if meter exists by ID.
+     *
+     * @param id meter UUID
+     * @return true if meter exists
      */
-    boolean existsBySerialNumber(String serialNumber);
+    boolean existsById(UUID id);
 
     /**
      * Count total meters.
+     *
+     * @return total count of meters
      */
-    long countMeters();
-
-    /**
-     * Count virtual meters.
-     */
-    long countVirtualMeters();
-
-    /**
-     * Count physical meters.
-     */
-    long countPhysicalMeters();
+    long count();
 }

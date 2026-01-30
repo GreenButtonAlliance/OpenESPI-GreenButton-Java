@@ -21,79 +21,17 @@ package org.greenbuttonalliance.espi.common.repositories.customer;
 
 import org.greenbuttonalliance.espi.common.domain.customer.entity.MeterEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
  * Spring Data JPA repository for Meter entities.
  * <p>
- * Manages physical metering device data including serial numbers, form numbers, and installation details.
+ * Manages physical metering device data.
+ * Per ESPI 4.0 compliance: ONLY inherited JpaRepository methods (no custom queries).
  */
 @Repository
 public interface MeterRepository extends JpaRepository<MeterEntity, UUID> {
-
-    /**
-     * Find meter by serial number.
-     */
-    @Query("SELECT m FROM MeterEntity m WHERE m.serialNumber = :serialNumber")
-    Optional<MeterEntity> findBySerialNumber(@Param("serialNumber") String serialNumber);
-
-    /**
-     * Find meters by form number.
-     */
-    @Query("SELECT m FROM MeterEntity m WHERE m.formNumber = :formNumber")
-    List<MeterEntity> findByFormNumber(@Param("formNumber") String formNumber);
-
-    /**
-     * Find meters by UTC number.
-     */
-    @Query("SELECT m FROM MeterEntity m WHERE m.utcNumber = :utcNumber")
-    List<MeterEntity> findByUtcNumber(@Param("utcNumber") String utcNumber);
-
-    /**
-     * Find virtual meters.
-     */
-    @Query("SELECT m FROM MeterEntity m WHERE m.isVirtual = true")
-    List<MeterEntity> findVirtualMeters();
-
-    /**
-     * Find physical meters.
-     */
-    @Query("SELECT m FROM MeterEntity m WHERE m.isVirtual = false OR m.isVirtual IS NULL")
-    List<MeterEntity> findPhysicalMeters();
-
-    /**
-     * Find PAN devices.
-     */
-    @Query("SELECT m FROM MeterEntity m WHERE m.isPan = true")
-    List<MeterEntity> findPanDevices();
-
-    /**
-     * Find meters by AMR system.
-     */
-    @Query("SELECT m FROM MeterEntity m WHERE m.amrSystem = :amrSystem")
-    List<MeterEntity> findByAmrSystem(@Param("amrSystem") String amrSystem);
-
-    /**
-     * Find meters by install code.
-     */
-    @Query("SELECT m FROM MeterEntity m WHERE m.installCode = :installCode")
-    List<MeterEntity> findByInstallCode(@Param("installCode") String installCode);
-
-    /**
-     * Find meters with interval length greater than specified seconds.
-     */
-    @Query("SELECT m FROM MeterEntity m WHERE m.intervalLength > :seconds")
-    List<MeterEntity> findByIntervalLengthGreaterThan(@Param("seconds") Long seconds);
-
-    /**
-     * Find critical meters.
-     */
-    @Query("SELECT m FROM MeterEntity m WHERE m.critical = true")
-    List<MeterEntity> findCriticalMeters();
+    // ONLY inherited methods - NO custom queries
 }

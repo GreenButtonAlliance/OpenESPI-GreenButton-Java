@@ -20,8 +20,10 @@
 package org.greenbuttonalliance.espi.common.mapper.customer;
 
 import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerEntity;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.Organisation;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.PhoneNumberEntity;
+import org.greenbuttonalliance.espi.common.domain.customer.common.StreetAddress;
 import org.greenbuttonalliance.espi.common.dto.customer.CustomerDto;
 import org.greenbuttonalliance.espi.common.dto.customer.ElectronicAddressDto;
 import org.greenbuttonalliance.espi.common.mapper.BaseIdentifiedObjectMapper;
@@ -139,7 +141,7 @@ public interface CustomerMapper extends BaseMapperUtils {
     }
 
     // Helper methods for address mapping
-    default CustomerDto.StreetAddressDto mapStreetAddress(Organisation.StreetAddress address) {
+    default CustomerDto.StreetAddressDto mapStreetAddress(StreetAddress address) {
         if (address == null) return null;
         return new CustomerDto.StreetAddressDto(
             address.getStreetDetail(),
@@ -150,9 +152,9 @@ public interface CustomerMapper extends BaseMapperUtils {
         );
     }
 
-    default Organisation.StreetAddress mapStreetAddressFromDto(CustomerDto.StreetAddressDto dto) {
+    default StreetAddress mapStreetAddressFromDto(CustomerDto.StreetAddressDto dto) {
         if (dto == null) return null;
-        Organisation.StreetAddress address = new Organisation.StreetAddress();
+        StreetAddress address = new StreetAddress();
         address.setStreetDetail(dto.getStreetDetail());
         address.setTownDetail(dto.getTownDetail());
         address.setStateOrProvince(dto.getStateOrProvince());
@@ -166,7 +168,7 @@ public interface CustomerMapper extends BaseMapperUtils {
      * Delegates to simple field-to-field copy since ElectronicAddressMapper
      * is not directly accessible from default interface methods.
      */
-    default ElectronicAddressDto mapElectronicAddress(Organisation.ElectronicAddress address) {
+    default ElectronicAddressDto mapElectronicAddress(ElectronicAddress address) {
         if (address == null) return null;
         return new ElectronicAddressDto(
             address.getLan(),
@@ -185,9 +187,9 @@ public interface CustomerMapper extends BaseMapperUtils {
      * Delegates to simple field-to-field copy since ElectronicAddressMapper
      * is not directly accessible from default interface methods.
      */
-    default Organisation.ElectronicAddress mapElectronicAddressFromDto(ElectronicAddressDto dto) {
+    default ElectronicAddress mapElectronicAddressFromDto(ElectronicAddressDto dto) {
         if (dto == null) return null;
-        Organisation.ElectronicAddress address = new Organisation.ElectronicAddress();
+        ElectronicAddress address = new ElectronicAddress();
         address.setLan(dto.getLan());
         address.setMac(dto.getMac());
         address.setEmail1(dto.getEmail1());

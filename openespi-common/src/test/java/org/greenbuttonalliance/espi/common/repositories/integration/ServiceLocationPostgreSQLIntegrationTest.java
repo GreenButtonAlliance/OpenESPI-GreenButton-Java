@@ -19,8 +19,17 @@
 package org.greenbuttonalliance.espi.common.repositories.integration;
 
 import org.greenbuttonalliance.espi.common.domain.customer.entity.Organisation;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.StreetAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.TelephoneNumber;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.ServiceLocationEntity;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.StreetAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.TelephoneNumber;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.Status;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.StreetAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.TelephoneNumber;
 import org.greenbuttonalliance.espi.common.repositories.customer.ServiceLocationRepository;
 import org.greenbuttonalliance.espi.common.test.BaseTestContainersTest;
 import org.greenbuttonalliance.espi.common.test.TestDataBuilders;
@@ -85,7 +94,7 @@ class ServiceLocationPostgreSQLIntegrationTest extends BaseTestContainersTest {
             location.setOutageBlock("POSTGRES-BLOCK-456");
 
             // Main address
-            Organisation.StreetAddress mainAddress = new Organisation.StreetAddress();
+            StreetAddress mainAddress = new StreetAddress();
             mainAddress.setStreetDetail("200 PostgreSQL Avenue");
             mainAddress.setTownDetail("Postgres Town");
             mainAddress.setStateOrProvince("WA");
@@ -94,7 +103,7 @@ class ServiceLocationPostgreSQLIntegrationTest extends BaseTestContainersTest {
             location.setMainAddress(mainAddress);
 
             // Secondary address
-            Organisation.StreetAddress secondaryAddress = new Organisation.StreetAddress();
+            StreetAddress secondaryAddress = new StreetAddress();
             secondaryAddress.setStreetDetail("PO Box 54321");
             secondaryAddress.setTownDetail("Postgres Town");
             secondaryAddress.setStateOrProvince("WA");
@@ -103,13 +112,13 @@ class ServiceLocationPostgreSQLIntegrationTest extends BaseTestContainersTest {
             location.setSecondaryAddress(secondaryAddress);
 
             // Phone numbers
-            Organisation.TelephoneNumber phone1 = new Organisation.TelephoneNumber();
+            TelephoneNumber phone1 = new TelephoneNumber();
             phone1.setCountryCode("1");
             phone1.setAreaCode("206");
             phone1.setLocalNumber("9876543");
             location.setPhone1(phone1);
 
-            Organisation.TelephoneNumber phone2 = new Organisation.TelephoneNumber();
+            TelephoneNumber phone2 = new TelephoneNumber();
             phone2.setCountryCode("1");
             phone2.setAreaCode("206");
             phone2.setLocalNumber("3456789");
@@ -117,7 +126,7 @@ class ServiceLocationPostgreSQLIntegrationTest extends BaseTestContainersTest {
             location.setPhone2(phone2);
 
             // Electronic address
-            Organisation.ElectronicAddress electronicAddress = new Organisation.ElectronicAddress();
+            ElectronicAddress electronicAddress = new ElectronicAddress();
             electronicAddress.setEmail1("location@postgres.test");
             electronicAddress.setWeb("https://location.postgres.test");
             location.setElectronicAddress(electronicAddress);
@@ -281,7 +290,7 @@ class ServiceLocationPostgreSQLIntegrationTest extends BaseTestContainersTest {
             ServiceLocationEntity location = TestDataBuilders.createValidServiceLocation();
             location.setType("PostgreSQL Address Test");
 
-            Organisation.StreetAddress mainAddress = new Organisation.StreetAddress();
+            StreetAddress mainAddress = new StreetAddress();
             mainAddress.setStreetDetail("600 PostgreSQL Complete Boulevard");
             mainAddress.setTownDetail("Complete Town");
             mainAddress.setStateOrProvince("OR");
@@ -289,7 +298,7 @@ class ServiceLocationPostgreSQLIntegrationTest extends BaseTestContainersTest {
             mainAddress.setCountry("USA");
             location.setMainAddress(mainAddress);
 
-            Organisation.StreetAddress secondaryAddress = new Organisation.StreetAddress();
+            StreetAddress secondaryAddress = new StreetAddress();
             secondaryAddress.setStreetDetail("PO Box 111");
             secondaryAddress.setTownDetail("Complete Town");
             secondaryAddress.setStateOrProvince("OR");
@@ -348,7 +357,7 @@ class ServiceLocationPostgreSQLIntegrationTest extends BaseTestContainersTest {
             ServiceLocationEntity location = TestDataBuilders.createValidServiceLocation();
             location.setType("PostgreSQL Electronic Address Test");
 
-            Organisation.ElectronicAddress electronicAddress = new Organisation.ElectronicAddress();
+            ElectronicAddress electronicAddress = new ElectronicAddress();
             electronicAddress.setLan("10.0.0.100");
             electronicAddress.setMac("AA:BB:CC:DD:EE:FF");
             electronicAddress.setEmail1("primary@postgres-loc.test");
@@ -366,7 +375,7 @@ class ServiceLocationPostgreSQLIntegrationTest extends BaseTestContainersTest {
 
             // Assert
             assertThat(retrieved).isPresent();
-            Organisation.ElectronicAddress retrievedAddress = retrieved.get().getElectronicAddress();
+            ElectronicAddress retrievedAddress = retrieved.get().getElectronicAddress();
             assertThat(retrievedAddress).isNotNull();
             assertThat(retrievedAddress.getLan()).isEqualTo("10.0.0.100");
             assertThat(retrievedAddress.getMac()).isEqualTo("AA:BB:CC:DD:EE:FF");

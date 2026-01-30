@@ -18,7 +18,11 @@
 
 package org.greenbuttonalliance.espi.common.repositories.customer;
 
+import org.greenbuttonalliance.espi.common.domain.customer.entity.Asset;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.MeterEntity;
+import org.greenbuttonalliance.espi.common.domain.customer.entity.Status;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.MeterMultiplier;
 import org.greenbuttonalliance.espi.common.test.BaseRepositoryTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -26,83 +30,24 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Comprehensive test suite for MeterRepository.
- * 
- * Tests all CRUD operations, 10 custom query methods, meter device field testing,
- * EndDeviceEntity inheritance testing, and IdentifiedObject base functionality.
+ *
+ * Tests all CRUD operations and validation constraints for Meter entities.
+ * Per ESPI 4.0 API specification, only default JpaRepository methods are supported.
  */
 @DisplayName("Meter Repository Tests")
 class MeterRepositoryTest extends BaseRepositoryTest {
 
     @Autowired
     private MeterRepository meterRepository;
-
-    /**
-     * Creates a valid MeterEntity for testing.
-     */
-    private MeterEntity createValidMeter() {
-        MeterEntity meter = new MeterEntity();
-        meter.setDescription("Test Meter - " + faker.lorem().sentence(3));
-        
-        // MeterEntity specific fields
-        meter.setFormNumber("FORM-" + faker.number().digits(4));
-        meter.setIntervalLength(faker.number().numberBetween(300L, 3600L)); // 5 minutes to 1 hour
-        
-        // EndDeviceEntity inherited fields
-        meter.setType("ELECTRIC_METER");
-        meter.setUtcNumber("UTC-" + faker.number().digits(8));
-        meter.setSerialNumber("SN-" + faker.number().digits(10));
-        meter.setLotNumber("LOT-" + faker.number().digits(6));
-        meter.setPurchasePrice(faker.number().numberBetween(50000L, 500000L)); // $500-$5000
-        meter.setCritical(faker.bool().bool());
-        meter.setInitialCondition("NEW");
-        meter.setInitialLossOfLife(BigDecimal.ZERO);
-        meter.setIsVirtual(false);
-        meter.setIsPan(faker.bool().bool());
-        meter.setInstallCode("INSTALL-" + faker.number().digits(8));
-        meter.setAmrSystem("AMR-" + faker.company().name());
-        
-        return meter;
-    }
-
-    /**
-     * Creates a virtual meter for testing.
-     */
-    private MeterEntity createVirtualMeter() {
-        MeterEntity meter = createValidMeter();
-        meter.setIsVirtual(true);
-        meter.setType("VIRTUAL_METER");
-        meter.setSerialNumber("VIRTUAL-" + faker.number().digits(8));
-        return meter;
-    }
-
-    /**
-     * Creates a PAN device meter for testing.
-     */
-    private MeterEntity createPanMeter() {
-        MeterEntity meter = createValidMeter();
-        meter.setIsPan(true);
-        meter.setType("PAN_DEVICE");
-        meter.setInstallCode("PAN-" + faker.number().digits(8));
-        return meter;
-    }
-
-    /**
-     * Creates a critical meter for testing.
-     */
-    private MeterEntity createCriticalMeter() {
-        MeterEntity meter = createValidMeter();
-        meter.setCritical(true);
-        meter.setType("CRITICAL_METER");
-        return meter;
-    }
 
     @Nested
     @DisplayName("CRUD Operations")
@@ -113,8 +58,8 @@ class MeterRepositoryTest extends BaseRepositoryTest {
         void shouldSaveAndRetrieveMeterSuccessfully() {
             // Arrange
             MeterEntity meter = createValidMeter();
-            meter.setDescription("Test Meter for CRUD");
-            meter.setSerialNumber("CRUD-TEST-12345");
+            meter.setDescription("Test Electric Meter");
+            meter.setSerialNumber("SM-12345");
 
             // Act
             MeterEntity saved = meterRepository.save(meter);
@@ -122,50 +67,16 @@ class MeterRepositoryTest extends BaseRepositoryTest {
             Optional<MeterEntity> retrieved = meterRepository.findById(saved.getId());
 
             // Assert
-            assertThat(saved).isNotNull();
             assertThat(saved.getId()).isNotNull();
-            assertThat(retrieved).isPresent();
-            assertThat(retrieved.get().getDescription()).isEqualTo("Test Meter for CRUD");
-            assertThat(retrieved.get().getSerialNumber()).isEqualTo("CRUD-TEST-12345");
-        }
-
-        @Test
-        @DisplayName("Should update meter successfully")
-        void shouldUpdateMeterSuccessfully() {
-            // Arrange
-            MeterEntity meter = createValidMeter();
-            MeterEntity saved = persistAndFlush(meter);
-
-            // Act
-            saved.setDescription("Updated Meter Description");
-            saved.setFormNumber("UPDATED-FORM-9999");
-            saved.setIntervalLength(1800L); // 30 minutes
-            MeterEntity updated = meterRepository.save(saved);
-            flushAndClear();
-
-            // Assert
-            Optional<MeterEntity> retrieved = meterRepository.findById(updated.getId());
-            assertThat(retrieved).isPresent();
-            assertThat(retrieved.get().getDescription()).isEqualTo("Updated Meter Description");
-            assertThat(retrieved.get().getFormNumber()).isEqualTo("UPDATED-FORM-9999");
-            assertThat(retrieved.get().getIntervalLength()).isEqualTo(1800L);
-        }
-
-        @Test
-        @DisplayName("Should delete meter successfully")
-        void shouldDeleteMeterSuccessfully() {
-            // Arrange
-            MeterEntity meter = createValidMeter();
-            MeterEntity saved = persistAndFlush(meter);
-            UUID savedId = saved.getId();
-
-            // Act
-            meterRepository.deleteById(savedId);
-            flushAndClear();
-
-            // Assert
-            Optional<MeterEntity> retrieved = meterRepository.findById(savedId);
-            assertThat(retrieved).isEmpty();
+            assertThat(retrieved)
+                    .isPresent()
+                    .hasValueSatisfying(m -> assertThat(m)
+                            .extracting(
+                                    MeterEntity::getDescription,
+                                    MeterEntity::getSerialNumber,
+                                    MeterEntity::getIsVirtual
+                            )
+                            .containsExactly("Test Electric Meter", "SM-12345", false));
         }
 
         @Test
@@ -176,503 +87,397 @@ class MeterRepositoryTest extends BaseRepositoryTest {
             meter1.setSerialNumber("METER-001");
             MeterEntity meter2 = createValidMeter();
             meter2.setSerialNumber("METER-002");
-            
-            persistAndFlush(meter1);
-            persistAndFlush(meter2);
+            MeterEntity meter3 = createValidMeter();
+            meter3.setSerialNumber("METER-003");
+
+            meterRepository.saveAll(List.of(meter1, meter2, meter3));
+            flushAndClear();
 
             // Act
             List<MeterEntity> allMeters = meterRepository.findAll();
 
             // Assert
-            assertThat(allMeters).hasSizeGreaterThanOrEqualTo(2);
             assertThat(allMeters)
-                .extracting(MeterEntity::getSerialNumber)
-                .contains("METER-001", "METER-002");
+                    .hasSizeGreaterThanOrEqualTo(3)
+                    .extracting(MeterEntity::getSerialNumber)
+                    .contains("METER-001", "METER-002", "METER-003");
         }
 
         @Test
-        @DisplayName("Should count meters correctly")
-        void shouldCountMetersCorrectly() {
+        @DisplayName("Should delete meter successfully")
+        void shouldDeleteMeterSuccessfully() {
+            // Arrange
+            MeterEntity meter = createValidMeter();
+            meter.setSerialNumber("METER-DELETE");
+            MeterEntity saved = meterRepository.save(meter);
+            UUID meterId = saved.getId();
+            flushAndClear();
+
+            // Act
+            meterRepository.deleteById(meterId);
+            flushAndClear();
+            Optional<MeterEntity> retrieved = meterRepository.findById(meterId);
+
+            // Assert
+            assertThat(retrieved).isEmpty();
+        }
+
+        @Test
+        @DisplayName("Should check if meter exists")
+        void shouldCheckIfMeterExists() {
+            // Arrange
+            MeterEntity meter = createValidMeter();
+            meter.setSerialNumber("EXIST-CHECK");
+            MeterEntity saved = meterRepository.save(meter);
+            flushAndClear();
+
+            // Act & Assert
+            assertThat(meterRepository.existsById(saved.getId())).isTrue();
+            assertThat(meterRepository.existsById(UUID.randomUUID())).isFalse();
+        }
+
+        @Test
+        @DisplayName("Should count meters")
+        void shouldCountMeters() {
             // Arrange
             long initialCount = meterRepository.count();
-            MeterEntity meter1 = createValidMeter();
-            MeterEntity meter2 = createValidMeter();
-            
-            persistAndFlush(meter1);
-            persistAndFlush(meter2);
+            meterRepository.saveAll(List.of(
+                    createValidMeter(),
+                    createValidMeter(),
+                    createValidMeter()
+            ));
+            flushAndClear();
 
-            // Act
-            long finalCount = meterRepository.count();
-
-            // Assert
-            assertThat(finalCount).isEqualTo(initialCount + 2);
+            // Act & Assert
+            assertThat(meterRepository.count()).isEqualTo(initialCount + 3);
         }
     }
 
     @Nested
-    @DisplayName("Custom Query Methods")
-    class CustomQueryMethodsTest {
+    @DisplayName("Meter Specific Field Persistence")
+    class MeterSpecificFieldPersistenceTest {
 
         @Test
-        @DisplayName("Should find meter by serial number")
-        void shouldFindMeterBySerialNumber() {
+        @DisplayName("Should persist all Meter-specific fields correctly")
+        void shouldPersistAllMeterSpecificFields() {
             // Arrange
             MeterEntity meter = createValidMeter();
-            meter.setSerialNumber("UNIQUE-SERIAL-12345");
-            MeterEntity saved = persistAndFlush(meter);
-
-            // Act
-            Optional<MeterEntity> found = meterRepository.findBySerialNumber("UNIQUE-SERIAL-12345");
-
-            // Assert
-            assertThat(found).isPresent();
-            assertThat(found.get().getId()).isEqualTo(saved.getId());
-            assertThat(found.get().getSerialNumber()).isEqualTo("UNIQUE-SERIAL-12345");
-        }
-
-        @Test
-        @DisplayName("Should find meters by form number")
-        void shouldFindMetersByFormNumber() {
-            // Arrange
-            MeterEntity meter1 = createValidMeter();
-            meter1.setFormNumber("FORM-A123");
-            MeterEntity meter2 = createValidMeter();
-            meter2.setFormNumber("FORM-A123");
-            MeterEntity meter3 = createValidMeter();
-            meter3.setFormNumber("FORM-B456");
-            
-            persistAndFlush(meter1);
-            persistAndFlush(meter2);
-            persistAndFlush(meter3);
-
-            // Act
-            List<MeterEntity> formAMeters = meterRepository.findByFormNumber("FORM-A123");
-
-            // Assert
-            assertThat(formAMeters).hasSize(2);
-            assertThat(formAMeters).extracting(MeterEntity::getFormNumber)
-                .allMatch(form -> form.equals("FORM-A123"));
-        }
-
-        @Test
-        @DisplayName("Should find meters by UTC number")
-        void shouldFindMetersByUtcNumber() {
-            // Arrange
-            MeterEntity meter1 = createValidMeter();
-            meter1.setUtcNumber("UTC-999888");
-            MeterEntity meter2 = createValidMeter();
-            meter2.setUtcNumber("UTC-999888");
-            MeterEntity meter3 = createValidMeter();
-            meter3.setUtcNumber("UTC-777666");
-            
-            persistAndFlush(meter1);
-            persistAndFlush(meter2);
-            persistAndFlush(meter3);
-
-            // Act
-            List<MeterEntity> utcMeters = meterRepository.findByUtcNumber("UTC-999888");
-
-            // Assert
-            assertThat(utcMeters).hasSize(2);
-            assertThat(utcMeters).extracting(MeterEntity::getUtcNumber)
-                .allMatch(utc -> utc.equals("UTC-999888"));
-        }
-
-        @Test
-        @DisplayName("Should find virtual meters")
-        void shouldFindVirtualMeters() {
-            // Arrange
-            MeterEntity virtualMeter1 = createVirtualMeter();
-            MeterEntity virtualMeter2 = createVirtualMeter();
-            MeterEntity physicalMeter = createValidMeter();
-            physicalMeter.setIsVirtual(false);
-            
-            persistAndFlush(virtualMeter1);
-            persistAndFlush(virtualMeter2);
-            persistAndFlush(physicalMeter);
-
-            // Act
-            List<MeterEntity> virtualMeters = meterRepository.findVirtualMeters();
-
-            // Assert
-            assertThat(virtualMeters).hasSize(2);
-            assertThat(virtualMeters).extracting(MeterEntity::getIsVirtual)
-                .allMatch(isVirtual -> isVirtual.equals(true));
-        }
-
-        @Test
-        @DisplayName("Should find physical meters")
-        void shouldFindPhysicalMeters() {
-            // Arrange
-            MeterEntity physicalMeter1 = createValidMeter();
-            physicalMeter1.setIsVirtual(false);
-            MeterEntity physicalMeter2 = createValidMeter();
-            physicalMeter2.setIsVirtual(null); // Should be considered physical
-            MeterEntity virtualMeter = createVirtualMeter();
-            
-            persistAndFlush(physicalMeter1);
-            persistAndFlush(physicalMeter2);
-            persistAndFlush(virtualMeter);
-
-            // Act
-            List<MeterEntity> physicalMeters = meterRepository.findPhysicalMeters();
-
-            // Assert
-            assertThat(physicalMeters).hasSize(2);
-            assertThat(physicalMeters).extracting(MeterEntity::getIsVirtual)
-                .allMatch(isVirtual -> isVirtual == null || isVirtual.equals(false));
-        }
-
-        @Test
-        @DisplayName("Should find PAN devices")
-        void shouldFindPanDevices() {
-            // Arrange
-            MeterEntity panMeter1 = createPanMeter();
-            MeterEntity panMeter2 = createPanMeter();
-            MeterEntity regularMeter = createValidMeter();
-            regularMeter.setIsPan(false);
-            
-            persistAndFlush(panMeter1);
-            persistAndFlush(panMeter2);
-            persistAndFlush(regularMeter);
-
-            // Act
-            List<MeterEntity> panDevices = meterRepository.findPanDevices();
-
-            // Assert
-            assertThat(panDevices).hasSize(2);
-            assertThat(panDevices).extracting(MeterEntity::getIsPan)
-                .allMatch(isPan -> isPan.equals(true));
-        }
-
-        @Test
-        @DisplayName("Should find meters by AMR system")
-        void shouldFindMetersByAmrSystem() {
-            // Arrange
-            MeterEntity meter1 = createValidMeter();
-            meter1.setAmrSystem("AMR-SYSTEM-ALPHA");
-            MeterEntity meter2 = createValidMeter();
-            meter2.setAmrSystem("AMR-SYSTEM-ALPHA");
-            MeterEntity meter3 = createValidMeter();
-            meter3.setAmrSystem("AMR-SYSTEM-BETA");
-            
-            persistAndFlush(meter1);
-            persistAndFlush(meter2);
-            persistAndFlush(meter3);
-
-            // Act
-            List<MeterEntity> alphaMeters = meterRepository.findByAmrSystem("AMR-SYSTEM-ALPHA");
-
-            // Assert
-            assertThat(alphaMeters).hasSize(2);
-            assertThat(alphaMeters).extracting(MeterEntity::getAmrSystem)
-                .allMatch(amr -> amr.equals("AMR-SYSTEM-ALPHA"));
-        }
-
-        @Test
-        @DisplayName("Should find meters by install code")
-        void shouldFindMetersByInstallCode() {
-            // Arrange
-            MeterEntity meter1 = createValidMeter();
-            meter1.setInstallCode("INSTALL-CODE-XYZ");
-            MeterEntity meter2 = createValidMeter();
-            meter2.setInstallCode("INSTALL-CODE-XYZ");
-            MeterEntity meter3 = createValidMeter();
-            meter3.setInstallCode("INSTALL-CODE-ABC");
-            
-            persistAndFlush(meter1);
-            persistAndFlush(meter2);
-            persistAndFlush(meter3);
-
-            // Act
-            List<MeterEntity> xyzMeters = meterRepository.findByInstallCode("INSTALL-CODE-XYZ");
-
-            // Assert
-            assertThat(xyzMeters).hasSize(2);
-            assertThat(xyzMeters).extracting(MeterEntity::getInstallCode)
-                .allMatch(code -> code.equals("INSTALL-CODE-XYZ"));
-        }
-
-        @Test
-        @DisplayName("Should find meters by interval length greater than")
-        void shouldFindMetersByIntervalLengthGreaterThan() {
-            // Arrange
-            MeterEntity meter1 = createValidMeter();
-            meter1.setIntervalLength(300L); // 5 minutes
-            MeterEntity meter2 = createValidMeter();
-            meter2.setIntervalLength(1800L); // 30 minutes
-            MeterEntity meter3 = createValidMeter();
-            meter3.setIntervalLength(3600L); // 60 minutes
-            
-            persistAndFlush(meter1);
-            persistAndFlush(meter2);
-            persistAndFlush(meter3);
-
-            // Act
-            List<MeterEntity> longIntervalMeters = meterRepository.findByIntervalLengthGreaterThan(900L); // > 15 minutes
-
-            // Assert
-            assertThat(longIntervalMeters).hasSize(2);
-            assertThat(longIntervalMeters).extracting(MeterEntity::getIntervalLength)
-                .allMatch(interval -> interval > 900L);
-        }
-
-        @Test
-        @DisplayName("Should find critical meters")
-        void shouldFindCriticalMeters() {
-            // Arrange
-            MeterEntity criticalMeter1 = createCriticalMeter();
-            MeterEntity criticalMeter2 = createCriticalMeter();
-            MeterEntity regularMeter = createValidMeter();
-            regularMeter.setCritical(false);
-            
-            persistAndFlush(criticalMeter1);
-            persistAndFlush(criticalMeter2);
-            persistAndFlush(regularMeter);
-
-            // Act
-            List<MeterEntity> criticalMeters = meterRepository.findCriticalMeters();
-
-            // Assert
-            assertThat(criticalMeters).hasSize(2);
-            assertThat(criticalMeters).extracting(MeterEntity::getCritical)
-                .allMatch(critical -> critical.equals(true));
-        }
-
-        @Test
-        @DisplayName("Should return empty results when no matches found")
-        void shouldReturnEmptyResultsWhenNoMatchesFound() {
-            // Arrange
-            MeterEntity meter = createValidMeter();
-            meter.setSerialNumber("EXISTING-METER");
-            persistAndFlush(meter);
-
-            // Act
-            Optional<MeterEntity> notFound = meterRepository.findBySerialNumber("NON-EXISTENT");
-            List<MeterEntity> emptyList = meterRepository.findByFormNumber("NON-EXISTENT-FORM");
-
-            // Assert
-            assertThat(notFound).isEmpty();
-            assertThat(emptyList).isEmpty();
-        }
-    }
-
-    @Nested
-    @DisplayName("Meter Device Field Testing")
-    class MeterDeviceFieldTest {
-
-        @Test
-        @DisplayName("Should persist all meter specific fields correctly")
-        void shouldPersistAllMeterSpecificFieldsCorrectly() {
-            // Arrange
-            MeterEntity meter = createValidMeter();
-            meter.setFormNumber("SPECIAL-FORM-12345");
-            meter.setIntervalLength(2700L); // 45 minutes
-
-            // Act
-            MeterEntity saved = persistAndFlush(meter);
-
-            // Assert
-            Optional<MeterEntity> retrieved = meterRepository.findById(saved.getId());
-            assertThat(retrieved).isPresent();
-            MeterEntity entity = retrieved.get();
-            assertThat(entity.getFormNumber()).isEqualTo("SPECIAL-FORM-12345");
-            assertThat(entity.getIntervalLength()).isEqualTo(2700L);
-        }
-
-        @Test
-        @DisplayName("Should persist all inherited EndDevice fields correctly")
-        void shouldPersistAllInheritedEndDeviceFieldsCorrectly() {
-            // Arrange
-            MeterEntity meter = createValidMeter();
-            meter.setType("SMART_METER");
-            meter.setUtcNumber("UTC-SPECIAL-999");
-            meter.setSerialNumber("SN-SPECIAL-888777");
-            meter.setLotNumber("LOT-SPECIAL-666");
-            meter.setPurchasePrice(125000L); // $1250.00
-            meter.setCritical(true);
-            meter.setInitialCondition("REFURBISHED");
-            meter.setInitialLossOfLife(new BigDecimal("0.15"));
-            meter.setIsVirtual(false);
-            meter.setIsPan(true);
-            meter.setInstallCode("SPECIAL-INSTALL-CODE");
-            meter.setAmrSystem("SPECIAL-AMR-SYSTEM");
-
-            // Act
-            MeterEntity saved = persistAndFlush(meter);
-
-            // Assert
-            Optional<MeterEntity> retrieved = meterRepository.findById(saved.getId());
-            assertThat(retrieved).isPresent();
-            MeterEntity entity = retrieved.get();
-            assertThat(entity.getType()).isEqualTo("SMART_METER");
-            assertThat(entity.getUtcNumber()).isEqualTo("UTC-SPECIAL-999");
-            assertThat(entity.getSerialNumber()).isEqualTo("SN-SPECIAL-888777");
-            assertThat(entity.getLotNumber()).isEqualTo("LOT-SPECIAL-666");
-            assertThat(entity.getPurchasePrice()).isEqualTo(125000L);
-            assertThat(entity.getCritical()).isTrue();
-            assertThat(entity.getInitialCondition()).isEqualTo("REFURBISHED");
-            assertThat(entity.getInitialLossOfLife()).isEqualTo(new BigDecimal("0.15"));
-            assertThat(entity.getIsVirtual()).isFalse();
-            assertThat(entity.getIsPan()).isTrue();
-            assertThat(entity.getInstallCode()).isEqualTo("SPECIAL-INSTALL-CODE");
-            assertThat(entity.getAmrSystem()).isEqualTo("SPECIAL-AMR-SYSTEM");
-        }
-
-        @Test
-        @DisplayName("Should handle null optional fields correctly")
-        void shouldHandleNullOptionalFieldsCorrectly() {
-            // Arrange
-            MeterEntity meter = new MeterEntity();
-            meter.setDescription("Minimal Meter");
-            meter.setFormNumber(null);
-            meter.setIntervalLength(null);
-            meter.setType(null);
-            meter.setUtcNumber(null);
-            meter.setSerialNumber(null);
-            meter.setLotNumber(null);
-            meter.setPurchasePrice(null);
-            meter.setCritical(null);
-            meter.setInitialCondition(null);
-            meter.setInitialLossOfLife(null);
-            meter.setIsVirtual(null);
-            meter.setIsPan(null);
-            meter.setInstallCode(null);
-            meter.setAmrSystem(null);
-
-            // Act
-            MeterEntity saved = persistAndFlush(meter);
-
-            // Assert
-            Optional<MeterEntity> retrieved = meterRepository.findById(saved.getId());
-            assertThat(retrieved).isPresent();
-            MeterEntity entity = retrieved.get();
-            assertThat(entity.getFormNumber()).isNull();
-            assertThat(entity.getIntervalLength()).isNull();
-            assertThat(entity.getType()).isNull();
-            assertThat(entity.getUtcNumber()).isNull();
-            assertThat(entity.getSerialNumber()).isNull();
-            assertThat(entity.getLotNumber()).isNull();
-            assertThat(entity.getPurchasePrice()).isNull();
-            assertThat(entity.getCritical()).isNull();
-            assertThat(entity.getInitialCondition()).isNull();
-            assertThat(entity.getInitialLossOfLife()).isNull();
-            assertThat(entity.getIsVirtual()).isNull();
-            assertThat(entity.getIsPan()).isNull();
-            assertThat(entity.getInstallCode()).isNull();
-            assertThat(entity.getAmrSystem()).isNull();
-        }
-    }
-
-    @Nested
-    @DisplayName("Inheritance Testing")
-    class InheritanceTest {
-
-        @Test
-        @DisplayName("Should inherit IdentifiedObject functionality through EndDeviceEntity")
-        void shouldInheritIdentifiedObjectFunctionalityThroughEndDeviceEntity() {
-            // Arrange
-            MeterEntity meter = createValidMeter();
+            meter.setFormNumber("FORM-2A");
+            meter.setIntervalLength(900L); // 15 minutes
 
             // Act
             MeterEntity saved = meterRepository.save(meter);
             flushAndClear();
-
-            // Assert
             Optional<MeterEntity> retrieved = meterRepository.findById(saved.getId());
-            assertThat(retrieved).isPresent();
-            
-            MeterEntity entity = retrieved.get();
-            // IdentifiedObject fields
-            assertThat(entity.getId()).isNotNull();
-            assertThat(entity.getCreated()).isNotNull();
-            assertThat(entity.getUpdated()).isNotNull();
-            assertThat(entity.getDescription()).isNotNull();
+
+            // Assert
+            assertThat(retrieved)
+                    .isPresent()
+                    .hasValueSatisfying(m -> assertThat(m)
+                            .extracting(
+                                    MeterEntity::getFormNumber,
+                                    MeterEntity::getIntervalLength
+                            )
+                            .containsExactly("FORM-2A", 900L));
         }
 
         @Test
-        @DisplayName("Should update timestamps on modification")
-        void shouldUpdateTimestampsOnModification() {
+        @DisplayName("Should persist MeterMultiplier collection")
+        void shouldPersistMeterMultiplierCollection() {
+            // Arrange
+            MeterMultiplier multiplier1 = new MeterMultiplier("voltage", new BigDecimal("120.5"));
+            MeterMultiplier multiplier2 = new MeterMultiplier("kH", new BigDecimal("7.2"));
+
+            MeterEntity meter = createValidMeter();
+            meter.setMeterMultipliers(List.of(multiplier1, multiplier2));
+
+            // Act
+            MeterEntity saved = meterRepository.save(meter);
+            flushAndClear();
+            Optional<MeterEntity> retrieved = meterRepository.findById(saved.getId());
+
+            // Assert
+            assertThat(retrieved)
+                    .isPresent()
+                    .hasValueSatisfying(m -> {
+                        assertThat(m.getMeterMultipliers()).hasSize(2);
+                        // BigDecimal assertions use isEqualByComparingTo() for cross-platform precision tolerance
+                        assertThat(m.getMeterMultipliers().get(0).getKind()).isEqualTo("voltage");
+                        assertThat(m.getMeterMultipliers().get(0).getValue())
+                                .isEqualByComparingTo(new BigDecimal("120.5"));
+                        assertThat(m.getMeterMultipliers().get(1).getKind()).isEqualTo("kH");
+                        assertThat(m.getMeterMultipliers().get(1).getValue())
+                                .isEqualByComparingTo(new BigDecimal("7.2"));
+                    });
+        }
+
+        @Test
+        @DisplayName("Should handle empty MeterMultipliers collection")
+        void shouldHandleEmptyMeterMultipliersCollection() {
             // Arrange
             MeterEntity meter = createValidMeter();
-            MeterEntity saved = persistAndFlush(meter);
-            
-            // Wait a moment to ensure timestamp difference
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+            meter.setMeterMultipliers(List.of());
 
             // Act
-            saved.setDescription("Updated Description");
-            MeterEntity updated = meterRepository.save(saved);
+            MeterEntity saved = meterRepository.save(meter);
             flushAndClear();
+            Optional<MeterEntity> retrieved = meterRepository.findById(saved.getId());
 
             // Assert
-            Optional<MeterEntity> retrieved = meterRepository.findById(updated.getId());
-            assertThat(retrieved).isPresent();
-            assertThat(retrieved.get().getUpdated()).isAfter(retrieved.get().getCreated());
+            assertThat(retrieved)
+                    .isPresent()
+                    .hasValueSatisfying(m -> assertThat(m.getMeterMultipliers()).isEmpty());
         }
+    }
+
+    @Nested
+    @DisplayName("EndDevice Inherited Field Persistence")
+    class EndDeviceInheritedFieldPersistenceTest {
 
         @Test
-        @DisplayName("Should generate unique IDs for different entities")
-        void shouldGenerateUniqueIdsForDifferentEntities() {
-            // Arrange
-            MeterEntity meter1 = createValidMeter();
-            MeterEntity meter2 = createValidMeter();
-
-            // Act
-            MeterEntity saved1 = meterRepository.save(meter1);
-            MeterEntity saved2 = meterRepository.save(meter2);
-            flushAndClear();
-
-            // Assert
-            assertThat(saved1.getId()).isNotEqualTo(saved2.getId());
-            assertThat(saved1.getId()).isNotNull();
-            assertThat(saved2.getId()).isNotNull();
-        }
-
-        @Test
-        @DisplayName("Should handle equals and hashCode correctly")
-        void shouldHandleEqualsAndHashCodeCorrectly() {
-            // Arrange
-            MeterEntity meter1 = createValidMeter();
-            MeterEntity meter2 = createValidMeter();
-            
-            MeterEntity saved1 = persistAndFlush(meter1);
-            MeterEntity saved2 = persistAndFlush(meter2);
-
-            // Act & Assert
-            assertThat(saved1).isNotEqualTo(saved2);
-            // Note: Hibernate proxy-aware hashCode implementation returns class hashCode for different entities
-            // This is expected behavior for entities with different IDs
-            
-            // Same entity should be equal to itself
-            assertThat(saved1).isEqualTo(saved1);
-            assertThat(saved1.hashCode()).isEqualTo(saved1.hashCode());
-            
-            // Different entities with different IDs should not be equal
-            assertThat(saved1.getId()).isNotEqualTo(saved2.getId());
-        }
-
-        @Test
-        @DisplayName("Should generate meaningful toString representation")
-        void shouldGenerateMeaningfulToStringRepresentation() {
+        @DisplayName("Should persist all Asset fields inherited through EndDevice")
+        void shouldPersistAllAssetFields() {
             // Arrange
             MeterEntity meter = createValidMeter();
-            meter.setSerialNumber("TEST-SERIAL-12345");
-            meter.setFormNumber("TEST-FORM-67890");
-            MeterEntity saved = persistAndFlush(meter);
+            meter.setType("ElectricMeter");
+            meter.setUtcNumber("UTC-54321");
+            meter.setSerialNumber("SN-ASSET-001");
+            meter.setLotNumber("LOT-2025-Q1");
+            meter.setPurchasePrice(25000L);
+            meter.setCritical(true);
+            meter.setInitialCondition("NEW");
+            meter.setInitialLossOfLife(BigDecimal.ZERO);
 
             // Act
-            String toString = saved.toString();
+            MeterEntity saved = meterRepository.save(meter);
+            flushAndClear();
+            Optional<MeterEntity> retrieved = meterRepository.findById(saved.getId());
 
             // Assert
-            assertThat(toString).contains("MeterEntity");
-            assertThat(toString).contains("id = " + saved.getId());
-            assertThat(toString).contains("serialNumber = TEST-SERIAL-12345");
-            assertThat(toString).contains("formNumber = TEST-FORM-67890");
+            assertThat(retrieved)
+                    .isPresent()
+                    .hasValueSatisfying(m -> assertThat(m)
+                            .extracting(
+                                    MeterEntity::getType,
+                                    MeterEntity::getUtcNumber,
+                                    MeterEntity::getSerialNumber,
+                                    MeterEntity::getLotNumber,
+                                    MeterEntity::getPurchasePrice,
+                                    MeterEntity::getCritical,
+                                    MeterEntity::getInitialCondition
+                            )
+                            .containsExactly("ElectricMeter", "UTC-54321", "SN-ASSET-001",
+                                    "LOT-2025-Q1", 25000L, true, "NEW"))
+                    .hasValueSatisfying(m ->
+                            assertThat(m.getInitialLossOfLife()).isEqualByComparingTo(BigDecimal.ZERO));
         }
+
+        @Test
+        @DisplayName("Should persist lifecycle dates correctly")
+        void shouldPersistLifecycleDatesCorrectly() {
+            // Arrange
+            OffsetDateTime now = OffsetDateTime.now();
+            Asset.LifecycleDate lifecycle = new Asset.LifecycleDate();
+            lifecycle.setInstallationDate(now.minusDays(30));
+            lifecycle.setManufacturedDate(now.minusDays(90));
+            lifecycle.setPurchaseDate(now.minusDays(60));
+            lifecycle.setReceivedDate(now.minusDays(45));
+
+            MeterEntity meter = createValidMeter();
+            meter.setLifecycle(lifecycle);
+
+            // Act
+            MeterEntity saved = meterRepository.save(meter);
+            flushAndClear();
+            Optional<MeterEntity> retrieved = meterRepository.findById(saved.getId());
+
+            // Assert
+            assertThat(retrieved)
+                    .isPresent()
+                    .hasValueSatisfying(m -> assertThat(m.getLifecycle())
+                            .isNotNull()
+                            .extracting(
+                                    Asset.LifecycleDate::getInstallationDate,
+                                    Asset.LifecycleDate::getManufacturedDate,
+                                    Asset.LifecycleDate::getPurchaseDate,
+                                    Asset.LifecycleDate::getReceivedDate
+                            )
+                            .doesNotContainNull());
+        }
+
+        @Test
+        @DisplayName("Should persist acceptance test correctly")
+        void shouldPersistAcceptanceTestCorrectly() {
+            // Arrange
+            Asset.AcceptanceTest acceptanceTest = new Asset.AcceptanceTest();
+            acceptanceTest.setDateTime(OffsetDateTime.now().minusDays(7));
+            acceptanceTest.setSuccess(true);
+            acceptanceTest.setType("FIELD_TEST");
+
+            MeterEntity meter = createValidMeter();
+            meter.setAcceptanceTest(acceptanceTest);
+
+            // Act
+            MeterEntity saved = meterRepository.save(meter);
+            flushAndClear();
+            Optional<MeterEntity> retrieved = meterRepository.findById(saved.getId());
+
+            // Assert
+            assertThat(retrieved)
+                    .isPresent()
+                    .hasValueSatisfying(m -> assertThat(m.getAcceptanceTest())
+                            .isNotNull()
+                            .extracting(
+                                    Asset.AcceptanceTest::getSuccess,
+                                    Asset.AcceptanceTest::getType
+                            )
+                            .containsExactly(true, "FIELD_TEST"))
+                    .hasValueSatisfying(m ->
+                            assertThat(m.getAcceptanceTest().getDateTime()).isNotNull());
+        }
+
+        @Test
+        @DisplayName("Should persist status correctly")
+        void shouldPersistStatusCorrectly() {
+            // Arrange
+            Status status = new Status();
+            status.setValue("ACTIVE");
+            status.setDateTime(OffsetDateTime.now());
+            status.setRemark("Meter operational");
+            status.setReason("Installation complete");
+
+            MeterEntity meter = createValidMeter();
+            meter.setStatus(status);
+
+            // Act
+            MeterEntity saved = meterRepository.save(meter);
+            flushAndClear();
+            Optional<MeterEntity> retrieved = meterRepository.findById(saved.getId());
+
+            // Assert
+            assertThat(retrieved)
+                    .isPresent()
+                    .hasValueSatisfying(m -> assertThat(m.getStatus())
+                            .isNotNull()
+                            .extracting(
+                                    Status::getValue,
+                                    Status::getRemark,
+                                    Status::getReason
+                            )
+                            .containsExactly("ACTIVE", "Meter operational", "Installation complete"))
+                    .hasValueSatisfying(m ->
+                            assertThat(m.getStatus().getDateTime()).isNotNull());
+        }
+
+        @Test
+        @DisplayName("Should persist electronic address correctly")
+        void shouldPersistElectronicAddressCorrectly() {
+            // Arrange
+            ElectronicAddress electronicAddress = new ElectronicAddress();
+            electronicAddress.setLan("192.168.1.100");
+            electronicAddress.setMac("00:1A:2B:3C:4D:5E");
+            electronicAddress.setEmail1("meter@utility.com");
+            electronicAddress.setWeb("https://meter.utility.com");
+
+            MeterEntity meter = createValidMeter();
+            meter.setElectronicAddress(electronicAddress);
+
+            // Act
+            MeterEntity saved = meterRepository.save(meter);
+            flushAndClear();
+            Optional<MeterEntity> retrieved = meterRepository.findById(saved.getId());
+
+            // Assert
+            assertThat(retrieved)
+                    .isPresent()
+                    .hasValueSatisfying(m -> assertThat(m.getElectronicAddress())
+                            .isNotNull()
+                            .extracting(
+                                    ElectronicAddress::getLan,
+                                    ElectronicAddress::getMac,
+                                    ElectronicAddress::getEmail1,
+                                    ElectronicAddress::getWeb
+                            )
+                            .containsExactly("192.168.1.100", "00:1A:2B:3C:4D:5E",
+                                    "meter@utility.com", "https://meter.utility.com"));
+        }
+    }
+
+    @Nested
+    @DisplayName("EndDevice Specific Fields")
+    class EndDeviceSpecificFieldsTest {
+
+        @Test
+        @DisplayName("Should persist virtual device flag")
+        void shouldPersistVirtualDeviceFlag() {
+            // Arrange
+            MeterEntity virtualMeter = createValidMeter();
+            virtualMeter.setIsVirtual(true);
+
+            // Act
+            MeterEntity saved = meterRepository.save(virtualMeter);
+            flushAndClear();
+            Optional<MeterEntity> retrieved = meterRepository.findById(saved.getId());
+
+            // Assert
+            assertThat(retrieved)
+                    .isPresent()
+                    .hasValueSatisfying(m -> assertThat(m.getIsVirtual()).isTrue());
+        }
+
+        @Test
+        @DisplayName("Should persist PAN device flag")
+        void shouldPersistPanDeviceFlag() {
+            // Arrange
+            MeterEntity panMeter = createValidMeter();
+            panMeter.setIsPan(true);
+
+            // Act
+            MeterEntity saved = meterRepository.save(panMeter);
+            flushAndClear();
+            Optional<MeterEntity> retrieved = meterRepository.findById(saved.getId());
+
+            // Assert
+            assertThat(retrieved)
+                    .isPresent()
+                    .hasValueSatisfying(m -> assertThat(m.getIsPan()).isTrue());
+        }
+
+        @Test
+        @DisplayName("Should persist install code and AMR system")
+        void shouldPersistInstallCodeAndAmrSystem() {
+            // Arrange
+            MeterEntity meter = createValidMeter();
+            meter.setInstallCode("INSTALL-CODE-12345");
+            meter.setAmrSystem("ZigBee Smart Energy 2.0");
+
+            // Act
+            MeterEntity saved = meterRepository.save(meter);
+            flushAndClear();
+            Optional<MeterEntity> retrieved = meterRepository.findById(saved.getId());
+
+            // Assert
+            assertThat(retrieved)
+                    .isPresent()
+                    .hasValueSatisfying(m -> assertThat(m)
+                            .extracting(
+                                    MeterEntity::getInstallCode,
+                                    MeterEntity::getAmrSystem
+                            )
+                            .containsExactly("INSTALL-CODE-12345", "ZigBee Smart Energy 2.0"));
+        }
+    }
+
+    /**
+     * Helper method to create a valid MeterEntity for testing.
+     */
+    private MeterEntity createValidMeter() {
+        MeterEntity meter = new MeterEntity();
+        meter.setSerialNumber("DEFAULT-SN-" + UUID.randomUUID().toString().substring(0, 8));
+        meter.setFormNumber("FORM-1");
+        meter.setIntervalLength(900L); // 15 minutes default
+        meter.setIsVirtual(false);
+        meter.setIsPan(false);
+        return meter;
     }
 }

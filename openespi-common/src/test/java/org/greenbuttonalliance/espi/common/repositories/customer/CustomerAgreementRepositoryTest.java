@@ -22,6 +22,9 @@ import org.greenbuttonalliance.espi.common.domain.common.DateTimeInterval;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerAgreementEntity;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.Organisation;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.Status;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.StreetAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.TelephoneNumber;
 import org.greenbuttonalliance.espi.common.test.BaseRepositoryTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -66,7 +69,7 @@ class CustomerAgreementRepositoryTest extends BaseRepositoryTest {
         agreement.setRevisionNumber("1.0");
 
         // Document.electronicAddress (customer.xsd lines 886-936)
-        Organisation.ElectronicAddress electronicAddress = new Organisation.ElectronicAddress();
+        ElectronicAddress electronicAddress = new ElectronicAddress();
         electronicAddress.setLan("192.168." + faker.number().numberBetween(1, 255) + "." + faker.number().numberBetween(1, 255));
         electronicAddress.setMac(faker.internet().macAddress());
         electronicAddress.setEmail1(faker.internet().emailAddress());
@@ -266,7 +269,7 @@ class CustomerAgreementRepositoryTest extends BaseRepositoryTest {
 
             // Assert - ElectronicAddress fields (customer.xsd lines 886-936)
             assertThat(retrieved).isPresent();
-            Organisation.ElectronicAddress result = retrieved.get().getElectronicAddress();
+            ElectronicAddress result = retrieved.get().getElectronicAddress();
 
             assertThat(result).isNotNull();
             assertThat(result.getLan()).isEqualTo(agreement.getElectronicAddress().getLan());

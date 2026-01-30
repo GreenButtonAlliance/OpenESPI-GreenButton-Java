@@ -24,6 +24,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.StreetAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.TelephoneNumber;
 import org.hibernate.proxy.HibernateProxy;
 
 import java.util.List;
@@ -62,7 +65,7 @@ ServiceLocationEntity extends IdentifiedObject {
     @AttributeOverride(name = "stateOrProvince", column = @Column(name = "main_state_or_province"))
     @AttributeOverride(name = "postalCode", column = @Column(name = "main_postal_code"))
     @AttributeOverride(name = "country", column = @Column(name = "main_country"))
-    private Organisation.StreetAddress mainAddress;
+    private StreetAddress mainAddress;
 
     /**
      * Secondary address of the location. For example, PO Box address may have different ZIP code than that in the 'mainAddress'.
@@ -73,7 +76,7 @@ ServiceLocationEntity extends IdentifiedObject {
     @AttributeOverride(name = "stateOrProvince", column = @Column(name = "secondary_state_or_province"))
     @AttributeOverride(name = "postalCode", column = @Column(name = "secondary_postal_code"))
     @AttributeOverride(name = "country", column = @Column(name = "secondary_country"))
-    private Organisation.StreetAddress secondaryAddress;
+    private StreetAddress secondaryAddress;
 
     /**
      * Primary phone number for this service location.
@@ -88,7 +91,7 @@ ServiceLocationEntity extends IdentifiedObject {
     @AttributeOverride(name = "dialOut", column = @Column(name = "phone1_dial_out"))
     @AttributeOverride(name = "internationalPrefix", column = @Column(name = "phone1_international_prefix"))
     @AttributeOverride(name = "ituPhone", column = @Column(name = "phone1_itu_phone"))
-    private Organisation.TelephoneNumber phone1;
+    private TelephoneNumber phone1;
 
     /**
      * Secondary phone number for this service location.
@@ -103,7 +106,7 @@ ServiceLocationEntity extends IdentifiedObject {
     @AttributeOverride(name = "dialOut", column = @Column(name = "phone2_dial_out"))
     @AttributeOverride(name = "internationalPrefix", column = @Column(name = "phone2_international_prefix"))
     @AttributeOverride(name = "ituPhone", column = @Column(name = "phone2_itu_phone"))
-    private Organisation.TelephoneNumber phone2;
+    private TelephoneNumber phone2;
 
     /**
      * Electronic address.
@@ -117,7 +120,7 @@ ServiceLocationEntity extends IdentifiedObject {
     @AttributeOverride(name = "radio", column = @Column(name = "electronic_radio"))
     @AttributeOverride(name = "userID", column = @Column(name = "electronic_user_id"))
     @AttributeOverride(name = "password", column = @Column(name = "electronic_password"))
-    private Organisation.ElectronicAddress electronicAddress;
+    private ElectronicAddress electronicAddress;
 
     /**
      * (if applicable) Reference to geographical information source, often external to the utility.

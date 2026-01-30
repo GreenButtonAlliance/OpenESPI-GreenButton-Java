@@ -19,30 +19,40 @@
 
 package org.greenbuttonalliance.espi.common.dto.customer;
 
-import org.greenbuttonalliance.espi.common.dto.atom.LinkDto;
-
-import jakarta.xml.bind.annotation.*;
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.XmlRootElement;
+import jakarta.xml.bind.annotation.XmlType;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
- * Meter DTO class for JAXB XML marshalling/unmarshalling.
- *
- * Represents a meter device extending EndDevice with meter-specific functionality.
- * Supports Atom protocol XML wrapping.
+ * Meter DTO for ESPI 4.0 XSD compliance.
+ * <p>
+ * Represents a physical metering device extending EndDevice.
+ * Contains all fields from Asset (12) + EndDevice (4) + Meter (3) = 19 fields total.
+ * <p>
+ * XSD Inheritance Chain: Object → IdentifiedObject → Asset → AssetContainer → EndDevice → Meter
+ * <p>
+ * Field sequence MUST match customer.xsd definition exactly.
+ * ONLY contains XSD-defined fields - NO Atom metadata (handled by AtomEntryDto wrapper).
  */
 @XmlRootElement(name = "Meter", namespace = "http://naesb.org/espi/customer")
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "Meter", namespace = "http://naesb.org/espi/customer", propOrder = {
-    "published", "updated", "selfLink", "upLink", "relatedLinks",
-    "description", "amrSystem", "installCode", "isPan", "installDate",
-    "removedDate", "serialNumber", "formNumber", "kh", "meterMultiplier",
-    "serviceLocation"
+    // Asset fields (12) - from customer.xsd lines 650-709
+    "type", "utcNumber", "serialNumber", "lotNumber", "purchasePrice", "critical",
+    "electronicAddress", "lifecycle", "acceptanceTest", "initialCondition",
+    "initialLossOfLife", "status",
+    // EndDevice fields (4) - from customer.xsd lines 219-238
+    "isVirtual", "isPan", "installCode", "amrSystem",
+    // Meter fields (3) - from customer.xsd lines 250-264
+    "formNumber", "meterMultipliers", "intervalLength"
 })
 @Getter
 @Setter
@@ -50,86 +60,150 @@ import java.util.List;
 @AllArgsConstructor
 public class MeterDto {
 
-    @XmlTransient
-    private Long id;
+    // ========================================
+    // Asset Fields (12 fields from customer.xsd lines 650-709)
+    // ========================================
 
-    @XmlAttribute(name = "mRID")
-    private String uuid;
+    /**
+     * Utility supplied name for the type of meter.
+     * XSD: String256, minOccurs="0"
+     */
+    @XmlElement(name = "type", namespace = "http://naesb.org/espi/customer")
+    private String type;
 
-    @XmlElement(name = "published")
-    private OffsetDateTime published;
+    /**
+     * Uniquely identifies the meter within utility.
+     * XSD: String256, minOccurs="0"
+     */
+    @XmlElement(name = "utcNumber", namespace = "http://naesb.org/espi/customer")
+    private String utcNumber;
 
-    @XmlElement(name = "updated")
-    private OffsetDateTime updated;
-
-    @XmlElement(name = "link", namespace = "http://www.w3.org/2005/Atom")
-    @XmlElementWrapper(name = "links", namespace = "http://www.w3.org/2005/Atom")
-    private List<LinkDto> relatedLinks;
-
-    @XmlElement(name = "link", namespace = "http://www.w3.org/2005/Atom")
-    private LinkDto selfLink;
-
-    @XmlElement(name = "link", namespace = "http://www.w3.org/2005/Atom")
-    private LinkDto upLink;
-
-    @XmlElement(name = "description")
-    private String description;
-
-    // EndDevice fields
-    @XmlElement(name = "amrSystem")
-    private String amrSystem;
-
-    @XmlElement(name = "installCode")
-    private String installCode;
-
-    @XmlElement(name = "isPan")
-    private Boolean isPan;
-
-    @XmlElement(name = "installDate")
-    private OffsetDateTime installDate;
-
-    @XmlElement(name = "removedDate")
-    private OffsetDateTime removedDate;
-
-    @XmlElement(name = "serialNumber")
+    /**
+     * Serial number of the physical meter.
+     * Used for UUID v5 generation in ESPI 4.0.
+     * XSD: String256, minOccurs="0"
+     */
+    @XmlElement(name = "serialNumber", namespace = "http://naesb.org/espi/customer")
     private String serialNumber;
 
-    // Meter-specific fields
-    @XmlElement(name = "formNumber")
+    /**
+     * Lot number for the meter.
+     * XSD: String256, minOccurs="0"
+     */
+    @XmlElement(name = "lotNumber", namespace = "http://naesb.org/espi/customer")
+    private String lotNumber;
+
+    /**
+     * Purchase price of the meter in currency minor units (cents).
+     * XSD: Int48, minOccurs="0"
+     */
+    @XmlElement(name = "purchasePrice", namespace = "http://naesb.org/espi/customer")
+    private Long purchasePrice;
+
+    /**
+     * True if asset is considered critical for some reason (e.g., staffing, safety).
+     * XSD: xs:boolean, minOccurs="0"
+     */
+    @XmlElement(name = "critical", namespace = "http://naesb.org/espi/customer")
+    private Boolean critical;
+
+    /**
+     * Electronic address (email, URL, radio, etc.) for this asset.
+     * XSD: ElectronicAddress (complex type), minOccurs="0"
+     * Note: Singular, not a collection.
+     */
+    @XmlElement(name = "electronicAddress", namespace = "http://naesb.org/espi/customer")
+    private ElectronicAddressDto electronicAddress;
+
+    /**
+     * Lifecycle dates for the asset.
+     * XSD: LifecycleDate (complex type), minOccurs="0"
+     */
+    @XmlElement(name = "lifecycle", namespace = "http://naesb.org/espi/customer")
+    private LifecycleDateDto lifecycle;
+
+    /**
+     * Acceptance test information.
+     * XSD: AcceptanceTest (complex type), minOccurs="0"
+     */
+    @XmlElement(name = "acceptanceTest", namespace = "http://naesb.org/espi/customer")
+    private AcceptanceTestDto acceptanceTest;
+
+    /**
+     * Condition of the asset when it was initially received.
+     * XSD: String256, minOccurs="0"
+     */
+    @XmlElement(name = "initialCondition", namespace = "http://naesb.org/espi/customer")
+    private String initialCondition;
+
+    /**
+     * Initial loss of life as a percentage.
+     * XSD: PerCent (UInt16), minOccurs="0"
+     */
+    @XmlElement(name = "initialLossOfLife", namespace = "http://naesb.org/espi/customer")
+    private Integer initialLossOfLife;
+
+    /**
+     * Status information for this asset.
+     * XSD: Status (complex type), minOccurs="0"
+     */
+    @XmlElement(name = "status", namespace = "http://naesb.org/espi/customer")
+    private StatusDto status;
+
+    // ========================================
+    // EndDevice Fields (4 fields from customer.xsd lines 219-238)
+    // ========================================
+
+    /**
+     * If true, this is a virtual device (not a physical device).
+     * XSD: xs:boolean, minOccurs="0"
+     */
+    @XmlElement(name = "isVirtual", namespace = "http://naesb.org/espi/customer")
+    private Boolean isVirtual;
+
+    /**
+     * If true, this is a personal area network (PAN) device.
+     * XSD: xs:boolean, minOccurs="0"
+     */
+    @XmlElement(name = "isPan", namespace = "http://naesb.org/espi/customer")
+    private Boolean isPan;
+
+    /**
+     * Installation code for the device.
+     * XSD: String256, minOccurs="0"
+     */
+    @XmlElement(name = "installCode", namespace = "http://naesb.org/espi/customer")
+    private String installCode;
+
+    /**
+     * Automated meter reading (AMR) system identifier.
+     * XSD: String256, minOccurs="0"
+     */
+    @XmlElement(name = "amrSystem", namespace = "http://naesb.org/espi/customer")
+    private String amrSystem;
+
+    // ========================================
+    // Meter Fields (3 fields from customer.xsd lines 250-264)
+    // ========================================
+
+    /**
+     * Utility meter form designation per ANSI C12.10 or other regional standards.
+     * XSD: String256, minOccurs="0"
+     */
+    @XmlElement(name = "formNumber", namespace = "http://naesb.org/espi/customer")
     private String formNumber;
 
-    @XmlElement(name = "kh")
-    private Double kh;
-
-    @XmlElement(name = "meterMultiplier")
-    private Double meterMultiplier;
-
-    @XmlElement(name = "ServiceLocation")
-    private ServiceLocationDto serviceLocation;
+    /**
+     * Collection of meter multipliers applied to the meter readings.
+     * XSD: MeterMultiplier (complex type), minOccurs="0", maxOccurs="unbounded"
+     */
+    @XmlElement(name = "MeterMultipliers", namespace = "http://naesb.org/espi/customer")
+    private List<MeterMultiplierDto> meterMultipliers;
 
     /**
-     * Minimal constructor for basic meter data.
+     * Default interval length (in seconds) for interval readings.
+     * XSD: UInt32, minOccurs="0"
      */
-    public MeterDto(String uuid, String serialNumber, String formNumber) {
-        this(null, uuid, null, null, null, null, null, null,
-             null, null, null, null, null, serialNumber, formNumber, null, null, null);
-    }
-
-    /**
-     * Gets the self href for this meter.
-     *
-     * @return self href string
-     */
-    public String getSelfHref() {
-        return selfLink != null ? selfLink.getHref() : null;
-    }
-
-    /**
-     * Gets the up href for this meter.
-     *
-     * @return up href string
-     */
-    public String getUpHref() {
-        return upLink != null ? upLink.getHref() : null;
-    }
+    @XmlElement(name = "intervalLength", namespace = "http://naesb.org/espi/customer")
+    private Long intervalLength;
 }

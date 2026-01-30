@@ -237,6 +237,40 @@ ESPI uses Atom XML feeds for data exchange. Key patterns:
 
 ### Common Development Patterns
 
+#### File Modification Best Practices
+**CRITICAL: Always use the Edit tool with visible diffs instead of sed/awk for file modifications**
+
+- **NEVER use sed, awk, or bash text manipulation** for modifying source code or test files
+- **ALWAYS use the Edit tool** which shows explicit diffs for review
+- **Benefits of Edit tool**:
+  - Changes are visible and reviewable before execution
+  - Prevents cascading errors from bulk updates
+  - Easy to verify correctness with explicit old_string → new_string diff
+  - Catches errors immediately rather than discovering them during compilation
+
+- **When multiple files need the same change**:
+  - Use multiple Edit tool calls (one per file) in a single message
+  - Show exactly what's changing in each file
+  - Do NOT use sed/awk loops even if it seems more efficient
+
+- **Exception**: Only use bash text tools (grep, find) for **searching/analysis**, never for modifications
+
+**Example - WRONG approach:**
+```bash
+# DON'T DO THIS - sed makes changes invisibly
+sed -i '' 's/OldClass/NewClass/g' src/**/*.java
+```
+
+**Example - CORRECT approach:**
+```
+# DO THIS - Use Edit tool with explicit diffs
+Edit tool call showing:
+old_string: "import com.example.OldClass;"
+new_string: "import com.example.NewClass;"
+```
+
+This practice prevents issues like missing imports, broken references, and compilation errors that are difficult to track down.
+
 #### Adding New ESPI Entity
 1. Create entity in `openespi-common/src/main/java/org/greenbuttonalliance/espi/common/domain/usage/` (or `/customer/`)
 2. Extend `IdentifiedObject` base class

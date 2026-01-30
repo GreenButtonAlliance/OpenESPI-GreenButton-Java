@@ -19,9 +19,11 @@
 
 package org.greenbuttonalliance.espi.common.mapper.customer;
 
+import org.greenbuttonalliance.espi.common.domain.customer.common.TelephoneNumber;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.Organisation;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.ServiceLocationEntity;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.Status;
+import org.greenbuttonalliance.espi.common.domain.customer.common.StreetAddress;
 import org.greenbuttonalliance.espi.common.dto.customer.CustomerDto;
 import org.greenbuttonalliance.espi.common.dto.customer.ServiceLocationDto;
 import org.greenbuttonalliance.espi.common.dto.customer.StatusDto;
@@ -103,9 +105,9 @@ public interface ServiceLocationMapper {
     // Helper methods for embedded type conversions
 
     /**
-     * Maps Organisation.StreetAddress entity to CustomerDto.StreetAddressDto.
+     * Maps StreetAddress entity to CustomerDto.StreetAddressDto.
      */
-    default CustomerDto.StreetAddressDto map(Organisation.StreetAddress address) {
+    default CustomerDto.StreetAddressDto map(StreetAddress address) {
         if (address == null) return null;
         return new CustomerDto.StreetAddressDto(
             address.getStreetDetail(),
@@ -117,11 +119,11 @@ public interface ServiceLocationMapper {
     }
 
     /**
-     * Maps CustomerDto.StreetAddressDto to Organisation.StreetAddress entity.
+     * Maps CustomerDto.StreetAddressDto to StreetAddress entity.
      */
-    default Organisation.StreetAddress map(CustomerDto.StreetAddressDto dto) {
+    default StreetAddress map(CustomerDto.StreetAddressDto dto) {
         if (dto == null) return null;
-        Organisation.StreetAddress address = new Organisation.StreetAddress();
+        StreetAddress address = new StreetAddress();
         address.setStreetDetail(dto.getStreetDetail());
         address.setTownDetail(dto.getTownDetail());
         address.setStateOrProvince(dto.getStateOrProvince());
@@ -131,9 +133,9 @@ public interface ServiceLocationMapper {
     }
 
     /**
-     * Maps Organisation.TelephoneNumber entity to CustomerDto.TelephoneNumberDto.
+     * Maps TelephoneNumber entity to CustomerDto.TelephoneNumberDto.
      */
-    default CustomerDto.TelephoneNumberDto mapTelephone(Organisation.TelephoneNumber phone) {
+    default CustomerDto.TelephoneNumberDto mapTelephone(TelephoneNumber phone) {
         if (phone == null) return null;
         return new CustomerDto.TelephoneNumberDto(
             phone.getCountryCode(),
@@ -148,11 +150,11 @@ public interface ServiceLocationMapper {
     }
 
     /**
-     * Maps CustomerDto.TelephoneNumberDto to Organisation.TelephoneNumber entity.
+     * Maps CustomerDto.TelephoneNumberDto to TelephoneNumber entity.
      */
-    default Organisation.TelephoneNumber mapTelephone(CustomerDto.TelephoneNumberDto dto) {
+    default TelephoneNumber mapTelephone(CustomerDto.TelephoneNumberDto dto) {
         if (dto == null) return null;
-        return new Organisation.TelephoneNumber(
+        return new TelephoneNumber(
             dto.getCountryCode(),
             dto.getAreaCode(),
             dto.getCityCode(),

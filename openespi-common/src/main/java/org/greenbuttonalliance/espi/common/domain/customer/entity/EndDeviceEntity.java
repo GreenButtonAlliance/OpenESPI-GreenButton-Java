@@ -24,6 +24,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
 
 import java.math.BigDecimal;
 
@@ -103,7 +104,7 @@ public class EndDeviceEntity extends IdentifiedObject {
         @AttributeOverride(name = "userID", column = @Column(name = "end_device_user_id")),
         @AttributeOverride(name = "password", column = @Column(name = "end_device_password"))
     })
-    private Organisation.ElectronicAddress electronicAddress;
+    private ElectronicAddress electronicAddress;
 
     /**
      * Lifecycle dates for this asset.

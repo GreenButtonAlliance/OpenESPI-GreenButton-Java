@@ -58,27 +58,25 @@ public class CustomerEntity extends IdentifiedObject {
      * Organisation having this role.
      */
     @Embedded
-    @AttributeOverrides({
-        @AttributeOverride(name = "organisationName", column = @Column(name = "customer_organisation_name")),
-        @AttributeOverride(name = "streetAddress.streetDetail", column = @Column(name = "customer_street_detail")),
-        @AttributeOverride(name = "streetAddress.townDetail", column = @Column(name = "customer_town_detail")),
-        @AttributeOverride(name = "streetAddress.stateOrProvince", column = @Column(name = "customer_state_or_province")),
-        @AttributeOverride(name = "streetAddress.postalCode", column = @Column(name = "customer_postal_code")),
-        @AttributeOverride(name = "streetAddress.country", column = @Column(name = "customer_country")),
-        @AttributeOverride(name = "postalAddress.streetDetail", column = @Column(name = "customer_postal_street_detail")),
-        @AttributeOverride(name = "postalAddress.townDetail", column = @Column(name = "customer_postal_town_detail")),
-        @AttributeOverride(name = "postalAddress.stateOrProvince", column = @Column(name = "customer_postal_state_or_province")),
-        @AttributeOverride(name = "postalAddress.postalCode", column = @Column(name = "customer_postal_postal_code")),
-        @AttributeOverride(name = "postalAddress.country", column = @Column(name = "customer_postal_country")),
-        @AttributeOverride(name = "electronicAddress.lan", column = @Column(name = "customer_lan")),
-        @AttributeOverride(name = "electronicAddress.mac", column = @Column(name = "customer_mac")),
-        @AttributeOverride(name = "electronicAddress.email1", column = @Column(name = "customer_email1")),
-        @AttributeOverride(name = "electronicAddress.email2", column = @Column(name = "customer_email2")),
-        @AttributeOverride(name = "electronicAddress.web", column = @Column(name = "customer_web")),
-        @AttributeOverride(name = "electronicAddress.radio", column = @Column(name = "customer_radio")),
-        @AttributeOverride(name = "electronicAddress.userID", column = @Column(name = "customer_user_id")),
-        @AttributeOverride(name = "electronicAddress.password", column = @Column(name = "customer_password"))
-    })
+    @AttributeOverride(name = "organisationName", column = @Column(name = "customer_organisation_name"))
+    @AttributeOverride(name = "streetAddress.streetDetail", column = @Column(name = "customer_street_detail"))
+    @AttributeOverride(name = "streetAddress.townDetail", column = @Column(name = "customer_town_detail"))
+    @AttributeOverride(name = "streetAddress.stateOrProvince", column = @Column(name = "customer_state_or_province"))
+    @AttributeOverride(name = "streetAddress.postalCode", column = @Column(name = "customer_postal_code"))
+    @AttributeOverride(name = "streetAddress.country", column = @Column(name = "customer_country"))
+    @AttributeOverride(name = "postalAddress.streetDetail", column = @Column(name = "customer_postal_street_detail"))
+    @AttributeOverride(name = "postalAddress.townDetail", column = @Column(name = "customer_postal_town_detail"))
+    @AttributeOverride(name = "postalAddress.stateOrProvince", column = @Column(name = "customer_postal_state_or_province"))
+    @AttributeOverride(name = "postalAddress.postalCode", column = @Column(name = "customer_postal_postal_code"))
+    @AttributeOverride(name = "postalAddress.country", column = @Column(name = "customer_postal_country"))
+    @AttributeOverride(name = "electronicAddress.lan", column = @Column(name = "customer_lan"))
+    @AttributeOverride(name = "electronicAddress.mac", column = @Column(name = "customer_mac"))
+    @AttributeOverride(name = "electronicAddress.email1", column = @Column(name = "customer_email1"))
+    @AttributeOverride(name = "electronicAddress.email2", column = @Column(name = "customer_email2"))
+    @AttributeOverride(name = "electronicAddress.web", column = @Column(name = "customer_web"))
+    @AttributeOverride(name = "electronicAddress.radio", column = @Column(name = "customer_radio"))
+    @AttributeOverride(name = "electronicAddress.userID", column = @Column(name = "customer_user_id"))
+    @AttributeOverride(name = "electronicAddress.password", column = @Column(name = "customer_password"))
     private Organisation organisation;
 
     /**
@@ -111,22 +109,18 @@ public class CustomerEntity extends IdentifiedObject {
      * Status of this customer.
      */
     @Embedded
-    @AttributeOverrides({
-        @AttributeOverride(name = "value", column = @Column(name = "status_value")),
-        @AttributeOverride(name = "dateTime", column = @Column(name = "status_date_time")),
-        @AttributeOverride(name = "reason", column = @Column(name = "status_reason"))
-    })
+    @AttributeOverride(name = "value", column = @Column(name = "status_value"))
+    @AttributeOverride(name = "dateTime", column = @Column(name = "status_date_time"))
+    @AttributeOverride(name = "reason", column = @Column(name = "status_reason"))
     private Status status;
 
     /**
      * Priority of the customer.
      */
     @Embedded
-    @AttributeOverrides({
-        @AttributeOverride(name = "value", column = @Column(name = "priority_value")),
-        @AttributeOverride(name = "rank", column = @Column(name = "priority_rank")),
-        @AttributeOverride(name = "type", column = @Column(name = "priority_type"))
-    })
+    @AttributeOverride(name = "value", column = @Column(name = "priority_value"))
+    @AttributeOverride(name = "rank", column = @Column(name = "priority_rank"))
+    @AttributeOverride(name = "type", column = @Column(name = "priority_type"))
     private Priority priority;
 
     /**

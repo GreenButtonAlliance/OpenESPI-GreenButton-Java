@@ -19,9 +19,13 @@
 package org.greenbuttonalliance.espi.common.repositories.integration;
 
 import org.greenbuttonalliance.espi.common.domain.customer.entity.Asset;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.EndDeviceEntity;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.Organisation;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.Status;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
 import org.greenbuttonalliance.espi.common.repositories.customer.EndDeviceRepository;
 import org.greenbuttonalliance.espi.common.test.BaseTestContainersTest;
 import org.greenbuttonalliance.espi.common.test.TestDataBuilders;
@@ -91,7 +95,7 @@ class EndDeviceMySQLIntegrationTest extends BaseTestContainersTest {
             endDevice.setAmrSystem("AMR-MYSQL-SYSTEM");
 
             // Electronic address
-            Organisation.ElectronicAddress electronicAddress = new Organisation.ElectronicAddress();
+            ElectronicAddress electronicAddress = new ElectronicAddress();
             electronicAddress.setEmail1("device@mysql.test");
             electronicAddress.setMac("AA:BB:CC:DD:EE:FF");
             electronicAddress.setWeb("https://mysql-device.test");
@@ -350,7 +354,7 @@ class EndDeviceMySQLIntegrationTest extends BaseTestContainersTest {
             EndDeviceEntity endDevice = TestDataBuilders.createValidEndDevice();
             endDevice.setSerialNumber("MYSQL-ELECTRONIC-TEST");
 
-            Organisation.ElectronicAddress electronicAddress = new Organisation.ElectronicAddress();
+            ElectronicAddress electronicAddress = new ElectronicAddress();
             electronicAddress.setLan("192.168.100.50");
             electronicAddress.setMac("11:22:33:44:55:66");
             electronicAddress.setEmail1("device1@mysql.test");
@@ -368,7 +372,7 @@ class EndDeviceMySQLIntegrationTest extends BaseTestContainersTest {
 
             // Assert
             assertThat(retrieved).isPresent();
-            Organisation.ElectronicAddress retrievedAddress = retrieved.get().getElectronicAddress();
+            ElectronicAddress retrievedAddress = retrieved.get().getElectronicAddress();
             assertThat(retrievedAddress).isNotNull();
             assertThat(retrievedAddress.getLan()).isEqualTo("192.168.100.50");
             assertThat(retrievedAddress.getMac()).isEqualTo("11:22:33:44:55:66");
