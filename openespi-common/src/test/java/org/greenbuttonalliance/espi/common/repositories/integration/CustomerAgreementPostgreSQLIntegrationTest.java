@@ -20,8 +20,11 @@ package org.greenbuttonalliance.espi.common.repositories.integration;
 
 import org.greenbuttonalliance.espi.common.domain.common.DateTimeInterval;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerAgreementEntity;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.Organisation;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.Status;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
 import org.greenbuttonalliance.espi.common.repositories.customer.CustomerAgreementRepository;
 import org.greenbuttonalliance.espi.common.test.BaseTestContainersTest;
 import org.greenbuttonalliance.espi.common.test.TestDataBuilders;
@@ -93,7 +96,7 @@ class CustomerAgreementPostgreSQLIntegrationTest extends BaseTestContainersTest 
             agreement.setAgreementId("POSTGRES-AGR-67890");
 
             // Electronic address for document
-            Organisation.ElectronicAddress electronicAddress = new Organisation.ElectronicAddress();
+            ElectronicAddress electronicAddress = new ElectronicAddress();
             electronicAddress.setEmail1("agreement@postgres.test");
             electronicAddress.setWeb("https://postgres-agreement.test");
             agreement.setElectronicAddress(electronicAddress);

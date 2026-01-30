@@ -19,6 +19,9 @@
 package org.greenbuttonalliance.espi.common.repositories.customer;
 
 import org.greenbuttonalliance.espi.common.domain.customer.entity.*;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.StreetAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.TelephoneNumber;
 import org.greenbuttonalliance.espi.common.test.BaseRepositoryTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -56,7 +59,7 @@ class ServiceLocationRepositoryTest extends BaseRepositoryTest {
         serviceLocation.setNeedsInspection(false);
         
         // Create main address
-        Organisation.StreetAddress mainAddress = new Organisation.StreetAddress();
+        StreetAddress mainAddress = new StreetAddress();
         mainAddress.setStreetDetail(faker.address().streetAddress());
         mainAddress.setTownDetail(faker.address().city());
         mainAddress.setStateOrProvince(faker.address().state());
@@ -110,7 +113,7 @@ class ServiceLocationRepositoryTest extends BaseRepositoryTest {
             ServiceLocationEntity serviceLocation = createValidServiceLocation();
             
             // Add secondary address
-            Organisation.StreetAddress secondaryAddress = new Organisation.StreetAddress();
+            StreetAddress secondaryAddress = new StreetAddress();
             secondaryAddress.setStreetDetail("PO Box 123");
             secondaryAddress.setTownDetail(faker.address().city());
             secondaryAddress.setStateOrProvince(faker.address().state());
@@ -376,7 +379,7 @@ class ServiceLocationRepositoryTest extends BaseRepositoryTest {
             // Arrange
             ServiceLocationEntity serviceLocation = createValidServiceLocation();
             
-            Organisation.ElectronicAddress electronicAddress = new Organisation.ElectronicAddress();
+            ElectronicAddress electronicAddress = new ElectronicAddress();
             electronicAddress.setEmail1("test@example.com");
             electronicAddress.setEmail2("backup@example.com");
             electronicAddress.setWeb("https://example.com");

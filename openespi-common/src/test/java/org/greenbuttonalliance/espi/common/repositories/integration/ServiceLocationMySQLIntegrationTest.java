@@ -19,8 +19,17 @@
 package org.greenbuttonalliance.espi.common.repositories.integration;
 
 import org.greenbuttonalliance.espi.common.domain.customer.entity.Organisation;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.StreetAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.TelephoneNumber;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.ServiceLocationEntity;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.StreetAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.TelephoneNumber;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.Status;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.StreetAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.TelephoneNumber;
 import org.greenbuttonalliance.espi.common.repositories.customer.ServiceLocationRepository;
 import org.greenbuttonalliance.espi.common.test.BaseTestContainersTest;
 import org.greenbuttonalliance.espi.common.test.TestDataBuilders;
@@ -85,7 +94,7 @@ class ServiceLocationMySQLIntegrationTest extends BaseTestContainersTest {
             location.setOutageBlock("MYSQL-BLOCK-789");
 
             // Main address
-            Organisation.StreetAddress mainAddress = new Organisation.StreetAddress();
+            StreetAddress mainAddress = new StreetAddress();
             mainAddress.setStreetDetail("100 MySQL Main Street");
             mainAddress.setTownDetail("MySQL City");
             mainAddress.setStateOrProvince("CA");
@@ -94,7 +103,7 @@ class ServiceLocationMySQLIntegrationTest extends BaseTestContainersTest {
             location.setMainAddress(mainAddress);
 
             // Secondary address
-            Organisation.StreetAddress secondaryAddress = new Organisation.StreetAddress();
+            StreetAddress secondaryAddress = new StreetAddress();
             secondaryAddress.setStreetDetail("PO Box 12345");
             secondaryAddress.setTownDetail("MySQL City");
             secondaryAddress.setStateOrProvince("CA");
@@ -103,13 +112,13 @@ class ServiceLocationMySQLIntegrationTest extends BaseTestContainersTest {
             location.setSecondaryAddress(secondaryAddress);
 
             // Phone numbers
-            Organisation.TelephoneNumber phone1 = new Organisation.TelephoneNumber();
+            TelephoneNumber phone1 = new TelephoneNumber();
             phone1.setCountryCode("1");
             phone1.setAreaCode("555");
             phone1.setLocalNumber("1234567");
             location.setPhone1(phone1);
 
-            Organisation.TelephoneNumber phone2 = new Organisation.TelephoneNumber();
+            TelephoneNumber phone2 = new TelephoneNumber();
             phone2.setCountryCode("1");
             phone2.setAreaCode("555");
             phone2.setLocalNumber("7654321");
@@ -117,7 +126,7 @@ class ServiceLocationMySQLIntegrationTest extends BaseTestContainersTest {
             location.setPhone2(phone2);
 
             // Electronic address
-            Organisation.ElectronicAddress electronicAddress = new Organisation.ElectronicAddress();
+            ElectronicAddress electronicAddress = new ElectronicAddress();
             electronicAddress.setEmail1("location@mysql.test");
             electronicAddress.setWeb("https://location.mysql.test");
             location.setElectronicAddress(electronicAddress);
@@ -281,7 +290,7 @@ class ServiceLocationMySQLIntegrationTest extends BaseTestContainersTest {
             ServiceLocationEntity location = TestDataBuilders.createValidServiceLocation();
             location.setType("MySQL Address Test");
 
-            Organisation.StreetAddress mainAddress = new Organisation.StreetAddress();
+            StreetAddress mainAddress = new StreetAddress();
             mainAddress.setStreetDetail("500 MySQL Complete Street");
             mainAddress.setTownDetail("Complete City");
             mainAddress.setStateOrProvince("TX");
@@ -289,7 +298,7 @@ class ServiceLocationMySQLIntegrationTest extends BaseTestContainersTest {
             mainAddress.setCountry("USA");
             location.setMainAddress(mainAddress);
 
-            Organisation.StreetAddress secondaryAddress = new Organisation.StreetAddress();
+            StreetAddress secondaryAddress = new StreetAddress();
             secondaryAddress.setStreetDetail("PO Box 999");
             secondaryAddress.setTownDetail("Complete City");
             secondaryAddress.setStateOrProvince("TX");
@@ -348,7 +357,7 @@ class ServiceLocationMySQLIntegrationTest extends BaseTestContainersTest {
             ServiceLocationEntity location = TestDataBuilders.createValidServiceLocation();
             location.setType("MySQL Electronic Address Test");
 
-            Organisation.ElectronicAddress electronicAddress = new Organisation.ElectronicAddress();
+            ElectronicAddress electronicAddress = new ElectronicAddress();
             electronicAddress.setLan("192.168.1.100");
             electronicAddress.setMac("00:1A:2B:3C:4D:5E");
             electronicAddress.setEmail1("primary@mysql-loc.test");
@@ -366,7 +375,7 @@ class ServiceLocationMySQLIntegrationTest extends BaseTestContainersTest {
 
             // Assert
             assertThat(retrieved).isPresent();
-            Organisation.ElectronicAddress retrievedAddress = retrieved.get().getElectronicAddress();
+            ElectronicAddress retrievedAddress = retrieved.get().getElectronicAddress();
             assertThat(retrievedAddress).isNotNull();
             assertThat(retrievedAddress.getLan()).isEqualTo("192.168.1.100");
             assertThat(retrievedAddress.getMac()).isEqualTo("00:1A:2B:3C:4D:5E");

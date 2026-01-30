@@ -523,6 +523,18 @@ CREATE TABLE meters
 
 CREATE INDEX idx_meters_form_number ON meters (form_number);
 
+-- Meter Multipliers Collection Table (@ElementCollection for MeterEntity.meterMultipliers)
+-- Per customer.xsd MeterMultiplier type (embedded collection)
+CREATE TABLE meter_multipliers
+(
+    meter_id         CHAR(36) NOT NULL,
+    multiplier_kind  VARCHAR(256),
+    multiplier_value DECIMAL(19, 4),
+    FOREIGN KEY (meter_id) REFERENCES meters (id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_meter_multipliers_meter_id ON meter_multipliers (meter_id);
+
 -- Related Links Table for Meters
 CREATE TABLE meter_related_links
 (

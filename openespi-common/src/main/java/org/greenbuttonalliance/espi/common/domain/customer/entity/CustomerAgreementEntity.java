@@ -22,6 +22,7 @@ package org.greenbuttonalliance.espi.common.domain.customer.entity;
 import lombok.*;
 import org.greenbuttonalliance.espi.common.domain.common.DateTimeInterval;
 import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
 
 import jakarta.persistence.*;
 import org.hibernate.proxy.HibernateProxy;
@@ -98,7 +99,7 @@ public class CustomerAgreementEntity extends IdentifiedObject {
     @AttributeOverride(name = "radio", column = @Column(name = "doc_radio"))
     @AttributeOverride(name = "userID", column = @Column(name = "doc_user_id"))
     @AttributeOverride(name = "password", column = @Column(name = "doc_password"))
-    private Organisation.ElectronicAddress electronicAddress;
+    private ElectronicAddress electronicAddress;
 
     /**
      * Subject of this document, intended for this document to be found by a search engine.

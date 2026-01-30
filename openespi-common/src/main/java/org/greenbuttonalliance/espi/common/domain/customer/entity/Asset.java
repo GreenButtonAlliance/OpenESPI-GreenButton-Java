@@ -23,6 +23,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
 
 import jakarta.persistence.*;
 import java.io.Serializable;
@@ -88,17 +89,15 @@ public abstract class Asset implements Serializable {
      * Electronic address.
      */
     @Embedded
-    @AttributeOverrides({
-        @AttributeOverride(name = "lan", column = @Column(name = "asset_lan")),
-        @AttributeOverride(name = "mac", column = @Column(name = "asset_mac")),
-        @AttributeOverride(name = "email1", column = @Column(name = "asset_email1")),
-        @AttributeOverride(name = "email2", column = @Column(name = "asset_email2")),
-        @AttributeOverride(name = "web", column = @Column(name = "asset_web")),
-        @AttributeOverride(name = "radio", column = @Column(name = "asset_radio")),
-        @AttributeOverride(name = "userID", column = @Column(name = "asset_user_id")),
-        @AttributeOverride(name = "password", column = @Column(name = "asset_password"))
-    })
-    private Organisation.ElectronicAddress electronicAddress;
+    @AttributeOverride(name = "lan", column = @Column(name = "asset_lan"))
+    @AttributeOverride(name = "mac", column = @Column(name = "asset_mac"))
+    @AttributeOverride(name = "email1", column = @Column(name = "asset_email1"))
+    @AttributeOverride(name = "email2", column = @Column(name = "asset_email2"))
+    @AttributeOverride(name = "web", column = @Column(name = "asset_web"))
+    @AttributeOverride(name = "radio", column = @Column(name = "asset_radio"))
+    @AttributeOverride(name = "userID", column = @Column(name = "asset_user_id"))
+    @AttributeOverride(name = "password", column = @Column(name = "asset_password"))
+    private ElectronicAddress electronicAddress;
 
     /**
      * Lifecycle dates for this asset.

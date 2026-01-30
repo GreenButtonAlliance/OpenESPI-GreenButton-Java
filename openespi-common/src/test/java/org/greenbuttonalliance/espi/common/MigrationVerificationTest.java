@@ -22,10 +22,20 @@ package org.greenbuttonalliance.espi.common;
 import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
 import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerEntity;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.StreetAddress;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.MeterEntity;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.StreetAddress;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.Organisation;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.StreetAddress;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.ServiceLocationEntity;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.StreetAddress;
 import org.greenbuttonalliance.espi.common.domain.customer.enums.CustomerKind;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.StreetAddress;
 import org.greenbuttonalliance.espi.common.dto.atom.UsageAtomEntryDto;
 import org.greenbuttonalliance.espi.common.dto.usage.UsagePointDto;
 import org.greenbuttonalliance.espi.common.dto.SummaryMeasurementDto;
@@ -232,7 +242,7 @@ class MigrationVerificationTest {
         org.setOrganisationName("Test Organisation");
 
         // Test StreetAddress nested embedded object
-        Organisation.StreetAddress streetAddress = new Organisation.StreetAddress();
+        StreetAddress streetAddress = new StreetAddress();
         streetAddress.setStreetDetail("123 Test Street");
         streetAddress.setTownDetail("Test City");
         streetAddress.setStateOrProvince("CA");
@@ -241,7 +251,7 @@ class MigrationVerificationTest {
         org.setStreetAddress(streetAddress);
 
         // Test ElectronicAddress nested embedded object
-        Organisation.ElectronicAddress electronicAddress = new Organisation.ElectronicAddress();
+        ElectronicAddress electronicAddress = new ElectronicAddress();
         electronicAddress.setEmail1("test@example.com");
         electronicAddress.setWeb("https://example.com");
         org.setElectronicAddress(electronicAddress);

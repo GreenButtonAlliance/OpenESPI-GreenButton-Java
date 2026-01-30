@@ -23,6 +23,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.StreetAddress;
 
 import jakarta.persistence.*;
 import java.io.Serializable;
@@ -58,27 +60,23 @@ public abstract class Location implements Serializable {
      * Main address of the location.
      */
     @Embedded
-    @AttributeOverrides({
-        @AttributeOverride(name = "streetDetail", column = @Column(name = "location_main_street_detail")),
-        @AttributeOverride(name = "townDetail", column = @Column(name = "location_main_town_detail")),
-        @AttributeOverride(name = "stateOrProvince", column = @Column(name = "location_main_state_or_province")),
-        @AttributeOverride(name = "postalCode", column = @Column(name = "location_main_postal_code")),
-        @AttributeOverride(name = "country", column = @Column(name = "location_main_country"))
-    })
-    private Organisation.StreetAddress mainAddress;
+    @AttributeOverride(name = "streetDetail", column = @Column(name = "location_main_street_detail"))
+    @AttributeOverride(name = "townDetail", column = @Column(name = "location_main_town_detail"))
+    @AttributeOverride(name = "stateOrProvince", column = @Column(name = "location_main_state_or_province"))
+    @AttributeOverride(name = "postalCode", column = @Column(name = "location_main_postal_code"))
+    @AttributeOverride(name = "country", column = @Column(name = "location_main_country"))
+    private StreetAddress mainAddress;
 
     /**
      * Secondary address of the location. For example, PO Box address may have different ZIP code than that in the 'mainAddress'.
      */
     @Embedded
-    @AttributeOverrides({
-        @AttributeOverride(name = "streetDetail", column = @Column(name = "location_secondary_street_detail")),
-        @AttributeOverride(name = "townDetail", column = @Column(name = "location_secondary_town_detail")),
-        @AttributeOverride(name = "stateOrProvince", column = @Column(name = "location_secondary_state_or_province")),
-        @AttributeOverride(name = "postalCode", column = @Column(name = "location_secondary_postal_code")),
-        @AttributeOverride(name = "country", column = @Column(name = "location_secondary_country"))
-    })
-    private Organisation.StreetAddress secondaryAddress;
+    @AttributeOverride(name = "streetDetail", column = @Column(name = "location_secondary_street_detail"))
+    @AttributeOverride(name = "townDetail", column = @Column(name = "location_secondary_town_detail"))
+    @AttributeOverride(name = "stateOrProvince", column = @Column(name = "location_secondary_state_or_province"))
+    @AttributeOverride(name = "postalCode", column = @Column(name = "location_secondary_postal_code"))
+    @AttributeOverride(name = "country", column = @Column(name = "location_secondary_country"))
+    private StreetAddress secondaryAddress;
 
     // PhoneNumber fields removed - phone numbers are managed separately via PhoneNumberEntity
     // to avoid JPA column mapping conflicts in embedded contexts
@@ -87,17 +85,15 @@ public abstract class Location implements Serializable {
      * Electronic address.
      */
     @Embedded
-    @AttributeOverrides({
-        @AttributeOverride(name = "lan", column = @Column(name = "location_lan")),
-        @AttributeOverride(name = "mac", column = @Column(name = "location_mac")),
-        @AttributeOverride(name = "email1", column = @Column(name = "location_email1")),
-        @AttributeOverride(name = "email2", column = @Column(name = "location_email2")),
-        @AttributeOverride(name = "web", column = @Column(name = "location_web")),
-        @AttributeOverride(name = "radio", column = @Column(name = "location_radio")),
-        @AttributeOverride(name = "userID", column = @Column(name = "location_user_id")),
-        @AttributeOverride(name = "password", column = @Column(name = "location_password"))
-    })
-    private Organisation.ElectronicAddress electronicAddress;
+    @AttributeOverride(name = "lan", column = @Column(name = "location_lan"))
+    @AttributeOverride(name = "mac", column = @Column(name = "location_mac"))
+    @AttributeOverride(name = "email1", column = @Column(name = "location_email1"))
+    @AttributeOverride(name = "email2", column = @Column(name = "location_email2"))
+    @AttributeOverride(name = "web", column = @Column(name = "location_web"))
+    @AttributeOverride(name = "radio", column = @Column(name = "location_radio"))
+    @AttributeOverride(name = "userID", column = @Column(name = "location_user_id"))
+    @AttributeOverride(name = "password", column = @Column(name = "location_password"))
+    private ElectronicAddress electronicAddress;
 
     /**
      * (if applicable) Reference to geographical information source, often external to the utility.

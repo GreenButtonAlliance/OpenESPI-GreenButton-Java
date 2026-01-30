@@ -379,4 +379,21 @@ public class TestDataBuilders {
         endDevice.setAmrSystem("AMR-" + faker.lorem().word());
         return endDevice;
     }
+
+    /**
+     * Creates a valid MeterEntity for testing.
+     */
+    public static MeterEntity createValidMeter() {
+        MeterEntity meter = new MeterEntity();
+        meter.setDescription(faker.lorem().sentence(4, 8));
+        meter.setType("Electric Meter");
+        meter.setSerialNumber("SN-" + faker.number().digits(12));
+        meter.setUtcNumber("UTC-" + faker.number().digits(8));
+        meter.setFormNumber("FORM-" + faker.number().numberBetween(1, 10));
+        meter.setIntervalLength(900L); // 15 minutes default
+        meter.setIsVirtual(false);
+        meter.setIsPan(false);
+        meter.setAmrSystem("AMR-" + faker.lorem().word());
+        return meter;
+    }
 }

@@ -20,8 +20,17 @@ package org.greenbuttonalliance.espi.common.repositories.customer;
 
 import jakarta.validation.ConstraintViolation;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerEntity;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.StreetAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.TelephoneNumber;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.Organisation;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.StreetAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.TelephoneNumber;
 import org.greenbuttonalliance.espi.common.domain.customer.enums.CustomerKind;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.StreetAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.TelephoneNumber;
 import org.greenbuttonalliance.espi.common.test.BaseRepositoryTest;
 import org.greenbuttonalliance.espi.common.test.TestDataBuilders;
 import org.junit.jupiter.api.DisplayName;
@@ -204,7 +213,7 @@ class CustomerRepositoryTest extends BaseRepositoryTest {
             Organisation org = new Organisation();
             org.setOrganisationName("ACME Energy Services");
 
-            Organisation.StreetAddress streetAddress = new Organisation.StreetAddress();
+            StreetAddress streetAddress = new StreetAddress();
             streetAddress.setStreetDetail("123 Main Street");
             streetAddress.setTownDetail("San Francisco");
             streetAddress.setStateOrProvince("CA");
@@ -212,7 +221,7 @@ class CustomerRepositoryTest extends BaseRepositoryTest {
             streetAddress.setCountry("USA");
             org.setStreetAddress(streetAddress);
 
-            Organisation.StreetAddress postalAddress = new Organisation.StreetAddress();
+            StreetAddress postalAddress = new StreetAddress();
             postalAddress.setStreetDetail("PO Box 789");
             postalAddress.setTownDetail("San Francisco");
             postalAddress.setStateOrProvince("CA");
@@ -220,7 +229,7 @@ class CustomerRepositoryTest extends BaseRepositoryTest {
             postalAddress.setCountry("USA");
             org.setPostalAddress(postalAddress);
 
-            Organisation.ElectronicAddress electronicAddress = new Organisation.ElectronicAddress();
+            ElectronicAddress electronicAddress = new ElectronicAddress();
             electronicAddress.setEmail1("contact@acme.com");
             electronicAddress.setEmail2("support@acme.com");
             electronicAddress.setWeb("https://www.acme.com");

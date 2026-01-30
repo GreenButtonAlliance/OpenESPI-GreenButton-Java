@@ -19,14 +19,14 @@
 
 package org.greenbuttonalliance.espi.common.domain.customer.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.greenbuttonalliance.espi.common.domain.customer.common.MeterMultiplier;
 import org.hibernate.proxy.HibernateProxy;
 
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -52,10 +52,13 @@ public class MeterEntity extends EndDeviceEntity {
 
     /**
      * All multipliers applied at this meter.
-     * TODO: Create MeterMultiplierEntity and enable this relationship
+     * Per customer.xsd Meter.MeterMultipliers (collection of MeterMultiplier embeddables).
      */
-    // @OneToMany(mappedBy = "meter", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    // private List<MeterMultiplierEntity> meterMultipliers;
+    @ElementCollection
+    @CollectionTable(name = "meter_multipliers", joinColumns = @JoinColumn(name = "meter_id"))
+    @AttributeOverride(name = "kind", column = @Column(name = "multiplier_kind"))
+    @AttributeOverride(name = "value", column = @Column(name = "multiplier_value"))
+    private List<MeterMultiplier> meterMultipliers;
 
     /**
      * [extension] Current interval length specified in seconds.
@@ -66,9 +69,13 @@ public class MeterEntity extends EndDeviceEntity {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "(" +
+                // IdentifiedObject fields
                 "id = " + getId() + ", " +
-                "formNumber = " + getFormNumber() + ", " +
-                "intervalLength = " + getIntervalLength() + ", " +
+                "description = " + getDescription() + ", " +
+                "created = " + getCreated() + ", " +
+                "updated = " + getUpdated() + ", " +
+                "published = " + getPublished() + ", " +
+                // Asset fields (via EndDevice)
                 "type = " + getType() + ", " +
                 "utcNumber = " + getUtcNumber() + ", " +
                 "serialNumber = " + getSerialNumber() + ", " +
@@ -81,13 +88,14 @@ public class MeterEntity extends EndDeviceEntity {
                 "initialCondition = " + getInitialCondition() + ", " +
                 "initialLossOfLife = " + getInitialLossOfLife() + ", " +
                 "status = " + getStatus() + ", " +
+                // EndDevice fields
                 "isVirtual = " + getIsVirtual() + ", " +
                 "isPan = " + getIsPan() + ", " +
                 "installCode = " + getInstallCode() + ", " +
                 "amrSystem = " + getAmrSystem() + ", " +
-                "description = " + getDescription() + ", " +
-                "created = " + getCreated() + ", " +
-                "updated = " + getUpdated() + ", " +
-                "published = " + getPublished() + ")";
+                // Meter-specific fields (per customer.xsd Meter sequence)
+                "formNumber = " + getFormNumber() + ", " +
+                "meterMultipliers = " + getMeterMultipliers() + ", " +
+                "intervalLength = " + getIntervalLength() + ")";
     }
 }

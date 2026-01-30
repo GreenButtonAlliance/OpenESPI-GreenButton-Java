@@ -19,9 +19,17 @@
 package org.greenbuttonalliance.espi.common.repositories.customer;
 
 import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerAccountEntity;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.StreetAddress;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerEntity;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.StreetAddress;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.Organisation;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.StreetAddress;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.Status;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.StreetAddress;
 import org.greenbuttonalliance.espi.common.test.BaseRepositoryTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -81,7 +89,7 @@ class CustomerAccountRepositoryTest extends BaseRepositoryTest {
         account.setRevisionNumber("1.0");
 
         // Document.electronicAddress
-        Organisation.ElectronicAddress electronicAddress = new Organisation.ElectronicAddress();
+        ElectronicAddress electronicAddress = new ElectronicAddress();
         electronicAddress.setEmail1(faker.internet().emailAddress());
         electronicAddress.setEmail2(faker.internet().emailAddress());
         electronicAddress.setWeb(faker.internet().url());
@@ -105,7 +113,7 @@ class CustomerAccountRepositoryTest extends BaseRepositoryTest {
         // contactInfo Organisation embedded object
         Organisation contactInfo = new Organisation();
         contactInfo.setOrganisationName(faker.company().name());
-        Organisation.StreetAddress streetAddress = new Organisation.StreetAddress();
+        StreetAddress streetAddress = new StreetAddress();
         streetAddress.setStreetDetail(faker.address().streetAddress());
         streetAddress.setTownDetail(faker.address().city());
         streetAddress.setStateOrProvince(faker.address().stateAbbr());
@@ -305,7 +313,7 @@ class CustomerAccountRepositoryTest extends BaseRepositoryTest {
         void shouldPersistDocumentElectronicAddressEmbeddedObject() {
             // Arrange
             CustomerAccountEntity account = createCompleteTestSetup();
-            Organisation.ElectronicAddress electronicAddress = new Organisation.ElectronicAddress();
+            ElectronicAddress electronicAddress = new ElectronicAddress();
             electronicAddress.setEmail1("primary@example.com");
             electronicAddress.setEmail2("secondary@example.com");
             electronicAddress.setWeb("https://www.example.com");
@@ -393,7 +401,7 @@ class CustomerAccountRepositoryTest extends BaseRepositoryTest {
             Organisation contactInfo = new Organisation();
             contactInfo.setOrganisationName("ACME Corporation");
 
-            Organisation.StreetAddress streetAddress = new Organisation.StreetAddress();
+            StreetAddress streetAddress = new StreetAddress();
             streetAddress.setStreetDetail("123 Main Street");
             streetAddress.setTownDetail("Springfield");
             streetAddress.setStateOrProvince("IL");
@@ -401,7 +409,7 @@ class CustomerAccountRepositoryTest extends BaseRepositoryTest {
             streetAddress.setCountry("USA");
             contactInfo.setStreetAddress(streetAddress);
 
-            Organisation.ElectronicAddress electronicAddress = new Organisation.ElectronicAddress();
+            ElectronicAddress electronicAddress = new ElectronicAddress();
             electronicAddress.setEmail1("contact@acme.com");
             electronicAddress.setWeb("https://www.acme.com");
             contactInfo.setElectronicAddress(electronicAddress);

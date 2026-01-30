@@ -19,7 +19,7 @@
 
 package org.greenbuttonalliance.espi.common.mapper.customer;
 
-import org.greenbuttonalliance.espi.common.domain.customer.entity.Organisation;
+import org.greenbuttonalliance.espi.common.domain.customer.common.StreetAddress;
 import org.greenbuttonalliance.espi.common.dto.customer.CustomerDto;
 import org.mapstruct.Mapper;
 
@@ -35,7 +35,7 @@ public interface StreetAddressMapper {
      * @param entity the street address entity
      * @return the street address DTO
      */
-    CustomerDto.StreetAddressDto toDto(Organisation.StreetAddress entity);
+    CustomerDto.StreetAddressDto toDto(StreetAddress entity);
 
     /**
      * Converts a StreetAddress DTO to an entity.
@@ -43,5 +43,5 @@ public interface StreetAddressMapper {
      * @param dto the street address DTO
      * @return the street address entity
      */
-    Organisation.StreetAddress toEntity(CustomerDto.StreetAddressDto dto);
+    StreetAddress toEntity(CustomerDto.StreetAddressDto dto);
 }

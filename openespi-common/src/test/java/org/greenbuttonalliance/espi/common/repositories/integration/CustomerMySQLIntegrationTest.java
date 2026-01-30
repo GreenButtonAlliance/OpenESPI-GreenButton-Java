@@ -19,8 +19,17 @@
 package org.greenbuttonalliance.espi.common.repositories.integration;
 
 import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerEntity;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.StreetAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.TelephoneNumber;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.Organisation;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.StreetAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.TelephoneNumber;
 import org.greenbuttonalliance.espi.common.domain.customer.enums.CustomerKind;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.StreetAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.TelephoneNumber;
 import org.greenbuttonalliance.espi.common.repositories.customer.CustomerRepository;
 import org.greenbuttonalliance.espi.common.test.BaseTestContainersTest;
 import org.greenbuttonalliance.espi.common.test.TestDataBuilders;
@@ -86,7 +95,7 @@ class CustomerMySQLIntegrationTest extends BaseTestContainersTest {
             Organisation org = new Organisation();
             org.setOrganisationName("MySQL Test Corporation");
 
-            Organisation.StreetAddress streetAddress = new Organisation.StreetAddress();
+            StreetAddress streetAddress = new StreetAddress();
             streetAddress.setStreetDetail("123 MySQL Street");
             streetAddress.setTownDetail("Database City");
             streetAddress.setStateOrProvince("CA");
@@ -94,7 +103,7 @@ class CustomerMySQLIntegrationTest extends BaseTestContainersTest {
             streetAddress.setCountry("USA");
             org.setStreetAddress(streetAddress);
 
-            Organisation.ElectronicAddress electronicAddress = new Organisation.ElectronicAddress();
+            ElectronicAddress electronicAddress = new ElectronicAddress();
             electronicAddress.setEmail1("mysql@test.com");
             electronicAddress.setWeb("https://mysql.test.com");
             org.setElectronicAddress(electronicAddress);
@@ -248,7 +257,7 @@ class CustomerMySQLIntegrationTest extends BaseTestContainersTest {
             Organisation org = new Organisation();
             org.setOrganisationName("Complete MySQL Corporation");
 
-            Organisation.StreetAddress streetAddress = new Organisation.StreetAddress();
+            StreetAddress streetAddress = new StreetAddress();
             streetAddress.setStreetDetail("456 MySQL Avenue");
             streetAddress.setTownDetail("Database Town");
             streetAddress.setStateOrProvince("NY");
@@ -256,7 +265,7 @@ class CustomerMySQLIntegrationTest extends BaseTestContainersTest {
             streetAddress.setCountry("USA");
             org.setStreetAddress(streetAddress);
 
-            Organisation.StreetAddress postalAddress = new Organisation.StreetAddress();
+            StreetAddress postalAddress = new StreetAddress();
             postalAddress.setStreetDetail("PO Box 999");
             postalAddress.setTownDetail("Database Town");
             postalAddress.setStateOrProvince("NY");
@@ -264,7 +273,7 @@ class CustomerMySQLIntegrationTest extends BaseTestContainersTest {
             postalAddress.setCountry("USA");
             org.setPostalAddress(postalAddress);
 
-            Organisation.ElectronicAddress electronicAddress = new Organisation.ElectronicAddress();
+            ElectronicAddress electronicAddress = new ElectronicAddress();
             electronicAddress.setEmail1("contact@mysql.test");
             electronicAddress.setEmail2("support@mysql.test");
             electronicAddress.setWeb("https://mysql.test");
