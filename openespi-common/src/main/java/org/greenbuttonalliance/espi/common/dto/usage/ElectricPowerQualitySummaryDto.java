@@ -168,14 +168,6 @@ public class ElectricPowerQualitySummaryDto {
     private Long tempOvervoltage;
 
     /**
-     * Reference to the usage point this power quality summary belongs to.
-     * Represents the logical relationship to the measurement point.
-     */
-    @XmlTransient
-    private Long usagePointId;
-
-    
-    /**
      * Checks if this summary contains voltage quality measurements.
      * 
      * @return true if voltage-related measurements are present

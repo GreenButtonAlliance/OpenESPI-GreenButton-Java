@@ -47,28 +47,28 @@ import java.io.Serializable;
 @AllArgsConstructor
 public class TelephoneNumber implements Serializable {
 
-    @Column(name = "country_code", length = 256)
+    @Column(name = "country_code", length = 10)
     private String countryCode;
 
-    @Column(name = "area_code", length = 256)
+    @Column(name = "area_code", length = 10)
     private String areaCode;
 
-    @Column(name = "city_code", length = 256)
+    @Column(name = "city_code", length = 10)
     private String cityCode;
 
-    @Column(name = "local_number", length = 256)
+    @Column(name = "local_number", length = 30)
     private String localNumber;
 
-    @Column(name = "ext", length = 256)
+    @Column(name = "ext", length = 20)
     private String ext;
 
-    @Column(name = "dial_out", length = 256)
+    @Column(name = "dial_out", length = 10)
     private String dialOut;
 
-    @Column(name = "international_prefix", length = 256)
+    @Column(name = "international_prefix", length = 10)
     private String internationalPrefix;
 
-    @Column(name = "itu_phone", length = 256)
+    @Column(name = "itu_phone", length = 50)
     private String ituPhone;
 
     @Override

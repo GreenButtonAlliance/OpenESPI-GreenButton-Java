@@ -24,11 +24,9 @@ import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
 import org.greenbuttonalliance.espi.common.domain.customer.enums.SupplierKind;
 
 import jakarta.persistence.*;
-import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.proxy.HibernateProxy;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.Objects;
 
 /**
@@ -59,6 +57,22 @@ public class ServiceSupplierEntity extends IdentifiedObject {
         @AttributeOverride(name = "postalAddress.stateOrProvince", column = @Column(name = "supplier_postal_state_or_province")),
         @AttributeOverride(name = "postalAddress.postalCode", column = @Column(name = "supplier_postal_postal_code")),
         @AttributeOverride(name = "postalAddress.country", column = @Column(name = "supplier_postal_country")),
+        @AttributeOverride(name = "phone1.countryCode", column = @Column(name = "supplier_phone1_country_code")),
+        @AttributeOverride(name = "phone1.areaCode", column = @Column(name = "supplier_phone1_area_code")),
+        @AttributeOverride(name = "phone1.cityCode", column = @Column(name = "supplier_phone1_city_code")),
+        @AttributeOverride(name = "phone1.localNumber", column = @Column(name = "supplier_phone1_local_number")),
+        @AttributeOverride(name = "phone1.ext", column = @Column(name = "supplier_phone1_ext")),
+        @AttributeOverride(name = "phone1.dialOut", column = @Column(name = "supplier_phone1_dial_out")),
+        @AttributeOverride(name = "phone1.internationalPrefix", column = @Column(name = "supplier_phone1_international_prefix")),
+        @AttributeOverride(name = "phone1.ituPhone", column = @Column(name = "supplier_phone1_itu_phone")),
+        @AttributeOverride(name = "phone2.countryCode", column = @Column(name = "supplier_phone2_country_code")),
+        @AttributeOverride(name = "phone2.areaCode", column = @Column(name = "supplier_phone2_area_code")),
+        @AttributeOverride(name = "phone2.cityCode", column = @Column(name = "supplier_phone2_city_code")),
+        @AttributeOverride(name = "phone2.localNumber", column = @Column(name = "supplier_phone2_local_number")),
+        @AttributeOverride(name = "phone2.ext", column = @Column(name = "supplier_phone2_ext")),
+        @AttributeOverride(name = "phone2.dialOut", column = @Column(name = "supplier_phone2_dial_out")),
+        @AttributeOverride(name = "phone2.internationalPrefix", column = @Column(name = "supplier_phone2_international_prefix")),
+        @AttributeOverride(name = "phone2.ituPhone", column = @Column(name = "supplier_phone2_itu_phone")),
         @AttributeOverride(name = "electronicAddress.lan", column = @Column(name = "supplier_lan")),
         @AttributeOverride(name = "electronicAddress.mac", column = @Column(name = "supplier_mac")),
         @AttributeOverride(name = "electronicAddress.email1", column = @Column(name = "supplier_email1")),
@@ -90,15 +104,6 @@ public class ServiceSupplierEntity extends IdentifiedObject {
      */
     @Column(name = "effective_date")
     private OffsetDateTime effectiveDate;
-
-    /**
-     * Phone numbers for this service supplier's organisation.
-     * Managed via separate PhoneNumberEntity to avoid column conflicts.
-     */
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JoinColumn(name = "parent_entity_uuid", referencedColumnName = "id")
-    @SQLRestriction("parent_entity_type = 'ServiceSupplierEntity'")
-    private List<PhoneNumberEntity> phoneNumbers;
 
     @Override
     public final boolean equals(Object o) {

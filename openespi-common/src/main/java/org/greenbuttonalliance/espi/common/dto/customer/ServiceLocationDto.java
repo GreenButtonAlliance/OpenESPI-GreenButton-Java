@@ -74,13 +74,13 @@ public class ServiceLocationDto implements Serializable {
      * Primary phone number for this service location.
      */
     @XmlElement(name = "phone1", namespace = "http://naesb.org/espi/customer")
-    private CustomerDto.TelephoneNumberDto phone1;
+    private TelephoneNumberDto phone1;
 
     /**
      * Secondary phone number for this service location.
      */
     @XmlElement(name = "phone2", namespace = "http://naesb.org/espi/customer")
-    private CustomerDto.TelephoneNumberDto phone2;
+    private TelephoneNumberDto phone2;
 
     /**
      * Electronic address (email, web, etc.).
