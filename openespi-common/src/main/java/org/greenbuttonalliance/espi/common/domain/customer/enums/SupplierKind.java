@@ -20,38 +20,40 @@
 package org.greenbuttonalliance.espi.common.domain.customer.enums;
 
 /**
- * Enumeration for SupplierKind values.
- * 
+ * Enumeration for SupplierKind values per ESPI 4.0 customer.xsd.
+ *
  * Kind of supplier based on the energy market business rules.
+ *
+ * IMPORTANT: Sequence must match XSD exactly - ESPI uses ordinal values (0-5) for serialization.
  */
 public enum SupplierKind {
     /**
-     * Utility supplier
+     * Utility supplier (ordinal 0)
      */
     UTILITY,
-    
+
     /**
-     * Retail energy supplier
+     * Retail energy supplier (ordinal 1)
      */
-    RETAIL,
-    
+    RETAILER,
+
     /**
-     * Generation supplier
+     * Other supplier type (ordinal 2)
      */
-    GENERATION,
-    
+    OTHER,
+
     /**
-     * Transmission supplier
+     * Load Serving Entity (ordinal 3)
      */
-    TRANSMISSION,
-    
+    LSE,
+
     /**
-     * Distribution supplier
+     * Meter Data Management Agent (ordinal 4)
      */
-    DISTRIBUTION,
-    
+    MDMA,
+
     /**
-     * Other supplier
+     * Metering Service Provider (ordinal 5)
      */
-    OTHER
+    MSP
 }

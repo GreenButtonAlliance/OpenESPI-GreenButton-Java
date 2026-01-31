@@ -98,38 +98,6 @@ public class CustomerDto {
     }
 
     /**
-     * Embeddable DTO for Organisation.
-     * Field order matches customer.xsd:1096-1125.
-     */
-    @XmlAccessorType(XmlAccessType.FIELD)
-    @XmlType(name = "Organisation", namespace = "http://naesb.org/espi/customer", propOrder = {
-        "streetAddress", "postalAddress", "phone1", "phone2", "electronicAddress", "organisationName"
-    })
-    @Getter
-    @Setter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class OrganisationDto {
-        @XmlElement(name = "streetAddress", namespace = "http://naesb.org/espi/customer")
-        private StreetAddressDto streetAddress;
-
-        @XmlElement(name = "postalAddress", namespace = "http://naesb.org/espi/customer")
-        private StreetAddressDto postalAddress;
-
-        @XmlElement(name = "phone1", namespace = "http://naesb.org/espi/customer")
-        private TelephoneNumberDto phone1;
-
-        @XmlElement(name = "phone2", namespace = "http://naesb.org/espi/customer")
-        private TelephoneNumberDto phone2;
-
-        @XmlElement(name = "electronicAddress", namespace = "http://naesb.org/espi/customer")
-        private ElectronicAddressDto electronicAddress;
-
-        @XmlElement(name = "organisationName", namespace = "http://naesb.org/espi/customer")
-        private String organisationName;
-    }
-
-    /**
      * Embeddable DTO for StreetAddress.
      */
     @XmlAccessorType(XmlAccessType.FIELD)
@@ -155,45 +123,4 @@ public class CustomerDto {
         private String country;
     }
 
-    /**
-     * Embeddable DTO for PhoneNumber.
-     */
-    /**
-     * TelephoneNumber DTO nested class.
-     * Per customer.xsd TelephoneNumber type (lines 1428-1478).
-     * 8 fields per ESPI 4.0 specification.
-     */
-    @XmlAccessorType(XmlAccessType.FIELD)
-    @XmlType(name = "TelephoneNumber", namespace = "http://naesb.org/espi/customer", propOrder = {
-        "countryCode", "areaCode", "cityCode", "localNumber", "ext", "dialOut", "internationalPrefix", "ituPhone"
-    })
-    @Getter
-    @Setter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class TelephoneNumberDto implements Serializable {
-        @XmlElement(name = "countryCode", namespace = "http://naesb.org/espi/customer")
-        private String countryCode;
-
-        @XmlElement(name = "areaCode", namespace = "http://naesb.org/espi/customer")
-        private String areaCode;
-
-        @XmlElement(name = "cityCode", namespace = "http://naesb.org/espi/customer")
-        private String cityCode;
-
-        @XmlElement(name = "localNumber", namespace = "http://naesb.org/espi/customer")
-        private String localNumber;
-
-        @XmlElement(name = "ext", namespace = "http://naesb.org/espi/customer")
-        private String ext;
-
-        @XmlElement(name = "dialOut", namespace = "http://naesb.org/espi/customer")
-        private String dialOut;
-
-        @XmlElement(name = "internationalPrefix", namespace = "http://naesb.org/espi/customer")
-        private String internationalPrefix;
-
-        @XmlElement(name = "ituPhone", namespace = "http://naesb.org/espi/customer")
-        private String ituPhone;
-    }
 }

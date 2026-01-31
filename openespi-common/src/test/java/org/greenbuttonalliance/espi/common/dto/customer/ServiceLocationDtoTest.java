@@ -304,11 +304,11 @@ class ServiceLocationDtoTest {
             "PO Box 789", "Chicago", "IL", "60602", "USA"
         );
 
-        CustomerDto.TelephoneNumberDto phone1 = new CustomerDto.TelephoneNumberDto(
+        TelephoneNumberDto phone1 = new TelephoneNumberDto(
             "1", "312", "773", "555-1000", "100", "9", "011", "+1-312-555-1000"
         );
 
-        CustomerDto.TelephoneNumberDto phone2 = new CustomerDto.TelephoneNumberDto(
+        TelephoneNumberDto phone2 = new TelephoneNumberDto(
             "1", "312", "773", "555-2000", "200", "9", "011", "+1-312-555-2000"
         );
 

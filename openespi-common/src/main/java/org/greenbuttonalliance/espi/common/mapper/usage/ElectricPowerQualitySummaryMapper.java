@@ -39,7 +39,6 @@ import org.mapstruct.MappingTarget;
  */
 @Mapper(componentModel = "spring", uses = {
     DateTimeMapper.class,
-    BaseMapperUtils.class,
     DateTimeIntervalMapper.class
 })
 public interface ElectricPowerQualitySummaryMapper {
@@ -51,7 +50,6 @@ public interface ElectricPowerQualitySummaryMapper {
      * @param entity the electric power quality summary entity
      * @return the electric power quality summary DTO
      */
-    @Mapping(target = "usagePointId", source = "usagePoint.id", qualifiedByName = "uuidToLong")
     ElectricPowerQualitySummaryDto toDto(ElectricPowerQualitySummaryEntity entity);
 
     /**

@@ -45,7 +45,8 @@ import java.util.stream.Collectors;
  */
 @Mapper(componentModel = "spring", uses = {
     DateTimeMapper.class,
-    ElectronicAddressMapper.class
+    ElectronicAddressMapper.class,
+    TelephoneNumberMapper.class
 })
 public interface ServiceLocationMapper {
 
@@ -132,39 +133,6 @@ public interface ServiceLocationMapper {
         return address;
     }
 
-    /**
-     * Maps TelephoneNumber entity to CustomerDto.TelephoneNumberDto.
-     */
-    default CustomerDto.TelephoneNumberDto mapTelephone(TelephoneNumber phone) {
-        if (phone == null) return null;
-        return new CustomerDto.TelephoneNumberDto(
-            phone.getCountryCode(),
-            phone.getAreaCode(),
-            phone.getCityCode(),
-            phone.getLocalNumber(),
-            phone.getExt(),
-            phone.getDialOut(),
-            phone.getInternationalPrefix(),
-            phone.getItuPhone()
-        );
-    }
-
-    /**
-     * Maps CustomerDto.TelephoneNumberDto to TelephoneNumber entity.
-     */
-    default TelephoneNumber mapTelephone(CustomerDto.TelephoneNumberDto dto) {
-        if (dto == null) return null;
-        return new TelephoneNumber(
-            dto.getCountryCode(),
-            dto.getAreaCode(),
-            dto.getCityCode(),
-            dto.getLocalNumber(),
-            dto.getExt(),
-            dto.getDialOut(),
-            dto.getInternationalPrefix(),
-            dto.getItuPhone()
-        );
-    }
 
     /**
      * Maps Status entity to StatusDto.

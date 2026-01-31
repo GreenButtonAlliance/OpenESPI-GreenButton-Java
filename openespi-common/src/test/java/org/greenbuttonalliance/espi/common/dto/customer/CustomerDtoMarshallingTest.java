@@ -69,7 +69,7 @@ class CustomerDtoMarshallingTest {
             "high-priority"  // type
         );
 
-        CustomerDto.TelephoneNumberDto phone1 = new CustomerDto.TelephoneNumberDto(
+        TelephoneNumberDto phone1 = new TelephoneNumberDto(
             "1",        // countryCode
             "415",      // areaCode
             "555",      // cityCode
@@ -80,7 +80,7 @@ class CustomerDtoMarshallingTest {
             null        // ituPhone
         );
 
-        CustomerDto.TelephoneNumberDto phone2 = new CustomerDto.TelephoneNumberDto(
+        TelephoneNumberDto phone2 = new TelephoneNumberDto(
             "1",
             "415",
             "555",
@@ -118,7 +118,7 @@ class CustomerDtoMarshallingTest {
             "USA"
         );
 
-        CustomerDto.OrganisationDto organisation = new CustomerDto.OrganisationDto(
+        OrganisationDto organisation = new OrganisationDto(
             streetAddress,
             postalAddress,
             phone1,

@@ -27,7 +27,6 @@ import lombok.Setter;
 import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
 import org.greenbuttonalliance.espi.common.domain.customer.enums.CustomerKind;
 import org.greenbuttonalliance.espi.common.domain.usage.TimeConfigurationEntity;
-import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.proxy.HibernateProxy;
 
 import java.time.OffsetDateTime;
@@ -69,6 +68,22 @@ public class CustomerEntity extends IdentifiedObject {
     @AttributeOverride(name = "postalAddress.stateOrProvince", column = @Column(name = "customer_postal_state_or_province"))
     @AttributeOverride(name = "postalAddress.postalCode", column = @Column(name = "customer_postal_postal_code"))
     @AttributeOverride(name = "postalAddress.country", column = @Column(name = "customer_postal_country"))
+    @AttributeOverride(name = "phone1.countryCode", column = @Column(name = "customer_phone1_country_code"))
+    @AttributeOverride(name = "phone1.areaCode", column = @Column(name = "customer_phone1_area_code"))
+    @AttributeOverride(name = "phone1.cityCode", column = @Column(name = "customer_phone1_city_code"))
+    @AttributeOverride(name = "phone1.localNumber", column = @Column(name = "customer_phone1_local_number"))
+    @AttributeOverride(name = "phone1.ext", column = @Column(name = "customer_phone1_ext"))
+    @AttributeOverride(name = "phone1.dialOut", column = @Column(name = "customer_phone1_dial_out"))
+    @AttributeOverride(name = "phone1.internationalPrefix", column = @Column(name = "customer_phone1_international_prefix"))
+    @AttributeOverride(name = "phone1.ituPhone", column = @Column(name = "customer_phone1_itu_phone"))
+    @AttributeOverride(name = "phone2.countryCode", column = @Column(name = "customer_phone2_country_code"))
+    @AttributeOverride(name = "phone2.areaCode", column = @Column(name = "customer_phone2_area_code"))
+    @AttributeOverride(name = "phone2.cityCode", column = @Column(name = "customer_phone2_city_code"))
+    @AttributeOverride(name = "phone2.localNumber", column = @Column(name = "customer_phone2_local_number"))
+    @AttributeOverride(name = "phone2.ext", column = @Column(name = "customer_phone2_ext"))
+    @AttributeOverride(name = "phone2.dialOut", column = @Column(name = "customer_phone2_dial_out"))
+    @AttributeOverride(name = "phone2.internationalPrefix", column = @Column(name = "customer_phone2_international_prefix"))
+    @AttributeOverride(name = "phone2.ituPhone", column = @Column(name = "customer_phone2_itu_phone"))
     @AttributeOverride(name = "electronicAddress.lan", column = @Column(name = "customer_lan"))
     @AttributeOverride(name = "electronicAddress.mac", column = @Column(name = "customer_mac"))
     @AttributeOverride(name = "electronicAddress.email1", column = @Column(name = "customer_email1"))
@@ -157,16 +172,6 @@ public class CustomerEntity extends IdentifiedObject {
      */
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<StatementEntity> statements = new ArrayList<>();
-
-    /**
-     * Phone numbers for this customer's organisation.
-     * Managed via separate PhoneNumberEntity to avoid column conflicts.
-     * Initialized to empty ArrayList to avoid null pointer exceptions.
-     */
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JoinColumn(name = "parent_entity_uuid", referencedColumnName = "id")
-    @SQLRestriction("parent_entity_type = 'CustomerEntity'")
-    private List<PhoneNumberEntity> phoneNumbers = new ArrayList<>();
 
     /**
      * Embeddable class for Status

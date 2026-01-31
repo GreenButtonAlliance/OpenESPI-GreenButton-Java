@@ -70,18 +70,6 @@ class ServiceLocationRepositoryTest extends BaseRepositoryTest {
         return serviceLocation;
     }
 
-    /**
-     * Creates a valid PhoneNumberEntity for testing.
-     */
-    private PhoneNumberEntity createValidPhoneNumber() {
-        PhoneNumberEntity phoneNumber = new PhoneNumberEntity();
-        phoneNumber.setAreaCode(faker.number().digits(3));
-        phoneNumber.setCityCode(faker.number().digits(3));
-        phoneNumber.setLocalNumber(faker.number().digits(4));
-        phoneNumber.setParentEntityType("ServiceLocationEntity");
-        return phoneNumber;
-    }
-
     @Nested
     @DisplayName("CRUD Operations")
     class CrudOperationsTest {

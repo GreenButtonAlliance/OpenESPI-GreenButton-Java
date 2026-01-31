@@ -25,6 +25,7 @@ import jakarta.persistence.Embedded;
 import lombok.*;
 import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
 import org.greenbuttonalliance.espi.common.domain.customer.common.StreetAddress;
+import org.greenbuttonalliance.espi.common.domain.customer.common.TelephoneNumber;
 
 import java.io.Serializable;
 
@@ -59,8 +60,17 @@ public class Organisation implements Serializable {
     @Embedded
     private StreetAddress postalAddress;
 
-    // PhoneNumber fields removed - phone numbers are managed separately via PhoneNumberEntity
-    // to avoid JPA column mapping conflicts in embedded contexts
+    /**
+     * Primary phone number for this organisation.
+     */
+    @Embedded
+    private TelephoneNumber phone1;
+
+    /**
+     * Secondary phone number for this organisation.
+     */
+    @Embedded
+    private TelephoneNumber phone2;
 
     /**
      * Electronic address for this organisation.

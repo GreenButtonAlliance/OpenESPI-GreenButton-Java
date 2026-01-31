@@ -217,7 +217,7 @@ class CustomerAccountDtoTest {
             "Account in good standing"
         );
 
-        CustomerDto.OrganisationDto contactInfo = new CustomerDto.OrganisationDto(
+        OrganisationDto contactInfo = new OrganisationDto(
             new CustomerDto.StreetAddressDto("123 Main St", "Springfield", "IL", "62701", "USA"),
             null, null, null,
             new ElectronicAddressDto(null, null, "contact@acme.com", null, "https://acme.com", null, null, null),

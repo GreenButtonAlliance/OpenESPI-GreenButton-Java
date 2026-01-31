@@ -55,9 +55,8 @@ public class CustomerAtomEntryDto extends AtomEntryDto {
         @XmlElement(name = "ProgramDateIdMappings", type = ProgramDateIdMappingsDto.class, namespace = "http://naesb.org/espi/customer"),
         @XmlElement(name = "ServiceLocation", type = ServiceLocationDto.class, namespace = "http://naesb.org/espi/customer"),
         @XmlElement(name = "Statement", type = StatementDto.class, namespace = "http://naesb.org/espi/customer"),
-        @XmlElement(name = "StatementRef", type = StatementRefDto.class, namespace = "http://naesb.org/espi/customer")
-        // ServiceSupplier - will be activated when ServiceSupplier DTO is added as part of Issue #28
-        // @XmlElement(name = "ServiceSupplier", type = ServiceSupplierDto.class, namespace = "http://naesb.org/espi/customer")
+        @XmlElement(name = "StatementRef", type = StatementRefDto.class, namespace = "http://naesb.org/espi/customer"),
+        @XmlElement(name = "ServiceSupplier", type = ServiceSupplierDto.class, namespace = "http://naesb.org/espi/customer")
     })
     protected Object content;
 

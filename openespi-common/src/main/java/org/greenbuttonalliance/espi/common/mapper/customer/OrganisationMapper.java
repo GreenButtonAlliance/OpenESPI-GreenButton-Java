@@ -20,36 +20,49 @@
 package org.greenbuttonalliance.espi.common.mapper.customer;
 
 import org.greenbuttonalliance.espi.common.domain.customer.entity.Organisation;
-import org.greenbuttonalliance.espi.common.dto.customer.CustomerDto;
+import org.greenbuttonalliance.espi.common.dto.customer.OrganisationDto;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 /**
  * MapStruct mapper for converting between Organisation entity and DTO.
+ *
+ * Handles embedded StreetAddress, TelephoneNumber, and ElectronicAddress mappings.
  */
 @Mapper(componentModel = "spring", uses = {
     StreetAddressMapper.class,
+    TelephoneNumberMapper.class,
     ElectronicAddressMapper.class
 })
 public interface OrganisationMapper {
 
     /**
      * Converts an Organisation entity to a DTO.
-     * Note: phone1 and phone2 are not included in the entity due to JPA column mapping conflicts.
+     * Maps all embedded objects (addresses, phones, electronic address).
      *
      * @param entity the organisation entity
      * @return the organisation DTO
      */
-    @Mapping(target = "phone1", ignore = true) // Not in entity - managed separately
-    @Mapping(target = "phone2", ignore = true) // Not in entity - managed separately
-    CustomerDto.OrganisationDto toDto(Organisation entity);
+    @Mapping(target = "streetAddress", source = "streetAddress")
+    @Mapping(target = "postalAddress", source = "postalAddress")
+    @Mapping(target = "phone1", source = "phone1")
+    @Mapping(target = "phone2", source = "phone2")
+    @Mapping(target = "electronicAddress", source = "electronicAddress")
+    @Mapping(target = "organisationName", source = "organisationName")
+    OrganisationDto toDto(Organisation entity);
 
     /**
      * Converts an Organisation DTO to an entity.
-     * Note: phone1 and phone2 are not included in the entity due to JPA column mapping conflicts.
+     * Maps all embedded objects from DTO to entity.
      *
      * @param dto the organisation DTO
      * @return the organisation entity
      */
-    Organisation toEntity(CustomerDto.OrganisationDto dto);
+    @Mapping(target = "streetAddress", source = "streetAddress")
+    @Mapping(target = "postalAddress", source = "postalAddress")
+    @Mapping(target = "phone1", source = "phone1")
+    @Mapping(target = "phone2", source = "phone2")
+    @Mapping(target = "electronicAddress", source = "electronicAddress")
+    @Mapping(target = "organisationName", source = "organisationName")
+    Organisation toEntity(OrganisationDto dto);
 }

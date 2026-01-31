@@ -201,7 +201,7 @@ class CustomerDtoTest {
         LocalDateTime localDateTime = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
         OffsetDateTime now = localDateTime.atOffset(ZoneOffset.UTC).toZonedDateTime().toOffsetDateTime();
 
-        CustomerDto.OrganisationDto organisation = new CustomerDto.OrganisationDto(
+        OrganisationDto organisation = new OrganisationDto(
             null, null, null, null, null, "Minimal Org"
         );
 
@@ -273,11 +273,11 @@ class CustomerDtoTest {
             "PO Box 456", "Springfield", "IL", "62702", "USA"
         );
 
-        CustomerDto.TelephoneNumberDto phone1 = new CustomerDto.TelephoneNumberDto(
+        TelephoneNumberDto phone1 = new TelephoneNumberDto(
             "1", "217", null, "555-1234", null, null, null, null
         );
 
-        CustomerDto.TelephoneNumberDto phone2 = new CustomerDto.TelephoneNumberDto(
+        TelephoneNumberDto phone2 = new TelephoneNumberDto(
             "1", "217", null, "555-5678", "101", null, null, null
         );
 
@@ -285,7 +285,7 @@ class CustomerDtoTest {
             null, null, "customer@example.com", "support@example.com", "https://www.example.com", null, null, null
         );
 
-        CustomerDto.OrganisationDto organisation = new CustomerDto.OrganisationDto(
+        OrganisationDto organisation = new OrganisationDto(
             streetAddress, postalAddress, phone1, phone2, electronicAddress, "ACME Energy Services"
         );
 
@@ -312,7 +312,7 @@ class CustomerDtoTest {
     }
 
     private CustomerDto createMinimalCustomerDto() {
-        CustomerDto.OrganisationDto organisation = new CustomerDto.OrganisationDto(
+        OrganisationDto organisation = new OrganisationDto(
             null, null, null, null, null, "Test Org"
         );
 

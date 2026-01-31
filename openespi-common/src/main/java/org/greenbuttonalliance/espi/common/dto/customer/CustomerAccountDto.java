@@ -142,7 +142,7 @@ public class CustomerAccountDto {
      * responsible for billing and payment of CustomerAccount.
      */
     @XmlElement(name = "contactInfo", namespace = "http://naesb.org/espi/customer")
-    private CustomerDto.OrganisationDto contactInfo;
+    private OrganisationDto contactInfo;
 
     /**
      * [extension] Customer account identifier.
