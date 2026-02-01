@@ -48,6 +48,13 @@ import java.util.Objects;
 @AttributeOverride(name = "selfLink.rel", column = @Column(name = "customer_agreement_self_link_rel"))
 @AttributeOverride(name = "selfLink.href", column = @Column(name = "customer_agreement_self_link_href"))
 @AttributeOverride(name = "selfLink.type", column = @Column(name = "customer_agreement_self_link_type"))
+@AssociationOverride(
+    name = "relatedLinks",
+    joinTable = @JoinTable(
+        name = "customer_agreement_related_links",
+        joinColumns = @JoinColumn(name = "customer_agreement_id")
+    )
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -235,6 +242,12 @@ public class CustomerAgreementEntity extends IdentifiedObject {
     public String toString() {
         return getClass().getSimpleName() + "(" +
                 "id = " + getId() + ", " +
+                "description = " + getDescription() + ", " +
+                "created = " + getCreated() + ", " +
+                "updated = " + getUpdated() + ", " +
+                "published = " + getPublished() + ", " +
+                "upLink = " + getUpLink() + ", " +
+                "selfLink = " + getSelfLink() + ", " +
                 "type = " + getType() + ", " +
                 "authorName = " + getAuthorName() + ", " +
                 "createdDateTime = " + getCreatedDateTime() + ", " +
@@ -252,11 +265,6 @@ public class CustomerAgreementEntity extends IdentifiedObject {
                 "isPrePay = " + getIsPrePay() + ", " +
                 "shutOffDateTime = " + getShutOffDateTime() + ", " +
                 "currency = " + getCurrency() + ", " +
-                "futureStatus = " + getFutureStatus() + ", " +
-                "agreementId = " + getAgreementId() + ", " +
-                "description = " + getDescription() + ", " +
-                "created = " + getCreated() + ", " +
-                "updated = " + getUpdated() + ", " +
-                "published = " + getPublished() + ")";
+                "agreementId = " + getAgreementId() + ")";
     }
 }

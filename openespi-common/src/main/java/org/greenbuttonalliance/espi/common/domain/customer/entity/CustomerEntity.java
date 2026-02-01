@@ -48,6 +48,13 @@ import java.util.Objects;
  */
 @Entity
 @Table(name = "customers")
+@AssociationOverride(
+    name = "relatedLinks",
+    joinTable = @JoinTable(
+        name = "customer_related_links",
+        joinColumns = @JoinColumn(name = "customer_id")
+    )
+)
 @Getter
 @Setter
 @NoArgsConstructor

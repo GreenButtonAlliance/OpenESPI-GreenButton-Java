@@ -20,13 +20,14 @@
 package org.greenbuttonalliance.espi.common.domain.customer.entity;
 
 import jakarta.persistence.*;
+import lombok.Delegate;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
-import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
+import org.hibernate.proxy.HibernateProxy;
 
-import java.math.BigDecimal;
+import java.util.Objects;
 
 /**
  * Pure JPA/Hibernate entity for EndDevice without JAXB concerns.
@@ -45,149 +46,87 @@ import java.math.BigDecimal;
  */
 @Entity
 @Table(name = "end_devices")
-@Inheritance(strategy = InheritanceType.JOINED)
+@AssociationOverride(
+    name = "relatedLinks",
+    joinTable = @JoinTable(
+        name = "end_device_related_links",
+        joinColumns = @JoinColumn(name = "end_device_id")
+    )
+)
 @Getter
 @Setter
 @NoArgsConstructor
 public class EndDeviceEntity extends IdentifiedObject {
 
-    // Asset fields (previously inherited from Asset superclass)
-    
-    /**
-     * Utility-specific classification of Asset and its subtypes, according to their corporate standards, 
-     * practices, and existing IT systems (e.g., for management of assets, maintenance, work, outage, customers, etc.).
-     */
-    @Column(name = "type", length = 256)
-    private String type;
-
-    /**
-     * Uniquely tracked commodity (UTC) number.
-     */
-    @Column(name = "utc_number", length = 256)
-    private String utcNumber;
-
-    /**
-     * Serial number of this asset.
-     */
-    @Column(name = "serial_number", length = 256)
-    private String serialNumber;
-
-    /**
-     * Lot number for this asset. Even for the same model and version number, many assets are manufactured in lots.
-     */
-    @Column(name = "lot_number", length = 256)
-    private String lotNumber;
-
-    /**
-     * Purchase price of asset.
-     */
-    @Column(name = "purchase_price")
-    private Long purchasePrice;
-
-    /**
-     * True if asset is considered critical for some reason (for example, a pole with critical attachments).
-     */
-    @Column(name = "critical")
-    private Boolean critical;
-
-    /**
-     * Electronic address.
-     */
+    // Asset fields (embedded component per NAESB ESPI 4.0 customer.xsd lines 643-713)
     @Embedded
     @AttributeOverrides({
-        @AttributeOverride(name = "lan", column = @Column(name = "end_device_lan")),
-        @AttributeOverride(name = "mac", column = @Column(name = "end_device_mac")),
-        @AttributeOverride(name = "email1", column = @Column(name = "end_device_email1")),
-        @AttributeOverride(name = "email2", column = @Column(name = "end_device_email2")),
-        @AttributeOverride(name = "web", column = @Column(name = "end_device_web")),
-        @AttributeOverride(name = "radio", column = @Column(name = "end_device_radio")),
-        @AttributeOverride(name = "userID", column = @Column(name = "end_device_user_id")),
-        @AttributeOverride(name = "password", column = @Column(name = "end_device_password"))
+        @AttributeOverride(name = "electronicAddress.lan", column = @Column(name = "end_device_lan")),
+        @AttributeOverride(name = "electronicAddress.mac", column = @Column(name = "end_device_mac")),
+        @AttributeOverride(name = "electronicAddress.email1", column = @Column(name = "end_device_email1")),
+        @AttributeOverride(name = "electronicAddress.email2", column = @Column(name = "end_device_email2")),
+        @AttributeOverride(name = "electronicAddress.web", column = @Column(name = "end_device_web")),
+        @AttributeOverride(name = "electronicAddress.radio", column = @Column(name = "end_device_radio")),
+        @AttributeOverride(name = "electronicAddress.userID", column = @Column(name = "end_device_user_id")),
+        @AttributeOverride(name = "electronicAddress.password", column = @Column(name = "end_device_password")),
+        @AttributeOverride(name = "status.value", column = @Column(name = "status_value")),
+        @AttributeOverride(name = "status.dateTime", column = @Column(name = "status_date_time")),
+        @AttributeOverride(name = "status.remark", column = @Column(name = "status_remark")),
+        @AttributeOverride(name = "status.reason", column = @Column(name = "status_reason")),
+        @AttributeOverride(name = "acceptanceTest.dateTime", column = @Column(name = "acceptance_test_date_time")),
+        @AttributeOverride(name = "acceptanceTest.success", column = @Column(name = "acceptance_test_success")),
+        @AttributeOverride(name = "acceptanceTest.type", column = @Column(name = "acceptance_test_type"))
     })
-    private ElectronicAddress electronicAddress;
+    @Delegate(excludes = {Object.class})
+    private Asset asset = new Asset();
 
-    /**
-     * Lifecycle dates for this asset.
-     */
+    // EndDevice-specific fields (per NAESB ESPI 4.0 customer.xsd lines 218-238)
     @Embedded
-    private Asset.LifecycleDate lifecycle;
+    @Delegate(excludes = {Object.class})
+    private EndDeviceFields endDeviceFields = new EndDeviceFields();
 
-    /**
-     * Information on acceptance test.
-     */
-    @Embedded
-    @AttributeOverrides({
-        @AttributeOverride(name = "dateTime", column = @Column(name = "acceptance_test_date_time")),
-        @AttributeOverride(name = "success", column = @Column(name = "acceptance_test_success")),
-        @AttributeOverride(name = "type", column = @Column(name = "acceptance_test_type"))
-    })
-    private Asset.AcceptanceTest acceptanceTest;
-
-    /**
-     * Condition of asset in inventory or at time of installation. Examples include new, rebuilt, 
-     * overhaul required, other. Refer to inspection data for information on the most current condition of the asset.
-     */
-    @Column(name = "initial_condition", length = 256)
-    private String initialCondition;
-
-    /**
-     * Whenever an asset is reconditioned, percentage of expected life for the asset when it was new; zero for new devices.
-     */
-    @Column(name = "initial_loss_of_life")
-    private BigDecimal initialLossOfLife;
-
-    /**
-     * Status of this asset.
-     */
-    @Embedded
-    @AttributeOverride(name = "value", column = @Column(name = "status_value"))
-    @AttributeOverride(name = "dateTime", column = @Column(name = "status_date_time"))
-    @AttributeOverride(name = "remark", column = @Column(name = "status_remark"))
-    @AttributeOverride(name = "reason", column = @Column(name = "status_reason"))
-    private Status status;
-
-    // AssetContainer fields (AssetContainer is simply an Asset that can contain other assets - no additional fields)
-
-    // EndDevice specific fields
-
-    /**
-     * If true, there is no physical device. As an example, a virtual meter can be defined to aggregate 
-     * the consumption for two or more physical meters. Otherwise, this is a physical hardware device.
-     */
-    @Column(name = "is_virtual")
-    private Boolean isVirtual;
-
-    /**
-     * If true, this is a premises area network (PAN) device.
-     */
-    @Column(name = "is_pan")
-    private Boolean isPan;
-
-    /**
-     * Installation code.
-     */
-    @Column(name = "install_code", length = 256)
-    private String installCode;
-
-    /**
-     * Automated meter reading (AMR) or other communication system responsible for communications to this end device.
-     */
-    @Column(name = "amr_system", length = 256)
-    private String amrSystem;
 
     @Override
     public final boolean equals(Object o) {
         if (this == o) return true;
         if (o == null) return false;
-        Class<?> oEffectiveClass = o instanceof org.hibernate.proxy.HibernateProxy ? ((org.hibernate.proxy.HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
-        Class<?> thisEffectiveClass = this instanceof org.hibernate.proxy.HibernateProxy ? ((org.hibernate.proxy.HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
+        Class<?> oEffectiveClass = o instanceof HibernateProxy hibernateProxy ? hibernateProxy.getHibernateLazyInitializer().getPersistentClass() : o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy hibernateProxy ? hibernateProxy.getHibernateLazyInitializer().getPersistentClass() : this.getClass();
         if (thisEffectiveClass != oEffectiveClass) return false;
         EndDeviceEntity that = (EndDeviceEntity) o;
-        return getId() != null && java.util.Objects.equals(getId(), that.getId());
+        return getId() != null && Objects.equals(getId(), that.getId());
     }
 
     @Override
     public final int hashCode() {
-        return this instanceof org.hibernate.proxy.HibernateProxy ? ((org.hibernate.proxy.HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
+        return this instanceof HibernateProxy hibernateProxy ? hibernateProxy.getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(" +
+                "id = " + getId() + ", " +
+                "description = " + getDescription() + ", " +
+                "created = " + getCreated() + ", " +
+                "updated = " + getUpdated() + ", " +
+                "published = " + getPublished() + ", " +
+                "upLink = " + getUpLink() + ", " +
+                "selfLink = " + getSelfLink() + ", " +
+                "type = " + getType() + ", " +
+                "utcNumber = " + getUtcNumber() + ", " +
+                "serialNumber = " + getSerialNumber() + ", " +
+                "lotNumber = " + getLotNumber() + ", " +
+                "purchasePrice = " + getPurchasePrice() + ", " +
+                "critical = " + getCritical() + ", " +
+                "electronicAddress = " + getElectronicAddress() + ", " +
+                "lifecycle = " + getLifecycle() + ", " +
+                "acceptanceTest = " + getAcceptanceTest() + ", " +
+                "initialCondition = " + getInitialCondition() + ", " +
+                "initialLossOfLife = " + getInitialLossOfLife() + ", " +
+                "status = " + getStatus() + ", " +
+                "isVirtual = " + getIsVirtual() + ", " +
+                "isPan = " + getIsPan() + ", " +
+                "installCode = " + getInstallCode() + ", " +
+                "amrSystem = " + getAmrSystem() + ")";
     }
 }

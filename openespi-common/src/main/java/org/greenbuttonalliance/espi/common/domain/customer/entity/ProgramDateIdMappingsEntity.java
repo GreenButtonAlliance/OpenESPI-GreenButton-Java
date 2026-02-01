@@ -21,8 +21,10 @@ package org.greenbuttonalliance.espi.common.domain.customer.entity;
 
 import lombok.*;
 import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
+import org.hibernate.proxy.HibernateProxy;
 
 import jakarta.persistence.*;
+import java.util.Objects;
 
 /**
  * Pure JPA/Hibernate entity for ProgramDateIdMappings without JAXB concerns.
@@ -31,6 +33,13 @@ import jakarta.persistence.*;
  */
 @Entity
 @Table(name = "program_date_id_mappings")
+@AssociationOverride(
+    name = "relatedLinks",
+    joinTable = @JoinTable(
+        name = "program_date_id_mapping_related_links",
+        joinColumns = @JoinColumn(name = "program_date_id_mapping_id")
+    )
+)
 @Getter
 @Setter
 @NoArgsConstructor

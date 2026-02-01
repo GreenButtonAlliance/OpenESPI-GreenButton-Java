@@ -44,6 +44,13 @@ import java.util.Set;
  */
 @Entity
 @Table(name = "application_information")
+@AssociationOverride(
+    name = "relatedLinks",
+    joinTable = @JoinTable(
+        name = "application_information_related_links",
+        joinColumns = @JoinColumn(name = "application_information_id")
+    )
+)
 @Getter
 @Setter
 @NoArgsConstructor

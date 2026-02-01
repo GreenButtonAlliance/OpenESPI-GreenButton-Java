@@ -39,6 +39,13 @@ import java.util.Objects;
  */
 @Entity
 @Table(name = "electric_power_quality_summaries")
+@AssociationOverride(
+    name = "relatedLinks",
+    joinTable = @JoinTable(
+        name = "electric_power_quality_summary_related_links",
+        joinColumns = @JoinColumn(name = "electric_power_quality_summary_id")
+    )
+)
 @Getter
 @Setter
 @NoArgsConstructor
