@@ -288,6 +288,7 @@ This practice prevents issues like missing imports, broken references, and compi
 - Avoid `@Where` annotation conflicts with `@JoinColumn` on the same field
 - Be careful with `@ElementCollection` and `@CollectionTable` for embedded collections
 - Phone numbers and addresses are embedded collections using `@ElementCollection`
+- **toString() method sequencing**: Entity toString() methods MUST follow the exact database field sequence from Flyway migration scripts. Standard sequence is: id, description, created, updated, published, upLink, selfLink, [type-specific fields in database column order], relatedLinks (if present as last field). Always verify toString() matches the CREATE TABLE statement column order.
 
 #### REST Controller Development
 - Controllers in `openespi-datacustodian` implement ESPI REST API
