@@ -195,8 +195,10 @@ CREATE INDEX idx_customer_updated ON customers (updated);
 -- Related Links Table for Customers
 CREATE TABLE customer_related_links
 (
-    customer_id   CHAR(36) NOT NULL,
-    related_links VARCHAR(1024),
+    customer_id CHAR(36) NOT NULL,
+    rel         VARCHAR(255),
+    href        VARCHAR(1024),
+    link_type   VARCHAR(255),
     FOREIGN KEY (customer_id) REFERENCES customers (id) ON DELETE CASCADE
 );
 
@@ -268,7 +270,9 @@ CREATE INDEX idx_customer_agreement_updated ON customer_agreements (updated);
 CREATE TABLE customer_agreement_related_links
 (
     customer_agreement_id CHAR(36) NOT NULL,
-    related_links         VARCHAR(1024),
+    rel                   VARCHAR(255),
+    href                  VARCHAR(1024),
+    link_type             VARCHAR(255),
     FOREIGN KEY (customer_agreement_id) REFERENCES customer_agreements (id) ON DELETE CASCADE
 );
 
@@ -396,7 +400,9 @@ CREATE INDEX idx_customer_account_updated ON customer_accounts (updated);
 CREATE TABLE customer_account_related_links
 (
     customer_account_id CHAR(36) NOT NULL,
-    related_links       VARCHAR(1024),
+    rel                 VARCHAR(255),
+    href                VARCHAR(1024),
+    link_type           VARCHAR(255),
     FOREIGN KEY (customer_account_id) REFERENCES customer_accounts (id) ON DELETE CASCADE
 );
 
@@ -466,7 +472,9 @@ CREATE INDEX idx_epqs_updated ON electric_power_quality_summaries (updated);
 CREATE TABLE electric_power_quality_summary_related_links
 (
     electric_power_quality_summary_id CHAR(36) NOT NULL,
-    related_links                     VARCHAR(1024),
+    rel                               VARCHAR(255),
+    href                              VARCHAR(1024),
+    link_type                         VARCHAR(255),
     FOREIGN KEY (electric_power_quality_summary_id) REFERENCES electric_power_quality_summaries (id) ON DELETE CASCADE
 );
 
@@ -535,7 +543,9 @@ CREATE INDEX idx_end_device_updated ON end_devices (updated);
 CREATE TABLE end_device_related_links
 (
     end_device_id CHAR(36) NOT NULL,
-    related_links VARCHAR(1024),
+    rel           VARCHAR(255),
+    href          VARCHAR(1024),
+    link_type     VARCHAR(255),
     FOREIGN KEY (end_device_id) REFERENCES end_devices (id) ON DELETE CASCADE
 );
 
@@ -548,16 +558,65 @@ CREATE INDEX idx_end_device_related_links ON end_device_related_links (end_devic
 --      db/vendor/postgres/V2__PostgreSQL_Specific_Tables.sql
 --      db/vendor/h2/V2__H2_Specific_Tables.sql
 
--- Meter Entity Table (Joined inheritance from EndDevice)
+-- Meter Entity Table (extends IdentifiedObject, embeds Asset + EndDeviceFields)
+-- Per customer.xsd, Meter extends EndDevice which extends Asset
+-- Implementation uses composition: Meter embeds Asset + EndDeviceFields as @Embeddable
 CREATE TABLE meters
 (
-    id              CHAR(36) PRIMARY KEY,
-    form_number     VARCHAR(256),
-    interval_length BIGINT,
-    FOREIGN KEY (id) REFERENCES end_devices (id) ON DELETE CASCADE
-);
+    id                   CHAR(36) PRIMARY KEY ,
+    description          VARCHAR(255),
+    created              TIMESTAMP NOT NULL,
+    updated              TIMESTAMP NOT NULL,
+    published            TIMESTAMP,
+    up_link_rel          VARCHAR(255),
+    up_link_href         VARCHAR(1024),
+    up_link_type         VARCHAR(255),
+    self_link_rel        VARCHAR(255),
+    self_link_href       VARCHAR(1024),
+    self_link_type       VARCHAR(255),
 
-CREATE INDEX idx_meters_form_number ON meters (form_number);
+    -- Asset fields (embedded from Asset.java) - Same structure as end_devices
+    type                 VARCHAR(50),
+    utc_number           VARCHAR(100),
+    serial_number        VARCHAR(100),
+    lot_number           VARCHAR(100),
+    purchase_price       BIGINT,
+    critical             BOOLEAN              DEFAULT FALSE,
+    -- ElectronicAddress (customer.xsd lines 886-936)
+    end_device_lan       VARCHAR(255),
+    end_device_mac       VARCHAR(255),
+    end_device_email1    VARCHAR(255),
+    end_device_email2    VARCHAR(255),
+    end_device_web       VARCHAR(255),
+    end_device_radio     VARCHAR(255),
+    end_device_user_id   VARCHAR(255),
+    end_device_password  VARCHAR(255),
+    installation_date    TIMESTAMP,
+    manufactured_date    TIMESTAMP,
+    purchase_date        TIMESTAMP,
+    received_date        TIMESTAMP,
+    retirement_date      TIMESTAMP,
+    removal_date         TIMESTAMP,
+    acceptance_test_date_time TIMESTAMP,
+    acceptance_test_success BOOLEAN,
+    acceptance_test_type VARCHAR(255),
+    initial_condition    VARCHAR(255),
+    initial_loss_of_life DECIMAL(5, 2),
+    status_value         VARCHAR(256),
+    status_date_time     TIMESTAMP,
+    status_remark        VARCHAR(256),
+    status_reason        VARCHAR(256),
+
+    -- EndDevice fields (embedded from EndDeviceFields.java)
+    is_virtual           BOOLEAN              DEFAULT FALSE,
+    is_pan               BOOLEAN              DEFAULT FALSE,
+    install_code         VARCHAR(255),
+    amr_system           VARCHAR(100),
+
+    -- Meter-specific fields (customer.xsd Meter lines 250-264)
+    form_number          VARCHAR(256),
+    interval_length      BIGINT
+);
 
 -- Meter Multipliers Collection Table (@ElementCollection for MeterEntity.meterMultipliers)
 -- Per customer.xsd MeterMultiplier type (embedded collection)
@@ -574,8 +633,10 @@ CREATE INDEX idx_meter_multipliers_meter_id ON meter_multipliers (meter_id);
 -- Related Links Table for Meters
 CREATE TABLE meter_related_links
 (
-    meter_id      CHAR(36) NOT NULL,
-    related_links VARCHAR(1024),
+    meter_id  CHAR(36) NOT NULL,
+    rel       VARCHAR(255),
+    href      VARCHAR(1024),
+    link_type VARCHAR(255),
     FOREIGN KEY (meter_id) REFERENCES meters (id) ON DELETE CASCADE
 );
 
@@ -645,7 +706,9 @@ CREATE INDEX idx_program_date_id_mapping_updated ON program_date_id_mappings (up
 CREATE TABLE program_date_id_mapping_related_links
 (
     program_date_id_mapping_id CHAR(36) NOT NULL,
-    related_links              VARCHAR(1024),
+    rel                        VARCHAR(255),
+    href                       VARCHAR(1024),
+    link_type                  VARCHAR(255),
     FOREIGN KEY (program_date_id_mapping_id) REFERENCES program_date_id_mappings (id) ON DELETE CASCADE
 );
 
@@ -740,7 +803,9 @@ CREATE INDEX idx_service_location_updated ON service_locations (updated);
 CREATE TABLE service_location_related_links
 (
     service_location_id CHAR(36) NOT NULL,
-    related_links       VARCHAR(1024),
+    rel                 VARCHAR(255),
+    href                VARCHAR(1024),
+    link_type           VARCHAR(255),
     FOREIGN KEY (service_location_id) REFERENCES service_locations (id) ON DELETE CASCADE
 );
 
@@ -828,7 +893,9 @@ CREATE INDEX idx_service_supplier_updated ON service_suppliers (updated);
 CREATE TABLE service_supplier_related_links
 (
     service_supplier_id CHAR(36) NOT NULL,
-    related_links       VARCHAR(1024),
+    rel                 VARCHAR(255),
+    href                VARCHAR(1024),
+    link_type           VARCHAR(255),
     FOREIGN KEY (service_supplier_id) REFERENCES service_suppliers (id) ON DELETE CASCADE
 );
 
@@ -869,8 +936,10 @@ CREATE INDEX idx_statement_updated ON statements (updated);
 -- Related Links Table for Statements
 CREATE TABLE statement_related_links
 (
-    statement_id  CHAR(36) NOT NULL,
-    related_links VARCHAR(1024),
+    statement_id CHAR(36) NOT NULL,
+    rel          VARCHAR(255),
+    href         VARCHAR(1024),
+    link_type    VARCHAR(255),
     FOREIGN KEY (statement_id) REFERENCES statements (id) ON DELETE CASCADE
 );
 

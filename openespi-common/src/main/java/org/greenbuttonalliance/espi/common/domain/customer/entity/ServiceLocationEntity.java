@@ -41,6 +41,13 @@ import java.util.Objects;
  */
 @Entity
 @Table(name = "service_locations")
+@AssociationOverride(
+    name = "relatedLinks",
+    joinTable = @JoinTable(
+        name = "service_location_related_links",
+        joinColumns = @JoinColumn(name = "service_location_id")
+    )
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -233,21 +240,24 @@ ServiceLocationEntity extends IdentifiedObject {
     public String toString() {
         return getClass().getSimpleName() + "(" +
                 "id = " + getId() + ", " +
+                "description = " + getDescription() + ", " +
+                "created = " + getCreated() + ", " +
+                "updated = " + getUpdated() + ", " +
+                "published = " + getPublished() + ", " +
+                "upLink = " + getUpLink() + ", " +
+                "selfLink = " + getSelfLink() + ", " +
                 "type = " + getType() + ", " +
                 "mainAddress = " + getMainAddress() + ", " +
                 "secondaryAddress = " + getSecondaryAddress() + ", " +
                 "electronicAddress = " + getElectronicAddress() + ", " +
-                "geoInfoReference = " + getGeoInfoReference() + ", " +
-                "direction = " + getDirection() + ", " +
                 "status = " + getStatus() + ", " +
+                "phone1 = " + getPhone1() + ", " +
+                "phone2 = " + getPhone2() + ", " +
                 "accessMethod = " + getAccessMethod() + ", " +
                 "siteAccessProblem = " + getSiteAccessProblem() + ", " +
                 "needsInspection = " + getNeedsInspection() + ", " +
-                "usagePointHrefs = " + getUsagePointHrefs() + ", " +
-                "outageBlock = " + getOutageBlock() + ", " +
-                "description = " + getDescription() + ", " +
-                "created = " + getCreated() + ", " +
-                "updated = " + getUpdated() + ", " +
-                "published = " + getPublished() + ")";
+                "direction = " + getDirection() + ", " +
+                "geoInfoReference = " + getGeoInfoReference() + ", " +
+                "outageBlock = " + getOutageBlock() + ")";
     }
 }

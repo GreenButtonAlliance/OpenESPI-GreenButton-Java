@@ -44,6 +44,13 @@ import java.util.Objects;
     @Index(name = "idx_authorization_state", columnList = "state"),
     @Index(name = "idx_authorization_resource_uri", columnList = "resource_uri")
 })
+@AssociationOverride(
+    name = "relatedLinks",
+    joinTable = @JoinTable(
+        name = "authorization_related_links",
+        joinColumns = @JoinColumn(name = "authorization_id")
+    )
+)
 @Getter
 @Setter
 @NoArgsConstructor

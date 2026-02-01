@@ -50,6 +50,13 @@ import java.util.Objects;
 @AttributeOverride(name = "selfLink.rel", column = @Column(name = "customer_account_self_link_rel"))
 @AttributeOverride(name = "selfLink.href", column = @Column(name = "customer_account_self_link_href"))
 @AttributeOverride(name = "selfLink.type", column = @Column(name = "customer_account_self_link_type"))
+@AssociationOverride(
+    name = "relatedLinks",
+    joinTable = @JoinTable(
+        name = "customer_account_related_links",
+        joinColumns = @JoinColumn(name = "customer_account_id")
+    )
+)
 @Getter
 @Setter
 @NoArgsConstructor

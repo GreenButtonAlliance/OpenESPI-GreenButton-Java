@@ -56,24 +56,24 @@ public interface MeterMapper {
      * @param entity the meter entity
      * @return the meter DTO
      */
-    // Asset fields (12) - customer.xsd lines 650-709
-    @Mapping(target = "type", source = "type")
-    @Mapping(target = "utcNumber", source = "utcNumber")
-    @Mapping(target = "serialNumber", source = "serialNumber")
-    @Mapping(target = "lotNumber", source = "lotNumber")
-    @Mapping(target = "purchasePrice", source = "purchasePrice")
-    @Mapping(target = "critical", source = "critical")
-    @Mapping(target = "electronicAddress", source = "electronicAddress")
-    @Mapping(target = "lifecycle", source = "lifecycle")
-    @Mapping(target = "acceptanceTest", source = "acceptanceTest")
-    @Mapping(target = "initialCondition", source = "initialCondition")
-    @Mapping(target = "initialLossOfLife", source = "initialLossOfLife")
-    @Mapping(target = "status", source = "status")
-    // EndDevice fields (4) - customer.xsd lines 219-238
-    @Mapping(target = "isVirtual", source = "isVirtual")
-    @Mapping(target = "isPan", source = "isPan")
-    @Mapping(target = "installCode", source = "installCode")
-    @Mapping(target = "amrSystem", source = "amrSystem")
+    // Asset fields (12) - mapped from embedded asset
+    @Mapping(target = "type", source = "asset.type")
+    @Mapping(target = "utcNumber", source = "asset.utcNumber")
+    @Mapping(target = "serialNumber", source = "asset.serialNumber")
+    @Mapping(target = "lotNumber", source = "asset.lotNumber")
+    @Mapping(target = "purchasePrice", source = "asset.purchasePrice")
+    @Mapping(target = "critical", source = "asset.critical")
+    @Mapping(target = "electronicAddress", source = "asset.electronicAddress")
+    @Mapping(target = "lifecycle", source = "asset.lifecycle")
+    @Mapping(target = "acceptanceTest", source = "asset.acceptanceTest")
+    @Mapping(target = "initialCondition", source = "asset.initialCondition")
+    @Mapping(target = "initialLossOfLife", source = "asset.initialLossOfLife")
+    @Mapping(target = "status", source = "asset.status")
+    // EndDevice fields (4) - mapped from embedded endDeviceFields
+    @Mapping(target = "isVirtual", source = "endDeviceFields.isVirtual")
+    @Mapping(target = "isPan", source = "endDeviceFields.isPan")
+    @Mapping(target = "installCode", source = "endDeviceFields.installCode")
+    @Mapping(target = "amrSystem", source = "endDeviceFields.amrSystem")
     // Meter fields (3) - customer.xsd lines 250-264
     @Mapping(target = "formNumber", source = "formNumber")
     @Mapping(target = "meterMultipliers", ignore = true) // TODO: Implement when MeterMultiplierEntity exists
@@ -87,24 +87,24 @@ public interface MeterMapper {
      * @param dto the meter DTO
      * @return the meter entity
      */
-    // Asset fields (12) - customer.xsd lines 650-709
-    @Mapping(target = "type", source = "type")
-    @Mapping(target = "utcNumber", source = "utcNumber")
-    @Mapping(target = "serialNumber", source = "serialNumber")
-    @Mapping(target = "lotNumber", source = "lotNumber")
-    @Mapping(target = "purchasePrice", source = "purchasePrice")
-    @Mapping(target = "critical", source = "critical")
-    @Mapping(target = "electronicAddress", source = "electronicAddress")
-    @Mapping(target = "lifecycle", source = "lifecycle")
-    @Mapping(target = "acceptanceTest", source = "acceptanceTest")
-    @Mapping(target = "initialCondition", source = "initialCondition")
-    @Mapping(target = "initialLossOfLife", source = "initialLossOfLife")
-    @Mapping(target = "status", source = "status")
-    // EndDevice fields (4) - customer.xsd lines 219-238
-    @Mapping(target = "isVirtual", source = "isVirtual")
-    @Mapping(target = "isPan", source = "isPan")
-    @Mapping(target = "installCode", source = "installCode")
-    @Mapping(target = "amrSystem", source = "amrSystem")
+    // Asset fields (12) - mapped to embedded asset
+    @Mapping(target = "asset.type", source = "type")
+    @Mapping(target = "asset.utcNumber", source = "utcNumber")
+    @Mapping(target = "asset.serialNumber", source = "serialNumber")
+    @Mapping(target = "asset.lotNumber", source = "lotNumber")
+    @Mapping(target = "asset.purchasePrice", source = "purchasePrice")
+    @Mapping(target = "asset.critical", source = "critical")
+    @Mapping(target = "asset.electronicAddress", source = "electronicAddress")
+    @Mapping(target = "asset.lifecycle", source = "lifecycle")
+    @Mapping(target = "asset.acceptanceTest", source = "acceptanceTest")
+    @Mapping(target = "asset.initialCondition", source = "initialCondition")
+    @Mapping(target = "asset.initialLossOfLife", source = "initialLossOfLife")
+    @Mapping(target = "asset.status", source = "status")
+    // EndDevice fields (4) - mapped to embedded endDeviceFields
+    @Mapping(target = "endDeviceFields.isVirtual", source = "isVirtual")
+    @Mapping(target = "endDeviceFields.isPan", source = "isPan")
+    @Mapping(target = "endDeviceFields.installCode", source = "installCode")
+    @Mapping(target = "endDeviceFields.amrSystem", source = "amrSystem")
     // Meter fields (3) - customer.xsd lines 250-264
     @Mapping(target = "formNumber", source = "formNumber")
     // meterMultipliers not mapped - collection commented out in entity (TODO)

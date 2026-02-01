@@ -27,6 +27,7 @@ import jakarta.persistence.*;
 import org.hibernate.proxy.HibernateProxy;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -36,6 +37,13 @@ import java.util.Objects;
  */
 @Entity
 @Table(name = "service_suppliers")
+@AssociationOverride(
+    name = "relatedLinks",
+    joinTable = @JoinTable(
+        name = "service_supplier_related_links",
+        joinColumns = @JoinColumn(name = "service_supplier_id")
+    )
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -125,13 +133,15 @@ public class ServiceSupplierEntity extends IdentifiedObject {
     public String toString() {
         return getClass().getSimpleName() + "(" +
                 "id = " + getId() + ", " +
-                "organisation = " + getOrganisation() + ", " +
-                "kind = " + getKind() + ", " +
-                "issuerIdentificationNumber = " + getIssuerIdentificationNumber() + ", " +
-                "effectiveDate = " + getEffectiveDate() + ", " +
                 "description = " + getDescription() + ", " +
                 "created = " + getCreated() + ", " +
                 "updated = " + getUpdated() + ", " +
-                "published = " + getPublished() + ")";
+                "published = " + getPublished() + ", " +
+                "upLink = " + getUpLink() + ", " +
+                "selfLink = " + getSelfLink() + ", " +
+                "kind = " + getKind() + ", " +
+                "issuerIdentificationNumber = " + getIssuerIdentificationNumber() + ", " +
+                "effectiveDate = " + getEffectiveDate() + ", " +
+                "organisation = " + getOrganisation() + ")";
     }
 }

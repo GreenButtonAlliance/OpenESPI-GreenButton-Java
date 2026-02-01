@@ -20,33 +20,26 @@
 package org.greenbuttonalliance.espi.common.domain.customer.entity;
 
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 import org.greenbuttonalliance.espi.common.domain.customer.common.ElectronicAddress;
 
 import jakarta.persistence.*;
-import java.io.Serializable;
 import java.math.BigDecimal;
 
 /**
- * Abstract base class for Asset without JAXB concerns.
- * 
- * Tangible resource of the utility, including power system equipment, various end devices, 
- * cabinets, buildings, etc. Asset description places emphasis on the physical characteristics 
+ * Embeddable component for Asset without JAXB concerns.
+ *
+ * Tangible resource of the utility, including power system equipment, various end devices,
+ * cabinets, buildings, etc. Asset description places emphasis on the physical characteristics
  * of the equipment fulfilling that role.
- * 
- * This is a @MappedSuperclass that provides asset-specific fields but does not extend IdentifiedObject.
- * Actual ESPI resource entities that represent assets should extend IdentifiedObject directly.
+ *
+ * This is an @Embeddable component that can be embedded in ESPI resource entities.
+ * Per NAESB ESPI 4.0 customer.xsd, Asset extends IdentifiedObject (lines 643-713).
  */
-@MappedSuperclass
+@Embeddable
 @Data
-@EqualsAndHashCode
 @NoArgsConstructor
-@ToString
-public abstract class Asset implements Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class Asset {
 
     /**
      * Utility-specific classification of Asset and its subtypes, according to their corporate standards, 
@@ -87,16 +80,9 @@ public abstract class Asset implements Serializable {
 
     /**
      * Electronic address.
+     * Note: Column names will be overridden by the entity embedding this Asset.
      */
     @Embedded
-    @AttributeOverride(name = "lan", column = @Column(name = "asset_lan"))
-    @AttributeOverride(name = "mac", column = @Column(name = "asset_mac"))
-    @AttributeOverride(name = "email1", column = @Column(name = "asset_email1"))
-    @AttributeOverride(name = "email2", column = @Column(name = "asset_email2"))
-    @AttributeOverride(name = "web", column = @Column(name = "asset_web"))
-    @AttributeOverride(name = "radio", column = @Column(name = "asset_radio"))
-    @AttributeOverride(name = "userID", column = @Column(name = "asset_user_id"))
-    @AttributeOverride(name = "password", column = @Column(name = "asset_password"))
     private ElectronicAddress electronicAddress;
 
     /**
@@ -126,9 +112,10 @@ public abstract class Asset implements Serializable {
 
     /**
      * Status of this asset.
+     * Note: Uses Status embeddable (column names will be overridden by embedding entity).
      */
     @Embedded
-    private CustomerEntity.Status status;
+    private Status status;
 
     /**
      * Embeddable class for LifecycleDate

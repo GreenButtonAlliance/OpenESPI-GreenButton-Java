@@ -41,6 +41,13 @@ import java.util.Objects;
  */
 @Entity
 @Table(name = "reading_types")
+@AssociationOverride(
+    name = "relatedLinks",
+    joinTable = @JoinTable(
+        name = "reading_type_related_links",
+        joinColumns = @JoinColumn(name = "reading_type_id")
+    )
+)
 @Getter
 @Setter
 @NoArgsConstructor

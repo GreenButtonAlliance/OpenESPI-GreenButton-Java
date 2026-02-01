@@ -111,7 +111,9 @@ CREATE INDEX idx_application_updated ON application_information (updated);
 CREATE TABLE application_information_related_links
 (
     application_information_id CHAR(36) NOT NULL,
-    related_links              VARCHAR(1024),
+    rel                        VARCHAR(255),
+    href                       VARCHAR(1024),
+    link_type                  VARCHAR(255),
     FOREIGN KEY (application_information_id) REFERENCES application_information (id) ON DELETE CASCADE
 );
 
@@ -205,7 +207,9 @@ CREATE INDEX idx_authorization_updated ON authorizations (updated);
 CREATE TABLE authorization_related_links
 (
     authorization_id CHAR(36) NOT NULL,
-    related_links    VARCHAR(1024),
+    rel              VARCHAR(255),
+    href             VARCHAR(1024),
+    link_type        VARCHAR(255),
     FOREIGN KEY (authorization_id) REFERENCES authorizations (id) ON DELETE CASCADE
 );
 
@@ -259,7 +263,9 @@ CREATE INDEX idx_reading_type_updated ON reading_types (updated);
 CREATE TABLE reading_type_related_links
 (
     reading_type_id CHAR(36) NOT NULL,
-    related_links   VARCHAR(1024),
+    rel             VARCHAR(255),
+    href            VARCHAR(1024),
+    link_type       VARCHAR(255),
     FOREIGN KEY (reading_type_id) REFERENCES reading_types (id) ON DELETE CASCADE
 );
 
