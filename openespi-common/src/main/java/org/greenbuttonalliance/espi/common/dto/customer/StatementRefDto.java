@@ -25,25 +25,25 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.OffsetDateTime;
-
 /**
- * StatementRef DTO class for JAXB XML marshalling/unmarshalling.
+ * StatementRef DTO for JAXB XML marshalling/unmarshalling.
  *
- * Represents a reference to a statement document.
+ * [extension] A sequence of references to a document associated with a Statement.
  *
- * Note: StatementRef does NOT extend IdentifiedObject per ESPI 4.0 specification.
- * It is not a top-level resource with selfLink/upLink/relatedLinks.
+ * Corresponds to customer.xsd StatementRef definition (lines 285-307).
+ * StatementRef extends Object (not IdentifiedObject), so it has no id/links/metadata.
  *
- * WARNING: DTO fields do not currently match entity fields.
- * Entity has: fileName, mediaType, statementURL
- * DTO has: referenceId, referenceType, referenceDate, referenceUrl
- * This mismatch needs to be resolved.
+ * ESPI 4.0 XSD Sequence (customer.xsd lines 291-306):
+ * 1. fileName (String256) - optional
+ * 2. mediaType (String256) - optional
+ * 3. statementURL (String2048) - optional
  */
 @XmlRootElement(name = "StatementRef", namespace = "http://naesb.org/espi/customer")
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "StatementRef", namespace = "http://naesb.org/espi/customer", propOrder = {
-    "referenceId", "referenceType", "referenceDate", "referenceUrl", "statement"
+    "fileName",
+    "mediaType",
+    "statementURL"
 })
 @Getter
 @Setter
@@ -51,25 +51,23 @@ import java.time.OffsetDateTime;
 @AllArgsConstructor
 public class StatementRefDto {
 
-    @XmlElement(name = "referenceId")
-    private String referenceId;
-
-    @XmlElement(name = "referenceType")
-    private String referenceType;
-
-    @XmlElement(name = "referenceDate")
-    private OffsetDateTime referenceDate;
-
-    @XmlElement(name = "referenceUrl")
-    private String referenceUrl;
-
-    @XmlElement(name = "Statement")
-    private StatementDto statement;
+    /**
+     * [extension] Name of document or file including filename extension if present.
+     */
+    @XmlElement(name = "fileName", namespace = "http://naesb.org/espi/customer")
+    private String fileName;
 
     /**
-     * Minimal constructor for basic reference data.
+     * [extension] Document media type as published by IANA.
+     * See https://www.iana.org/assignments/media-types for more information.
      */
-    public StatementRefDto(String referenceId, String referenceUrl) {
-        this(referenceId, null, null, referenceUrl, null);
-    }
+    @XmlElement(name = "mediaType", namespace = "http://naesb.org/espi/customer")
+    private String mediaType;
+
+    /**
+     * [extension] URL used to access a representation of a statement, for example a bill image.
+     * Use CDATA or URL encoding to escape characters not allowed in XML.
+     */
+    @XmlElement(name = "statementURL", namespace = "http://naesb.org/espi/customer")
+    private String statementURL;
 }

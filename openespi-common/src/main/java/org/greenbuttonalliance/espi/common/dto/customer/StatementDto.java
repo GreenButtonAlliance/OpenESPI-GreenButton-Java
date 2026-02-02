@@ -19,29 +19,32 @@
 
 package org.greenbuttonalliance.espi.common.dto.customer;
 
-import org.greenbuttonalliance.espi.common.dto.atom.LinkDto;
-
 import jakarta.xml.bind.annotation.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
- * Statement DTO class for JAXB XML marshalling/unmarshalling.
+ * Statement DTO for JAXB XML marshalling/unmarshalling.
  *
- * Represents a billing statement or document for a customer agreement.
- * Supports Atom protocol XML wrapping.
+ * [extension] Billing statement for provided services.
+ *
+ * Corresponds to customer.xsd Statement definition (lines 373-393).
+ * Statement extends IdentifiedObject, but DTO excludes IdentifiedObject fields
+ * (id, description, published, updated, links) as they're handled by Atom Entry wrapper.
+ *
+ * ESPI 4.0 XSD Sequence (customer.xsd lines 379-392):
+ * 1. issueDateTime (TimeType) - optional
+ * 2. statementRef (StatementRef collection) - optional, unbounded
  */
 @XmlRootElement(name = "Statement", namespace = "http://naesb.org/espi/customer")
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "Statement", namespace = "http://naesb.org/espi/customer", propOrder = {
-    "published", "updated", "selfLink", "upLink", "relatedLinks",
-    "description", "createdDateTime", "lastModifiedDateTime", "revisionNumber",
-    "subject", "docStatus", "type", "customerAgreement", "statementRefs"
+    "issueDateTime",
+    "statementRef"
 })
 @Getter
 @Setter
@@ -49,79 +52,17 @@ import java.util.List;
 @AllArgsConstructor
 public class StatementDto {
 
-    @XmlTransient
-    private Long id;
-
-    @XmlAttribute(name = "mRID")
-    private String uuid;
-
-    @XmlElement(name = "published")
-    private OffsetDateTime published;
-
-    @XmlElement(name = "updated")
-    private OffsetDateTime updated;
-
-    @XmlElement(name = "link", namespace = "http://www.w3.org/2005/Atom")
-    @XmlElementWrapper(name = "links", namespace = "http://www.w3.org/2005/Atom")
-    private List<LinkDto> relatedLinks;
-
-    @XmlElement(name = "link", namespace = "http://www.w3.org/2005/Atom")
-    private LinkDto selfLink;
-
-    @XmlElement(name = "link", namespace = "http://www.w3.org/2005/Atom")
-    private LinkDto upLink;
-
-    @XmlElement(name = "description")
-    private String description;
-
-    @XmlElement(name = "createdDateTime")
-    private OffsetDateTime createdDateTime;
-
-    @XmlElement(name = "lastModifiedDateTime")
-    private OffsetDateTime lastModifiedDateTime;
-
-    @XmlElement(name = "revisionNumber")
-    private String revisionNumber;
-
-    @XmlElement(name = "subject")
-    private String subject;
-
-    @XmlElement(name = "docStatus")
-    private String docStatus;
-
-    @XmlElement(name = "type")
-    private String type;
-
-    @XmlElement(name = "CustomerAgreement")
-    private CustomerAgreementDto customerAgreement;
-
-    @XmlElement(name = "StatementRef")
-    @XmlElementWrapper(name = "StatementRefs")
-    private List<StatementRefDto> statementRefs;
+    /**
+     * [extension] Date and time at which a billing statement was issued.
+     * Stored as Unix epoch timestamp (seconds since 1970-01-01T00:00:00Z).
+     */
+    @XmlElement(name = "issueDateTime", namespace = "http://naesb.org/espi/customer")
+    private Long issueDateTime;
 
     /**
-     * Minimal constructor for basic statement data.
+     * [extension] Contains document reference metadata needed to access a document
+     * representation of a billing statement.
      */
-    public StatementDto(String uuid, String subject) {
-        this(null, uuid, null, null, null, null, null, null,
-             null, null, null, subject, null, null, null, null);
-    }
-
-    /**
-     * Gets the self href for this statement.
-     *
-     * @return self href string
-     */
-    public String getSelfHref() {
-        return selfLink != null ? selfLink.getHref() : null;
-    }
-
-    /**
-     * Gets the up href for this statement.
-     *
-     * @return up href string
-     */
-    public String getUpHref() {
-        return upLink != null ? upLink.getHref() : null;
-    }
+    @XmlElement(name = "statementRef", namespace = "http://naesb.org/espi/customer")
+    private List<StatementRefDto> statementRef;
 }

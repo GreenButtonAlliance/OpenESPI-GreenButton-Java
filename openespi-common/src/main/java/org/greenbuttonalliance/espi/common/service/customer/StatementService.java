@@ -21,92 +21,80 @@ package org.greenbuttonalliance.espi.common.service.customer;
 
 import org.greenbuttonalliance.espi.common.domain.customer.entity.StatementEntity;
 
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 /**
  * Service interface for Statement management.
- * 
- * Handles business logic for billing statement operations including bill amounts,
- * due dates, payment tracking, and statement status management.
+ *
+ * [extension] Billing statement for provided services.
+ *
+ * Provides standard CRUD operations and ID-based relationship queries.
+ * Per ESPI 4.0 compliance (Issue #28 Phase 19), non-ID queries removed to prevent
+ * performance issues and ensure consistent API patterns.
  */
 public interface StatementService {
 
     /**
      * Find all statements.
+     *
+     * @return list of all statements
      */
     List<StatementEntity> findAll();
 
     /**
      * Find statement by ID.
+     *
+     * @param id the statement UUID
+     * @return Optional containing the statement if found
      */
     Optional<StatementEntity> findById(UUID id);
 
+    /**
+     * Find statements by customer ID.
+     *
+     * @param customerId the customer UUID
+     * @return list of statements for the customer
+     */
+    List<StatementEntity> findByCustomerId(UUID customerId);
 
     /**
-     * Find statements issued after specified date.
+     * Find statements by customer account ID.
+     *
+     * @param customerAccountId the customer account UUID
+     * @return list of statements for the customer account
      */
-    List<StatementEntity> findByIssueDateTimeAfter(OffsetDateTime dateTime);
+    List<StatementEntity> findByCustomerAccountId(UUID customerAccountId);
 
     /**
-     * Find statements issued before specified date.
+     * Find statements by customer agreement ID.
+     *
+     * @param customerAgreementId the customer agreement UUID
+     * @return list of statements for the customer agreement
      */
-    List<StatementEntity> findByIssueDateTimeBefore(OffsetDateTime dateTime);
+    List<StatementEntity> findByCustomerAgreementId(UUID customerAgreementId);
 
     /**
-     * Find statements issued between specified dates.
+     * Find statements by usage summary ID.
+     *
+     * @param usageSummaryId the usage summary UUID
+     * @return list of statements for the usage summary
      */
-    List<StatementEntity> findByIssueDateTimeBetween(OffsetDateTime startDate, OffsetDateTime endDate);
-
-    /**
-     * Find statements with document references.
-     */
-    List<StatementEntity> findStatementsWithReferences();
-
-    /**
-     * Find statements without document references.
-     */
-    List<StatementEntity> findStatementsWithoutReferences();
-
-    /**
-     * Find statements by description containing text.
-     */
-    List<StatementEntity> findByDescriptionContaining(String description);
-
-    /**
-     * Find recent statements (issued within last N days).
-     */
-    List<StatementEntity> findRecentStatements(OffsetDateTime cutoffDate);
+    List<StatementEntity> findByUsageSummaryId(UUID usageSummaryId);
 
     /**
      * Save statement.
+     *
+     * @param statement the statement to save
+     * @return the saved statement
      */
     StatementEntity save(StatementEntity statement);
 
     /**
      * Delete statement by ID.
+     *
+     * @param id the statement UUID to delete
      */
     void deleteById(UUID id);
-
-    /**
-     * Update statement description.
-     */
-    StatementEntity updateDescription(UUID id, String description);
-
-    /**
-     * Count total statements.
-     */
-    long countStatements();
-
-    /**
-     * Count statements with references.
-     */
-    long countStatementsWithReferences();
-
-    /**
-     * Count statements without references.
-     */
-    long countStatementsWithoutReferences();
 }

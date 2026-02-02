@@ -19,40 +19,28 @@
 
 package org.greenbuttonalliance.espi.common.domain.customer.entity;
 
-import jakarta.persistence.*;
-import lombok.Getter;
+import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.proxy.HibernateProxy;
-import org.hibernate.type.SqlTypes;
+import lombok.ToString;
 
-import java.util.Objects;
-import java.util.UUID;
+import java.io.Serializable;
 
 /**
- * Pure JPA/Hibernate entity for StatementRef without JAXB concerns.
+ * Embeddable class for StatementRef without JAXB concerns.
  *
  * [extension] A sequence of references to a document associated with a Statement.
  *
- * Note: StatementRef does NOT extend IdentifiedObject per ESPI 4.0 specification.
- * It is not a top-level resource with selfLink/upLink/relatedLinks.
+ * Note: StatementRef extends Object (not IdentifiedObject) per customer.xsd lines 285-307.
+ * It is not a top-level resource and has no selfLink/upLink/relatedLinks.
+ * Stored as @ElementCollection in StatementEntity.
  */
-@Entity
-@Table(name = "statement_refs")
-@Getter
-@Setter
+@Embeddable
+@Data
 @NoArgsConstructor
-public class StatementRefEntity {
-
-    /**
-     * Primary key identifier.
-     */
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @JdbcTypeCode(SqlTypes.CHAR)
-    @Column(length = 36, columnDefinition = "char(36)", updatable = false, nullable = false)
-    private UUID id;
+@ToString
+public class StatementRefEntity implements Serializable {
 
     /**
      * [extension] Name of document or file including filename extension if present.
@@ -67,44 +55,9 @@ public class StatementRefEntity {
     private String mediaType;
 
     /**
-     * [extension] URL used to access a representation of a statement, for example a bill image. 
+     * [extension] URL used to access a representation of a statement, for example a bill image.
      * Use CDATA or URL encoding to escape characters not allowed in XML.
      */
     @Column(name = "statement_url", length = 2048)
     private String statementURL;
-
-    /**
-     * Statement this reference belongs to
-     */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "statement_id")
-    private StatementEntity statement;
-
-    @Override
-    public final boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null) return false;
-        Class<?> oEffectiveClass = o instanceof HibernateProxy hibernateProxy ?
-            hibernateProxy.getHibernateLazyInitializer().getPersistentClass() : o.getClass();
-        Class<?> thisEffectiveClass = this instanceof HibernateProxy hibernateProxy ?
-            hibernateProxy.getHibernateLazyInitializer().getPersistentClass() : this.getClass();
-        if (thisEffectiveClass != oEffectiveClass) return false;
-        StatementRefEntity that = (StatementRefEntity) o;
-        return getId() != null && Objects.equals(getId(), that.getId());
-    }
-
-    @Override
-    public final int hashCode() {
-        return this instanceof HibernateProxy hibernateProxy ?
-            hibernateProxy.getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "(" +
-                "id = " + getId() + ", " +
-                "fileName = " + getFileName() + ", " +
-                "mediaType = " + getMediaType() + ", " +
-                "statementURL = " + getStatementURL() + ")";
-    }
 }
