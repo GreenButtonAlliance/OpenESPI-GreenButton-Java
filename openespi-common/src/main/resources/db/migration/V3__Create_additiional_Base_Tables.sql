@@ -678,6 +678,8 @@ CREATE INDEX idx_phone_number_created ON phone_numbers (created);
 CREATE INDEX idx_phone_number_updated ON phone_numbers (updated);
 
 -- Program Date ID Mappings Table
+-- Per customer.xsd lines 269-283, ProgramDateIdMappings extends IdentifiedObject
+-- and contains embedded ProgramDateIdMapping (lines 1223-1251)
 CREATE TABLE program_date_id_mappings
 (
     id             CHAR(36) PRIMARY KEY ,
@@ -692,15 +694,12 @@ CREATE TABLE program_date_id_mappings
     self_link_href VARCHAR(1024),
     self_link_type VARCHAR(255),
 
-    -- Program date ID mapping specific fields
-    program_date   BIGINT,
-    program_id     VARCHAR(100)
+    -- ProgramDateIdMapping embedded fields (customer.xsd lines 1223-1251)
+    program_date_type VARCHAR(64),
+    code              VARCHAR(64),
+    name              VARCHAR(256),
+    note              VARCHAR(256)
 );
-
-CREATE INDEX idx_program_date_id_mapping_program_date ON program_date_id_mappings (program_date);
-CREATE INDEX idx_program_date_id_mapping_program_id ON program_date_id_mappings (program_id);
-CREATE INDEX idx_program_date_id_mapping_created ON program_date_id_mappings (created);
-CREATE INDEX idx_program_date_id_mapping_updated ON program_date_id_mappings (updated);
 
 -- Related Links Table for Program Date ID Mappings
 CREATE TABLE program_date_id_mapping_related_links

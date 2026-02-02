@@ -19,102 +19,46 @@
 
 package org.greenbuttonalliance.espi.common.dto.customer;
 
-import org.greenbuttonalliance.espi.common.dto.atom.LinkDto;
-
 import jakarta.xml.bind.annotation.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.OffsetDateTime;
-import java.util.List;
+import java.io.Serializable;
 
 /**
- * ProgramDateIdMappings DTO class for JAXB XML marshalling/unmarshalling.
+ * ProgramDateIdMappings DTO for ESPI 4.0 customer.xsd schema compliance.
+ * Per customer.xsd lines 269-283.
  *
- * Represents mappings between program dates and identifiers.
- * Supports Atom protocol XML wrapping.
+ * ProgramDateIdMappings is an ESPI Resource that inherits from IdentifiedObject.
+ *
+ * [extension] Collection of all customer Energy Efficiency programs.
+ * Contains a single embedded ProgramDateIdMapping object with customer energy efficiency
+ * program date mapping information.
+ *
+ * This DTO contains ONLY the 1 XSD element from customer.xsd:
+ * - programDateIdMapping: Single customer energy efficiency program date mapping
+ *
+ * Atom protocol fields (id, published, updated, links) are handled by CustomerAtomEntryDto wrapper.
  */
 @XmlRootElement(name = "ProgramDateIdMappings", namespace = "http://naesb.org/espi/customer")
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "ProgramDateIdMappings", namespace = "http://naesb.org/espi/customer", propOrder = {
-    "published", "updated", "selfLink", "upLink", "relatedLinks",
-    "description", "programId", "programDate", "mappingId", "mappingType",
-    "isActive", "customer"
+    "programDateIdMapping"
 })
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProgramDateIdMappingsDto {
+public class ProgramDateIdMappingsDto implements Serializable {
 
-    @XmlTransient
-    private Long id;
-
-    @XmlAttribute(name = "mRID")
-    private String uuid;
-
-    @XmlElement(name = "published")
-    private OffsetDateTime published;
-
-    @XmlElement(name = "updated")
-    private OffsetDateTime updated;
-
-    @XmlElement(name = "link", namespace = "http://www.w3.org/2005/Atom")
-    @XmlElementWrapper(name = "links", namespace = "http://www.w3.org/2005/Atom")
-    private List<LinkDto> relatedLinks;
-
-    @XmlElement(name = "link", namespace = "http://www.w3.org/2005/Atom")
-    private LinkDto selfLink;
-
-    @XmlElement(name = "link", namespace = "http://www.w3.org/2005/Atom")
-    private LinkDto upLink;
-
-    @XmlElement(name = "description")
-    private String description;
-
-    @XmlElement(name = "programId")
-    private String programId;
-
-    @XmlElement(name = "programDate")
-    private OffsetDateTime programDate;
-
-    @XmlElement(name = "mappingId")
-    private String mappingId;
-
-    @XmlElement(name = "mappingType")
-    private String mappingType;
-
-    @XmlElement(name = "isActive")
-    private Boolean isActive;
-
-    @XmlElement(name = "Customer")
-    private CustomerDto customer;
+    private static final long serialVersionUID = 1L;
 
     /**
-     * Minimal constructor for basic mapping data.
+     * Single customer energy efficiency program date mapping.
+     * Maps to customer.xsd ProgramDateIdMapping element (lines 270-282).
      */
-    public ProgramDateIdMappingsDto(String uuid, String programId, String mappingId) {
-        this(null, uuid, null, null, null, null, null, null,
-             programId, null, mappingId, null, null, null);
-    }
-
-    /**
-     * Gets the self href for this mapping.
-     *
-     * @return self href string
-     */
-    public String getSelfHref() {
-        return selfLink != null ? selfLink.getHref() : null;
-    }
-
-    /**
-     * Gets the up href for this mapping.
-     *
-     * @return up href string
-     */
-    public String getUpHref() {
-        return upLink != null ? upLink.getHref() : null;
-    }
+    @XmlElement(name = "ProgramDateIdMapping", namespace = "http://naesb.org/espi/customer")
+    private ProgramDateIdMappingDto programDateIdMapping;
 }

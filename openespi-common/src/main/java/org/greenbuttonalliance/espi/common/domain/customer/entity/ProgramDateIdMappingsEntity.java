@@ -21,6 +21,7 @@ package org.greenbuttonalliance.espi.common.domain.customer.entity;
 
 import lombok.*;
 import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
+import org.greenbuttonalliance.espi.common.domain.customer.common.ProgramDateIdMapping;
 import org.hibernate.proxy.HibernateProxy;
 
 import jakarta.persistence.*;
@@ -28,8 +29,10 @@ import java.util.Objects;
 
 /**
  * Pure JPA/Hibernate entity for ProgramDateIdMappings without JAXB concerns.
- * 
- * [extension] Collection of all customer Energy Efficiency programs
+ *
+ * [extension] Collection of all customer Energy Efficiency programs.
+ * Per customer.xsd lines 269-283, ProgramDateIdMappings extends IdentifiedObject
+ * and contains a single embedded ProgramDateIdMapping object.
  */
 @Entity
 @Table(name = "program_date_id_mappings")
@@ -46,10 +49,39 @@ import java.util.Objects;
 public class ProgramDateIdMappingsEntity extends IdentifiedObject {
 
     /**
-     * [extension] Program date description
-     * TODO: Create ProgramDateIdMappingEntity and enable this relationship
+     * Single customer energy efficiency program date mapping.
+     * Per customer.xsd, this is the only field in ProgramDateIdMappings beyond IdentifiedObject fields.
      */
-    // @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    // @JoinColumn(name = "program_date_id_mapping_id")
-    // private ProgramDateIdMappingEntity programDateIdMapping;
+    @Embedded
+    private ProgramDateIdMapping programDateIdMapping;
+
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null) return false;
+        Class<?> oEffectiveClass = o instanceof HibernateProxy hibernateProxy ? hibernateProxy.getHibernateLazyInitializer().getPersistentClass() : o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy hibernateProxy ? hibernateProxy.getHibernateLazyInitializer().getPersistentClass() : this.getClass();
+        if (thisEffectiveClass != oEffectiveClass) return false;
+        ProgramDateIdMappingsEntity that = (ProgramDateIdMappingsEntity) o;
+        return getId() != null && Objects.equals(getId(), that.getId());
+    }
+
+    @Override
+    public final int hashCode() {
+        return this instanceof HibernateProxy hibernateProxy ? hibernateProxy.getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(" +
+                "id = " + getId() + ", " +
+                "description = " + getDescription() + ", " +
+                "created = " + getCreated() + ", " +
+                "updated = " + getUpdated() + ", " +
+                "published = " + getPublished() + ", " +
+                "upLink = " + getUpLink() + ", " +
+                "selfLink = " + getSelfLink() + ", " +
+                "programDateIdMapping = " + programDateIdMapping + ", " +
+                "relatedLinks = " + getRelatedLinks() + ")";
+    }
 }
