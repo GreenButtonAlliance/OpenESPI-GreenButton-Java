@@ -86,7 +86,7 @@ class StatementPostgreSQLIntegrationTest extends BaseTestContainersTest {
         // Arrange
         StatementEntity statement = new StatementEntity();
         statement.setDescription("PostgreSQL Statement Test");
-        statement.setIssueDateTime(OffsetDateTime.now());
+        statement.setIssueDateTime(OffsetDateTime.now().truncatedTo(java.time.temporal.ChronoUnit.MICROS));
 
         List<StatementRefEntity> refs = new ArrayList<>();
         StatementRefEntity ref1 = new StatementRefEntity();
@@ -124,7 +124,7 @@ class StatementPostgreSQLIntegrationTest extends BaseTestContainersTest {
 
         StatementEntity statement = new StatementEntity();
         statement.setDescription("Statement for Customer");
-        statement.setIssueDateTime(OffsetDateTime.now());
+        statement.setIssueDateTime(OffsetDateTime.now().truncatedTo(java.time.temporal.ChronoUnit.MICROS));
         statement.setCustomer(savedCustomer);
         statementRepository.save(statement);
 
@@ -179,7 +179,7 @@ class StatementPostgreSQLIntegrationTest extends BaseTestContainersTest {
         // Arrange
         StatementEntity statement = new StatementEntity();
         statement.setDescription("Statement to Delete");
-        statement.setIssueDateTime(OffsetDateTime.now());
+        statement.setIssueDateTime(OffsetDateTime.now().truncatedTo(java.time.temporal.ChronoUnit.MICROS));
 
         List<StatementRefEntity> refs = new ArrayList<>();
         StatementRefEntity ref = new StatementRefEntity();

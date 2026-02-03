@@ -63,7 +63,9 @@ class StatementRepositoryTest extends BaseRepositoryTest {
         // Arrange
         StatementEntity statement = new StatementEntity();
         statement.setDescription("Test Statement");
-        statement.setIssueDateTime(OffsetDateTime.now());
+        // Truncate to microseconds (6 decimal places) for cross-platform compatibility (Windows limit)
+        OffsetDateTime now = OffsetDateTime.now().truncatedTo(java.time.temporal.ChronoUnit.MICROS);
+        statement.setIssueDateTime(now);
 
         // Act
         StatementEntity saved = statementRepository.save(statement);
@@ -75,7 +77,7 @@ class StatementRepositoryTest extends BaseRepositoryTest {
                 .isPresent()
                 .hasValueSatisfying(stmt -> assertThat(stmt)
                         .extracting("description", "issueDateTime")
-                        .containsExactly("Test Statement", saved.getIssueDateTime()));
+                        .containsExactly("Test Statement", now));
     }
 
     @Test
@@ -84,7 +86,7 @@ class StatementRepositoryTest extends BaseRepositoryTest {
         // Arrange
         StatementEntity statement = new StatementEntity();
         statement.setDescription("Statement with Refs");
-        statement.setIssueDateTime(OffsetDateTime.now());
+        statement.setIssueDateTime(OffsetDateTime.now().truncatedTo(java.time.temporal.ChronoUnit.MICROS));
 
         // StatementRef is @Embeddable, stored as @ElementCollection
         List<StatementRefEntity> refs = new ArrayList<>();
@@ -234,7 +236,7 @@ class StatementRepositoryTest extends BaseRepositoryTest {
     private StatementEntity createStatementWithCustomer(CustomerEntity customer) {
         StatementEntity statement = new StatementEntity();
         statement.setDescription("Statement for Customer");
-        statement.setIssueDateTime(OffsetDateTime.now());
+        statement.setIssueDateTime(OffsetDateTime.now().truncatedTo(java.time.temporal.ChronoUnit.MICROS));
         statement.setCustomer(customer);
         return statement;
     }
