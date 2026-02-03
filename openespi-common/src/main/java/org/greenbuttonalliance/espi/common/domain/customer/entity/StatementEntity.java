@@ -56,17 +56,43 @@ public class StatementEntity extends IdentifiedObject {
 
     /**
      * [extension] Contains document reference metadata needed to access a document representation of a billing statement.
+     * StatementRef extends Object (not IdentifiedObject), so stored as @ElementCollection.
      */
-    @OneToMany(mappedBy = "statement", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "statement_refs", joinColumns = @JoinColumn(name = "statement_id"))
     private List<StatementRefEntity> statementRefs;
     
     /**
-     * Customer that owns this statement.
+     * Customer associated with this statement.
      * Many statements can belong to one customer.
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id")
     private CustomerEntity customer;
+
+    /**
+     * Customer account associated with this statement.
+     * Many statements can belong to one customer account.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_account_id")
+    private CustomerAccountEntity customerAccount;
+
+    /**
+     * Customer agreement associated with this statement.
+     * Many statements can belong to one customer agreement.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_agreement_id")
+    private CustomerAgreementEntity customerAgreement;
+
+    /**
+     * Usage summary associated with this statement.
+     * Many statements can belong to one usage summary.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "usage_summary_id")
+    private org.greenbuttonalliance.espi.common.domain.usage.UsageSummaryEntity usageSummary;
 
     @Override
     public final boolean equals(Object o) {
@@ -88,10 +114,13 @@ public class StatementEntity extends IdentifiedObject {
     public String toString() {
         return getClass().getSimpleName() + "(" +
                 "id = " + getId() + ", " +
-                "issueDateTime = " + getIssueDateTime() + ", " +
                 "description = " + getDescription() + ", " +
                 "created = " + getCreated() + ", " +
                 "updated = " + getUpdated() + ", " +
-                "published = " + getPublished() + ")";
+                "published = " + getPublished() + ", " +
+                "upLink = " + getUpLink() + ", " +
+                "selfLink = " + getSelfLink() + ", " +
+                "issueDateTime = " + getIssueDateTime() + ", " +
+                "relatedLinks = " + getRelatedLinks() + ")";
     }
 }

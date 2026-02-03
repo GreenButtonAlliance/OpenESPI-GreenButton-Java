@@ -21,61 +21,56 @@ package org.greenbuttonalliance.espi.common.repositories.customer;
 
 import org.greenbuttonalliance.espi.common.domain.customer.entity.StatementEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
 /**
  * Spring Data JPA repository for Statement entities.
- * 
- * Manages billing statement data with document references and issue dates.
+ *
+ * [extension] Billing statement for provided services.
+ *
+ * Provides standard CRUD operations via JpaRepository and ID-based relationship queries.
+ * Per ESPI 4.0 compliance (Issue #28 Phase 19), non-ID queries removed to prevent
+ * performance issues and ensure consistent API patterns.
  */
 @Repository
 public interface StatementRepository extends JpaRepository<StatementEntity, UUID> {
 
     /**
-     * Find statements issued after specified date.
+     * Find statements by customer ID.
+     * Supports Controller APIs for navigating Statement → Customer relationships.
+     *
+     * @param customerId the customer UUID
+     * @return list of statements for the customer
      */
-    @Query("SELECT s FROM StatementEntity s WHERE s.issueDateTime > :dateTime")
-    List<StatementEntity> findByIssueDateTimeAfter(@Param("dateTime") OffsetDateTime dateTime);
+    List<StatementEntity> findByCustomerId(UUID customerId);
 
     /**
-     * Find statements issued before specified date.
+     * Find statements by customer account ID.
+     * Supports Controller APIs for navigating Statement → CustomerAccount relationships.
+     *
+     * @param customerAccountId the customer account UUID
+     * @return list of statements for the customer account
      */
-    @Query("SELECT s FROM StatementEntity s WHERE s.issueDateTime < :dateTime")
-    List<StatementEntity> findByIssueDateTimeBefore(@Param("dateTime") OffsetDateTime dateTime);
+    List<StatementEntity> findByCustomerAccountId(UUID customerAccountId);
 
     /**
-     * Find statements issued between specified dates.
+     * Find statements by customer agreement ID.
+     * Supports Controller APIs for navigating Statement → CustomerAgreement relationships.
+     *
+     * @param customerAgreementId the customer agreement UUID
+     * @return list of statements for the customer agreement
      */
-    @Query("SELECT s FROM StatementEntity s WHERE s.issueDateTime BETWEEN :startDate AND :endDate")
-    List<StatementEntity> findByIssueDateTimeBetween(@Param("startDate") OffsetDateTime startDate, @Param("endDate") OffsetDateTime endDate);
+    List<StatementEntity> findByCustomerAgreementId(UUID customerAgreementId);
 
     /**
-     * Find statements with document references.
+     * Find statements by usage summary ID.
+     * Supports Controller APIs for navigating Statement → UsageSummary relationships.
+     *
+     * @param usageSummaryId the usage summary UUID
+     * @return list of statements for the usage summary
      */
-    @Query("SELECT s FROM StatementEntity s WHERE SIZE(s.statementRefs) > 0")
-    List<StatementEntity> findStatementsWithReferences();
-
-    /**
-     * Find statements without document references.
-     */
-    @Query("SELECT s FROM StatementEntity s WHERE SIZE(s.statementRefs) = 0")
-    List<StatementEntity> findStatementsWithoutReferences();
-
-    /**
-     * Find statements by description (from IdentifiedObject base class).
-     */
-    @Query("SELECT s FROM StatementEntity s WHERE UPPER(s.description) LIKE UPPER(CONCAT('%', :description, '%'))")
-    List<StatementEntity> findByDescriptionContaining(@Param("description") String description);
-
-    /**
-     * Find recent statements (issued within last N days).
-     */
-    @Query("SELECT s FROM StatementEntity s WHERE s.issueDateTime > :cutoffDate ORDER BY s.issueDateTime DESC")
-    List<StatementEntity> findRecentStatements(@Param("cutoffDate") OffsetDateTime cutoffDate);
+    List<StatementEntity> findByUsageSummaryId(UUID usageSummaryId);
 }

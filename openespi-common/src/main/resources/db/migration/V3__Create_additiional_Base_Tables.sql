@@ -916,19 +916,26 @@ CREATE TABLE statements
     self_link_href          VARCHAR(1024),
     self_link_type          VARCHAR(255),
 
-    -- Statement specific fields
+    -- Statement specific fields (customer.xsd lines 373-393)
+    -- Statement has: issueDateTime, statementRef (collection in statement_refs table)
     issue_date_time         TIMESTAMP,
+
+    -- Foreign keys for bidirectional relationships (JPA navigation for Controller APIs)
     customer_id             CHAR(36),
-    statement_date          BIGINT,
-    billing_period_start    BIGINT,
-    billing_period_duration BIGINT,
-    FOREIGN KEY (customer_id) REFERENCES customers(id)
+    customer_account_id     CHAR(36),
+    customer_agreement_id   CHAR(36),
+    usage_summary_id        CHAR(36),
+    FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL,
+    FOREIGN KEY (customer_account_id) REFERENCES customer_accounts(id) ON DELETE SET NULL,
+    FOREIGN KEY (customer_agreement_id) REFERENCES customer_agreements(id) ON DELETE SET NULL,
+    FOREIGN KEY (usage_summary_id) REFERENCES usage_summaries(id) ON DELETE SET NULL
 );
 
-CREATE INDEX idx_statement_issue_date_time ON statements (issue_date_time);
+-- Indexes for statements table (ID-based per ESPI standard)
 CREATE INDEX idx_statement_customer_id ON statements (customer_id);
-CREATE INDEX idx_statement_statement_date ON statements (statement_date);
-CREATE INDEX idx_statement_billing_period_start ON statements (billing_period_start);
+CREATE INDEX idx_statement_customer_account_id ON statements (customer_account_id);
+CREATE INDEX idx_statement_customer_agreement_id ON statements (customer_agreement_id);
+CREATE INDEX idx_statement_usage_summary_id ON statements (usage_summary_id);
 CREATE INDEX idx_statement_created ON statements (created);
 CREATE INDEX idx_statement_updated ON statements (updated);
 
@@ -944,29 +951,16 @@ CREATE TABLE statement_related_links
 
 CREATE INDEX idx_statement_related_links ON statement_related_links (statement_id);
 
--- Statement Ref Table
+-- Statement Refs Collection Table
+-- StatementRef extends Object (not IdentifiedObject) per customer.xsd lines 285-307
+-- Stored as @ElementCollection in StatementEntity - no id column needed
 CREATE TABLE statement_refs
 (
-    id             CHAR(36) PRIMARY KEY ,
-    description    VARCHAR(255),
-    created        TIMESTAMP,
-    updated        TIMESTAMP,
-    published      TIMESTAMP,
-    up_link_rel    VARCHAR(255),
-    up_link_href   VARCHAR(1024),
-    up_link_type   VARCHAR(255),
-    self_link_rel  VARCHAR(255),
-    self_link_href VARCHAR(1024),
-    self_link_type VARCHAR(255),
-
-    -- Statement ref specific fields
-    file_name      VARCHAR(512),
-    media_type     VARCHAR(256),
-    statement_url  VARCHAR(2048),
-    statement_id   CHAR(36),
-    FOREIGN KEY (statement_id) REFERENCES statements(id)
+    statement_id  CHAR(36) NOT NULL,
+    file_name     VARCHAR(512),
+    media_type    VARCHAR(256),
+    statement_url VARCHAR(2048),
+    FOREIGN KEY (statement_id) REFERENCES statements(id) ON DELETE CASCADE
 );
 
 CREATE INDEX idx_statement_ref_statement_id ON statement_refs (statement_id);
-CREATE INDEX idx_statement_ref_created ON statement_refs (created);
-CREATE INDEX idx_statement_ref_updated ON statement_refs (updated);

@@ -26,16 +26,18 @@ import org.greenbuttonalliance.espi.common.service.customer.StatementService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 /**
  * Service implementation for Statement management.
- * <p>
- * Provides business logic for billing statement operations including bill amounts,
- * due dates, payment tracking, and statement status management.
+ *
+ * [extension] Billing statement for provided services.
+ *
+ * Provides standard CRUD operations and ID-based relationship queries.
+ * Per ESPI 4.0 compliance (Issue #28 Phase 19), non-ID queries removed to prevent
+ * performance issues and ensure consistent API patterns.
  */
 @Service
 @Transactional
@@ -58,86 +60,35 @@ public class StatementServiceImpl implements StatementService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<StatementEntity> findByIssueDateTimeAfter(OffsetDateTime dateTime) {
-        return statementRepository.findByIssueDateTimeAfter(dateTime);
+    public List<StatementEntity> findByCustomerId(UUID customerId) {
+        return statementRepository.findByCustomerId(customerId);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<StatementEntity> findByIssueDateTimeBefore(OffsetDateTime dateTime) {
-        return statementRepository.findByIssueDateTimeBefore(dateTime);
+    public List<StatementEntity> findByCustomerAccountId(UUID customerAccountId) {
+        return statementRepository.findByCustomerAccountId(customerAccountId);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<StatementEntity> findByIssueDateTimeBetween(OffsetDateTime startDate, OffsetDateTime endDate) {
-        return statementRepository.findByIssueDateTimeBetween(startDate, endDate);
+    public List<StatementEntity> findByCustomerAgreementId(UUID customerAgreementId) {
+        return statementRepository.findByCustomerAgreementId(customerAgreementId);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<StatementEntity> findStatementsWithReferences() {
-        return statementRepository.findStatementsWithReferences();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<StatementEntity> findStatementsWithoutReferences() {
-        return statementRepository.findStatementsWithoutReferences();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<StatementEntity> findByDescriptionContaining(String description) {
-        return statementRepository.findByDescriptionContaining(description);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<StatementEntity> findRecentStatements(OffsetDateTime cutoffDate) {
-        return statementRepository.findRecentStatements(cutoffDate);
+    public List<StatementEntity> findByUsageSummaryId(UUID usageSummaryId) {
+        return statementRepository.findByUsageSummaryId(usageSummaryId);
     }
 
     @Override
     public StatementEntity save(StatementEntity statement) {
-        // Generate UUID if not present
-        if (statement.getId() == null) {
-            statement.setId(UUID.randomUUID());
-        }
         return statementRepository.save(statement);
     }
 
     @Override
     public void deleteById(UUID id) {
         statementRepository.deleteById(id);
-    }
-
-    @Override
-    public StatementEntity updateDescription(UUID id, String description) {
-        Optional<StatementEntity> optionalStatement = statementRepository.findById(id);
-        if (optionalStatement.isPresent()) {
-            StatementEntity statement = optionalStatement.get();
-            statement.setDescription(description);
-            return statementRepository.save(statement);
-        }
-        throw new IllegalArgumentException("Statement not found with id: " + id);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public long countStatements() {
-        return statementRepository.count();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public long countStatementsWithReferences() {
-        return statementRepository.findStatementsWithReferences().size();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public long countStatementsWithoutReferences() {
-        return statementRepository.findStatementsWithoutReferences().size();
     }
 }
