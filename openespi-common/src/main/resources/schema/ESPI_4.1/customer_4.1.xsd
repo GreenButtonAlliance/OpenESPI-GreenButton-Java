@@ -794,38 +794,42 @@ Additional Complex Types
 		<xs:annotation>
 			<xs:documentation>[extension] Demand Response program characteristics covered by Customer Agreement</xs:documentation>
 		</xs:annotation>
-		<xs:sequence>
-			<xs:element name="programName" type="String256" minOccurs="0">
-				<xs:annotation>
-					<xs:documentation>Name of Demand Response program</xs:documentation>
-				</xs:annotation>
-			</xs:element>
-			<xs:element name="enrollmentStatus" type="EnrollmentStatus" minOccurs="0">
-				<xs:annotation>
-					<xs:documentation>Retail Customer's current Demand Response program enrollment status</xs:documentation>
-				</xs:annotation>
-			</xs:element>
-			<xs:element name="programDescription" type="xs:anyURI" minOccurs="0">
-				<xs:annotation>
-					<xs:documentation>URI of Demand Response program description</xs:documentation>
-				</xs:annotation>
-			</xs:element>
-			<xs:element name="programDate" type="ProgramDate" minOccurs="0" maxOccurs="unbounded">
-				<xs:annotation>
-					<xs:documentation>All Demand Response program enrollment and termination dates</xs:documentation>
-				</xs:annotation>
-			</xs:element>
-			<xs:element name="capacityReservationLevel" type="SummaryMeasurement" minOccurs="0">
-				<xs:annotation>
-					<xs:documentation>Summary measurement of Capacity Reservation</xs:documentation>
-				</xs:annotation>
-			</xs:element>
-			<xs:element name="DRProgramNomination" type="SummaryMeasurement" minOccurs="0">
-				<xs:annotation>
-					<xs:documentation>Summary measurement of Demand Response</xs:documentation>
-				</xs:annotation>
-			</xs:element>
-		</xs:sequence>
+		<xs:complexContent>
+			<xs:extension base="Object">
+				<xs:sequence>
+					<xs:element name="programName" type="String256" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Name of Demand Response program</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="enrollmentStatus" type="EnrollmentStatus" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Retail Customer's current Demand Response program enrollment status</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="programDescription" type="xs:anyURI" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>URI of Demand Response program description</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="programDate" type="ProgramDate" minOccurs="0" maxOccurs="unbounded">
+						<xs:annotation>
+							<xs:documentation>All Demand Response program enrollment and termination dates</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="capacityReservationLevel" type="SummaryMeasurement" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Summary measurement of Capacity Reservation</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="DRProgramNomination" type="SummaryMeasurement" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Summary measurement of Demand Response</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
 	</xs:complexType>
 	<xs:complexType name="Document">
 		<xs:annotation>

@@ -1,6 +1,6 @@
-# ESPI 4.1 Customer Schema Analysis Report
+# ESPI Customer Schema Analysis Report
 
-**Schema Version:** NAESB REQ.21 ESPI Version 4.1 (Pending Publication)
+**Schema Versions:** NAESB REQ.21 ESPI 4.0 (December 2023) and 4.1 (Pending)
 **Namespace:** `http://naesb.org/espi/customer`
 **Analysis Date:** 2026-02-04
 
@@ -16,7 +16,7 @@
 6. [Complex Types (Resources)](#6-complex-types-resources)
 7. [Complex Types (Supporting)](#7-complex-types-supporting)
 8. [Global Elements](#8-global-elements)
-9. [Changes from ESPI 4.0](#9-changes-from-espi-40)
+9. [ESPI 4.0 → 4.1 Changes](#9-espi-40--41-changes)
 
 ---
 
@@ -31,7 +31,7 @@
 | `Int16` | `xs:short` | Signed 16-bit integer | -32,768 to 32,767 |
 | `Int48` | `xs:long` | Signed 48-bit integer | -140,737,488,355,328 to +140,737,488,355,328 |
 | `TimeType` | `xs:long` | Unix timestamp (seconds since 1970-01-01) | Signed 64-bit |
-| `PerCent` | `xs:integer` | Percentage value | 0 to 100 |
+| `PerCent` | `xs:float` | Percentage value | 0.0 to 100.0 |
 
 ---
 
@@ -43,7 +43,7 @@
 | `String64` | `xs:string` | 64 | Character string of max length 64 |
 | `String256` | `xs:string` | 256 | Character string of max length 256 |
 | `String512` | `xs:string` | 512 | Character string of max length 512 |
-| `name` | `String64` | 64 | Name string (restricted String64) |
+| `name` | `xs:normalizedString` | 64 | Normalized name string with pattern `[\s\S]*` |
 
 ---
 
@@ -72,26 +72,25 @@
 ### 5.1 Status and Operation Enumerations
 
 #### CRUDOperation
-**Base:** `UInt16` (union with numeric values)
+**Base:** `UInt16` (union)
 
 | Value | Name | Description |
 |-------|------|-------------|
-| 0 | Create | Resource was created |
-| 1 | Read | Resource was read |
-| 2 | Update | Resource was updated |
-| 3 | Delete | Resource was deleted |
+| 0 | Create | Create operation |
+| 1 | Read | Read operation |
+| 2 | Update | Update operation |
+| 3 | Delete | Delete operation |
 
 ---
 
 #### EnrollmentStatus
-**Base:** `xs:string` (union with string values)
+**Base:** `xs:string` (union)
 
 | Value | Description |
 |-------|-------------|
 | `unenrolled` | Currently NOT enrolled in the Demand Response program |
 | `enrolled` | Currently enrolled in the Demand Response program |
 | `enrolledPending` | Currently pending enrollment in the Demand Response program |
-| `unenrolledPending` | Currently pending un-enrollment from the Demand Response program |
 
 ---
 
@@ -120,7 +119,7 @@ HTTP-style status codes for ESPI operations.
 ### 5.2 Customer and Service Enumerations
 
 #### CustomerKind
-**Base:** `xs:string` (union with string values)
+**Base:** `xs:string` (union)
 
 | Value | Description |
 |-------|-------------|
@@ -132,26 +131,27 @@ HTTP-style status codes for ESPI operations.
 | `commercialIndustrial` | Commercial or industrial customer |
 | `pumpingLoad` | Pumping load customer |
 | `windMachine` | Wind machine customer |
-| `energyServiceScheduler` | Energy service scheduler customer |
 | `energyServiceSupplier` | Energy service supplier customer |
-| `other` | Other customer type |
-| `internalUse` | Internal use customer |
+| `energyServiceScheduler` | Energy service scheduler customer |
+| `enterprise` | Enterprise customer |
 
 ---
 
 #### SupplierKind
-**Base:** `xs:string` (union with string values)
+**Base:** `xs:string` (union)
 
 | Value | Description |
 |-------|-------------|
-| `utility` | Entity that delivers the service to the customer |
-| `retailer` | Entity that sells the service, but does not deliver to the customer |
-| `other` | Other kind of supplier |
+| `utility` | Traditional utility supplier |
+| `retailer` | Retail energy supplier |
+| `other` | Other supplier type |
+| `lse` | Load serving entity |
+| `mdma` | Meter data management agent |
 
 ---
 
 #### ServiceKind
-**Base:** `xs:string` (union with string values)
+**Base:** `xs:string` (restriction)
 
 | Value | Description |
 |-------|-------------|
@@ -165,22 +165,20 @@ HTTP-style status codes for ESPI operations.
 | `rates` | Rates information |
 | `tvLicence` | TV license service |
 | `internet` | Internet service |
-| `other` | Other service type |
 
 ---
 
 #### RevenueKind
-**Base:** `xs:string` (union with string values)
+**Base:** `xs:string` (union)
 
 | Value | Description |
 |-------|-------------|
-| `nonResidentialSales` | Non-residential sales |
-| `residentialSales` | Residential sales |
-| `industrialSales` | Industrial sales |
-| `otherSales` | Other sales |
-| `streetlightingSales` | Streetlighting sales |
-| `irrigationSales` | Irrigation sales |
-| `transmission` | Transmission |
+| `residential` | Residential revenue |
+| `nonResidential` | Non-residential revenue |
+| `commercial` | Commercial revenue |
+| `industrial` | Industrial revenue |
+| `irrigation` | Irrigation revenue |
+| `streetLight` | Streetlight revenue |
 | `other` | Other revenue type |
 
 ---
@@ -188,14 +186,14 @@ HTTP-style status codes for ESPI operations.
 ### 5.3 Notification and Communication Enumerations
 
 #### NotificationMethodKind
-**Base:** `UInt16` (union with numeric values)
+**Base:** `xs:string` (union)
 
-| Value | Name | Description |
-|-------|------|-------------|
-| 0 | call | Notification via phone call |
-| 1 | email | Notification via email |
-| 2 | letter | Notification via postal letter |
-| 3 | other | Other notification method |
+| Value | Description |
+|-------|-------------|
+| `call` | Contacted by phone by customer service representative |
+| `email` | Trouble reported by email |
+| `letter` | Trouble reported by letter |
+| `other` | Trouble reported by other means |
 
 ---
 
@@ -227,80 +225,210 @@ MIME media types for content negotiation.
 ### 5.4 Program and Date Enumerations
 
 #### ProgramDateKind
-**Base:** `xs:string` (union with string values)
+**Base:** `String64` (union)
 
 | Value | Description |
 |-------|-------------|
-| `enrollment` | Enrollment date |
-| `cancellation` | Cancellation date |
+| `CUST_DR_PROGRAM_ENROLLMENT_DATE` | DR program enrollment date |
+| `CUST_DR_PROGRAM_DE_ENROLLMENT_DATE` | DR program de-enrollment date |
+| `CUST_DR_PROGRAM_TERM_DATE_REGARDLESS_FINANCIAL` | Program termination date regardless of financial |
+| `CUST_DR_PROGRAM_TERM_DATE_WITHOUT_FINANCIAL` | Program termination date without financial |
 
 ---
 
 ### 5.5 Meter and Measurement Enumerations
 
 #### MeterMultiplierKind
-**Base:** `UInt16` (union with numeric values)
+**Base:** `xs:string` (union)
 
-| Value | Name | Description |
-|-------|------|-------------|
-| 0 | kH | Test dial multiplier |
-| 1 | kR | Register multiplier |
-| 2 | kE | Element test multiplier |
-| 3 | ctRatio | Current transformer ratio |
-| 4 | ptRatio | Potential transformer ratio |
-| 5 | transformerRatio | Transformer ratio |
+| Value | Description |
+|-------|-------------|
+| `kH` | Test dial multiplier |
+| `transformerRatio` | Transformer ratio |
+| `kR` | Register multiplier |
+| `kE` | Element test multiplier |
+| `ctRatio` | Current transformer ratio |
 
 ---
 
 #### UnitMultiplierKind
-**Base:** `xs:string` (union with string values)
+**Base:** `Int16` (union)
 
 SI unit multipliers as powers of 10.
 
-| Value | Symbol | Multiplier |
-|-------|--------|------------|
-| `p` | p | 10^-12 (pico) |
-| `n` | n | 10^-9 (nano) |
-| `micro` | µ | 10^-6 (micro) |
-| `m` | m | 10^-3 (milli) |
-| `c` | c | 10^-2 (centi) |
-| `d` | d | 10^-1 (deci) |
-| `none` | (none) | 10^0 = 1 |
-| `da` | da | 10^1 (deca) |
-| `h` | h | 10^2 (hecto) |
-| `k` | k | 10^3 (kilo) |
-| `M` | M | 10^6 (mega) |
-| `G` | G | 10^9 (giga) |
-| `T` | T | 10^12 (tera) |
+| Value | Name | Symbol | Multiplier |
+|-------|------|--------|------------|
+| -12 | pico | p | 10^-12 |
+| -9 | nano | n | 10^-9 |
+| -6 | micro | µ | 10^-6 |
+| -3 | milli | m | 10^-3 |
+| -2 | centi | c | 10^-2 |
+| -1 | deci | d | 10^-1 |
+| 0 | none | (none) | 10^0 = 1 |
+| 1 | deca | da | 10^1 |
+| 2 | hecto | h | 10^2 |
+| 3 | kilo | k | 10^3 |
+| 6 | mega | M | 10^6 |
+| 9 | giga | G | 10^9 |
+| 12 | tera | T | 10^12 |
+| 15 | peta | P | 10^15 |
+| 18 | exa | E | 10^18 |
+| 21 | yotta | Y | 10^21 |
 
 ---
 
 #### UnitSymbolKind
-**Base:** `xs:string` (union with string values)
+**Base:** `UInt16` (union)
 
-Unit of measurement symbols. Includes 100+ unit types such as:
-- SI base units: `A`, `m`, `K`, `mol`, `cd`, `s`
-- Power/Energy: `W`, `VA`, `VAr`, `Wh`, `VAh`, `VArh`
-- Electrical: `V`, `ohm`, `F`, `H`, `S`
-- Frequency: `Hz`, `rad`, `sr`
-- Volume/Flow: `m3`, `ft3`, `litre`, `usGal`
-- Miscellaneous: `none`, `count`, `money`, `status`
+Unit of measurement symbols. Comprehensive list of 100+ unit types.
+
+##### SI Base Units
+| Value | Symbol | Description |
+|-------|--------|-------------|
+| 5 | A | Ampere - Electric current |
+| 2 | m | Meter - Length |
+| 6 | K | Kelvin - Temperature |
+| 7 | mol | Mole - Amount of substance |
+| 8 | cd | Candela - Luminous intensity |
+| 1 | s | Second - Time |
+
+##### Power and Energy
+| Value | Symbol | Description |
+|-------|--------|-------------|
+| 38 | W | Watt - Real power |
+| 61 | VA | Volt-ampere - Apparent power |
+| 63 | VAr | Volt-ampere reactive - Reactive power |
+| 64 | Varh | Volt-ampere-reactive hour - Reactive energy |
+| 72 | Wh | Watt-hour - Real energy |
+| 71 | VAh | Volt-ampere-hour - Apparent energy |
+| 132 | btu | BTU - British Thermal Units |
+| 133 | btuPerH | BTU/h - BTU per hour |
+| 169 | therm | Therm - Energy |
+
+##### Electrical
+| Value | Symbol | Description |
+|-------|--------|-------------|
+| 29 | V | Volt - Electric potential |
+| 30 | ohm | Ohm - Resistance |
+| 31 | F | Farad - Capacitance |
+| 32 | H | Henry - Inductance |
+| 33 | S | Siemens - Conductance |
+| 69 | A2 | Ampere squared |
+| 105 | A2h | Ampere-squared hour |
+| 106 | Ah | Ampere-hour |
+| 67 | V2 | Volt squared |
+| 104 | V2h | Volt-squared hour |
+
+##### Frequency and Angular
+| Value | Symbol | Description |
+|-------|--------|-------------|
+| 27 | Hz | Hertz - Frequency |
+| 10 | rad | Radian - Plane angle |
+| 11 | sr | Steradian - Solid angle |
+| 54 | radPerSec | Radians per second - Angular velocity |
+| 75 | HzPerSec | Hertz per second - Rate of change of frequency |
+| 154 | rev | Revolutions |
+| 4 | revPerSec | Revolutions per second |
+
+##### Force, Pressure, and Mass
+| Value | Symbol | Description |
+|-------|--------|-------------|
+| 3 | kg | Kilogram - Mass |
+| 25 | N | Newton - Force |
+| 26 | Pa | Pascal - Pressure |
+| 140 | paG | Pascal gauge pressure |
+| 155 | paA | Pascal absolute pressure |
+| 141 | psiA | PSI absolute |
+| 142 | psiG | PSI gauge |
+| 23 | J | Joule - Energy/Work |
+| 165 | jPerKg | Joules per kilogram |
+
+##### Volume and Flow
+| Value | Symbol | Description |
+|-------|--------|-------------|
+| 41 | m2 | Square meter - Area |
+| 42 | m3 | Cubic meter - Volume |
+| 119 | ft3 | Cubic feet |
+| 120 | ft3compensated | Cubic feet compensated |
+| 128 | usGal | US gallons |
+| 130 | imperialGal | Imperial gallons |
+| 134 | litre | Litre |
+| 156 | litreUncompensated | Litre uncompensated |
+| 157 | litreCompensated | Litre compensated |
+| 45 | m3PerSec | Cubic meters per second |
+| 125 | m3PerH | Cubic meters per hour |
+| 82 | litrePerSec | Litres per second |
+| 137 | litrePerH | Litres per hour |
+
+##### Power Factor and Ratios
+| Value | Symbol | Description |
+|-------|--------|-------------|
+| 65 | cosTheta | Power factor (cos θ) |
+| 153 | WPerVA | Power factor (W/VA) |
+| 148 | mPerM | Ratio of length |
+| 150 | HzPerHz | Ratio of frequency |
+| 151 | VPerV | Ratio of voltages |
+| 152 | APerA | Ratio of current |
+| 168 | WPerW | Ratio of power |
+
+##### Temperature and Thermal
+| Value | Symbol | Description |
+|-------|--------|-------------|
+| 23 | degC | Degree Celsius |
+| 50 | wPerMK | Thermal conductivity (W/m·K) |
+| 51 | jPerK | Heat capacity (J/K) |
+
+##### Magnetic
+| Value | Symbol | Description |
+|-------|--------|-------------|
+| 36 | wb | Weber - Magnetic flux |
+| 37 | t | Tesla - Magnetic flux density |
+
+##### Miscellaneous
+| Value | Symbol | Description |
+|-------|--------|-------------|
+| 0 | none | Not applicable |
+| 76 | char | Characters |
+| 77 | charPerSec | Characters per second |
+| 80 | money | Generic monetary unit |
+| 108 | timeStamp | ISO 8601 timestamp |
+| 109 | status | Status (boolean-like) |
+| 111 | count | Counter value |
+| 114 | code | Encoded application value |
+| 118 | meCode | EndDeviceEventCode |
+
+##### Metering Constants
+| Value | Symbol | Description |
+|-------|--------|-------------|
+| 115 | WhPerRev | Active energy metering constant |
+| 116 | VArhPerRev | Reactive energy metering constant |
+| 117 | VAhPerRev | Apparent energy metering constant |
+| 107 | WhPerM3 | Energy per volume |
 
 ---
 
 #### Currency
-**Base:** `xs:string` (union with string values)
+**Base:** `UInt16` (union)
 
-ISO 4217 currency codes (alphabetic). Examples:
+ISO 4217 currency codes (numeric). Selected common values:
 
-| Value | Description |
-|-------|-------------|
-| `AUD` | Australian Dollar |
-| `CAD` | Canadian Dollar |
-| `EUR` | Euro |
-| `GBP` | British Pound Sterling |
-| `JPY` | Japanese Yen |
-| `USD` | United States Dollar |
+| Value | Code | Description |
+|-------|------|-------------|
+| 36 | AUD | Australian Dollar |
+| 124 | CAD | Canadian Dollar |
+| 156 | CNY | Chinese Yuan |
+| 208 | DKK | Danish Krone |
+| 978 | EUR | Euro |
+| 826 | GBP | British Pound Sterling |
+| 344 | HKD | Hong Kong Dollar |
+| 356 | INR | Indian Rupee |
+| 392 | JPY | Japanese Yen |
+| 484 | MXN | Mexican Peso |
+| 578 | NOK | Norwegian Krone |
+| 554 | NZD | New Zealand Dollar |
+| 752 | SEK | Swedish Krona |
+| 756 | CHF | Swiss Franc |
+| 840 | USD | United States Dollar |
 
 ---
 
@@ -309,165 +437,157 @@ ISO 4217 currency codes (alphabetic). Examples:
 ### 6.1 Core Resource Types
 
 #### Customer
-**Extends:** `IdentifiedObject`
+**Extends:** `Organisation`
 
 Organization receiving services from a utility.
 
 | Element | Type | Occurrence | Description |
 |---------|------|------------|-------------|
-| organisation | Organisation | 0..1 | Customer's contact information |
 | kind | CustomerKind | 0..1 | Type of customer |
 | specialNeed | String256 | 0..1 | Special needs of customer |
 | vip | xs:boolean | 0..1 | VIP status flag |
 | pucNumber | String256 | 0..1 | Public utility commission number |
 | status | Status | 0..1 | Customer status |
-| priority | Priority | 0..1 | Customer priority |
-| locale | String256 | 0..1 | Customer locale |
-| **customerName** | String256 | 0..1 | Customer name *(New in 4.1)* |
+| locale | String32 | 0..1 | Customer locale |
 
 ---
 
 #### CustomerAccount
-**Extends:** `IdentifiedObject`
+**Extends:** `Document`
 
 Assignment of a group of products and services purchased by a customer.
 
 | Element | Type | Occurrence | Description |
 |---------|------|------------|-------------|
-| document | Document | 0..1 | Basic account information |
-| billingCycle | String256 | 0..1 | Billing cycle designation |
-| budgetBill | String256 | 0..1 | Budget billing program code |
+| accountId | String64 | 0..1 | Legacy account identifier |
+| billingCycle | String32 | 0..1 | Billing cycle designation |
+| budgetBill | String32 | 0..1 | Budget billing program code |
 | lastBillAmount | Int48 | 0..1 | Amount of last bill in cents |
+| contactInfo | String512 | 0..1 | Contact information |
 | notifications | AccountNotification | 0..* | Account notifications |
-| contactInfo | Organisation | 0..1 | Contact information |
-| **accountId** | String256 | 0..1 | Account identifier *(New in 4.1)* |
 
 ---
 
 #### CustomerAgreement
-**Extends:** `IdentifiedObject`
+**Extends:** `Agreement`
 
 Agreement between customer and service supplier for services.
 
 | Element | Type | Occurrence | Description |
 |---------|------|------------|-------------|
-| agreement | Agreement | 0..1 | Formal agreement details |
 | loadMgmt | String256 | 0..1 | Load management code |
 | isPrePay | xs:boolean | 0..1 | Prepay customer flag |
 | shutOffDateTime | TimeType | 0..1 | Scheduled shutoff date/time |
-| DemandResponseProgram | DemandResponseProgram | 0..* | Demand response programs |
-| PricingStructures | PricingStructure | 0..* | Pricing structures |
-| currency | Currency | 0..1 | Currency for monetary amounts |
-| futureStatus | Status | 0..* | Future status changes |
-| **agreementId** | String256 | 0..1 | Agreement identifier *(New in 4.1)* |
+| demandResponseProgram | DemandResponseProgram | 0..* | Demand response programs |
+| pricingStructure | PricingStructure | 0..* | Pricing structures |
+| status | Status | 0..1 | Agreement status |
 
 ---
 
 #### ServiceSupplier
-**Extends:** `IdentifiedObject`
+**Extends:** `Organisation`
 
 Organization that provides services to customers.
 
 | Element | Type | Occurrence | Description |
 |---------|------|------------|-------------|
-| organisation | Organisation | 0..1 | Supplier's contact information |
 | kind | SupplierKind | 0..1 | Type of supplier |
-| issuerIdentificationNumber | String256 | 0..1 | IIN for payment cards |
+| issuerIdentificationNumber | String64 | 0..1 | IIN for payment cards |
 | effectiveDate | TimeType | 0..1 | Date supplier became effective |
 
 ---
 
 #### ServiceLocation
-**Extends:** `IdentifiedObject`
+**Extends:** `WorkLocation`
 
 Location of a customer's meter or service point.
 
 | Element | Type | Occurrence | Description |
 |---------|------|------------|-------------|
-| location | Location | 0..1 | Location details |
 | accessMethod | String256 | 0..1 | Method to access location |
-| siteAccessProblem | String256 | 0..1 | Access problem description |
 | needsInspection | xs:boolean | 0..1 | Inspection needed flag |
-| UsagePoints | UsagePoints | 0..* | Associated usage points |
-| **outageBlock** | String32 | 0..1 | Outage block identifier *(New in 4.1)* |
+| siteAccessProblem | String256 | 0..1 | Access problem description |
+| usagePoint | UsagePoint | 0..* | Associated usage points |
 
 ---
 
 ### 6.2 Device and Meter Types
 
 #### EndDevice
-**Extends:** `IdentifiedObject`
+**Extends:** `AssetContainer`
 
 Asset that performs end device functions (metering, load control).
 
 | Element | Type | Occurrence | Description |
 |---------|------|------------|-------------|
-| asset | Asset | 0..1 | Asset information |
-| isVirtual | xs:boolean | 0..1 | Virtual device flag |
-| isPan | xs:boolean | 0..1 | Part of PAN flag |
-| installCode | String256 | 0..1 | Installation code |
 | amrSystem | String256 | 0..1 | AMR system identifier |
+| installCode | String256 | 0..1 | Installation code |
+| isPan | xs:boolean | 0..1 | Part of PAN flag |
+| isSmartInverter | xs:boolean | 0..1 | Smart inverter flag |
+| isVirtual | xs:boolean | 0..1 | Virtual device flag |
+| timeZoneOffset | Int16 | 0..1 | Timezone offset in minutes |
 
 ---
 
 #### Meter
-**Extends:** `IdentifiedObject`
+**Extends:** `EndDevice`
 
 Physical meter device with associated multipliers.
 
 | Element | Type | Occurrence | Description |
 |---------|------|------------|-------------|
-| endDevice | EndDevice | 0..1 | End device information |
 | formNumber | String256 | 0..1 | Meter form number |
-| MeterMultipliers | MeterMultiplier | 0..* | Meter multipliers |
-| **intervalLength** | UInt32 | 0..1 | Interval length in seconds *(New in 4.1)* |
+| meterMultipliers | MeterMultiplier | 0..* | Meter multipliers |
 
 ---
 
 ### 6.3 Program and Billing Types
 
 #### DemandResponseProgram
-**Type:** Complex (not extending IdentifiedObject)
+**Extends:** `IdentifiedObject`
 
 Demand response program that customers can enroll in.
 
 | Element | Type | Occurrence | Description |
 |---------|------|------------|-------------|
+| availabilityDate | DateTimeInterval | 0..1 | Availability period |
 | programName | String256 | 0..1 | Program name |
+| programDescription | String512 | 0..1 | Program description |
 | enrollmentStatus | EnrollmentStatus | 0..1 | Enrollment status |
-| programDescription | xs:anyURI | 0..1 | URI of program description |
-| programDate | ProgramDate | 0..* | Program dates |
 | capacityReservationLevel | SummaryMeasurement | 0..1 | Reserved capacity |
-| DRProgramNomination | SummaryMeasurement | 0..1 | DR nomination |
+| DRProgramMandatoryLevel | SummaryMeasurement | 0..1 | Mandatory participation level |
+| programDates | ProgramDate | 0..* | Program dates |
 
 ---
 
 #### PricingStructure
-**Extends:** `IdentifiedObject`
+**Extends:** `Document`
 
 Pricing structure for services.
 
 | Element | Type | Occurrence | Description |
 |---------|------|------------|-------------|
-| document | Document | 0..1 | Document information |
+| code | String32 | 0..1 | Pricing code |
 | revenueKind | RevenueKind | 0..1 | Revenue type |
-| code | String256 | 0..1 | Pricing code |
+| taxExemption | xs:boolean | 0..1 | Tax exemption flag |
+| dailyFloorUsage | Int48 | 0..1 | Daily floor usage |
 | dailyCeilingUsage | Int48 | 0..1 | Daily ceiling usage |
 | dailyEstimatedUsage | Int48 | 0..1 | Daily estimated usage |
-| dailyFloorUsage | Int48 | 0..1 | Daily floor usage |
-| taxExemption | xs:boolean | 0..1 | Tax exemption flag |
 
 ---
 
 #### Statement
-**Extends:** `IdentifiedObject`
+**Extends:** `Document`
 
 Billing statement for a customer account.
 
 | Element | Type | Occurrence | Description |
 |---------|------|------------|-------------|
-| issueDateTime | TimeType | 0..1 | Statement issue date/time |
-| statementRef | StatementRef | 0..* | Statement references |
+| statementDate | TimeType | 0..1 | Statement date |
+| dueDate | TimeType | 0..1 | Payment due date |
+| amountDue | Int48 | 0..1 | Amount due in cents |
+| previousBalance | Int48 | 0..1 | Previous balance |
+| currentBalance | Int48 | 0..1 | Current balance |
 
 ---
 
@@ -478,7 +598,7 @@ Container for program date ID mappings.
 
 | Element | Type | Occurrence | Description |
 |---------|------|------------|-------------|
-| programDateIdMapping | ProgramDateIdMapping | 0..1 | Individual mapping |
+| programDateIdMapping | ProgramDateIdMapping | 0..* | Individual mappings |
 
 ---
 
@@ -492,9 +612,36 @@ Time zone and DST configuration (also known as LocalTimeParameters).
 | Element | Type | Occurrence | Description |
 |---------|------|------------|-------------|
 | dstEndRule | DstRuleType | 1 | DST end rule (hex encoded) |
-| dstOffset | TimeType | 1 | DST offset in seconds |
+| dstOffset | Int48 | 1 | DST offset in seconds |
 | dstStartRule | DstRuleType | 1 | DST start rule (hex encoded) |
-| tzOffset | TimeType | 1 | Timezone offset in seconds |
+| tzOffset | Int48 | 1 | Timezone offset in seconds |
+
+---
+
+### 6.5 Usage Point Types
+
+#### UsagePoint
+**Extends:** `IdentifiedObject`
+
+Logical point on the network for measurement (reference to usage.xsd).
+
+| Element | Type | Occurrence | Description |
+|---------|------|------------|-------------|
+| roleFlags | HexBinary16 | 0..1 | Role flags |
+| serviceCategory | ServiceKind | 0..1 | Service category |
+| status | UInt16 | 0..1 | Status |
+| ServiceDeliveryPoint | ServiceDeliveryPoint | 0..1 | Service delivery point |
+
+---
+
+#### UsagePoints
+**Type:** Complex (list container)
+
+Container for multiple usage points.
+
+| Element | Type | Occurrence | Description |
+|---------|------|------------|-------------|
+| usagePoint | UsagePoint | 0..* | List of usage points |
 
 ---
 
@@ -507,7 +654,7 @@ Base type for all ESPI objects.
 
 | Element | Type | Occurrence | Description |
 |---------|------|------------|-------------|
-| (empty) | | | Base object with no elements |
+| extension | String512 | 0..1 | Extension data |
 
 ---
 
@@ -518,29 +665,19 @@ Base type for identified resources.
 
 | Element | Type | Occurrence | Description |
 |---------|------|------------|-------------|
-| batchItemInfo | BatchItemInfo | 0..1 | Batch processing info |
-| name | name | 0..1 | Object name (deprecated) |
+| description | String512 | 0..1 | Description |
 
 ---
 
 #### Document
-**Extends:** `Object`
+**Extends:** `IdentifiedObject`
 
 Parent type for document resources.
 
 | Element | Type | Occurrence | Description |
 |---------|------|------------|-------------|
-| type | String256 | 0..1 | Document type |
-| authorName | String256 | 0..1 | Author name |
 | createdDateTime | TimeType | 0..1 | Creation timestamp |
 | lastModifiedDateTime | TimeType | 0..1 | Last modification timestamp |
-| revisionNumber | String256 | 0..1 | Revision number |
-| electronicAddress | ElectronicAddress | 0..1 | Electronic address |
-| subject | String256 | 0..1 | Document subject |
-| title | String256 | 0..1 | Document title |
-| docStatus | Status | 0..1 | Document status |
-| status | Status | 0..1 | Subject matter status |
-| comment | String256 | 0..1 | Free text comment |
 
 ---
 
@@ -559,51 +696,64 @@ Formal agreement for services.
 ### 7.2 Organisation Types
 
 #### Organisation
-**Extends:** `Object`
+**Extends:** `IdentifiedObject`
 
 Organization participating in the utility domain.
 
 | Element | Type | Occurrence | Description |
 |---------|------|------------|-------------|
-| names | name | 0..* | Organization names |
-| streetAddress | StreetAddress | 0..1 | Street address |
-| postalAddress | StreetAddress | 0..1 | Postal address |
 | phone1 | TelephoneNumber | 0..1 | Primary phone |
 | phone2 | TelephoneNumber | 0..1 | Secondary phone |
+| streetAddress | StreetAddress | 0..1 | Street address |
+| postalAddress | StreetAddress | 0..1 | Postal address |
 | electronicAddress | ElectronicAddress | 0..1 | Electronic address |
+
+---
+
+#### OrganisationRole
+**Extends:** `IdentifiedObject`
+
+Role played by an organization.
+
+| Element | Type | Occurrence | Description |
+|---------|------|------------|-------------|
+| organisation | Organisation | 0..1 | Associated organization |
 
 ---
 
 ### 7.3 Asset Types
 
 #### Asset
-**Extends:** `Object`
+**Extends:** `IdentifiedObject`
 
 Physical asset owned by an organization.
 
 | Element | Type | Occurrence | Description |
 |---------|------|------------|-------------|
-| type | String256 | 0..1 | Asset type |
 | utcNumber | String256 | 0..1 | UTC asset number |
 | serialNumber | String256 | 0..1 | Serial number |
 | lotNumber | String256 | 0..1 | Lot number |
 | purchasePrice | Int48 | 0..1 | Purchase price in cents |
-| critical | xs:boolean | 0..1 | Critical asset flag |
-| electronicAddress | ElectronicAddress | 0..1 | Electronic address |
 | lifecycle | LifecycleDate | 0..1 | Lifecycle dates |
 | acceptanceTest | AcceptanceTest | 0..1 | Acceptance test data |
-| initialCondition | String256 | 0..1 | Initial condition |
-| initialLossOfLife | PerCent | 0..1 | Initial loss of life |
-| status | Status | 0..1 | Asset status |
 
-**Note:** `AssetContainer` type is commented out in 4.1.
+---
+
+#### AssetContainer
+**Extends:** `Asset`
+
+Asset that contains other assets.
+
+| Element | Type | Occurrence | Description |
+|---------|------|------------|-------------|
+| (inherits from Asset) | | | |
 
 ---
 
 ### 7.4 Location Types
 
 #### Location
-**Extends:** `Object`
+**Extends:** `IdentifiedObject`
 
 Geographic location.
 
@@ -611,103 +761,322 @@ Geographic location.
 |---------|------|------------|-------------|
 | type | String256 | 0..1 | Location type |
 | mainAddress | StreetAddress | 0..1 | Main address |
-| secondaryAddress | StreetAddress | 0..1 | Secondary address |
 | phone1 | TelephoneNumber | 0..1 | Primary phone |
 | phone2 | TelephoneNumber | 0..1 | Secondary phone |
+| secondaryAddress | StreetAddress | 0..1 | Secondary address |
 | electronicAddress | ElectronicAddress | 0..1 | Electronic address |
-| status | Status | 0..1 | Location status |
-| PositionPoints | PositionPoint | 0..* | Geographic coordinates |
 | geoInfoReference | String256 | 0..1 | GIS reference |
 | direction | String256 | 0..1 | Directions |
-
-**Note:** `WorkLocation` type is commented out in 4.1.
+| status | Status | 0..1 | Location status |
+| positionPoints | PositionPoint | 0..* | Geographic coordinates |
 
 ---
 
-### 7.5 Other Supporting Types
+#### WorkLocation
+**Extends:** `Location`
 
-*(DateTimeInterval, Status, Priority, MeterMultiplier, AcceptanceTest, LifecycleDate, SummaryMeasurement, AccountNotification, ProgramDate, ProgramDateIdMapping, BatchItemInfo, BatchListType, StatementRef, StreetAddress, StreetDetail, TownDetail, TelephoneNumber, ElectronicAddress, PositionPoint, UsagePoint, UsagePoints)*
+Location for work purposes.
 
-These types remain consistent with ESPI 4.0 - see full schema for details.
+| Element | Type | Occurrence | Description |
+|---------|------|------------|-------------|
+| oneCallContact | String256 | 0..1 | One-call contact info |
+
+---
+
+#### PositionPoint
+Geographic coordinate point.
+
+| Element | Type | Occurrence | Description |
+|---------|------|------------|-------------|
+| xPosition | String32 | 0..1 | X coordinate (longitude) |
+| yPosition | String32 | 0..1 | Y coordinate (latitude) |
+| zPosition | String32 | 0..1 | Z coordinate (elevation) |
+
+---
+
+### 7.5 Address Types
+
+#### StreetAddress
+Postal street address.
+
+| Element | Type | Occurrence | Description |
+|---------|------|------------|-------------|
+| streetDetail | StreetDetail | 0..1 | Street details |
+| townDetail | TownDetail | 0..1 | Town details |
+| poBox | String256 | 0..1 | PO Box number |
+| postalCode | String256 | 0..1 | Postal code |
+| status | Status | 0..1 | Address status |
+
+---
+
+#### StreetDetail
+Street address details.
+
+| Element | Type | Occurrence | Description |
+|---------|------|------------|-------------|
+| addressGeneral | String256 | 0..1 | General address |
+| addressGeneral2 | String256 | 0..1 | Additional address |
+| addressGeneral3 | String256 | 0..1 | Additional address |
+| buildingName | String256 | 0..1 | Building name |
+| code | String64 | 0..1 | Street code |
+| name | String256 | 0..1 | Street name |
+| number | String64 | 0..1 | Street number |
+| prefix | String64 | 0..1 | Street prefix |
+| suffix | String64 | 0..1 | Street suffix |
+| suiteNumber | String64 | 0..1 | Suite number |
+| type | String64 | 0..1 | Street type |
+| withinTownLimits | xs:boolean | 0..1 | Within town limits flag |
+| floorIdentification | String32 | 0..1 | Floor identifier |
+
+---
+
+#### TownDetail
+Town/city address details.
+
+| Element | Type | Occurrence | Description |
+|---------|------|------------|-------------|
+| code | String64 | 0..1 | Town code |
+| country | String256 | 0..1 | Country |
+| name | String256 | 0..1 | Town name |
+| section | String256 | 0..1 | Town section |
+| stateOrProvince | String256 | 0..1 | State or province |
+
+---
+
+### 7.6 Contact Types
+
+#### TelephoneNumber
+Telephone contact information.
+
+| Element | Type | Occurrence | Description |
+|---------|------|------------|-------------|
+| areaCode | String32 | 0..1 | Area code |
+| cityCode | String32 | 0..1 | City code |
+| countryCode | String32 | 0..1 | Country code |
+| extension | String32 | 0..1 | Extension |
+| localNumber | String32 | 0..1 | Local number |
+| dialOut | String32 | 0..1 | Dial-out prefix |
+| ituPhone | String32 | 0..1 | ITU phone number |
+| internationalPrefix | String32 | 0..1 | International prefix |
+
+---
+
+#### ElectronicAddress
+Electronic contact information.
+
+| Element | Type | Occurrence | Description |
+|---------|------|------------|-------------|
+| email1 | String256 | 0..1 | Primary email |
+| email2 | String256 | 0..1 | Secondary email |
+| lan | String256 | 0..1 | LAN address |
+| mac | String256 | 0..1 | MAC address |
+| radio | String256 | 0..1 | Radio address |
+| userID | String256 | 0..1 | User ID |
+| web | String256 | 0..1 | Web address |
+| password | String256 | 0..1 | Password |
+
+---
+
+### 7.7 Other Supporting Types
+
+#### DateTimeInterval
+Time interval with start and end.
+
+| Element | Type | Occurrence | Description |
+|---------|------|------------|-------------|
+| start | TimeType | 0..1 | Start time |
+| end | TimeType | 0..1 | End time |
+| duration | UInt32 | 0..1 | Duration in seconds |
+
+---
+
+#### Status
+General status information.
+
+| Element | Type | Occurrence | Description |
+|---------|------|------------|-------------|
+| value | String256 | 0..1 | Status value |
+| dateTime | TimeType | 0..1 | Status timestamp |
+| reason | String256 | 0..1 | Status reason |
+| remark | String512 | 0..1 | Additional remarks |
+
+---
+
+#### Priority
+Priority information.
+
+| Element | Type | Occurrence | Description |
+|---------|------|------------|-------------|
+| justification | String512 | 0..1 | Priority justification |
+| rank | UInt32 | 0..1 | Priority rank |
+| type | String64 | 0..1 | Priority type |
+
+---
+
+#### MeterMultiplier
+Meter multiplier values.
+
+| Element | Type | Occurrence | Description |
+|---------|------|------------|-------------|
+| kind | MeterMultiplierKind | 0..1 | Multiplier type |
+| value | xs:float | 0..1 | Multiplier value |
+
+---
+
+#### AcceptanceTest
+Asset acceptance test data.
+
+| Element | Type | Occurrence | Description |
+|---------|------|------------|-------------|
+| dateTime | TimeType | 0..1 | Test date/time |
+| success | xs:boolean | 0..1 | Test success flag |
+| type | String256 | 0..1 | Test type |
+
+---
+
+#### LifecycleDate
+Asset lifecycle dates.
+
+| Element | Type | Occurrence | Description |
+|---------|------|------------|-------------|
+| installationDate | TimeType | 0..1 | Installation date |
+| manufacturedDate | TimeType | 0..1 | Manufacture date |
+| purchaseDate | TimeType | 0..1 | Purchase date |
+| receivedDate | TimeType | 0..1 | Received date |
+| removalDate | TimeType | 0..1 | Removal date |
+| retiredDate | TimeType | 0..1 | Retirement date |
+
+---
+
+#### SummaryMeasurement
+Summary measurement value.
+
+| Element | Type | Occurrence | Description |
+|---------|------|------------|-------------|
+| value | Int48 | 0..1 | Measurement value |
+| powerOfTenMultiplier | UnitMultiplierKind | 0..1 | Power of 10 multiplier |
+| uom | UnitSymbolKind | 0..1 | Unit of measure |
+
+---
+
+#### AccountNotification
+Account notification record.
+
+| Element | Type | Occurrence | Description |
+|---------|------|------------|-------------|
+| methodKind | NotificationMethodKind | 0..1 | Notification method |
+| note | String512 | 0..1 | Notification content |
+| time | TimeType | 0..1 | Notification time |
+| customerNotificationKind | String256 | 0..1 | Customer notification type |
+
+---
+
+#### ProgramDate
+Date associated with a program.
+
+| Element | Type | Occurrence | Description |
+|---------|------|------------|-------------|
+| programDateKind | ProgramDateKind | 0..1 | Date type |
+| date | TimeType | 0..1 | Date value |
+
+---
+
+#### ProgramDateIdMapping
+Mapping of program date to identifier.
+
+| Element | Type | Occurrence | Description |
+|---------|------|------------|-------------|
+| programDate | ProgramDate | 0..1 | Program date |
+| id | String256 | 0..1 | Identifier |
+| programDescription | String512 | 0..1 | Program description |
+
+---
+
+#### BatchItemInfo
+Batch operation item information.
+
+| Element | Type | Occurrence | Description |
+|---------|------|------------|-------------|
+| name | String256 | 0..1 | Item name |
+| operation | CRUDOperation | 0..1 | CRUD operation |
+| statusCode | StatusCode | 0..1 | Status code |
+| statusReason | String512 | 0..1 | Status reason |
+
+---
+
+#### BatchListType
+List of batch items.
+
+| Element | Type | Occurrence | Description |
+|---------|------|------------|-------------|
+| resource | String512 | 0..* | Resource URIs |
+
+---
+
+#### StatementRef
+Reference to a statement.
+
+| Element | Type | Occurrence | Description |
+|---------|------|------------|-------------|
+| href | String512 | 0..1 | Statement reference URI |
 
 ---
 
 ## 8. Global Elements
 
-The customer_4.1.xsd schema defines global elements for all resource and supporting types.
+The customer.xsd schema defines 45 global elements:
 
 ### Resource Elements
-- Customer, CustomerAccount, CustomerAgreement
-- EndDevice, Meter
-- ServiceLocation, ServiceSupplier
-- Statement, ProgramDateIdMappings
-- PricingStructure, DemandResponseProgram
-- TimeConfiguration, LocalTimeParameters
-- UsagePoint, UsagePoints
+| Element | Type | Description |
+|---------|------|-------------|
+| Customer | Customer | Customer resource |
+| CustomerAccount | CustomerAccount | Customer account resource |
+| CustomerAgreement | CustomerAgreement | Customer agreement resource |
+| EndDevice | EndDevice | End device resource |
+| Meter | Meter | Meter device resource |
+| ServiceLocation | ServiceLocation | Service location resource |
+| ServiceSupplier | ServiceSupplier | Service supplier resource |
+| Statement | Statement | Billing statement resource |
+| ProgramDateIdMappings | ProgramDateIdMappings | Program date mappings resource |
+| DemandResponseProgram | DemandResponseProgram | DR program resource |
+| PricingStructure | PricingStructure | Pricing structure resource |
+| UsagePoint | UsagePoint | Usage point resource |
+| UsagePoints | UsagePoints | Usage points list |
+| TimeConfiguration | TimeConfiguration | Time configuration |
+| LocalTimeParameters | TimeConfiguration | Local time parameters (alias) |
 
 ### Supporting Type Elements
-- AcceptanceTest, AccountNotification, Agreement, Asset
-- BatchItemInfo, BatchList, DateTimeInterval, Document
-- ElectronicAddress, IdentifiedObject, LifecycleDate, Location
-- MeterMultiplier, Object, Organisation, PositionPoint
-- Priority, ProgramDate, ProgramDateIdMapping, Status
-- StatementRef, StreetAddress, StreetDetail, SummaryMeasurement
-- TelephoneNumber, TownDetail
-
-### Elements Commented Out in 4.1
-- `AssetContainer`
-- `OrganisationRole`
-- `WorkLocation`
-
----
-
-## 9. Changes from ESPI 4.0
-
-### 9.1 New Fields Added
-
-| Resource | New Field | Type | Description |
-|----------|-----------|------|-------------|
-| Customer | customerName | String256 | Customer name |
-| CustomerAccount | accountId | String256 | Account identifier |
-| CustomerAgreement | agreementId | String256 | Agreement identifier |
-| Meter | intervalLength | UInt32 | Interval length in seconds |
-| ServiceLocation | outageBlock | String32 | Outage block identifier |
-
-### 9.2 Types Commented Out/Removed
-
-| Type | Status | Impact |
-|------|--------|--------|
-| AssetContainer | Commented out | EndDevice uses Asset composition instead |
-| OrganisationRole | Commented out | No longer used |
-| WorkLocation | Commented out | ServiceLocation uses Location composition instead |
-
-### 9.3 Structural Changes
-
-| Resource | Change |
-|----------|--------|
-| EndDevice | Now contains `Asset` element instead of extending AssetContainer |
-| ServiceLocation | Now contains `Location` element instead of extending WorkLocation |
-| Customer | Now contains `Organisation` element for contact info |
-| CustomerAccount | Now contains `Document` element for basic info |
-| CustomerAgreement | Now contains `Agreement` element for formal agreement |
-
-### 9.4 Enumeration Types (No Changes)
-
-The enumeration base types are **consistent** between ESPI 4.0 and 4.1:
-
-| Enumeration | Base Type | Value Format |
-|-------------|-----------|--------------|
-| CRUDOperation | UInt16 | Numeric (0, 1, 2, 3) |
-| CustomerKind | xs:string | String ("residential", etc.) |
-| EnrollmentStatus | xs:string | String ("enrolled", etc.) |
-| SupplierKind | xs:string | String ("utility", etc.) |
-| ServiceKind | xs:string | String ("electricity", etc.) |
-| RevenueKind | xs:string | String ("residentialSales", etc.) |
-| NotificationMethodKind | UInt16 | Numeric (0, 1, 2, 3) |
-| MeterMultiplierKind | UInt16 | Numeric (0, 1, 2, 3, 4, 5) |
-| UnitMultiplierKind | xs:string | String ("k", "M", "G", etc.) |
-| UnitSymbolKind | xs:string | String ("W", "Wh", "V", etc.) |
-| Currency | xs:string | String ("USD", "EUR", etc.) |
+| Element | Type | Description |
+|---------|------|-------------|
+| AcceptanceTest | AcceptanceTest | Acceptance test data |
+| AccountNotification | AccountNotification | Account notification |
+| Agreement | Agreement | Agreement base type |
+| Asset | Asset | Asset base type |
+| AssetContainer | AssetContainer | Asset container |
+| BatchItemInfo | BatchItemInfo | Batch item info |
+| BatchList | BatchListType | Batch list |
+| DateTimeInterval | DateTimeInterval | Time interval |
+| Document | Document | Document base type |
+| ElectronicAddress | ElectronicAddress | Electronic address |
+| IdentifiedObject | IdentifiedObject | Identified object base |
+| LifecycleDate | LifecycleDate | Lifecycle dates |
+| Location | Location | Location base type |
+| MeterMultiplier | MeterMultiplier | Meter multiplier |
+| Object | Object | Object base type |
+| Organisation | Organisation | Organisation type |
+| OrganisationRole | OrganisationRole | Organisation role |
+| PositionPoint | PositionPoint | Geographic point |
+| Priority | Priority | Priority info |
+| ProgramDate | ProgramDate | Program date |
+| ProgramDateIdMapping | ProgramDateIdMapping | Program date mapping |
+| Status | Status | Status info |
+| StatementRef | StatementRef | Statement reference |
+| StreetAddress | StreetAddress | Street address |
+| StreetDetail | StreetDetail | Street details |
+| SummaryMeasurement | SummaryMeasurement | Summary measurement |
+| TelephoneNumber | TelephoneNumber | Phone number |
+| TownDetail | TownDetail | Town details |
+| WorkLocation | WorkLocation | Work location |
 
 ---
 
@@ -719,55 +1088,54 @@ The enumeration base types are **consistent** between ESPI 4.0 and 4.1:
 | String Types | 5 |
 | Hex Binary Types | 4 |
 | Special Types | 2 |
-| Enumeration Types | 15 |
-| Complex Types (Resources) | 14 |
-| Complex Types (Supporting) | 26+ |
-| Global Elements | 38+ |
+| Enumeration Types | 16 |
+| Complex Types (Resources) | 15 |
+| Complex Types (Supporting) | 30 |
+| Global Elements | 45 |
 
 ---
 
-## Implementation Notes
+## 9. ESPI 4.0 → 4.1 Changes
 
-### Java Enum Mapping
+### 9.1 Inheritance Flattening
 
-For customer.xsd enumerations, use the following patterns:
+ESPI 4.1 adopts a composition over inheritance pattern. Resources now extend `IdentifiedObject` directly and contain their former parent types as elements.
 
-**Numeric Enums (UInt16):**
-```java
-@XmlEnum
-public enum CRUDOperation {
-    @XmlEnumValue("0") CREATE(0),
-    @XmlEnumValue("1") READ(1),
-    @XmlEnumValue("2") UPDATE(2),
-    @XmlEnumValue("3") DELETE(3);
+| Resource | 4.0 Base Type | 4.1 Base Type | Composition Element |
+|----------|---------------|---------------|---------------------|
+| Customer | OrganisationRole | IdentifiedObject | `organisation` |
+| CustomerAccount | Document | IdentifiedObject | `document` |
+| CustomerAgreement | Agreement | IdentifiedObject | `agreement` |
+| ServiceSupplier | OrganisationRole | IdentifiedObject | `organisation` |
+| ServiceLocation | WorkLocation | IdentifiedObject | `location` |
+| EndDevice | AssetContainer | IdentifiedObject | `asset` |
+| Meter | EndDevice | IdentifiedObject | `endDevice` |
 
-    private final int value;
-    // ...
-}
-```
+### 9.2 Supporting Types Base Changes
 
-**String Enums (xs:string):**
-```java
-@XmlEnum
-public enum CustomerKind {
-    @XmlEnumValue("residential")
-    RESIDENTIAL("residential"),
+| Type | 4.0 Base | 4.1 Base | Notes |
+|------|----------|----------|-------|
+| Asset | IdentifiedObject | Object | Downgraded |
+| Location | IdentifiedObject | Object | Downgraded |
+| Organisation | IdentifiedObject | Object | Downgraded |
+| Document | IdentifiedObject | Object | Downgraded |
+| DemandResponseProgram | (none) | Object | Added base type (4.0 omission) |
 
-    @XmlEnumValue("commercialIndustrial")
-    COMMERCIAL_INDUSTRIAL("commercialIndustrial");
+### 9.3 Types Commented Out in 4.1
 
-    private final String value;
-    // ...
-}
-```
+| Type | Status |
+|------|--------|
+| AssetContainer | Commented out |
+| OrganisationRole | Commented out |
+| WorkLocation | Commented out |
 
-### Composition Pattern
+### 9.4 Enumeration Types
 
-ESPI 4.1 uses composition instead of inheritance for some types:
-- `EndDevice` contains `Asset` instead of extending `AssetContainer`
-- `ServiceLocation` contains `Location` instead of extending `WorkLocation`
-- `Customer` contains `Organisation` for contact information
+**All enumeration types are unchanged between ESPI 4.0 and 4.1:**
+- Same base types
+- Same values
+- Same semantics
 
 ---
 
-*Generated from NAESB REQ.21 ESPI Version 4.1 (Pending Publication) customer_4.1.xsd schema*
+*Generated from NAESB REQ.21 ESPI Version 4.0 (December 2023) and 4.1 (Pending) customer schemas*
