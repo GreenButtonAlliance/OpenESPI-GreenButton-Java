@@ -1,0 +1,147 @@
+# ESPI Verification Orchestrator Configuration
+
+# XSD schema paths
+xsd_paths:
+  espi: openespi-common/src/main/resources/schema/ESPI_4.0/espi.xsd
+  customer: openespi-common/src/main/resources/schema/ESPI_4.0/customer.xsd
+
+# Output directory for reports
+output_dir: reports/verification
+
+# Model preferences (can override automatic selection)
+model_overrides:
+  # Force specific tasks to use specific models
+  # analyze_xsd_schema: opus  # Already uses opus
+  # verify_entity: sonnet     # Already uses sonnet
+
+# Task execution settings
+execution:
+  max_retries: 3
+  timeout_seconds: 120
+  save_intermediate_results: true
+
+# Cost limits (optional - will warn when exceeded)
+cost_limits:
+  per_task_warn: 2.00      # Warn if single task costs > $2
+  total_warn: 100.00       # Warn if total costs > $100
+  total_stop: 500.00       # Stop execution if total > $500
+
+# Phase 0: Enumeration migration
+phase_0:
+  # Missing enums to generate (from espi.xsd)
+  missing_enums_usage:
+    - AccumulationKind
+    - CommodityKind
+    - DataQualifierKind
+    - FlowDirectionKind
+    - MeasurementKind
+    - TimeAttributeKind
+    - QualityOfReading
+    - AuthorizationStatus
+    - DataCustodianApplicationStatus
+    - ESPIServiceStatus
+    - ItemKind
+    - ThirdPartyApplicationType
+    - ThirdPartyApplicationUse
+    - ThirdPartyApplicatonStatus
+    - TokenEndPointMethod
+    - AnodeType
+    - ApnodeType
+    - ParticipationCategoryMPM
+    - tOUorCPPorConsumptionTier
+
+  # Missing enums (shared between espi.xsd and customer.xsd)
+  missing_enums_shared:
+    - Currency
+    - StatusCode
+    - CRUDOperation
+    - DstRuleType
+    - EnrollmentStatus
+    - UnitMultiplierKind
+    - UnitSymbolKind
+
+  # Missing enums (from customer.xsd)
+  missing_enums_customer:
+    - MediaType
+    - RevenueKind
+
+  # Enums to move from common/ to usage/enums/
+  move_to_usage_enums:
+    - AmiBillingReadyKind
+    - GrantType
+    - OAuthError
+    - PhaseCodeKind
+    - ResponseType
+    - TokenType
+    - UsagePointConnectedKind
+
+# Phase 1: Supporting classes
+phase_1:
+  common_embeddables:
+    - RationalNumber
+    - DateTimeInterval
+    - SummaryMeasurement
+    - LinkType
+    - ReadingInterharmonic
+    - BillingChargeSource
+
+  customer_embeddables:
+    - TelephoneNumber
+    - ElectronicAddress
+    - StreetAddress
+    - MeterMultiplier
+    - ProgramDateIdMapping
+
+  customer_base_classes:
+    - Asset
+    - AssetContainer
+    - Agreement
+    - Organisation
+    - Location
+    - Document
+    - Status
+    - WorkLocation
+    - AccountNotification
+    - EndDeviceFields
+
+# Phase 2: Usage domain entities
+phase_2:
+  usage_entities_core:
+    - UsagePoint
+    - MeterReading
+    - IntervalBlock
+    - ReadingType
+    - IntervalReading
+    - ReadingQuality
+
+  usage_entities_summary:
+    - ElectricPowerQualitySummary
+    - UsageSummary
+    - TimeConfiguration
+
+  usage_entities_customer:
+    - RetailCustomer
+    - ApplicationInformation
+    - Authorization
+    - Subscription
+
+  usage_entities_misc:
+    - BatchList
+    - LineItem
+    - AggregatedNodeRef
+    - PnodeRef
+    - ServiceDeliveryPoint
+
+# Phase 3: Customer domain entities
+phase_3:
+  customer_entities:
+    - CustomerAccount
+    - Customer
+    - CustomerAgreement
+    - ServiceSupplier
+    - ServiceLocation
+    - Meter
+    - EndDevice
+    - Statement
+    - StatementRef
+    - ProgramDateIdMappings

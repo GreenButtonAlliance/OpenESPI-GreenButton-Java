@@ -1,21 +1,30 @@
-# ESPI 4.0 Schema Analysis Summary
+# ESPI Schema Analysis Summary
 
-**Analysis Date:** 2026-02-03
-**NAESB REQ.21 ESPI Version:** 4.0
-**Schema Publication Dates:** December 13-15, 2023
+**Analysis Date:** 2026-02-04
+**NAESB REQ.21 ESPI Versions:** 4.0 and 4.1
+**Schema Publication Dates:** 4.0: December 13-15, 2023 | 4.1: Pending
 
 ---
 
 ## Overview
 
-This directory contains comprehensive analysis reports for the NAESB ESPI 4.0 XML schemas used in the OpenESPI-GreenButton-Java implementation. The schemas define the data model for energy usage data exchange under the Green Button standard.
+This directory contains comprehensive analysis reports for the NAESB ESPI XML schemas used in the OpenESPI-GreenButton-Java implementation. The schemas define the data model for energy usage data exchange under the Green Button standard.
 
 ## Schema Files Analyzed
+
+### ESPI 4.0 Schemas
 
 | Schema | Namespace | Purpose | Report |
 |--------|-----------|---------|--------|
 | `espi.xsd` | `http://naesb.org/espi` | Energy usage data (UsagePoint, MeterReading, IntervalBlock, etc.) | [espi_enumerations.md](espi_enumerations.md) |
 | `customer.xsd` | `http://naesb.org/espi/customer` | Customer/PII data (Customer, CustomerAccount, Meter, etc.) | [customer_enumerations.md](customer_enumerations.md) |
+
+### ESPI 4.1 Schemas
+
+| Schema | Namespace | Purpose | Notes |
+|--------|-----------|---------|-------|
+| `customer_4.1.xsd` | `http://naesb.org/espi/customer` | Customer/PII data (updated) | Flattened inheritance hierarchy |
+| `atom.xsd` | `http://www.w3.org/2005/Atom` | Atom feed structure | Unchanged from 4.0 |
 
 ---
 
@@ -102,25 +111,42 @@ This directory contains comprehensive analysis reports for the NAESB ESPI 4.0 XM
 
 ### Customer Domain Resources (customer.xsd)
 
-| Resource | Base Type | Description |
-|----------|-----------|-------------|
-| Customer | Organisation | Full customer information |
-| CustomerAccount | Document | Customer billing account |
-| CustomerAgreement | Agreement | Service agreement |
-| ServiceSupplier | Organisation | Utility or energy provider |
-| ServiceLocation | WorkLocation | Physical service location |
-| Meter | EndDevice | Physical meter device |
-| EndDevice | AssetContainer | End device (base for Meter) |
-| Statement | Document | Billing statement |
-| DemandResponseProgram | IdentifiedObject | DR program enrollment |
-| PricingStructure | Document | Pricing/rate structure |
-| ProgramDateIdMappings | IdentifiedObject | Program date mappings |
-| TimeConfiguration | IdentifiedObject | Timezone and DST settings |
-| UsagePoint | IdentifiedObject | Usage point (customer context) |
+| Resource | 4.0 Base Type | 4.1 Base Type | Description |
+|----------|---------------|---------------|-------------|
+| Customer | OrganisationRole | IdentifiedObject | Full customer information |
+| CustomerAccount | Document | IdentifiedObject | Customer billing account |
+| CustomerAgreement | Agreement | IdentifiedObject | Service agreement |
+| ServiceSupplier | OrganisationRole | IdentifiedObject | Utility or energy provider |
+| ServiceLocation | WorkLocation | IdentifiedObject | Physical service location |
+| Meter | EndDevice | IdentifiedObject | Physical meter device |
+| EndDevice | AssetContainer | IdentifiedObject | End device (base for Meter) |
+| Statement | IdentifiedObject | IdentifiedObject | Billing statement (unchanged) |
+| ProgramDateIdMappings | IdentifiedObject | IdentifiedObject | Program date mappings (unchanged) |
+| TimeConfiguration | IdentifiedObject | IdentifiedObject | Timezone and DST settings (unchanged) |
+
+### Supporting Types Base Changes (4.0 → 4.1)
+
+| Type | 4.0 Base Type | 4.1 Base Type | Notes |
+|------|---------------|---------------|-------|
+| Asset | IdentifiedObject | Object | Downgraded |
+| Location | IdentifiedObject | Object | Downgraded |
+| Organisation | IdentifiedObject | Object | Downgraded |
+| Document | IdentifiedObject | Object | Downgraded |
+| DemandResponseProgram | (none) | Object | Added base type (4.0 omission) |
+
+### Types Commented Out in 4.1
+
+| Type | 4.0 Base Type | Status in 4.1 |
+|------|---------------|---------------|
+| AssetContainer | Asset | Commented out |
+| OrganisationRole | IdentifiedObject | Commented out |
+| WorkLocation | Location | Commented out |
 
 ---
 
 ## Type Inheritance Hierarchy
+
+### ESPI 4.0 Hierarchy
 
 ```
 Object
@@ -136,27 +162,57 @@ Object
     ├── ApplicationInformation
     ├── Subscription
     ├── RetailCustomer
-    ├── DemandResponseProgram
+    ├── Statement
     ├── ProgramDateIdMappings
-    └── Document
-        ├── CustomerAccount
-        ├── PricingStructure
-        ├── Statement
-        └── Agreement
-            └── CustomerAgreement
+    ├── Document
+    │   ├── CustomerAccount
+    │   └── Agreement
+    │       └── CustomerAgreement
+    ├── Organisation
+    │   └── OrganisationRole
+    │       ├── Customer
+    │       └── ServiceSupplier
+    ├── Location
+    │   └── WorkLocation
+    │       └── ServiceLocation
+    └── Asset
+        └── AssetContainer
+            └── EndDevice
+                └── Meter
+```
 
-Organisation (extends IdentifiedObject)
-├── Customer
-└── ServiceSupplier
+### ESPI 4.1 Hierarchy (Flattened)
 
-Location (extends IdentifiedObject)
-└── WorkLocation
-    └── ServiceLocation
+```
+Object
+├── IdentifiedObject
+│   ├── UsagePoint
+│   ├── MeterReading
+│   ├── IntervalBlock
+│   ├── ReadingType
+│   ├── ElectricPowerQualitySummary
+│   ├── UsageSummary
+│   ├── TimeConfiguration
+│   ├── Authorization
+│   ├── ApplicationInformation
+│   ├── Subscription
+│   ├── RetailCustomer
+│   ├── Statement
+│   ├── ProgramDateIdMappings
+│   ├── Customer          (flattened, contains Organisation element)
+│   ├── CustomerAccount   (flattened, contains Document element)
+│   ├── CustomerAgreement (flattened, contains Agreement element)
+│   ├── ServiceSupplier   (flattened, contains Organisation element)
+│   ├── ServiceLocation   (flattened, contains Location element)
+│   ├── EndDevice         (flattened, contains Asset element)
+│   └── Meter             (flattened, contains EndDevice element)
+├── Organisation          (downgraded from IdentifiedObject)
+├── Location              (downgraded from IdentifiedObject)
+├── Asset                 (downgraded from IdentifiedObject)
+└── Document              (downgraded from IdentifiedObject)
+    └── Agreement
 
-Asset (extends IdentifiedObject)
-└── AssetContainer
-    └── EndDevice
-        └── Meter
+Types commented out in 4.1: AssetContainer, OrganisationRole, WorkLocation
 ```
 
 ---
@@ -184,7 +240,8 @@ ESPI uses a union pattern for numeric enumerations that allows both defined valu
 ### IdentifiedObject Base Type
 
 All major resources extend `IdentifiedObject` which provides:
-- `description` (String512) - Human-readable description
+- `batchItemInfo` (BatchItemInfo) - Batch processing information
+- `name` (name) - Object name [DEPRECATED]
 - Extension capability from `Object` base type
 
 ### Time Representation
@@ -202,11 +259,14 @@ All major resources extend `IdentifiedObject` which provides:
 
 ## Schema Location
 
-The schema files are located at:
 ```
-openespi-common/src/main/resources/schema/ESPI_4.0/
-├── espi.xsd        (usage/energy data)
-└── customer.xsd    (customer/PII data)
+openespi-common/src/main/resources/schema/
+├── ESPI_4.0/
+│   ├── espi.xsd           (usage/energy data)
+│   └── customer.xsd       (customer/PII data)
+└── ESPI_4.1/
+    ├── atom.xsd           (Atom feed structure)
+    └── customer_4.1.xsd   (customer/PII data - flattened hierarchy)
 ```
 
 ---
@@ -243,4 +303,37 @@ When implementing Java enums for ESPI types:
 
 ---
 
-*Generated from NAESB REQ.21 ESPI Version 4.0 schemas (December 2023)*
+## ESPI 4.0 → 4.1 Migration Notes
+
+### Composition Pattern in 4.1
+
+ESPI 4.1 adopts a **composition over inheritance** pattern. Resources that previously extended deep inheritance chains now:
+1. Extend `IdentifiedObject` directly
+2. Contain the former parent type as an embedded element
+
+| Resource | 4.0 Inheritance | 4.1 Composition |
+|----------|-----------------|-----------------|
+| Customer | extends OrganisationRole | contains `organisation` element |
+| CustomerAccount | extends Document | contains `document` element |
+| CustomerAgreement | extends Agreement | contains `agreement` element |
+| ServiceSupplier | extends OrganisationRole | contains `organisation` element |
+| ServiceLocation | extends WorkLocation | contains `location` element |
+| EndDevice | extends AssetContainer | contains `asset` element |
+| Meter | extends EndDevice | contains `endDevice` element |
+
+### Enumeration Types
+
+**Important:** All enumeration types are **unchanged** between ESPI 4.0 and 4.1:
+- Same base types (UInt16, xs:string, Int16, etc.)
+- Same values
+- Same semantics
+
+### Breaking Changes
+
+1. XML documents valid in 4.0 may not be valid in 4.1 due to structural changes
+2. Types that relied on inherited properties must now access them through embedded elements
+3. Asset, Location, Organisation, Document no longer extend IdentifiedObject
+
+---
+
+*Generated from NAESB REQ.21 ESPI Version 4.0 (December 2023) and 4.1 (Pending) schemas*

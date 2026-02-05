@@ -1,8 +1,8 @@
-# ESPI 4.0 Customer Schema Analysis Report
+# ESPI Customer Schema Analysis Report
 
-**Schema Version:** NAESB REQ.21 ESPI Version 4.0.20231215
-**Published:** December 15, 2023
+**Schema Versions:** NAESB REQ.21 ESPI 4.0 (December 2023) and 4.1 (Pending)
 **Namespace:** `http://naesb.org/espi/customer`
+**Analysis Date:** 2026-02-04
 
 ---
 
@@ -16,6 +16,7 @@
 6. [Complex Types (Resources)](#6-complex-types-resources)
 7. [Complex Types (Supporting)](#7-complex-types-supporting)
 8. [Global Elements](#8-global-elements)
+9. [ESPI 4.0 → 4.1 Changes](#9-espi-40--41-changes)
 
 ---
 
@@ -75,23 +76,21 @@
 
 | Value | Name | Description |
 |-------|------|-------------|
-| 0 | Created | Resource was created |
-| 1 | Deleted | Resource was deleted |
-| 2 | Updated | Resource was updated |
-| 3 | Unspecified | Operation unspecified |
+| 0 | Create | Create operation |
+| 1 | Read | Read operation |
+| 2 | Update | Update operation |
+| 3 | Delete | Delete operation |
 
 ---
 
 #### EnrollmentStatus
-**Base:** `UInt16` (union)
+**Base:** `xs:string` (union)
 
-| Value | Name | Description |
-|-------|------|-------------|
-| 0 | Enrolled | Customer is enrolled |
-| 1 | EnrollmentPending | Enrollment is pending |
-| 2 | UnEnrolled | Customer is not enrolled |
-| 3 | UnEnrolledPending | Unenrollment is pending |
-| 4 | Enrolling | Customer is in process of enrolling |
+| Value | Description |
+|-------|-------------|
+| `unenrolled` | Currently NOT enrolled in the Demand Response program |
+| `enrolled` | Currently enrolled in the Demand Response program |
+| `enrolledPending` | Currently pending enrollment in the Demand Response program |
 
 ---
 
@@ -120,88 +119,81 @@ HTTP-style status codes for ESPI operations.
 ### 5.2 Customer and Service Enumerations
 
 #### CustomerKind
-**Base:** `UInt16` (union)
+**Base:** `xs:string` (union)
 
-| Value | Name | Description |
-|-------|------|-------------|
-| 0 | energyServiceScheduler | Energy service scheduler customer |
-| 1 | energyServiceSupplier | Energy service supplier customer |
-| 2 | other | Other customer type |
-| 3 | commercialIndustrial | Commercial or industrial customer |
-| 4 | internalUse | Internal use customer |
-| 5 | pumpingLoad | Pumping load customer |
-| 6 | residential | Residential customer |
-| 7 | residentialAndCommercial | Residential and commercial customer |
-| 8 | residentialAndStreetlight | Residential and streetlight customer |
-| 9 | residentialFarmService | Residential farm service customer |
-| 10 | residentialStreetlightOthers | Residential streetlight and others |
-| 11 | streetLight | Streetlight customer |
-| 12 | energyServiceConsumer | Energy service consumer |
-| 13 | gridOperator | Grid operator |
-| 14 | windMachine | Wind machine customer |
+| Value | Description |
+|-------|-------------|
+| `residential` | Residential customer |
+| `residentialAndCommercial` | Residential and commercial customer |
+| `residentialAndStreetlight` | Residential and streetlight customer |
+| `residentialStreetlightOthers` | Residential streetlight and others |
+| `residentialFarmService` | Residential farm service customer |
+| `commercialIndustrial` | Commercial or industrial customer |
+| `pumpingLoad` | Pumping load customer |
+| `windMachine` | Wind machine customer |
+| `energyServiceSupplier` | Energy service supplier customer |
+| `energyServiceScheduler` | Energy service scheduler customer |
+| `enterprise` | Enterprise customer |
 
 ---
 
 #### SupplierKind
-**Base:** `UInt16` (union)
+**Base:** `xs:string` (union)
 
-| Value | Name | Description |
-|-------|------|-------------|
-| 0 | utility | Traditional utility supplier |
-| 1 | municipality | Municipal utility |
-| 2 | privateEnterprise | Private enterprise supplier |
-| 3 | cooperative | Cooperative utility |
-| 4 | retailer | Retail energy supplier |
-| 5 | other | Other supplier type |
+| Value | Description |
+|-------|-------------|
+| `utility` | Traditional utility supplier |
+| `retailer` | Retail energy supplier |
+| `other` | Other supplier type |
+| `lse` | Load serving entity |
+| `mdma` | Meter data management agent |
 
 ---
 
 #### ServiceKind
-**Base:** `UInt16` (union)
+**Base:** `xs:string` (restriction)
 
-| Value | Name | Description |
-|-------|------|-------------|
-| 0 | electricity | Electric service |
-| 1 | gas | Natural gas service |
-| 2 | water | Water service |
-| 3 | time | Time service |
-| 4 | heat | Heat service |
-| 5 | refuse | Refuse/waste service |
-| 6 | sewerage | Sewerage service |
-| 7 | rates | Rates information |
-| 8 | tvLicense | TV license service |
-| 9 | internet | Internet service |
-| 10 | other | Other service type |
+| Value | Description |
+|-------|-------------|
+| `electricity` | Electric service |
+| `gas` | Natural gas service |
+| `water` | Water service |
+| `time` | Time service |
+| `heat` | Heat service |
+| `refuse` | Refuse/waste service |
+| `sewerage` | Sewerage service |
+| `rates` | Rates information |
+| `tvLicence` | TV license service |
+| `internet` | Internet service |
 
 ---
 
 #### RevenueKind
-**Base:** `UInt16` (union)
+**Base:** `xs:string` (union)
 
-| Value | Name | Description |
-|-------|------|-------------|
-| 0 | fees | Revenue from fees |
-| 1 | rates | Revenue from rates |
-| 2 | cancellationFees | Revenue from cancellation fees |
-| 3 | lateFees | Revenue from late fees |
-| 4 | connectorFees | Revenue from connector fees |
-| 5 | rebates | Rebates (negative revenue) |
-| 6 | other | Other revenue type |
+| Value | Description |
+|-------|-------------|
+| `residential` | Residential revenue |
+| `nonResidential` | Non-residential revenue |
+| `commercial` | Commercial revenue |
+| `industrial` | Industrial revenue |
+| `irrigation` | Irrigation revenue |
+| `streetLight` | Streetlight revenue |
+| `other` | Other revenue type |
 
 ---
 
 ### 5.3 Notification and Communication Enumerations
 
 #### NotificationMethodKind
-**Base:** `UInt16` (union)
+**Base:** `xs:string` (union)
 
-| Value | Name | Description |
-|-------|------|-------------|
-| 0 | email | Notification via email |
-| 1 | inPerson | In-person notification |
-| 2 | phone | Notification via phone call |
-| 3 | postal | Notification via postal mail |
-| 4 | sms | Notification via SMS text message |
+| Value | Description |
+|-------|-------------|
+| `call` | Contacted by phone by customer service representative |
+| `email` | Trouble reported by email |
+| `letter` | Trouble reported by letter |
+| `other` | Trouble reported by other means |
 
 ---
 
@@ -233,30 +225,29 @@ MIME media types for content negotiation.
 ### 5.4 Program and Date Enumerations
 
 #### ProgramDateKind
-**Base:** `UInt16` (union)
+**Base:** `String64` (union)
 
-| Value | Name | Description |
-|-------|------|-------------|
-| 0 | signUp | Sign-up date |
-| 1 | cancel | Cancellation date |
-| 2 | enroll | Enrollment date |
-| 3 | deferred | Deferred date |
+| Value | Description |
+|-------|-------------|
+| `CUST_DR_PROGRAM_ENROLLMENT_DATE` | DR program enrollment date |
+| `CUST_DR_PROGRAM_DE_ENROLLMENT_DATE` | DR program de-enrollment date |
+| `CUST_DR_PROGRAM_TERM_DATE_REGARDLESS_FINANCIAL` | Program termination date regardless of financial |
+| `CUST_DR_PROGRAM_TERM_DATE_WITHOUT_FINANCIAL` | Program termination date without financial |
 
 ---
 
 ### 5.5 Meter and Measurement Enumerations
 
 #### MeterMultiplierKind
-**Base:** `UInt16` (union)
+**Base:** `xs:string` (union)
 
-| Value | Name | Description |
-|-------|------|-------------|
-| 0 | kH | Test dial multiplier |
-| 1 | kE | Element test multiplier |
-| 2 | kP | Potential transformer multiplier |
-| 3 | kC | Current transformer multiplier |
-| 4 | kR | Register multiplier |
-| 5 | transformerRatio | Transformer ratio |
+| Value | Description |
+|-------|-------------|
+| `kH` | Test dial multiplier |
+| `transformerRatio` | Transformer ratio |
+| `kR` | Register multiplier |
+| `kE` | Element test multiplier |
+| `ctRatio` | Current transformer ratio |
 
 ---
 
@@ -1104,4 +1095,47 @@ The customer.xsd schema defines 45 global elements:
 
 ---
 
-*Generated from NAESB REQ.21 ESPI Version 4.0.20231215 customer.xsd schema*
+## 9. ESPI 4.0 → 4.1 Changes
+
+### 9.1 Inheritance Flattening
+
+ESPI 4.1 adopts a composition over inheritance pattern. Resources now extend `IdentifiedObject` directly and contain their former parent types as elements.
+
+| Resource | 4.0 Base Type | 4.1 Base Type | Composition Element |
+|----------|---------------|---------------|---------------------|
+| Customer | OrganisationRole | IdentifiedObject | `organisation` |
+| CustomerAccount | Document | IdentifiedObject | `document` |
+| CustomerAgreement | Agreement | IdentifiedObject | `agreement` |
+| ServiceSupplier | OrganisationRole | IdentifiedObject | `organisation` |
+| ServiceLocation | WorkLocation | IdentifiedObject | `location` |
+| EndDevice | AssetContainer | IdentifiedObject | `asset` |
+| Meter | EndDevice | IdentifiedObject | `endDevice` |
+
+### 9.2 Supporting Types Base Changes
+
+| Type | 4.0 Base | 4.1 Base | Notes |
+|------|----------|----------|-------|
+| Asset | IdentifiedObject | Object | Downgraded |
+| Location | IdentifiedObject | Object | Downgraded |
+| Organisation | IdentifiedObject | Object | Downgraded |
+| Document | IdentifiedObject | Object | Downgraded |
+| DemandResponseProgram | (none) | Object | Added base type (4.0 omission) |
+
+### 9.3 Types Commented Out in 4.1
+
+| Type | Status |
+|------|--------|
+| AssetContainer | Commented out |
+| OrganisationRole | Commented out |
+| WorkLocation | Commented out |
+
+### 9.4 Enumeration Types
+
+**All enumeration types are unchanged between ESPI 4.0 and 4.1:**
+- Same base types
+- Same values
+- Same semantics
+
+---
+
+*Generated from NAESB REQ.21 ESPI Version 4.0 (December 2023) and 4.1 (Pending) customer schemas*
