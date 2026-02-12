@@ -25,9 +25,9 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.greenbuttonalliance.espi.common.domain.common.GrantType;
 import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
-import org.greenbuttonalliance.espi.common.domain.common.ResponseType;
+import org.greenbuttonalliance.espi.common.domain.common.enums.GrantType;
+import org.greenbuttonalliance.espi.common.domain.common.enums.ResponseType;
 import org.greenbuttonalliance.espi.common.utils.encryption.FieldEncryptionConverter;
 import org.hibernate.proxy.HibernateProxy;
 

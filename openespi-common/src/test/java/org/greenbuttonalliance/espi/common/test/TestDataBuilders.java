@@ -279,8 +279,8 @@ public class TestDataBuilders {
         }
         app.setDataCustodianId(dataCustodianId);
         
-        java.util.Set<org.greenbuttonalliance.espi.common.domain.common.GrantType> grantTypes = new java.util.HashSet<>();
-        grantTypes.add(org.greenbuttonalliance.espi.common.domain.common.GrantType.AUTHORIZATION_CODE);
+        java.util.Set<org.greenbuttonalliance.espi.common.domain.common.enums.GrantType> grantTypes = new java.util.HashSet<>();
+        grantTypes.add(org.greenbuttonalliance.espi.common.domain.common.enums.GrantType.AUTHORIZATION_CODE);
         app.setGrantTypes(grantTypes);
         
         return app;

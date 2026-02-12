@@ -23,6 +23,7 @@ import org.greenbuttonalliance.espi.common.domain.usage.ApplicationInformationEn
 import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.SubscriptionEntity;
 import org.greenbuttonalliance.espi.common.domain.common.*;
+import org.greenbuttonalliance.espi.common.domain.common.enums.*;
 import org.greenbuttonalliance.espi.common.test.BaseRepositoryTest;
 import org.greenbuttonalliance.espi.common.test.TestDataBuilders;
 import org.junit.jupiter.api.DisplayName;
@@ -493,7 +494,7 @@ class AuthorizationRepositoryTest extends BaseRepositoryTest {
         void shouldSaveAndRetrieveResponseTypeEnum() {
             // Arrange
             AuthorizationEntity auth = createValidAuthorization();
-            auth.setResponseType(ResponseType.TOKEN);
+            auth.setResponseType(ResponseType.CODE);
 
             // Act
             AuthorizationEntity saved = authorizationRepository.save(auth);
@@ -502,7 +503,7 @@ class AuthorizationRepositoryTest extends BaseRepositoryTest {
 
             // Assert
             assertThat(retrieved).isPresent();
-            assertThat(retrieved.get().getResponseType()).isEqualTo(ResponseType.TOKEN);
+            assertThat(retrieved.get().getResponseType()).isEqualTo(ResponseType.CODE);
         }
 
         @Test

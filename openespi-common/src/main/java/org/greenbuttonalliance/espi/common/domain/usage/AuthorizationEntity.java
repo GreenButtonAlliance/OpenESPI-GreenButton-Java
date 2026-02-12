@@ -24,6 +24,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.greenbuttonalliance.espi.common.domain.common.*;
+import org.greenbuttonalliance.espi.common.domain.common.enums.*;
 import org.greenbuttonalliance.espi.common.utils.encryption.FieldEncryptionConverter;
 import org.hibernate.proxy.HibernateProxy;
 
