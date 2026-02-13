@@ -19,7 +19,7 @@
 package org.greenbuttonalliance.espi.common.repositories.usage;
 
 import jakarta.validation.ConstraintViolation;
-import org.greenbuttonalliance.espi.common.domain.common.GrantType;
+import org.greenbuttonalliance.espi.common.domain.common.enums.GrantType;
 import org.greenbuttonalliance.espi.common.domain.usage.*;
 import org.greenbuttonalliance.espi.common.test.BaseRepositoryTest;
 import org.greenbuttonalliance.espi.common.test.TestDataBuilders;

@@ -19,8 +19,8 @@
 package org.greenbuttonalliance.espi.common.repositories.usage;
 
 import org.greenbuttonalliance.espi.common.domain.usage.ApplicationInformationEntity;
-import org.greenbuttonalliance.espi.common.domain.common.GrantType;
-import org.greenbuttonalliance.espi.common.domain.common.ResponseType;
+import org.greenbuttonalliance.espi.common.domain.common.enums.GrantType;
+import org.greenbuttonalliance.espi.common.domain.common.enums.ResponseType;
 import org.greenbuttonalliance.espi.common.test.BaseRepositoryTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -472,7 +472,7 @@ class ApplicationInformationRepositoryTest extends BaseRepositoryTest {
         void shouldSaveAndRetrieveResponseTypeEnum() {
             // Arrange
             ApplicationInformationEntity app = createValidApplicationInformation();
-            app.setResponseTypes(ResponseType.TOKEN);
+            app.setResponseTypes(ResponseType.CODE);
 
             // Act
             ApplicationInformationEntity saved = applicationInformationRepository.save(app);
@@ -482,7 +482,7 @@ class ApplicationInformationRepositoryTest extends BaseRepositoryTest {
             // Assert
             assertThat(retrieved).isPresent();
             ApplicationInformationEntity entity = retrieved.get();
-            assertThat(entity.getResponseTypes()).isEqualTo(ResponseType.TOKEN);
+            assertThat(entity.getResponseTypes()).isEqualTo(ResponseType.CODE);
         }
 
         @Test
