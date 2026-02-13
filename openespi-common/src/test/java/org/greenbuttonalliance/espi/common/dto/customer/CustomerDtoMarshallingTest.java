@@ -227,7 +227,7 @@ class CustomerDtoMarshallingTest {
 
         // Assert - Field values
         assertThat(xml).contains("ACME Energy Services");
-        assertThat(xml).contains("RESIDENTIAL");
+        assertThat(xml).contains("residential");
         assertThat(xml).contains("Wheelchair access required");
         assertThat(xml).contains("<cust:vip>true</cust:vip>");
         assertThat(xml).contains("PUC-12345");
@@ -282,7 +282,7 @@ class CustomerDtoMarshallingTest {
         // Arrange
         CustomerDto customer = new CustomerDto(
             null,
-            CustomerKind.COMMERCIAL,
+            CustomerKind.COMMERCIAL_INDUSTRIAL,
             "Test special need",
             false,
             "PUC-999",

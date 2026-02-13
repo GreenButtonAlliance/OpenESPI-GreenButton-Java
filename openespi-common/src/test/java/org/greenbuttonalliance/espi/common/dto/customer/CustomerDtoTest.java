@@ -103,7 +103,7 @@ class CustomerDtoTest {
         assertThat(xml).contains("ACME Energy Services");
 
         // Assert - Customer fields present
-        assertThat(xml).contains("RESIDENTIAL");
+        assertThat(xml).contains("residential");
         assertThat(xml).contains("Life support required");
         assertThat(xml).contains("PUC-12345");
         assertThat(xml).contains("John Smith");
@@ -230,7 +230,7 @@ class CustomerDtoTest {
         // Assert
         assertThat(xml).contains("<cust:Customer");
         assertThat(xml).contains("Minimal Org");
-        assertThat(xml).contains("ENTERPRISE");
+        assertThat(xml).contains("enterprise");
     }
 
     @Test

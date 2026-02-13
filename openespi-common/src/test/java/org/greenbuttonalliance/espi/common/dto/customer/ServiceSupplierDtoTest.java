@@ -97,7 +97,7 @@ class ServiceSupplierDtoTest {
             .contains("<cust:Organisation")
             .contains("456 Utility Ave")
             .contains("ACME Utility Company")
-            .contains("UTILITY")
+            .contains("utility")
             .contains("ISS-123456789");
     }
 
@@ -218,7 +218,7 @@ class ServiceSupplierDtoTest {
         assertThat(xml)
             .contains("<cust:ServiceSupplier")
             .contains("Minimal Supplier")
-            .contains("UTILITY");
+            .contains("utility");
     }
 
     @Test
