@@ -163,7 +163,7 @@ class CustomerPostgreSQLIntegrationTest extends BaseTestContainersTest {
 
             // Act
             savedCustomer.setCustomerName("Updated PostgreSQL Name");
-            savedCustomer.setKind(CustomerKind.COMMERCIAL);
+            savedCustomer.setKind(CustomerKind.COMMERCIAL_INDUSTRIAL);
             CustomerEntity updatedCustomer = customerRepository.save(savedCustomer);
             flushAndClear();
 
@@ -172,7 +172,7 @@ class CustomerPostgreSQLIntegrationTest extends BaseTestContainersTest {
             // Assert
             assertThat(retrieved).isPresent();
             assertThat(retrieved.get().getCustomerName()).isEqualTo("Updated PostgreSQL Name");
-            assertThat(retrieved.get().getKind()).isEqualTo(CustomerKind.COMMERCIAL);
+            assertThat(retrieved.get().getKind()).isEqualTo(CustomerKind.COMMERCIAL_INDUSTRIAL);
         }
 
         @Test

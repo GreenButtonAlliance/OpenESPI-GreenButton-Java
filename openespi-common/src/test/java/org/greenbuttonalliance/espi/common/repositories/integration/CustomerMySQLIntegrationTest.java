@@ -85,7 +85,7 @@ class CustomerMySQLIntegrationTest extends BaseTestContainersTest {
             // Arrange
             CustomerEntity customer = TestDataBuilders.createValidCustomer();
             customer.setCustomerName("MySQL Integration Test Customer");
-            customer.setKind(CustomerKind.COMMERCIAL);
+            customer.setKind(CustomerKind.COMMERCIAL_INDUSTRIAL);
             customer.setSpecialNeed("Wheelchair access");
             customer.setVip(true);
             customer.setPucNumber("PUC-MYSQL-12345");
@@ -134,7 +134,7 @@ class CustomerMySQLIntegrationTest extends BaseTestContainersTest {
             CustomerEntity result = retrieved.get();
 
             assertThat(result.getCustomerName()).isEqualTo("MySQL Integration Test Customer");
-            assertThat(result.getKind()).isEqualTo(CustomerKind.COMMERCIAL);
+            assertThat(result.getKind()).isEqualTo(CustomerKind.COMMERCIAL_INDUSTRIAL);
             assertThat(result.getSpecialNeed()).isEqualTo("Wheelchair access");
             assertThat(result.getVip()).isTrue();
             assertThat(result.getPucNumber()).isEqualTo("PUC-MYSQL-12345");

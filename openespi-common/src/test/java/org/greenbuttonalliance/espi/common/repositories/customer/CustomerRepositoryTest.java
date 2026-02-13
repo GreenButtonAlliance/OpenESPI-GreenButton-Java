@@ -316,7 +316,7 @@ class CustomerRepositoryTest extends BaseRepositoryTest {
             // Arrange
             CustomerEntity customer = TestDataBuilders.createValidCustomer();
             customer.setCustomerName("Customer with All Embedded Objects");
-            customer.setKind(CustomerKind.COMMERCIAL);
+            customer.setKind(CustomerKind.COMMERCIAL_INDUSTRIAL);
             customer.setSpecialNeed("Wheelchair access");
             customer.setVip(true);
             customer.setPucNumber("PUC-12345");
@@ -346,7 +346,7 @@ class CustomerRepositoryTest extends BaseRepositoryTest {
             assertThat(retrieved).isPresent();
             CustomerEntity result = retrieved.get();
             assertThat(result.getCustomerName()).isEqualTo("Customer with All Embedded Objects");
-            assertThat(result.getKind()).isEqualTo(CustomerKind.COMMERCIAL);
+            assertThat(result.getKind()).isEqualTo(CustomerKind.COMMERCIAL_INDUSTRIAL);
             assertThat(result.getSpecialNeed()).isEqualTo("Wheelchair access");
             assertThat(result.getVip()).isTrue();
             assertThat(result.getPucNumber()).isEqualTo("PUC-12345");
@@ -397,14 +397,14 @@ class CustomerRepositoryTest extends BaseRepositoryTest {
         void shouldValidateCustomerKindEnum() {
             // Arrange
             CustomerEntity customer = TestDataBuilders.createValidCustomer();
-            customer.setKind(CustomerKind.COMMERCIAL);
+            customer.setKind(CustomerKind.COMMERCIAL_INDUSTRIAL);
 
             // Act
             Set<ConstraintViolation<CustomerEntity>> violations = validator.validate(customer);
 
             // Assert
             assertThat(violations).isEmpty();
-            assertThat(customer.getKind()).isEqualTo(CustomerKind.COMMERCIAL);
+            assertThat(customer.getKind()).isEqualTo(CustomerKind.COMMERCIAL_INDUSTRIAL);
         }
 
         @Test
