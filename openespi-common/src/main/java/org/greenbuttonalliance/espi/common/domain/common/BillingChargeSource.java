@@ -21,6 +21,10 @@ package org.greenbuttonalliance.espi.common.domain.common;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.XmlType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -30,35 +34,44 @@ import java.io.Serializable;
 
 /**
  * Embeddable value object for BillingChargeSource.
- * <p>
- * Information about the source of billing charge.
- * Per ESPI 4.0 XSD (espi.xsd:1628-1643), BillingChargeSource extends Object
- * and contains a single agencyName field.
- * <p>
+ *
+ * <p>Information about the source of billing charge.
+ * Contains a single agencyName field identifying the billing agency.
  * Embedded within UsageSummary entity.
+ *
+ * <p>Per ESPI 4.0 espi.xsd lines 1628-1643.
+ *
+ * @see <a href="http://naesb.org/espi">ESPI Specification</a>
  */
 @Embeddable
+@XmlAccessorType(XmlAccessType.FIELD)
+@XmlType(name = "BillingChargeSource", namespace = "http://naesb.org/espi", propOrder = {
+	"agencyName"
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class BillingChargeSource implements Serializable {
 
-    @Serial
-    private static final long serialVersionUID = 1L;
+	@Serial
+	private static final long serialVersionUID = 1L;
 
-    /**
-     * Name of the billing source agency.
-     * Maximum length 256 characters per String256 type.
-     */
-    @Column(name = "billing_charge_source_agency_name", length = 256)
-    private String agencyName;
+	/**
+	 * Name of the billing source agency.
+	 *
+	 * <p>Optional field (nullable). Maximum length 256 characters per String256 type.
+	 * XSD: espi.xsd line 1635
+	 */
+	@XmlElement(name = "agencyName", namespace = "http://naesb.org/espi")
+	@Column(name = "billing_charge_source_agency_name", length = 256)
+	private String agencyName;
 
-    /**
-     * Checks if this billing charge source has a value.
-     *
-     * @return true if agency name is present
-     */
-    public boolean hasValue() {
-        return agencyName != null && !agencyName.trim().isEmpty();
-    }
+	/**
+	 * Checks if this billing charge source has a value.
+	 *
+	 * @return true if agency name is present
+	 */
+	public boolean hasValue() {
+		return agencyName != null && !agencyName.trim().isEmpty();
+	}
 }

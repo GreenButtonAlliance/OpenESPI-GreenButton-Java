@@ -19,25 +19,71 @@
 
 package org.greenbuttonalliance.espi.common.domain.common;
 
-import lombok.Getter;
-import lombok.Setter;
-import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.XmlType;
+
 import java.math.BigInteger;
 
+/**
+ * Rational number represented as numerator / denominator.
+ *
+ * <p>Embeddable component used for precise fractional values in ESPI entities.
+ * Both numerator and denominator are optional (nullable) per ESPI 4.0 specification.
+ *
+ * <p>Per ESPI 4.0 espi.xsd lines 1406-1418.
+ *
+ * @see <a href="http://naesb.org/espi">ESPI Specification</a>
+ */
 @Embeddable
+@XmlAccessorType(XmlAccessType.FIELD)
+@XmlType(name = "RationalNumber", namespace = "http://naesb.org/espi", propOrder = {
+	"numerator",
+	"denominator"
+})
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode
 public class RationalNumber {
 
-	@Column(name = "numerator")
+	/**
+	 * Numerator of the rational number.
+	 *
+	 * <p>Optional field (nullable). Type: xs:integer from XSD.
+	 * XSD: espi.xsd line 1413
+	 *
+	 * <p>Note: Uses BIGINT column type for database compatibility while maintaining
+	 * BigInteger type in Java for XSD compliance. Column type is specified in entity
+	 * @AttributeOverride annotations.
+	 */
+	@XmlElement(name = "numerator", namespace = "http://naesb.org/espi")
 	private BigInteger numerator;
 
-	@Column(name = "denominator")
+	/**
+	 * Denominator of the rational number.
+	 *
+	 * <p>Optional field (nullable). Type: assumed xs:integer from context.
+	 * XSD: espi.xsd line 1414
+	 *
+	 * <p>Note: XSD does not explicitly specify type for denominator.
+	 * Implementation assumes xs:integer based on RationalNumber semantics.
+	 *
+	 * <p>Uses BIGINT column type for database compatibility while maintaining
+	 * BigInteger type in Java for XSD compliance. Column type is specified in entity
+	 * @AttributeOverride annotations.
+	 */
+	@XmlElement(name = "denominator", namespace = "http://naesb.org/espi")
 	private BigInteger denominator;
 
 }

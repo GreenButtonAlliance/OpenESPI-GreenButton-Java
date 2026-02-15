@@ -625,12 +625,12 @@ public class UsageSummaryEntity extends IdentifiedObject {
 
     /**
      * Gets the commodity type being measured based on UOM.
-     * 
+     *
      * @return commodity type description
      */
     public String getCommodityType() {
         if (overallConsumptionLastPeriod != null && overallConsumptionLastPeriod.getUom() != null) {
-            String uom = overallConsumptionLastPeriod.getUom();
+            String uom = overallConsumptionLastPeriod.getUom().name();
             if (uom.contains("WH") || uom.contains("W")) return "Electricity";
             if (uom.contains("BTU") || uom.contains("THERM")) return "Gas";
             if (uom.contains("GAL") || uom.contains("L")) return "Water";
