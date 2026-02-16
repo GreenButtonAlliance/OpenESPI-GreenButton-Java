@@ -25,6 +25,8 @@ import org.greenbuttonalliance.espi.common.domain.common.RationalNumber;
 import org.greenbuttonalliance.espi.common.domain.common.ReadingInterharmonic;
 import org.greenbuttonalliance.espi.common.domain.common.ServiceCategory;
 import org.greenbuttonalliance.espi.common.test.BaseRepositoryTest;
+
+import java.math.BigInteger;
 import org.greenbuttonalliance.espi.common.test.TestDataBuilders;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -228,10 +230,10 @@ class ReadingTypeRepositoryTest extends BaseRepositoryTest {
             
             // Create ReadingInterharmonic for interharmonic
             ReadingInterharmonic interharmonic = new ReadingInterharmonic();
-            
-            // Set Long values directly
-            interharmonic.setNumerator(50L);
-            interharmonic.setDenominator(1L);
+
+            // Set BigInteger values directly
+            interharmonic.setNumerator(BigInteger.valueOf(50L));
+            interharmonic.setDenominator(BigInteger.valueOf(1L));
             
             readingType.setInterharmonic(interharmonic);
 

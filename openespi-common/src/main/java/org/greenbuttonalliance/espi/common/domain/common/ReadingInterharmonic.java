@@ -19,24 +19,64 @@
 
 package org.greenbuttonalliance.espi.common.domain.common;
 
-import lombok.Getter;
-import lombok.Setter;
-import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
-import jakarta.persistence.Column;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import jakarta.persistence.Embeddable;
 
+import java.math.BigInteger;
+
+/**
+ * Interharmonic reading represented as numerator / denominator.
+ *
+ * <p>Embeddable component used for harmonic and interharmonic measurements in reading types.
+ * Harmonics are identified by denominator = 1. Both numerator and denominator are
+ * optional (nullable) per ESPI 4.0 specification.
+ *
+ * <p>Per ESPI 4.0 espi.xsd lines 1419-1431.
+ *
+ * <p>Note: JAXB annotations are on ReadingInterharmonicDto for XML marshalling.
+ * This entity class is for JPA persistence only.
+ *
+ * @see <a href="http://naesb.org/espi">ESPI Specification</a>
+ */
 @Embeddable
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode
 public class ReadingInterharmonic {
 
-	@Column(name = "denominator")
-	private Long denominator;
+	/**
+	 * Numerator of the interharmonic rational number.
+	 *
+	 * <p>Optional field (nullable). Type: xs:integer from XSD.
+	 * XSD: espi.xsd line 1426
+	 *
+	 * <p>Note: Uses DECIMAL(38,0) column type for database compatibility while maintaining
+	 * BigInteger type in Java for XSD compliance. Column type is specified in entity
+	 * @AttributeOverride annotations.
+	 */
+	private BigInteger numerator;
 
-	@Column(name = "numerator")
-	private Long numerator;
+	/**
+	 * Denominator of the interharmonic rational number.
+	 * Harmonics are identified by denominator = 1.
+	 *
+	 * <p>Optional field (nullable). Type: assumed xs:integer from context.
+	 * XSD: espi.xsd line 1427
+	 *
+	 * <p>Note: XSD does not explicitly specify type for denominator (schema bug).
+	 * Implementation assumes xs:integer based on ReadingInterharmonic semantics.
+	 *
+	 * <p>Uses DECIMAL(38,0) column type for database compatibility while maintaining
+	 * BigInteger type in Java for XSD compliance. Column type is specified in entity
+	 * @AttributeOverride annotations.
+	 */
+	private BigInteger denominator;
 
 }

@@ -19,25 +19,62 @@
 
 package org.greenbuttonalliance.espi.common.domain.common;
 
-import lombok.Getter;
-import lombok.Setter;
-import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
-import jakarta.persistence.Column;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import jakarta.persistence.Embeddable;
+
 import java.math.BigInteger;
 
+/**
+ * Rational number represented as numerator / denominator.
+ *
+ * <p>Embeddable component used for precise fractional values in ESPI entities.
+ * Both numerator and denominator are optional (nullable) per ESPI 4.0 specification.
+ *
+ * <p>Per ESPI 4.0 espi.xsd lines 1406-1418.
+ *
+ * <p>Note: JAXB annotations are on RationalNumberDto for XML marshalling.
+ * This entity class is for JPA persistence only.
+ *
+ * @see <a href="http://naesb.org/espi">ESPI Specification</a>
+ */
 @Embeddable
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode
 public class RationalNumber {
 
-	@Column(name = "numerator")
+	/**
+	 * Numerator of the rational number.
+	 *
+	 * <p>Optional field (nullable). Type: xs:integer from XSD.
+	 * XSD: espi.xsd line 1413
+	 *
+	 * <p>Note: Uses DECIMAL(38,0) column type for database compatibility while maintaining
+	 * BigInteger type in Java for XSD compliance. Column type is specified in entity
+	 * @AttributeOverride annotations.
+	 */
 	private BigInteger numerator;
 
-	@Column(name = "denominator")
+	/**
+	 * Denominator of the rational number.
+	 *
+	 * <p>Optional field (nullable). Type: assumed xs:integer from context.
+	 * XSD: espi.xsd line 1414
+	 *
+	 * <p>Note: XSD does not explicitly specify type for denominator.
+	 * Implementation assumes xs:integer based on RationalNumber semantics.
+	 *
+	 * <p>Uses DECIMAL(38,0) column type for database compatibility while maintaining
+	 * BigInteger type in Java for XSD compliance. Column type is specified in entity
+	 * @AttributeOverride annotations.
+	 */
 	private BigInteger denominator;
 
 }

@@ -246,8 +246,8 @@ CREATE TABLE reading_types
     tou                     VARCHAR(50),
     uom                     VARCHAR(50),
     cpp                     VARCHAR(50),
-    interharmonic_numerator BIGINT,
-    interharmonic_denominator BIGINT,
+    interharmonic_numerator DECIMAL(38,0),
+    interharmonic_denominator DECIMAL(38,0),
     measuring_period        VARCHAR(50),
     argument_numerator      DECIMAL(38,0),
     argument_denominator    DECIMAL(38,0)

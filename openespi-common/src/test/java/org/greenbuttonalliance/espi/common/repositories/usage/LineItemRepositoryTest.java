@@ -21,6 +21,8 @@ package org.greenbuttonalliance.espi.common.repositories.usage;
 import org.greenbuttonalliance.espi.common.domain.common.DateTimeInterval;
 import org.greenbuttonalliance.espi.common.domain.common.SummaryMeasurement;
 import org.greenbuttonalliance.espi.common.domain.usage.LineItemEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.enums.UnitMultiplierKind;
+import org.greenbuttonalliance.espi.common.domain.usage.enums.UnitSymbolKind;
 import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.UsageSummaryEntity;
 import org.greenbuttonalliance.espi.common.test.BaseRepositoryTest;
@@ -112,8 +114,14 @@ class LineItemRepositoryTest extends BaseRepositoryTest {
             usageSummary.setUsagePoint(savedUsagePoint);
             UsageSummaryEntity savedUsageSummary = usageSummaryRepository.save(usageSummary);
 
-            SummaryMeasurement measurement = new SummaryMeasurement("3", 1641000000L, "Wh", 15000L, null);
-            DateTimeInterval itemPeriod = new DateTimeInterval(1640995200L, 86400L);
+            SummaryMeasurement measurement = new SummaryMeasurement(
+                UnitMultiplierKind.fromValue(3),
+                1641000000L,
+                UnitSymbolKind.WH,
+                15000L,
+                null
+            );
+            DateTimeInterval itemPeriod = new DateTimeInterval(86400L, 1640995200L);
 
             LineItemEntity lineItem = new LineItemEntity();
             lineItem.setAmount(15000L);

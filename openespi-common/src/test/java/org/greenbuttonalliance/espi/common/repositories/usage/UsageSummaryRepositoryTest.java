@@ -22,6 +22,8 @@ import org.greenbuttonalliance.espi.common.domain.common.DateTimeInterval;
 import org.greenbuttonalliance.espi.common.domain.common.ServiceCategory;
 import org.greenbuttonalliance.espi.common.domain.common.SummaryMeasurement;
 import org.greenbuttonalliance.espi.common.domain.usage.LineItemEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.enums.UnitMultiplierKind;
+import org.greenbuttonalliance.espi.common.domain.usage.enums.UnitSymbolKind;
 import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.UsageSummaryEntity;
@@ -95,9 +97,9 @@ class UsageSummaryRepositoryTest extends BaseRepositoryTest {
      */
     private SummaryMeasurement createValidSummaryMeasurement() {
         SummaryMeasurement measurement = new SummaryMeasurement();
-        measurement.setPowerOfTenMultiplier("0");
+        measurement.setPowerOfTenMultiplier(UnitMultiplierKind.fromValue(0)); // None
         measurement.setTimeStamp(randomOffsetDateTime().toEpochSecond());
-        measurement.setUom("72"); // Wh
+        measurement.setUom(UnitSymbolKind.fromValue(72)); // Wh
         measurement.setValue(faker.number().numberBetween(1000L, 50000L));
         measurement.setReadingTypeRef("https://api.example.com/ReadingType/" + randomUuid());
         return measurement;
@@ -381,12 +383,12 @@ class UsageSummaryRepositoryTest extends BaseRepositoryTest {
             
             SummaryMeasurement overallConsumption = createValidSummaryMeasurement();
             overallConsumption.setValue(15000L);
-            overallConsumption.setUom("72"); // Wh
+            overallConsumption.setUom(UnitSymbolKind.fromValue(72)); // Wh
             summary.setOverallConsumptionLastPeriod(overallConsumption);
 
             SummaryMeasurement peakDemand = createValidSummaryMeasurement();
             peakDemand.setValue(5000L);
-            peakDemand.setUom("38"); // W
+            peakDemand.setUom(UnitSymbolKind.fromValue(38)); // W
             summary.setPeakDemand(peakDemand);
 
             // Act
@@ -397,10 +399,10 @@ class UsageSummaryRepositoryTest extends BaseRepositoryTest {
             assertThat(retrieved).isPresent();
             assertThat(retrieved.get().getOverallConsumptionLastPeriod()).isNotNull();
             assertThat(retrieved.get().getOverallConsumptionLastPeriod().getValue()).isEqualTo(15000L);
-            assertThat(retrieved.get().getOverallConsumptionLastPeriod().getUom()).isEqualTo("72");
+            assertThat(retrieved.get().getOverallConsumptionLastPeriod().getUom()).isEqualTo(UnitSymbolKind.fromValue(72)); // Wh (UInt16: 72)
             assertThat(retrieved.get().getPeakDemand()).isNotNull();
             assertThat(retrieved.get().getPeakDemand().getValue()).isEqualTo(5000L);
-            assertThat(retrieved.get().getPeakDemand().getUom()).isEqualTo("38");
+            assertThat(retrieved.get().getPeakDemand().getUom()).isEqualTo(UnitSymbolKind.fromValue(38)); // W (UInt16: 38)
         }
 
         @Test

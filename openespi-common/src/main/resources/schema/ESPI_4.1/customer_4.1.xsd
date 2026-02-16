@@ -633,8 +633,13 @@ Additional Complex Types
 			<xs:documentation>Formal agreement between two parties defining the terms and conditions for a set of services. The specifics of the services are, in turn, defined via one or more service agreements.</xs:documentation>
 		</xs:annotation>
 		<xs:complexContent>
-			<xs:extension base="Document">
+			<xs:extension base="Object">
 				<xs:sequence>
+					<xs:element name="document" type="Document" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Basic agreement information.</xs:documentation>
+						</xs:annotation>
+					</xs:element>
 					<xs:element name="signDate" type="TimeType" minOccurs="0">
 						<xs:annotation>
 							<xs:documentation>Date this agreement was consummated among associated persons and/or organisations.</xs:documentation>
@@ -3161,9 +3166,6 @@ Global Elements
 	<xs:element name="AccountNotification" type="AccountNotification"/>
 	<xs:element name="Agreement" type="Agreement"/>
 	<xs:element name="Asset" type="Asset"/>
-	<!--
-	<xs:element name="AssetContainer" type="AssetContainer"/>
-	-->
 	<xs:element name="BatchItemInfo" type="BatchItemInfo"/>
 	<xs:element name="BatchList" type="BatchListType"/>
 	<xs:element name="Customer" type="Customer"/>
@@ -3182,9 +3184,6 @@ Global Elements
 	<xs:element name="MeterMultiplier" type="MeterMultiplier"/>
 	<xs:element name="Object" type="Object"/>
 	<xs:element name="Organisation" type="Organisation"/>
-	<!--
-	<xs:element name="OrganisationRole" type="OrganisationRole"/>
-	-->
 	<xs:element name="PositionPoint" type="PositionPoint"/>
 	<xs:element name="PricingStructure" type="PricingStructure"/>
 	<xs:element name="Priority" type="Priority"/>
@@ -3204,7 +3203,4 @@ Global Elements
 	<xs:element name="TownDetail" type="TownDetail"/>
 	<xs:element name="UsagePoint" type="UsagePoint"/>
 	<xs:element name="UsagePoints" type="UsagePoints"/>
-	<!--
-	<xs:element name="WorkLocation" type="WorkLocation"/>
-	-->
 </xs:schema>

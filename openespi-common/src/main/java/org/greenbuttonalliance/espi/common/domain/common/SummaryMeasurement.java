@@ -19,26 +19,84 @@
 
 package org.greenbuttonalliance.espi.common.domain.common;
 
-import lombok.Getter;
-import lombok.Setter;
-import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
-import jakarta.persistence.Embeddable;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.greenbuttonalliance.espi.common.domain.usage.enums.UnitMultiplierKind;
+import org.greenbuttonalliance.espi.common.domain.usage.enums.UnitSymbolKind;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+
+/**
+ * Summary measurement data embedded in usage summary entities.
+ *
+ * <p>Embeddable component used for aggregate measurement values with units and timestamps.
+ * All fields are optional (nullable) per ESPI 4.0 specification.
+ *
+ * <p>Per ESPI 4.0 espi.xsd lines 1094-1129.
+ *
+ * <p>Note: JAXB annotations are on SummaryMeasurementDto for XML marshalling.
+ * This entity class is for JPA persistence only.
+ *
+ * @see <a href="http://naesb.org/espi">ESPI Specification</a>
+ */
 @Embeddable
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode
 public class SummaryMeasurement {
 
-	private String powerOfTenMultiplier;
+	/**
+	 * The multiplier part of the unit of measure, e.g. "kilo" (k).
+	 *
+	 * <p>Optional field (nullable). Type: UnitMultiplierKind enum.
+	 * XSD: espi.xsd line 1101
+	 */
+	@Column(name = "power_of_ten_multiplier")
+	@Enumerated(EnumType.STRING)
+	private UnitMultiplierKind powerOfTenMultiplier;
 
+	/**
+	 * The date and time (if needed) of the summary measurement.
+	 *
+	 * <p>Optional field (nullable). Type: TimeType (seconds since Unix epoch).
+	 * XSD: espi.xsd line 1106
+	 */
+	@Column(name = "time_stamp")
 	private Long timeStamp;
 
-	private String uom;
+	/**
+	 * The units of the reading, e.g. "Wh".
+	 *
+	 * <p>Optional field (nullable). Type: UnitSymbolKind enum.
+	 * XSD: espi.xsd line 1111
+	 */
+	@Column(name = "uom")
+	@Enumerated(EnumType.STRING)
+	private UnitSymbolKind uom;
 
+	/**
+	 * The value of the summary measurement.
+	 *
+	 * <p>Optional field (nullable). Type: Int48 (48-bit signed integer).
+	 * XSD: espi.xsd line 1116
+	 */
+	@Column(name = "value")
 	private Long value;
 
+	/**
+	 * Reference URI to a full ReadingType resource.
+	 *
+	 * <p>Optional field (nullable). Type: xs:anyURI.
+	 * XSD: espi.xsd line 1121
+	 */
+	@Column(name = "reading_type_ref")
 	private String readingTypeRef;
 }
