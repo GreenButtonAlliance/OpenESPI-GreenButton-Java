@@ -131,6 +131,27 @@ The project uses MapStruct for entity-to-DTO mappings:
 
 DTOs mirror ESPI XML schema structure and are used exclusively for XML representations. JSON is only used by openespi-authserver for OAuth2 operations.
 
+#### JAXB Annotation Guidelines
+**CRITICAL: JAXB annotations MUST only be applied to DTO classes, NEVER to entity or embeddable classes.**
+
+- **Entity/Embeddable Classes** (`domain/` packages):
+  - Use JPA annotations only: `@Entity`, `@Table`, `@Column`, `@Embeddable`, etc.
+  - **ABSOLUTELY NO JAXB annotations**: Do not use `@XmlType`, `@XmlAccessorType`, `@XmlElement`, `@XmlRootElement`
+  - Purpose: JPA persistence layer only
+
+- **DTO Classes** (`dto/` packages):
+  - Use JAXB annotations: `@XmlType`, `@XmlAccessorType`, `@XmlElement`, `@XmlRootElement`
+  - NO JPA annotations
+  - Purpose: XML marshalling/unmarshalling only
+
+**If an embeddable class needs XML serialization but has no DTO:** Create a corresponding DTO class rather than adding JAXB annotations to the embeddable. This rule has NO exceptions.
+
+**Rationale:** When both entity and DTO classes have JAXB annotations with the same XML type name and namespace, JAXB throws `IllegalAnnotationsException` due to duplicate type definitions when both are loaded in the same context. This strict separation ensures:
+1. Clean architecture (persistence vs. presentation layers)
+2. No JAXB namespace conflicts
+3. Entities can be refactored without affecting XML schema
+4. DTOs can be optimized for XML without affecting database schema
+
 ## Database Management
 
 ### Supported Databases
