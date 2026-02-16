@@ -31,10 +31,6 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.xml.bind.annotation.XmlAccessType;
-import jakarta.xml.bind.annotation.XmlAccessorType;
-import jakarta.xml.bind.annotation.XmlElement;
-import jakarta.xml.bind.annotation.XmlType;
 
 /**
  * Summary measurement data embedded in usage summary entities.
@@ -44,17 +40,12 @@ import jakarta.xml.bind.annotation.XmlType;
  *
  * <p>Per ESPI 4.0 espi.xsd lines 1094-1129.
  *
+ * <p>Note: JAXB annotations are on SummaryMeasurementDto for XML marshalling.
+ * This entity class is for JPA persistence only.
+ *
  * @see <a href="http://naesb.org/espi">ESPI Specification</a>
  */
 @Embeddable
-@XmlAccessorType(XmlAccessType.FIELD)
-@XmlType(name = "SummaryMeasurement", namespace = "http://naesb.org/espi", propOrder = {
-	"powerOfTenMultiplier",
-	"timeStamp",
-	"uom",
-	"value",
-	"readingTypeRef"
-})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -68,7 +59,6 @@ public class SummaryMeasurement {
 	 * <p>Optional field (nullable). Type: UnitMultiplierKind enum.
 	 * XSD: espi.xsd line 1101
 	 */
-	@XmlElement(name = "powerOfTenMultiplier", namespace = "http://naesb.org/espi")
 	@Column(name = "power_of_ten_multiplier")
 	@Enumerated(EnumType.STRING)
 	private UnitMultiplierKind powerOfTenMultiplier;
@@ -79,7 +69,6 @@ public class SummaryMeasurement {
 	 * <p>Optional field (nullable). Type: TimeType (seconds since Unix epoch).
 	 * XSD: espi.xsd line 1106
 	 */
-	@XmlElement(name = "timeStamp", namespace = "http://naesb.org/espi")
 	@Column(name = "time_stamp")
 	private Long timeStamp;
 
@@ -89,7 +78,6 @@ public class SummaryMeasurement {
 	 * <p>Optional field (nullable). Type: UnitSymbolKind enum.
 	 * XSD: espi.xsd line 1111
 	 */
-	@XmlElement(name = "uom", namespace = "http://naesb.org/espi")
 	@Column(name = "uom")
 	@Enumerated(EnumType.STRING)
 	private UnitSymbolKind uom;
@@ -100,7 +88,6 @@ public class SummaryMeasurement {
 	 * <p>Optional field (nullable). Type: Int48 (48-bit signed integer).
 	 * XSD: espi.xsd line 1116
 	 */
-	@XmlElement(name = "value", namespace = "http://naesb.org/espi")
 	@Column(name = "value")
 	private Long value;
 
@@ -110,7 +97,6 @@ public class SummaryMeasurement {
 	 * <p>Optional field (nullable). Type: xs:anyURI.
 	 * XSD: espi.xsd line 1121
 	 */
-	@XmlElement(name = "readingTypeRef", namespace = "http://naesb.org/espi")
 	@Column(name = "reading_type_ref")
 	private String readingTypeRef;
 }

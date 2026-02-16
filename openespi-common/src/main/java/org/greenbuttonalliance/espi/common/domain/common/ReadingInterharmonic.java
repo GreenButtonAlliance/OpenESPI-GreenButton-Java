@@ -25,12 +25,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
-import jakarta.xml.bind.annotation.XmlAccessType;
-import jakarta.xml.bind.annotation.XmlAccessorType;
-import jakarta.xml.bind.annotation.XmlElement;
-import jakarta.xml.bind.annotation.XmlType;
 
 import java.math.BigInteger;
 
@@ -43,14 +38,12 @@ import java.math.BigInteger;
  *
  * <p>Per ESPI 4.0 espi.xsd lines 1419-1431.
  *
+ * <p>Note: JAXB annotations are on ReadingInterharmonicDto for XML marshalling.
+ * This entity class is for JPA persistence only.
+ *
  * @see <a href="http://naesb.org/espi">ESPI Specification</a>
  */
 @Embeddable
-@XmlAccessorType(XmlAccessType.FIELD)
-@XmlType(name = "ReadingInterharmonic", namespace = "http://naesb.org/espi", propOrder = {
-	"numerator",
-	"denominator"
-})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -64,11 +57,10 @@ public class ReadingInterharmonic {
 	 * <p>Optional field (nullable). Type: xs:integer from XSD.
 	 * XSD: espi.xsd line 1426
 	 *
-	 * <p>Note: Uses BIGINT column type for database compatibility while maintaining
+	 * <p>Note: Uses DECIMAL(38,0) column type for database compatibility while maintaining
 	 * BigInteger type in Java for XSD compliance. Column type is specified in entity
 	 * @AttributeOverride annotations.
 	 */
-	@XmlElement(name = "numerator", namespace = "http://naesb.org/espi")
 	private BigInteger numerator;
 
 	/**
@@ -81,11 +73,10 @@ public class ReadingInterharmonic {
 	 * <p>Note: XSD does not explicitly specify type for denominator (schema bug).
 	 * Implementation assumes xs:integer based on ReadingInterharmonic semantics.
 	 *
-	 * <p>Uses BIGINT column type for database compatibility while maintaining
+	 * <p>Uses DECIMAL(38,0) column type for database compatibility while maintaining
 	 * BigInteger type in Java for XSD compliance. Column type is specified in entity
 	 * @AttributeOverride annotations.
 	 */
-	@XmlElement(name = "denominator", namespace = "http://naesb.org/espi")
 	private BigInteger denominator;
 
 }
