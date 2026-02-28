@@ -42,17 +42,17 @@ import java.util.List;
 
 /**
  * Security configuration for the OpenESPI Data Custodian Resource Server.
- * 
+ * <p>
  * This configuration implements OAuth2 Resource Server security using opaque tokens
  * from the separate OpenESPI AuthorizationEntity Server. It replaces the legacy Spring
  * Security configuration replacing legacy Spring XML with modern Spring Security 6.5.
- * 
+ * <p>
  * Key Features:
  * - OAuth2 Resource Server with opaque token introspection
  * - ESPI-specific authorization rules  
  * - CORS configuration for web clients
  * - Method-level security for service layers
- * 
+ * <p>
  * Note: ESPI standard uses opaque OAuth2 tokens. JWT support will be added
  * in future enhancement for dynamic client registration.
  */
@@ -74,7 +74,7 @@ public class SecurityConfiguration {
      * Main security filter chain for ESPI Resource Server endpoints.
      */
     @Bean
-    @Order(1)
+    @Order(2)
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
             // Disable CSRF for API endpoints
@@ -207,19 +207,6 @@ public class SecurityConfiguration {
     }
 
     /**
-     * OAuth2 Resource Server configuration notes:
-     * 
-     * The DataCustodian acts as an OAuth2 Resource Server that validates opaque tokens
-     * issued by the separate OpenESPI AuthorizationEntity Server. This configuration:
-     * 
-     * 1. Uses opaque token introspection (ESPI standard requirement)
-     * 2. Connects to the AuthorizationEntity Server's introspection endpoint
-     * 3. Uses client credentials for introspection authentication
-     * 
-     * Future enhancement: Add JWT support for dynamic client registration scenarios
-     */
-
-    /**
      * Configures the Opaque Token Introspector to validate tokens against the AuthorizationEntity Server.
      */
     @Bean
@@ -229,7 +216,6 @@ public class SecurityConfiguration {
                 .clientSecret(clientSecret)
                 .build();
     }
-
 
     /**
      * CORS configuration for web clients.

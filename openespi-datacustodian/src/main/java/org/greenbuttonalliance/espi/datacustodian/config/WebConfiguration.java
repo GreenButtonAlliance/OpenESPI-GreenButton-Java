@@ -20,7 +20,6 @@
 package org.greenbuttonalliance.espi.datacustodian.config;
 
 
-import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.Marshaller;
 import jakarta.xml.bind.Unmarshaller;
@@ -43,10 +42,10 @@ import java.util.Arrays;
 
 /**
  * Web configuration for the OpenESPI Data Custodian Resource Server.
- * 
+ * <p>
  * This configuration replaces the legacy Spring MVC XML configuration and provides
  * modern Spring Boot 3.5 web configuration with ESPI-specific customizations.
- * 
+ * <p>
  * Key Features:
  * - JAXB XML marshalling for ESPI Atom feeds
  * - JSON serialization with proper date/time handling
@@ -147,19 +146,6 @@ public class WebConfiguration implements WebMvcConfigurer {
                         .build());
                 // Java 8 time should be included by default
     }
-
-    /**
-     * WebClient for external HTTP communication.
-     */
-//    @Bean
-//    public WebClient webClient() {
-//        return WebClient.builder()
-//            .codecs(configurer -> configurer
-//                .defaultCodecs()
-//                .maxInMemorySize(1024 * 1024) // 1MB buffer
-//            )
-//            .build();
-//    }
 
     /**
      * Configure static resource handling.

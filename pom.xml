@@ -50,7 +50,7 @@
         <module>openespi-common</module>
         <module>openespi-datacustodian</module>
         <module>openespi-thirdparty</module>
-        <module>openespi-authserver</module>
+<!--todo, commenting out module, need to remove from project, keeping for reference until migration is verified.        <module>openespi-authserver</module>-->
     </modules>
     
     <properties>
