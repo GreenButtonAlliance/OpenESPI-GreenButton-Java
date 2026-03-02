@@ -23,19 +23,16 @@ import org.greenbuttonalliance.espi.common.domain.usage.IntervalBlockEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.UUID;
 
-@Repository
 public interface IntervalBlockRepository extends JpaRepository<IntervalBlockEntity, UUID> {
 
 	@Query("SELECT i.id FROM IntervalBlockEntity i")
 	List<UUID> findAllIds();
 
-	@Query("SELECT i FROM IntervalBlockEntity i WHERE i.meterReading.id = :meterReadingId")
-	List<IntervalBlockEntity> findAllByMeterReadingId(@Param("meterReadingId") UUID meterReadingId);
+	List<IntervalBlockEntity> findAllByMeterReadingId(UUID meterReadingId);
 
 	@Query("SELECT i.id FROM IntervalBlockEntity i WHERE i.meterReading.usagePoint.id = :usagePointId")
 	List<UUID> findAllIdsByUsagePointId(@Param("usagePointId") UUID usagePointId);

@@ -48,6 +48,8 @@ public interface LineItemMapper {
      * @param dto the line item DTO
      * @return the line item entity
      */
+    @Mapping(target = "dateTimeFromLocalDateTime", ignore = true)
+    @Mapping(target = "dateTimeFromInstant", ignore = true)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "usageSummary", ignore = true)
     LineItemEntity toEntity(LineItemDto dto);

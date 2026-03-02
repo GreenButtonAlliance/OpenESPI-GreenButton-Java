@@ -21,7 +21,6 @@ package org.greenbuttonalliance.espi.common.repositories.customer;
 
 import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 
 import java.util.UUID;
 
@@ -35,7 +34,6 @@ import java.util.UUID;
  * Removed queries: findByCustomerName, findByKind, findByPucNumber, findVipCustomers,
  * findCustomersWithSpecialNeeds, findByLocale, findByPriorityRange, findByOrganisationName
  */
-@Repository
 public interface CustomerRepository extends JpaRepository<CustomerEntity, UUID> {
     // Only default JpaRepository methods are supported (findById, findAll, save, delete, etc.)
 }
