@@ -34,6 +34,7 @@ Next Steps:
 - Improve testing of returned payloads.
 
 ---
+
 Prompt to migrate the controllers to use the new design patterns:
 
 Inspect the controllers UseagePointController, MeterReadingController, and ReadingTypeRESTController and their 
