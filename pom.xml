@@ -55,7 +55,7 @@
     
     <properties>
         <java.version>25</java.version>
-        <spring.boot.version>4.0.1</spring.boot.version>
+        <spring.boot.version>4.0.3</spring.boot.version>
         <project.scm.id>github</project.scm.id>
         <maven.compiler.source>25</maven.compiler.source>
         <maven.compiler.target>25</maven.compiler.target>
@@ -376,19 +376,40 @@
         </plugins>
     </build>
     <repositories>
-        <!-- GitHub Packages Repository for OpenESPI -->
         <repository>
-            <id>github</id>
-            <name>GitHub Green Button Alliance Apache Maven Packages</name>
-            <url>https://maven.pkg.github.com/GreenButtonAlliance/OpenESPI-GreenButton-Java</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
+            <id>central</id>
+            <name>Maven Central</name>
+            <layout>default</layout>
+            <url>https://repo.maven.apache.org/maven2</url>
             <snapshots>
-                <enabled>true</enabled>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>atlassian</id>
+            <name>Atlassin Maven Repository</name>
+            <url>https://maven.artifacts.atlassian.com/</url>
+            <snapshots>
+                <enabled>false</enabled>
             </snapshots>
         </repository>
     </repositories>
+
+    <!--    <repositories>-->
+<!--        -->
+<!--        &lt;!&ndash; GitHub Packages Repository for OpenESPI &ndash;&gt;-->
+<!--        <repository>-->
+<!--            <id>github</id>-->
+<!--            <name>GitHub Green Button Alliance Apache Maven Packages</name>-->
+<!--            <url>https://maven.pkg.github.com/GreenButtonAlliance/OpenESPI-GreenButton-Java</url>-->
+<!--            <releases>-->
+<!--                <enabled>true</enabled>-->
+<!--            </releases>-->
+<!--            <snapshots>-->
+<!--                <enabled>true</enabled>-->
+<!--            </snapshots>-->
+<!--        </repository>-->
+<!--    </repositories>-->
 
     <scm>
         <connection>scm:git:https://github.com/GreenButtonAlliance/OpenESPI-GreenButton-Java</connection>
