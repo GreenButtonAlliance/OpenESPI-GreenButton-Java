@@ -30,10 +30,10 @@ import org.mapstruct.MappingTarget;
 
 /**
  * MapStruct mapper for converting between ElectricPowerQualitySummaryEntity and ElectricPowerQualitySummaryDto.
- *
+ * <p>
  * Maps only ElectricPowerQualitySummary fields. IdentifiedObject fields are NOT part of the usage.xsd
  * definition and are handled by AtomFeedDto/AtomEntryDto.
- *
+ * <p>
  * Handles the conversion between the JPA entity used for persistence and the DTO
  * used for JAXB XML marshalling in the Green Button API.
  */
@@ -59,6 +59,14 @@ public interface ElectricPowerQualitySummaryMapper {
      * @param dto the electric power quality summary DTO
      * @return the electric power quality summary entity
      */
+    @Mapping(target = "updated", ignore = true)
+    @Mapping(target = "upLink", ignore = true)
+    @Mapping(target = "selfLink", ignore = true)
+    @Mapping(target = "relatedLinks", ignore = true)
+    @Mapping(target = "relatedLinkHrefs", ignore = true)
+    @Mapping(target = "published", ignore = true)
+    @Mapping(target = "description", ignore = true)
+    @Mapping(target = "created", ignore = true)
     @Mapping(target = "id", ignore = true) // IdentifiedObject field handled by Atom layer
     @Mapping(target = "usagePoint", ignore = true) // Relationships handled separately
     @Mapping(target = "upResource", ignore = true)

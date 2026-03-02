@@ -27,9 +27,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.greenbuttonalliance.espi.common.dto.usage.AuthorizationDto;
-import org.greenbuttonalliance.espi.common.repositories.usage.AuthorizationRepository;
-import org.greenbuttonalliance.espi.common.mapper.usage.AuthorizationMapper;
-import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
@@ -43,27 +40,29 @@ import java.util.UUID;
 
 /**
  * Modern REST Controller for ESPI Authorization resources.
- * 
+ * <p>
  * This controller implements the NAESB ESPI 1.0 REST API for OAuth2 Authorizations,
- * using modern Spring Boot 3.5 patterns with DTOs and MapStruct mappers.
- * 
+ * using modern Spring Boot 4.x patterns with DTOs and MapStruct mappers.
+ * <p>
  * Supported endpoints:
  * - GET /espi/1_1/resource/Authorization - List all authorizations  
  * - GET /espi/1_1/resource/Authorization/{authorizationId} - Get specific authorization
  */
+
+//todo - complete implementation
 @RestController
 @RequestMapping("/espi/1_1/resource")
 @Tag(name = "Authorizations", description = "OAuth2 Authorization Management API")
 @SecurityRequirement(name = "oauth2")
 public class AuthorizationController {
 
-    private final AuthorizationRepository authorizationRepository;
-    private final AuthorizationMapper authorizationMapper;
-
-    public AuthorizationController(AuthorizationRepository authorizationRepository, AuthorizationMapper authorizationMapper) {
-        this.authorizationRepository = authorizationRepository;
-        this.authorizationMapper = authorizationMapper;
-    }
+//    private final AuthorizationRepository authorizationRepository;
+//    private final AuthorizationMapper authorizationMapper;
+//
+//    public AuthorizationController(AuthorizationRepository authorizationRepository, AuthorizationMapper authorizationMapper) {
+//        this.authorizationRepository = authorizationRepository;
+//        this.authorizationMapper = authorizationMapper;
+//    }
 
     /**
      * Get all Authorizations (admin access only).
@@ -89,11 +88,13 @@ public class AuthorizationController {
             Authentication authentication) {
         
         Pageable pageable = PageRequest.of(offset / limit, limit);
-        List<AuthorizationEntity> authorizationEntities = authorizationRepository.findAll(pageable).getContent();
-        List<AuthorizationDto> authorizations = authorizationEntities.stream()
-            .map(authorizationMapper::toDto)
-            .toList();
-        return ResponseEntity.ok(authorizations);
+//        List<AuthorizationEntity> authorizationEntities = authorizationRepository.findAll(pageable).getContent();
+//        List<AuthorizationDto> authorizations = authorizationEntities.stream()
+//            .map(authorizationMapper::toDto)
+//            .toList();
+
+        return null;
+       // return ResponseEntity.ok(authorizations);
     }
 
     /**
@@ -117,10 +118,11 @@ public class AuthorizationController {
             @Parameter(description = "Unique identifier of the Authorization", required = true)
             @PathVariable UUID authorizationId,
             Authentication authentication) {
-        
-        return authorizationRepository.findById(authorizationId)
-            .map(authorizationMapper::toDto)
-            .map(authorization -> ResponseEntity.ok(authorization))
-            .orElse(ResponseEntity.notFound().build());
+
+        return null;
+//        return authorizationRepository.findById(authorizationId)
+//            .map(authorizationMapper::toDto)
+//            .map(authorization -> ResponseEntity.ok(authorization))
+//            .orElse(ResponseEntity.notFound().build());
     }
 }

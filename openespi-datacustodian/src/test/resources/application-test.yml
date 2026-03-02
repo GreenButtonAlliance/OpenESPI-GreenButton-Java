@@ -25,9 +25,10 @@ spring:
   security:
     oauth2:
       resourceserver:
-        jwt:
-          issuer-uri: http://localhost:8080
-          jwk-set-uri: http://localhost:8080/.well-known/jwks.json
+        opaquetoken:
+          introspection-uri: http://localhost:8080/oauth2/introspect
+          client-id: datacustodian
+          client-secret: datacustodian-secret
 
 logging:
   level:
@@ -41,4 +42,6 @@ espi:
     base-url: http://localhost:8081/DataCustodian
   authorization-server:
     issuer-uri: http://localhost:8080
-    jwk-set-uri: http://localhost:8080/.well-known/jwks.json
+    introspection-endpoint: http://localhost:8080/oauth2/introspect
+    client-id: datacustodian
+    client-secret: datacustodian-secret

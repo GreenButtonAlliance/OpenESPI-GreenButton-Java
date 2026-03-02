@@ -2,6 +2,8 @@
 # Spring Boot 3.5 configuration with multi-environment support
 
 spring:
+  test:
+    print-condition-evaluation-report: false
   application:
     name: OpenESPI-DataCustodian
   

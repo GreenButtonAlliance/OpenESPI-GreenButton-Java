@@ -181,6 +181,12 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-cache</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.sun.syndication</groupId>
+            <artifactId>com.springsource.com.sun.syndication</artifactId>
+            <version>1.0.0</version>
+            <scope>compile</scope>
+        </dependency>
 
         <!-- Database Drivers -->
         <dependency>
@@ -226,6 +232,13 @@
         <dependency>
             <groupId>org.glassfish.jaxb</groupId>
             <artifactId>jaxb-runtime</artifactId>
+        </dependency>
+
+        <!-- Lombok -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
         </dependency>
 
         <!-- Observability -->

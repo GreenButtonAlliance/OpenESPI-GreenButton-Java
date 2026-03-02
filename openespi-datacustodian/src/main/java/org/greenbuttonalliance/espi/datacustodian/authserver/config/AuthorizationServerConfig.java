@@ -25,6 +25,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -69,7 +70,7 @@ import java.util.UUID;
  * @version 1.0.0
  * @since Spring Boot 3.5
  */
-@Configuration
+@Configuration(proxyBeanMethods = false)
 @EnableWebSecurity
 public class AuthorizationServerConfig {
 
@@ -91,6 +92,12 @@ public class AuthorizationServerConfig {
     @Value("${espi.authorization-server.client-secret:datacustodian-secret}")
     private String clientSecret;
 
+    @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri:}")
+    private String jwtIssuerUri;
+
+    @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri:}")
+    private String jwtJwkSetUri;
+
 
     /**
      * OAuth2 Authorization Server Security Filter Chain
@@ -102,21 +109,28 @@ public class AuthorizationServerConfig {
      * - /.well-known/oauth-authorization-server (discovery endpoint)
      */
     @Bean
-    @Order(1)
-    public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) {
-        OAuth2AuthorizationServerConfigurer authorizationServerCfg = new OAuth2AuthorizationServerConfigurer();
+    @Order(Ordered.HIGHEST_PRECEDENCE)
+    public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
+        OAuth2AuthorizationServerConfigurer authorizationServer = new OAuth2AuthorizationServerConfigurer();
+        http.with(authorizationServer, authServer -> {
+            if (isJwtResourceServerConfigured()) {
+                authServer.oidc(Customizer.withDefaults());
+            }
+        });
+
         http
-                .securityMatcher(authorizationServerCfg.getEndpointsMatcher())
+                .securityMatcher(authorizationServer.getEndpointsMatcher())
                 .authorizeHttpRequests((authorize) -> authorize
                         .requestMatchers("/assets/**", "/webjars/**", "/login").permitAll())
                 .formLogin(Customizer.withDefaults())
                 // Accept access tokens for User Info and/or Client Registration
-                .oauth2ResourceServer(resourceServer -> resourceServer
-                        .opaqueToken(Customizer.withDefaults())
-                )
-                .oauth2AuthorizationServer(authorizationServer ->
-                        authorizationServer.oidc(Customizer.withDefaults()) // Enable OpenID Connect 1.0
-                )
+                .oauth2ResourceServer(resourceServer -> {
+                    if (isJwtResourceServerConfigured()) {
+                        resourceServer.jwt(Customizer.withDefaults());
+                    } else {
+                        resourceServer.opaqueToken(Customizer.withDefaults());
+                    }
+                })
                 .csrf(Customizer.withDefaults())
                 // Redirect to the login page when not authenticated from the authorization endpoint
                 .exceptionHandling(exceptions -> exceptions
@@ -154,6 +168,11 @@ public class AuthorizationServerConfig {
                 );
 
         return http.build();
+    }
+
+    private boolean isJwtResourceServerConfigured() {
+        return (jwtIssuerUri != null && !jwtIssuerUri.isBlank())
+                || (jwtJwkSetUri != null && !jwtJwkSetUri.isBlank());
     }
 
     /**
@@ -278,6 +297,7 @@ public class AuthorizationServerConfig {
                 .tokenIntrospectionEndpoint("/oauth2/introspect")
                 .oidcClientRegistrationEndpoint("/connect/register")
                 .oidcUserInfoEndpoint("/userinfo")
+
                 .build();
     }
 }

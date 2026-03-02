@@ -182,7 +182,7 @@ public class SecurityConfiguration {
                 .requestMatchers("/espi/**").authenticated()
                 
                 // All other requests require authentication
-                .anyRequest().authenticated()
+              //  .anyRequest().authenticated()
             )
             
             // Configure OAuth2 Resource Server with opaque token introspection
@@ -202,7 +202,7 @@ public class SecurityConfiguration {
                             .maxAgeInSeconds(31536000)
                             .includeSubDomains(true)
                             .preload(true))
-            )
+            )//).securityMatcher(request -> request.)
                 .build();
     }
 

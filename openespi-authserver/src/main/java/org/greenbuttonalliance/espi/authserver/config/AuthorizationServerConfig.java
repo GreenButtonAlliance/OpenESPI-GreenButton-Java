@@ -106,6 +106,12 @@ public class AuthorizationServerConfig {
     @Value("${espi.authorization-server.client-secret:datacustodian-secret}")
     private String clientSecret;
 
+    @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri:}")
+    private String jwtIssuerUri;
+
+    @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri:}")
+    private String jwtJwkSetUri;
+
 
     /**
      * OAuth2 Authorization Server Security Filter Chain
@@ -125,7 +131,11 @@ public class AuthorizationServerConfig {
                         .requestMatchers("/assets/**", "/webjars/**", "/login").permitAll())
                 .formLogin(Customizer.withDefaults())
                 .oauth2AuthorizationServer(authorizationServer ->
-                        authorizationServer.oidc(Customizer.withDefaults()) // Enable OpenID Connect 1.0
+                        {
+                            if (isJwtResourceServerConfigured()) {
+                                authorizationServer.oidc(Customizer.withDefaults()); // Enable OpenID Connect 1.0
+                            }
+                        }
                 )
                 .authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated())
                 .csrf(Customizer.withDefaults())
@@ -137,11 +147,13 @@ public class AuthorizationServerConfig {
                         )
                 )
                 // Accept access tokens for User Info and/or Client Registration
-                .oauth2ResourceServer(resourceServer -> resourceServer
-                        .opaqueToken(Customizer.withDefaults())
-
-                        //.jwt(Customizer.withDefaults())
-                )
+                .oauth2ResourceServer(resourceServer -> {
+                    if (isJwtResourceServerConfigured()) {
+                        resourceServer.jwt(Customizer.withDefaults());
+                    } else {
+                        resourceServer.opaqueToken(Customizer.withDefaults());
+                    }
+                })
                 // HTTPS Channel Security for Production
                 //should be able to use property server.ssl.enabled=true
                 //todo - test this
@@ -170,6 +182,11 @@ public class AuthorizationServerConfig {
                 );
 
         return http.build();
+    }
+
+    private boolean isJwtResourceServerConfigured() {
+        return (jwtIssuerUri != null && !jwtIssuerUri.isBlank())
+                || (jwtJwkSetUri != null && !jwtJwkSetUri.isBlank());
     }
 
     /**
