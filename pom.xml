@@ -9,7 +9,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>4.0.1</version>
+        <version>4.0.3</version>
         <relativePath/>
     </parent>
 
@@ -50,7 +50,8 @@
         <module>openespi-common</module>
         <module>openespi-datacustodian</module>
         <module>openespi-thirdparty</module>
-        <module>openespi-authserver</module>
+        <!-- to do remove moduled, this has been added to datacustodian -->
+<!--        <module>openespi-authserver</module>-->
     </modules>
     
     <properties>
