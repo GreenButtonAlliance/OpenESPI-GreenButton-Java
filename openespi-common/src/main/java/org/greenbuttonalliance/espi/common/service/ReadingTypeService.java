@@ -23,6 +23,7 @@ import org.greenbuttonalliance.espi.common.domain.usage.MeterReadingEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.ReadingTypeEntity;
 
 import java.io.InputStream;
+import java.util.List;
 import java.util.UUID;
 
 public interface ReadingTypeService {
@@ -40,6 +41,8 @@ public interface ReadingTypeService {
 	ReadingTypeEntity save(ReadingTypeEntity readingType);
 
 	ReadingTypeEntity findById(UUID readingTypeId);
+
+	List<ReadingTypeEntity> findAll();
 
 	void add(ReadingTypeEntity readingType);
 

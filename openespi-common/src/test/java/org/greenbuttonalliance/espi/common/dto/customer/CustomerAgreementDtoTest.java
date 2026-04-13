@@ -50,7 +50,7 @@ class CustomerAgreementDtoTest {
     void setUp() {
         org.greenbuttonalliance.espi.common.service.EspiIdGeneratorService espiIdGeneratorService =
             new org.greenbuttonalliance.espi.common.service.EspiIdGeneratorService();
-        dtoExportService = new DtoExportServiceImpl(null, null, espiIdGeneratorService);
+        dtoExportService = new DtoExportServiceImpl(null, null, null, null, null, null, null, null, null, null, espiIdGeneratorService);
     }
 
     @Test

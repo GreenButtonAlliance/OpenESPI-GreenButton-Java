@@ -19,6 +19,10 @@
 
 package org.greenbuttonalliance.espi.common.service;
 
+import org.greenbuttonalliance.espi.common.dto.atom.AtomEntryDto;
+import org.greenbuttonalliance.espi.common.dto.atom.LinkDto;
+import org.greenbuttonalliance.espi.common.dto.atom.UsageAtomEntryDto;
+
 import jakarta.annotation.PostConstruct;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
@@ -195,5 +199,41 @@ public abstract class BaseExportService {
             log.error("Failed to export DTO with header: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to export DTO with header", e);
         }
+    }
+
+    /**
+     * Creates an Atom entry for ServiceStatus.
+     *
+     * @param currentStatus the current service status
+     * @return AtomEntryDto wrapped around ServiceStatusDto
+     */
+    public AtomEntryDto createServiceStatusEntry(String currentStatus) {
+        org.greenbuttonalliance.espi.common.dto.usage.ServiceStatusDto serviceStatus =
+                org.greenbuttonalliance.espi.common.dto.usage.ServiceStatusDto.builder()
+                        .currentStatus(currentStatus)
+                        .build();
+
+        AtomEntryDto entry = new UsageAtomEntryDto();
+        entry.setTitle("ServiceStatus");
+        entry.setId("urn:uuid:" + java.util.UUID.randomUUID());
+        entry.setPublished(java.time.OffsetDateTime.now());
+        entry.setUpdated(java.time.OffsetDateTime.now());
+
+        java.util.List<LinkDto> links = new java.util.ArrayList<>();
+        
+        LinkDto selfLink = new LinkDto();
+        selfLink.setRel("self");
+        selfLink.setHref("ServiceStatus");
+        links.add(selfLink);
+
+        LinkDto upLink = new LinkDto();
+        upLink.setRel("up");
+        upLink.setHref("");
+        links.add(upLink);
+
+        entry.setLinks(links);
+        entry.setContent(serviceStatus);
+
+        return entry;
     }
 }

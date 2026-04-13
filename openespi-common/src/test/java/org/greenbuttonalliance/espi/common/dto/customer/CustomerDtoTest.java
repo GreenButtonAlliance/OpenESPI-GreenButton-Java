@@ -51,10 +51,9 @@ class CustomerDtoTest {
 
     @BeforeEach
     void setUp() {
-        // Initialize DtoExportService with null repository/mapper (not needed for DTO-only tests)
         org.greenbuttonalliance.espi.common.service.EspiIdGeneratorService espiIdGeneratorService =
-            new org.greenbuttonalliance.espi.common.service.EspiIdGeneratorService();
-        dtoExportService = new DtoExportServiceImpl(null, null, espiIdGeneratorService);
+                new org.greenbuttonalliance.espi.common.service.EspiIdGeneratorService();
+        dtoExportService = new DtoExportServiceImpl(null, null, null, null, null, null, null, null, null, null, espiIdGeneratorService);
     }
 
     @Test

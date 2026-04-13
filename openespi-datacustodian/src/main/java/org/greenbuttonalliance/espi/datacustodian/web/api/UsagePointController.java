@@ -30,7 +30,9 @@ import org.greenbuttonalliance.espi.common.dto.usage.UsagePointDto;
 import org.greenbuttonalliance.espi.common.repositories.usage.UsagePointRepository;
 import org.greenbuttonalliance.espi.common.mapper.usage.UsagePointMapper;
 import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
-import org.springframework.data.domain.PageRequest;
+import org.greenbuttonalliance.espi.common.service.SubscriptionService;
+import org.greenbuttonalliance.espi.datacustodian.web.api.support.ApiAccessValidator;
+import org.greenbuttonalliance.espi.datacustodian.web.api.support.ApiRequestValidator;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -61,10 +63,20 @@ public class UsagePointController {
 
     private final UsagePointRepository usagePointRepository;
     private final UsagePointMapper usagePointMapper;
+    private final SubscriptionService subscriptionService;
+    private final ApiRequestValidator requestValidator;
+    private final ApiAccessValidator accessValidator;
 
-    public UsagePointController(UsagePointRepository usagePointRepository, UsagePointMapper usagePointMapper) {
+    public UsagePointController(UsagePointRepository usagePointRepository,
+                                UsagePointMapper usagePointMapper,
+                                SubscriptionService subscriptionService,
+                                ApiRequestValidator requestValidator,
+                                ApiAccessValidator accessValidator) {
         this.usagePointRepository = usagePointRepository;
         this.usagePointMapper = usagePointMapper;
+        this.subscriptionService = subscriptionService;
+        this.requestValidator = requestValidator;
+        this.accessValidator = accessValidator;
     }
 
     /**
@@ -91,10 +103,22 @@ public class UsagePointController {
             @RequestParam(defaultValue = "50") int limit,
             @Parameter(description = "Offset for pagination", example = "0")
             @RequestParam(defaultValue = "0") int offset,
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
             Authentication authentication) {
-        
-        Pageable pageable = PageRequest.of(offset / limit, limit);
-        List<UsagePointEntity> usagePointEntities = usagePointRepository.findAll(pageable).getContent();
+
+        List<UsagePointEntity> usagePointEntities;
+        if (accessValidator.isAdmin(authentication)) {
+            Pageable pageable = requestValidator.toPageable(limit, offset);
+            usagePointEntities = usagePointRepository.findAll(pageable).getContent();
+        } else {
+            UUID subscriptionId = accessValidator.requireSubscriptionId(authHeader);
+            List<UUID> usagePointIds = subscriptionService.findUsagePointIds(subscriptionId);
+            List<UsagePointEntity> entities = usagePointIds.stream()
+                .map(id -> usagePointRepository.findById(id).orElse(null))
+                .filter(java.util.Objects::nonNull)
+                .toList();
+            usagePointEntities = requestValidator.paginate(entities, limit, offset);
+        }
         List<UsagePointDto> usagePoints = usagePointEntities.stream()
             .map(usagePointMapper::toDto)
             .toList();
@@ -123,8 +147,14 @@ public class UsagePointController {
     public ResponseEntity<UsagePointDto> getUsagePoint(
             @Parameter(description = "Unique identifier of the Usage Point", required = true)
             @PathVariable UUID usagePointId,
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
             Authentication authentication) {
-        
+
+        if (!accessValidator.isAdmin(authentication)) {
+            UUID subscriptionId = accessValidator.requireSubscriptionId(authHeader);
+            accessValidator.enforceUsagePointInSubscription(subscriptionId, usagePointId);
+        }
+
         return usagePointRepository.findById(usagePointId)
             .map(usagePointMapper::toDto)
             .map(usagePoint -> ResponseEntity.ok(usagePoint))
@@ -156,12 +186,17 @@ public class UsagePointController {
             @RequestParam(defaultValue = "50") int limit,
             @Parameter(description = "Offset for pagination", example = "0")
             @RequestParam(defaultValue = "0") int offset,
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
             Authentication authentication) {
-        
-        // TODO: Implement subscription-based filtering when subscription relationship is available
-        // For now, return all usage points with pagination as a temporary solution
-        Pageable pageable = PageRequest.of(offset / limit, limit);
-        List<UsagePointEntity> usagePointEntities = usagePointRepository.findAll(pageable).getContent();
+
+        accessValidator.enforceSubscriptionPathAccess(authentication, authHeader, subscriptionId);
+
+        List<UUID> usagePointIds = subscriptionService.findUsagePointIds(subscriptionId);
+        List<UsagePointEntity> usagePointEntities = usagePointIds.stream()
+            .map(id -> usagePointRepository.findById(id).orElse(null))
+            .filter(java.util.Objects::nonNull)
+            .toList();
+        usagePointEntities = requestValidator.paginate(usagePointEntities, limit, offset);
         List<UsagePointDto> usagePoints = usagePointEntities.stream()
             .map(usagePointMapper::toDto)
             .toList();
@@ -191,10 +226,12 @@ public class UsagePointController {
             @PathVariable UUID subscriptionId,
             @Parameter(description = "Unique identifier of the Usage Point", required = true)
             @PathVariable UUID usagePointId,
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
             Authentication authentication) {
-        
-        // TODO: Implement subscription-based validation when subscription relationship is available
-        // For now, just return the usage point if it exists
+
+        accessValidator.enforceSubscriptionPathAccess(authentication, authHeader, subscriptionId);
+        accessValidator.enforceUsagePointInSubscription(subscriptionId, usagePointId);
+
         return usagePointRepository.findById(usagePointId)
             .map(usagePointMapper::toDto)
             .map(usagePoint -> ResponseEntity.ok(usagePoint))

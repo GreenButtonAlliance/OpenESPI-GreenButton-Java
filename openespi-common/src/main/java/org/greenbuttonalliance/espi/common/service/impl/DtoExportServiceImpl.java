@@ -24,14 +24,31 @@ import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.Marshaller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.greenbuttonalliance.espi.common.domain.usage.ReadingTypeEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.UsageSummaryEntity;
 import org.greenbuttonalliance.espi.common.dto.atom.AtomEntryDto;
 import org.greenbuttonalliance.espi.common.dto.atom.AtomFeedDto;
 import org.greenbuttonalliance.espi.common.dto.atom.UsageAtomEntryDto;
 import org.greenbuttonalliance.espi.common.dto.atom.CustomerAtomEntryDto;
+import org.greenbuttonalliance.espi.common.dto.customer.CustomerDto;
+import org.greenbuttonalliance.espi.common.dto.usage.ReadingTypeDto;
+import org.greenbuttonalliance.espi.common.dto.usage.ServiceStatusDto;
+import org.greenbuttonalliance.espi.common.dto.usage.TimeConfigurationDto;
 import org.greenbuttonalliance.espi.common.dto.usage.UsagePointDto;
+import org.greenbuttonalliance.espi.common.dto.usage.UsageSummaryDto;
+import org.greenbuttonalliance.espi.common.mapper.customer.CustomerMapper;
+import org.greenbuttonalliance.espi.common.mapper.usage.ReadingTypeMapper;
+import org.greenbuttonalliance.espi.common.mapper.usage.TimeConfigurationMapper;
 import org.greenbuttonalliance.espi.common.mapper.usage.UsagePointMapper;
+import org.greenbuttonalliance.espi.common.mapper.usage.UsageSummaryMapper;
+import org.greenbuttonalliance.espi.common.repositories.usage.ReadingTypeRepository;
+import org.greenbuttonalliance.espi.common.repositories.usage.RetailCustomerRepository;
+import org.greenbuttonalliance.espi.common.repositories.usage.TimeConfigurationRepository;
 import org.greenbuttonalliance.espi.common.repositories.usage.UsagePointRepository;
+import org.greenbuttonalliance.espi.common.repositories.usage.UsageSummaryRepository;
+import org.greenbuttonalliance.espi.common.domain.usage.TimeConfigurationEntity;
 import org.greenbuttonalliance.espi.common.service.DtoExportService;
 import org.springframework.stereotype.Service;
 
@@ -51,6 +68,14 @@ public class DtoExportServiceImpl implements DtoExportService {
 
     private final UsagePointRepository usagePointRepository;
     private final UsagePointMapper usagePointMapper;
+    private final TimeConfigurationRepository timeConfigurationRepository;
+    private final TimeConfigurationMapper timeConfigurationMapper;
+    private final RetailCustomerRepository retailCustomerRepository;
+    private final CustomerMapper customerMapper;
+    private final UsageSummaryRepository usageSummaryRepository;
+    private final UsageSummaryMapper usageSummaryMapper;
+    private final ReadingTypeRepository readingTypeRepository;
+    private final ReadingTypeMapper readingTypeMapper;
     private final org.greenbuttonalliance.espi.common.service.EspiIdGeneratorService espiIdGeneratorService;
 
     private final String XML_HEADER = """
@@ -60,61 +85,184 @@ public class DtoExportServiceImpl implements DtoExportService {
 
     @Override
     public void exportUsagePointEntry(UUID usagePointId, OutputStream stream) {
-        Optional<UsagePointEntity> entity = usagePointRepository.findById(usagePointId);
-        if (entity.isPresent()) {
-            exportUsagePointEntry(entity.get(), stream);
+        AtomEntryDto entry = createUsagePointEntry(usagePointId);
+        if (entry != null) {
+            exportDto(entry, stream);
         } else {
             log.warn("Usage point not found: " + usagePointId);
         }
     }
 
     @Override
+    public AtomEntryDto createUsagePointEntry(UUID usagePointId) {
+        return usagePointRepository.findById(usagePointId)
+                .map(this::createUsagePointEntry)
+                .orElse(null);
+    }
+
+    @Override
+    public AtomFeedDto createTimeConfigurationsFeed() {
+        List<TimeConfigurationEntity> entities = timeConfigurationRepository.findAll();
+        List<AtomEntryDto> entries = entities.stream()
+                .map(this::createTimeConfigurationEntry)
+                .toList();
+        return createAtomFeed("Time Configurations", entries);
+    }
+
+    @Override
+    public AtomFeedDto createTimeConfigurationsFeedByUsagePointId(UUID usagePointId) {
+        List<UUID> ids = timeConfigurationRepository.findAllIdsByUsagePointId(usagePointId);
+        List<AtomEntryDto> entries = ids.stream()
+                .map(this::createTimeConfigurationEntry)
+                .filter(Objects::nonNull)
+                .toList();
+        return createAtomFeed("Time Configurations for Usage Point " + usagePointId, entries);
+    }
+
+    @Override
+    public AtomEntryDto createTimeConfigurationEntry(UUID timeConfigurationId) {
+        return timeConfigurationRepository.findById(timeConfigurationId)
+                .map(this::createTimeConfigurationEntry)
+                .orElse(null);
+    }
+
+    @Override
+    public AtomEntryDto createTimeConfigurationEntry(TimeConfigurationEntity timeConfiguration) {
+        TimeConfigurationDto dto = timeConfigurationMapper.toDto(timeConfiguration);
+        return createAtomEntry("Time Configuration " + timeConfiguration.getId(), dto);
+    }
+
+    @Override
+    public AtomFeedDto createRetailCustomersFeed() {
+        List<RetailCustomerEntity> entities = retailCustomerRepository.findAll();
+        List<AtomEntryDto> entries = entities.stream()
+                .map(this::createRetailCustomerEntry)
+                .toList();
+        return createAtomFeed("Retail Customers", entries);
+    }
+
+    @Override
+    public AtomEntryDto createRetailCustomerEntry(Long retailCustomerId) {
+        return retailCustomerRepository.findById(retailCustomerId)
+                .map(this::createRetailCustomerEntry)
+                .orElse(null);
+    }
+
+    @Override
+    public AtomEntryDto createRetailCustomerEntry(RetailCustomerEntity retailCustomer) {
+        CustomerDto dto = customerMapper.toDto(retailCustomer);
+        String id = retailCustomer.getId().toString();
+        return createAtomEntry("RetailCustomer: " + id, dto);
+    }
+
+    @Override
+    public AtomEntryDto createServiceStatusEntry(String currentStatus) {
+        ServiceStatusDto serviceStatus = ServiceStatusDto.builder()
+                .currentStatus(currentStatus)
+                .build();
+        return createAtomEntry("ServiceStatus", serviceStatus);
+    }
+
+    @Override
+    public AtomFeedDto createUsageSummariesFeed() {
+        List<UsageSummaryEntity> entities = usageSummaryRepository.findAll();
+        List<AtomEntryDto> entries = entities.stream()
+                .map(this::createUsageSummaryEntry)
+                .toList();
+        return createAtomFeed("Usage Summaries", entries);
+    }
+
+    @Override
+    public AtomFeedDto createUsageSummariesFeedByUsagePointId(UUID usagePointId) {
+        List<UUID> ids = usageSummaryRepository.findAllIdsByUsagePointId(usagePointId);
+        List<AtomEntryDto> entries = ids.stream()
+                .map(this::createUsageSummaryEntry)
+                .filter(Objects::nonNull)
+                .toList();
+        return createAtomFeed("Usage Summaries for Usage Point " + usagePointId, entries);
+    }
+
+    @Override
+    public AtomEntryDto createUsageSummaryEntry(UUID usageSummaryId) {
+        return usageSummaryRepository.findById(usageSummaryId)
+                .map(this::createUsageSummaryEntry)
+                .orElse(null);
+    }
+
+    @Override
+    public AtomEntryDto createUsageSummaryEntry(UsageSummaryEntity usageSummary) {
+        UsageSummaryDto dto = usageSummaryMapper.toDto(usageSummary);
+        return createAtomEntry("Usage Summary " + usageSummary.getId(), dto);
+    }
+
+    @Override
+    public AtomFeedDto createReadingTypesFeed() {
+        List<ReadingTypeEntity> entities = readingTypeRepository.findAll();
+        List<AtomEntryDto> entries = entities.stream()
+                .map(this::createReadingTypeEntry)
+                .toList();
+        return createAtomFeed("Reading Types", entries);
+    }
+
+    @Override
+    public AtomEntryDto createReadingTypeEntry(UUID readingTypeId) {
+        return readingTypeRepository.findById(readingTypeId)
+                .map(this::createReadingTypeEntry)
+                .orElse(null);
+    }
+
+    @Override
+    public AtomEntryDto createReadingTypeEntry(ReadingTypeEntity readingType) {
+        ReadingTypeDto dto = readingTypeMapper.toDto(readingType);
+        return createAtomEntry("Reading Type " + readingType.getId(), dto);
+    }
+
+    @Override
     public void exportUsagePointsFeedByIds(List<UUID> usagePointIds, OutputStream stream) {
+        AtomFeedDto feed = createUsagePointsFeedByIds(usagePointIds);
+        exportDto(feed, stream);
+    }
+
+    @Override
+    public AtomFeedDto createUsagePointsFeedByIds(List<UUID> usagePointIds) {
         List<UsagePointEntity> entities = new ArrayList<>();
         for (UUID id : usagePointIds) {
             usagePointRepository.findById(id).ifPresent(entities::add);
         }
-        exportUsagePointsFeed(entities, stream);
+        return createUsagePointsFeed(entities);
     }
 
     @Override
     public void exportUsagePointEntry(UsagePointEntity usagePoint, OutputStream stream) {
-        try {
-            // Convert entity to DTO
-            UsagePointDto dto = usagePointMapper.toDto(usagePoint);
-            
-            // Create Atom entry
-            AtomEntryDto entry = createAtomEntry("Usage Point " + usagePoint.getId(), dto);
-            
-            // Export as XML
-            exportDto(entry, stream);
-            
-        } catch (Exception e) {
-            log.error("Failed to export usage point entry: " + e.getMessage(), e);
-        }
+        AtomEntryDto entry = createUsagePointEntry(usagePoint);
+        exportDto(entry, stream);
+    }
+
+    @Override
+    public AtomEntryDto createUsagePointEntry(UsagePointEntity usagePoint) {
+        UsagePointDto dto = usagePointMapper.toDto(usagePoint);
+        return createAtomEntry("Usage Point " + usagePoint.getId(), dto);
     }
 
     @Override
     public void exportUsagePointsFeed(List<UsagePointEntity> usagePoints, OutputStream stream) {
-        try {
-            List<AtomEntryDto> entries = new ArrayList<>();
-            
-            // Convert each entity to DTO and create entry
-            for (UsagePointEntity entity : usagePoints) {
-                UsagePointDto dto = usagePointMapper.toDto(entity);
-                AtomEntryDto entry = createAtomEntry("Usage Point " + entity.getId(), dto);
-                entries.add(entry);
-            }
-            
-            // Create feed
-            AtomFeedDto feed = createAtomFeed("Usage Points", entries);
-            
-            // Export as XML
-            exportDto(feed, stream);
-            
-        } catch (Exception e) {
-            log.error("Failed to export usage points feed: " + e.getMessage(), e);
+        AtomFeedDto feed = createUsagePointsFeed(usagePoints);
+        exportDto(feed, stream);
+    }
+
+    @Override
+    public AtomFeedDto createUsagePointsFeed(List<UsagePointEntity> usagePoints) {
+        List<AtomEntryDto> entries = new ArrayList<>();
+
+        // Convert each entity to DTO and create entry
+        for (UsagePointEntity entity : usagePoints) {
+            UsagePointDto dto = usagePointMapper.toDto(entity);
+            AtomEntryDto entry = createAtomEntry("Usage Point " + entity.getId(), dto);
+            entries.add(entry);
         }
+
+        // Create feed
+        return createAtomFeed("Usage Points", entries);
     }
 
     @Override

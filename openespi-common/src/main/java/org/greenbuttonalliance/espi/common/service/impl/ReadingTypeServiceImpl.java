@@ -31,6 +31,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.InputStream;
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -52,6 +53,11 @@ public class ReadingTypeServiceImpl implements ReadingTypeService {
 	@Override
 	public ReadingTypeEntity findById(UUID readingTypeId) {
 		return readingTypeRepository.findById(readingTypeId).orElse(null);
+	}
+
+	@Override
+	public List<ReadingTypeEntity> findAll() {
+		return readingTypeRepository.findAll();
 	}
 
 	@Override

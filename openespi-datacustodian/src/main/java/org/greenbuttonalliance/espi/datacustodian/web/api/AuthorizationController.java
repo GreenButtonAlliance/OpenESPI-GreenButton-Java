@@ -30,12 +30,11 @@ import org.greenbuttonalliance.espi.common.dto.usage.AuthorizationDto;
 import org.greenbuttonalliance.espi.common.repositories.usage.AuthorizationRepository;
 import org.greenbuttonalliance.espi.common.mapper.usage.AuthorizationMapper;
 import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
-import org.springframework.data.domain.PageRequest;
+import org.greenbuttonalliance.espi.datacustodian.web.api.support.ApiRequestValidator;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -59,10 +58,14 @@ public class AuthorizationController {
 
     private final AuthorizationRepository authorizationRepository;
     private final AuthorizationMapper authorizationMapper;
+    private final ApiRequestValidator requestValidator;
 
-    public AuthorizationController(AuthorizationRepository authorizationRepository, AuthorizationMapper authorizationMapper) {
+    public AuthorizationController(AuthorizationRepository authorizationRepository,
+                                   AuthorizationMapper authorizationMapper,
+                                   ApiRequestValidator requestValidator) {
         this.authorizationRepository = authorizationRepository;
         this.authorizationMapper = authorizationMapper;
+        this.requestValidator = requestValidator;
     }
 
     /**
@@ -85,10 +88,9 @@ public class AuthorizationController {
             @Parameter(description = "Maximum number of results to return", example = "50")
             @RequestParam(defaultValue = "50") int limit,
             @Parameter(description = "Offset for pagination", example = "0")
-            @RequestParam(defaultValue = "0") int offset,
-            Authentication authentication) {
+            @RequestParam(defaultValue = "0") int offset) {
         
-        Pageable pageable = PageRequest.of(offset / limit, limit);
+        Pageable pageable = requestValidator.toPageable(limit, offset);
         List<AuthorizationEntity> authorizationEntities = authorizationRepository.findAll(pageable).getContent();
         List<AuthorizationDto> authorizations = authorizationEntities.stream()
             .map(authorizationMapper::toDto)
@@ -115,8 +117,7 @@ public class AuthorizationController {
     @PreAuthorize("hasAuthority('SCOPE_DataCustodian_Admin_Access')")
     public ResponseEntity<AuthorizationDto> getAuthorization(
             @Parameter(description = "Unique identifier of the Authorization", required = true)
-            @PathVariable UUID authorizationId,
-            Authentication authentication) {
+            @PathVariable UUID authorizationId) {
         
         return authorizationRepository.findById(authorizationId)
             .map(authorizationMapper::toDto)

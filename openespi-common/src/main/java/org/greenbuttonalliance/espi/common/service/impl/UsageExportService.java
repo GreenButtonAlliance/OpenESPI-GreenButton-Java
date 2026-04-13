@@ -92,6 +92,7 @@ public class UsageExportService extends BaseExportService {
             org.greenbuttonalliance.espi.common.dto.usage.AuthorizationDto.class,
             org.greenbuttonalliance.espi.common.dto.usage.SubscriptionDto.class,
             org.greenbuttonalliance.espi.common.dto.usage.BatchListDto.class,
+            org.greenbuttonalliance.espi.common.dto.usage.ServiceStatusDto.class,
             org.greenbuttonalliance.espi.common.dto.usage.LineItemDto.class,
             org.greenbuttonalliance.espi.common.dto.usage.ServiceDeliveryPointDto.class,
             org.greenbuttonalliance.espi.common.dto.usage.ReadingQualityDto.class,

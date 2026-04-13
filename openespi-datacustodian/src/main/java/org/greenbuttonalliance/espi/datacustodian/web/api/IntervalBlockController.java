@@ -26,10 +26,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.greenbuttonalliance.espi.common.dto.usage.MeterReadingDto;
-import org.greenbuttonalliance.espi.common.repositories.usage.MeterReadingRepository;
-import org.greenbuttonalliance.espi.common.mapper.usage.MeterReadingMapper;
-import org.greenbuttonalliance.espi.common.domain.usage.MeterReadingEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.IntervalBlockEntity;
+import org.greenbuttonalliance.espi.common.dto.usage.IntervalBlockDto;
+import org.greenbuttonalliance.espi.common.mapper.usage.IntervalBlockMapper;
+import org.greenbuttonalliance.espi.common.repositories.usage.IntervalBlockRepository;
 import org.greenbuttonalliance.espi.datacustodian.web.api.support.ApiRequestValidator;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
@@ -41,44 +41,44 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Modern REST Controller for ESPI Meter Reading resources.
+ * Modern REST Controller for ESPI Interval Block resources.
  * 
- * This controller implements the NAESB ESPI 1.0 REST API for Meter Readings,
- * using modern Spring Boot 3.5 patterns with DTOs and MapStruct mappers.
+ * This controller implements the NAESB ESPI 1.0 REST API for Interval Blocks,
+ * using modern Spring Boot 4.0 patterns with DTOs and MapStruct mappers.
  * 
  * Supported endpoints:
- * - GET /espi/1_1/resource/MeterReading - List all meter readings
- * - GET /espi/1_1/resource/MeterReading/{meterReadingId} - Get specific meter reading
+ * - GET /espi/1_1/resource/IntervalBlock - List all interval blocks
+ * - GET /espi/1_1/resource/IntervalBlock/{intervalBlockId} - Get specific interval block
  */
 @RestController
 @RequestMapping("/espi/1_1/resource")
-@Tag(name = "Meter Readings", description = "ESPI Meter Reading resource endpoints")
+@Tag(name = "Interval Blocks", description = "ESPI Interval Block resource endpoints")
 @SecurityRequirement(name = "oauth2")
-public class MeterReadingController {
+public class IntervalBlockController {
 
-    private final MeterReadingRepository meterReadingRepository;
-    private final MeterReadingMapper meterReadingMapper;
+    private final IntervalBlockRepository intervalBlockRepository;
+    private final IntervalBlockMapper intervalBlockMapper;
     private final ApiRequestValidator requestValidator;
 
-    public MeterReadingController(MeterReadingRepository meterReadingRepository,
-                                  MeterReadingMapper meterReadingMapper,
-                                  ApiRequestValidator requestValidator) {
-        this.meterReadingRepository = meterReadingRepository;
-        this.meterReadingMapper = meterReadingMapper;
+    public IntervalBlockController(IntervalBlockRepository intervalBlockRepository,
+                                   IntervalBlockMapper intervalBlockMapper,
+                                   ApiRequestValidator requestValidator) {
+        this.intervalBlockRepository = intervalBlockRepository;
+        this.intervalBlockMapper = intervalBlockMapper;
         this.requestValidator = requestValidator;
     }
 
     /**
-     * Get all Meter Readings (root collection).
+     * Get all Interval Blocks (root collection).
      * Requires DataCustodian admin access or appropriate read scope.
      */
-    @GetMapping(value = "/MeterReading", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    @GetMapping(value = "/IntervalBlock", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @Operation(
-        summary = "Get all Meter Readings",
-        description = "Retrieve all Meter Readings accessible to the authenticated client",
+        summary = "Get all Interval Blocks",
+        description = "Retrieve all Interval Blocks accessible to the authenticated client",
         responses = {
-            @ApiResponse(responseCode = "200", description = "Meter Readings retrieved successfully",
-                content = @Content(schema = @Schema(implementation = MeterReadingDto.class))),
+            @ApiResponse(responseCode = "200", description = "Interval Blocks retrieved successfully",
+                content = @Content(schema = @Schema(implementation = IntervalBlockDto.class))),
             @ApiResponse(responseCode = "401", description = "Unauthorized"),
             @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
         }
@@ -87,31 +87,31 @@ public class MeterReadingController {
                  "hasAuthority('SCOPE_FB_15_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_16_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_36_READ_3rd_party')")
-    public ResponseEntity<List<MeterReadingDto>> getAllMeterReadings(
+    public ResponseEntity<List<IntervalBlockDto>> getAllIntervalBlocks(
             @Parameter(description = "Maximum number of results to return", example = "50")
             @RequestParam(defaultValue = "50") int limit,
             @Parameter(description = "Offset for pagination", example = "0")
             @RequestParam(defaultValue = "0") int offset) {
         
         Pageable pageable = requestValidator.toPageable(limit, offset);
-        List<MeterReadingEntity> meterReadingEntities = meterReadingRepository.findAll(pageable).getContent();
-        List<MeterReadingDto> meterReadings = meterReadingEntities.stream()
-            .map(meterReadingMapper::toDto)
+        List<IntervalBlockEntity> intervalBlockEntities = intervalBlockRepository.findAll(pageable).getContent();
+        List<IntervalBlockDto> intervalBlocks = intervalBlockEntities.stream()
+            .map(intervalBlockMapper::toDto)
             .toList();
-        return ResponseEntity.ok(meterReadings);
+        return ResponseEntity.ok(intervalBlocks);
     }
 
     /**
-     * Get specific Meter Reading by ID (root resource).
+     * Get specific Interval Block by ID (root resource).
      */
-    @GetMapping(value = "/MeterReading/{meterReadingId}", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    @GetMapping(value = "/IntervalBlock/{intervalBlockId}", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @Operation(
-        summary = "Get Meter Reading by ID",
-        description = "Retrieve a specific Meter Reading by its unique identifier",
+        summary = "Get Interval Block by ID",
+        description = "Retrieve a specific Interval Block by its unique identifier",
         responses = {
-            @ApiResponse(responseCode = "200", description = "Meter Reading retrieved successfully",
-                content = @Content(schema = @Schema(implementation = MeterReadingDto.class))),
-            @ApiResponse(responseCode = "404", description = "Meter Reading not found"),
+            @ApiResponse(responseCode = "200", description = "Interval Block retrieved successfully",
+                content = @Content(schema = @Schema(implementation = IntervalBlockDto.class))),
+            @ApiResponse(responseCode = "404", description = "Interval Block not found"),
             @ApiResponse(responseCode = "401", description = "Unauthorized"),
             @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
         }
@@ -120,13 +120,13 @@ public class MeterReadingController {
                  "hasAuthority('SCOPE_FB_15_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_16_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_36_READ_3rd_party')")
-    public ResponseEntity<MeterReadingDto> getMeterReading(
-            @Parameter(description = "Unique identifier of the Meter Reading", required = true)
-            @PathVariable UUID meterReadingId) {
+    public ResponseEntity<IntervalBlockDto> getIntervalBlock(
+            @Parameter(description = "Unique identifier of the Interval Block", required = true)
+            @PathVariable UUID intervalBlockId) {
         
-        return meterReadingRepository.findById(meterReadingId)
-            .map(meterReadingMapper::toDto)
-            .map(meterReading -> ResponseEntity.ok(meterReading))
+        return intervalBlockRepository.findById(intervalBlockId)
+            .map(intervalBlockMapper::toDto)
+            .map(ResponseEntity::ok)
             .orElse(ResponseEntity.notFound().build());
     }
 }

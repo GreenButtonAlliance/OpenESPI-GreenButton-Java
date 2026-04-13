@@ -20,6 +20,7 @@
 package org.greenbuttonalliance.espi.common.mapper.customer;
 
 import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.greenbuttonalliance.espi.common.dto.customer.CustomerDto;
 import org.greenbuttonalliance.espi.common.mapper.BaseMapperUtils;
 import org.greenbuttonalliance.espi.common.mapper.DateTimeMapper;
@@ -58,6 +59,36 @@ public interface CustomerMapper {
     @Mapping(target = "locale", source = "locale")
     @Mapping(target = "customerName", source = "customerName")
     CustomerDto toDto(CustomerEntity entity);
+
+    /**
+     * Converts a RetailCustomerEntity to a CustomerDto.
+     * Maps essential identity fields to Customer representation.
+     *
+     * @param retailCustomer the retail customer entity
+     * @return the customer DTO
+     */
+    default CustomerDto toDto(RetailCustomerEntity retailCustomer) {
+        if (retailCustomer == null) {
+            return null;
+        }
+        CustomerDto dto = new CustomerDto();
+        dto.setCustomerName(retailCustomer.getFirstName() + " " + retailCustomer.getLastName());
+        
+        org.greenbuttonalliance.espi.common.dto.customer.OrganisationDto orgDto = new org.greenbuttonalliance.espi.common.dto.customer.OrganisationDto();
+        orgDto.setOrganisationName(retailCustomer.getFirstName() + " " + retailCustomer.getLastName());
+        
+        org.greenbuttonalliance.espi.common.dto.customer.ElectronicAddressDto emailDto = new org.greenbuttonalliance.espi.common.dto.customer.ElectronicAddressDto();
+        emailDto.setEmail1(retailCustomer.getEmail());
+        orgDto.setElectronicAddress(emailDto);
+        
+        org.greenbuttonalliance.espi.common.dto.customer.TelephoneNumberDto phoneDto = new org.greenbuttonalliance.espi.common.dto.customer.TelephoneNumberDto();
+        phoneDto.setLocalNumber(retailCustomer.getPhone());
+        orgDto.setPhone1(phoneDto);
+        
+        dto.setOrganisation(orgDto);
+        
+        return dto;
+    }
 
     /**
      * Converts a CustomerDto to a CustomerEntity.

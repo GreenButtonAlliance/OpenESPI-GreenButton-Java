@@ -19,7 +19,11 @@
 
 package org.greenbuttonalliance.espi.common.service;
 
+import org.greenbuttonalliance.espi.common.domain.usage.ReadingTypeEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.TimeConfigurationEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.UsageSummaryEntity;
 import org.greenbuttonalliance.espi.common.dto.atom.AtomFeedDto;
 import org.greenbuttonalliance.espi.common.dto.atom.AtomEntryDto;
 
@@ -92,6 +96,44 @@ public interface DtoExportService {
      * @return Atom entry DTO
      */
     AtomEntryDto createAtomEntry(String title, Object resource);
+
+    AtomFeedDto createUsagePointsFeed(List<UsagePointEntity> usagePoints);
+
+    AtomFeedDto createUsagePointsFeedByIds(List<UUID> usagePointIds);
+
+    AtomEntryDto createUsagePointEntry(UsagePointEntity usagePoint);
+
+    AtomEntryDto createUsagePointEntry(UUID usagePointId);
+
+    AtomFeedDto createTimeConfigurationsFeed();
+
+    AtomFeedDto createTimeConfigurationsFeedByUsagePointId(UUID usagePointId);
+
+    AtomEntryDto createTimeConfigurationEntry(UUID timeConfigurationId);
+
+    AtomEntryDto createTimeConfigurationEntry(TimeConfigurationEntity timeConfiguration);
+
+    AtomFeedDto createRetailCustomersFeed();
+
+    AtomEntryDto createRetailCustomerEntry(Long retailCustomerId);
+
+    AtomEntryDto createRetailCustomerEntry(RetailCustomerEntity retailCustomer);
+
+    AtomFeedDto createUsageSummariesFeed();
+
+    AtomFeedDto createUsageSummariesFeedByUsagePointId(UUID usagePointId);
+
+    AtomEntryDto createUsageSummaryEntry(UUID usageSummaryId);
+
+    AtomEntryDto createUsageSummaryEntry(UsageSummaryEntity usageSummary);
+
+    AtomFeedDto createReadingTypesFeed();
+
+    AtomEntryDto createReadingTypeEntry(UUID readingTypeId);
+
+    AtomEntryDto createReadingTypeEntry(ReadingTypeEntity readingType);
+
+    AtomEntryDto createServiceStatusEntry(String currentStatus);
 
     void exportAtomFeed(AtomFeedDto atomFeedDto, OutputStream stream);
 }
