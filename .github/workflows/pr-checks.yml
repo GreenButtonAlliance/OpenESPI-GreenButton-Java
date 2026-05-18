@@ -4,6 +4,14 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: pr-checks-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 env:
   JAVA_VERSION: '25'
   MAVEN_OPTS: -Xmx3072m
@@ -46,52 +54,9 @@ jobs:
 
       - name: Check code formatting
         run: mvn spotless:check
-        continue-on-error: true
 
       - name: Run quick tests
         run: mvn test -pl openespi-common,openespi-datacustodian
 
       - name: Check for security vulnerabilities
         run: mvn org.owasp:dependency-check-maven:check -DfailBuildOnCVSS=8
-        continue-on-error: true
-
-  sonarcloud-pr:
-    name: SonarCloud PR Analysis
-    runs-on: ubuntu-latest
-    if: github.event.pull_request.head.repo.full_name == github.repository
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up JDK 25
-        uses: actions/setup-java@v4
-        with:
-          java-version: ${{ env.JAVA_VERSION }}
-          distribution: 'temurin'
-          cache: 'maven'
-
-      - name: Cache SonarCloud packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.sonar/cache
-          key: ${{ runner.os }}-sonar
-          restore-keys: ${{ runner.os }}-sonar
-
-      - name: Build modules for SonarCloud
-        run: mvn clean verify -pl openespi-common,openespi-datacustodian,openespi-thirdparty -am
-
-      - name: Analyze with SonarCloud
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          mvn org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
-            -Dsonar.projectKey=GreenButtonAlliance_OpenESPI-GreenButton-Java \
-            -Dsonar.organization=greenbuttonalliance \
-            -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.pullrequest.key=${{ github.event.pull_request.number }} \
-            -Dsonar.pullrequest.branch=${{ github.event.pull_request.head.ref }} \
-            -Dsonar.pullrequest.base=${{ github.event.pull_request.base.ref }}
