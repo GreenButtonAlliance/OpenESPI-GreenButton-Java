@@ -52,8 +52,12 @@ jobs:
             chore
           requireScope: false
 
-      - name: Check code formatting
-        run: mvn spotless:check
+      # TODO: Re-enable once the Spotless Maven plugin is configured in the root pom.xml.
+      # As of 2026-05-19 the project has no Spotless plugin registered, so this step fails
+      # on every PR with: "No plugin found for prefix 'spotless' in the current project".
+      # See follow-up issue: configure Spotless plugin or document formatting policy.
+      # - name: Check code formatting
+      #   run: mvn spotless:check
 
       - name: Run quick tests
         run: mvn test -pl openespi-common,openespi-datacustodian
