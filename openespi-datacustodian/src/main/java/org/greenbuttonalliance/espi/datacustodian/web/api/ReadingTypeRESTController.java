@@ -27,10 +27,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.greenbuttonalliance.espi.common.dto.usage.MeterReadingDto;
-import org.greenbuttonalliance.espi.common.mapper.usage.MeterReadingMapper;
-import org.greenbuttonalliance.espi.common.repositories.usage.MeterReadingRepository;
-import org.greenbuttonalliance.espi.common.service.impl.MeterReadingExportService;
+import org.greenbuttonalliance.espi.common.dto.usage.ReadingTypeDto;
+import org.greenbuttonalliance.espi.common.mapper.usage.ReadingTypeMapper;
+import org.greenbuttonalliance.espi.common.repositories.usage.ReadingTypeRepository;
+import org.greenbuttonalliance.espi.common.service.impl.ReadingTypeExportService;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -45,37 +45,35 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Modern REST Controller for ESPI Meter Reading resources.
+ * RESTful controller for managing ReadingType resources according to the
+ * Green Button Alliance ESPI (Energy Services Provider Interface) specification.
  * <p>
- * This controller implements the NAESB ESPI 1.0 REST API for Meter Readings,
- * using modern Spring Boot 3.5 patterns with DTOs and MapStruct mappers.
- * <p>
- * Supported endpoints:
- * - GET /espi/1_1/resource/MeterReading - List all meter readings
- * - GET /espi/1_1/resource/MeterReading/{meterReadingId} - Get specific meter reading
+ * ReadingType represents the type of reading being measured (e.g., energy consumed,
+ * energy produced, voltage, current) and includes metadata about units of measure,
+ * measurement kind, phase, and accumulation behavior.
  */
 @RestController
 @RequestMapping("/espi/1_1/resource")
-@Tag(name = "Meter Readings", description = "ESPI Meter Reading resource endpoints")
+@Tag(name = "Reading Type", description = "ESPI Reading Type resource endpoints")
 @SecurityRequirement(name = "oauth2")
 @RequiredArgsConstructor
-public class MeterReadingController {
-    
-    private final MeterReadingRepository meterReadingRepository;
-    private final MeterReadingMapper meterReadingMapper;
-    private final MeterReadingExportService meterReadingExportService;
+public class ReadingTypeRESTController {
+
+    private final ReadingTypeRepository readingTypeRepository;
+    private final ReadingTypeMapper readingTypeMapper;
+    private final ReadingTypeExportService readingTypeExportService;
 
     /**
-     * Get all Meter Readings (root collection).
+     * Get all Reading Types (root collection).
      * Requires DataCustodian admin access or appropriate read scope.
      */
-    @GetMapping(value = "/MeterReading", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    @GetMapping(value = "/ReadingType", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @Operation(
-        summary = "Get all Meter Readings",
-        description = "Retrieve all Meter Readings accessible to the authenticated client",
+        summary = "Get all Reading Types",
+        description = "Retrieve all Reading Types accessible to the authenticated client",
         responses = {
-            @ApiResponse(responseCode = "200", description = "Meter Readings retrieved successfully",
-                content = @Content(schema = @Schema(implementation = MeterReadingDto.class))),
+            @ApiResponse(responseCode = "200", description = "Reading Types retrieved successfully",
+                content = @Content(schema = @Schema(implementation = ReadingTypeDto.class))),
             @ApiResponse(responseCode = "401", description = "Unauthorized"),
             @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
         }
@@ -84,35 +82,35 @@ public class MeterReadingController {
                  "hasAuthority('SCOPE_FB_15_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_16_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_36_READ_3rd_party')")
-    public ResponseEntity<StreamingResponseBody> getAllMeterReadings(
+    public ResponseEntity<StreamingResponseBody> getReadingTypeCollection(
             @Parameter(description = "Maximum number of results to return", example = "50")
             @RequestParam(defaultValue = "50") int limit,
             @Parameter(description = "Offset for pagination", example = "0")
             @RequestParam(defaultValue = "0") int offset,
             Authentication authentication) {
-        
-        List<MeterReadingDto> meterReadings = meterReadingRepository.findAll(PageRequest.of(offset, limit)).getContent().stream()
-            .map(meterReadingMapper::toDto)
+
+        List<ReadingTypeDto> readingTypes = readingTypeRepository.findAll(PageRequest.of(offset, limit)).getContent().stream()
+            .map(readingTypeMapper::toDto)
             .toList();
 
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
                 .body(out -> {
-            meterReadingExportService.exportDto(meterReadings, out);
+            readingTypeExportService.exportDto(readingTypes, out);
         });
     }
 
     /**
-     * Get specific Meter Reading by ID (root resource).
+     * Get specific Reading Type by ID (root resource).
      */
-    @GetMapping(value = "/MeterReading/{meterReadingId}", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    @GetMapping(value = "/ReadingType/{readingTypeId}", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @Operation(
-        summary = "Get Meter Reading by ID",
-        description = "Retrieve a specific Meter Reading by its unique identifier",
+        summary = "Get Reading Type by ID",
+        description = "Retrieve a specific Reading Type by its unique identifier",
         responses = {
-            @ApiResponse(responseCode = "200", description = "Meter Reading retrieved successfully",
-                content = @Content(schema = @Schema(implementation = MeterReadingDto.class))),
-            @ApiResponse(responseCode = "404", description = "Meter Reading not found"),
+            @ApiResponse(responseCode = "200", description = "Reading Type retrieved successfully",
+                content = @Content(schema = @Schema(implementation = ReadingTypeDto.class))),
+            @ApiResponse(responseCode = "404", description = "Reading Type not found"),
             @ApiResponse(responseCode = "401", description = "Unauthorized"),
             @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
         }
@@ -121,19 +119,19 @@ public class MeterReadingController {
                  "hasAuthority('SCOPE_FB_15_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_16_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_36_READ_3rd_party')")
-    public ResponseEntity<StreamingResponseBody> getMeterReading(
-            @Parameter(description = "Unique identifier of the Meter Reading", required = true)
-            @PathVariable UUID meterReadingId,
+    public ResponseEntity<StreamingResponseBody> getReadingType(
+            @Parameter(description = "Unique identifier of the Reading Type", required = true)
+            @PathVariable UUID readingTypeId,
             Authentication authentication) {
 
-        MeterReadingDto dto = meterReadingRepository.findById(meterReadingId)
-            .map(meterReadingMapper::toDto)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Meter Reading not found for id: " + meterReadingId));
+        ReadingTypeDto dto = readingTypeRepository.findById(readingTypeId)
+            .map(readingTypeMapper::toDto)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Reading Type not found for id: " + readingTypeId));
 
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
                 .body(out -> {
-            meterReadingExportService.exportDto(dto, out);
+            readingTypeExportService.exportDto(dto, out);
         });
     }
 }

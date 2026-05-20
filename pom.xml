@@ -55,7 +55,7 @@
     
     <properties>
         <java.version>25</java.version>
-        <spring.boot.version>4.0.1</spring.boot.version>
+        <spring.boot.version>4.0.3</spring.boot.version>
         <project.scm.id>github</project.scm.id>
         <maven.compiler.source>25</maven.compiler.source>
         <maven.compiler.target>25</maven.compiler.target>

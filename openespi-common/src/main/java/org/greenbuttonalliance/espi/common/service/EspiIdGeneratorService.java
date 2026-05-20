@@ -30,7 +30,7 @@ import java.util.UUID;
 
 /**
  * Service for generating NAESB ESPI compliant UUID type 5 identifiers.
- * 
+ * <p>
  * This service generates deterministic UUID5 identifiers based on href URLs
  * to ensure ESPI compliance and consistency across the system.
  */
@@ -45,7 +45,7 @@ public class EspiIdGeneratorService {
 
     /**
      * Generates a NAESB ESPI compliant UUID5 based on the provided href URL.
-     * 
+     * <p>
      * UUID5 uses SHA-1 hashing to create deterministic identifiers, ensuring
      * that the same href will always generate the same UUID.
      * 

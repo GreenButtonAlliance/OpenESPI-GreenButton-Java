@@ -27,16 +27,18 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.greenbuttonalliance.espi.common.dto.usage.UsagePointDto;
-import org.greenbuttonalliance.espi.common.repositories.usage.UsagePointRepository;
 import org.greenbuttonalliance.espi.common.mapper.usage.UsagePointMapper;
-import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
+import org.greenbuttonalliance.espi.common.repositories.usage.UsagePointRepository;
+import org.greenbuttonalliance.espi.common.service.impl.UsageExportService;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.util.List;
 import java.util.UUID;
@@ -61,45 +63,61 @@ public class UsagePointController {
 
     private final UsagePointRepository usagePointRepository;
     private final UsagePointMapper usagePointMapper;
+    private final UsageExportService usageExportService;
 
-    public UsagePointController(UsagePointRepository usagePointRepository, UsagePointMapper usagePointMapper) {
+    public UsagePointController(UsagePointRepository usagePointRepository, UsagePointMapper usagePointMapper, UsageExportService usageExportService) {
         this.usagePointRepository = usagePointRepository;
         this.usagePointMapper = usagePointMapper;
+        this.usageExportService = usageExportService;
     }
-
     /**
      * Get all Usage Points (root collection).
      * Requires DataCustodian admin access or appropriate read scope.
      */
-    @GetMapping(value = "/UsagePoint", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    //@GetMapping(value = "/UsagePoint", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @Operation(
-        summary = "Get all Usage Points",
-        description = "Retrieve all Usage Points accessible to the authenticated client",
-        responses = {
-            @ApiResponse(responseCode = "200", description = "Usage Points retrieved successfully",
-                content = @Content(schema = @Schema(implementation = UsagePointDto.class))),
-            @ApiResponse(responseCode = "401", description = "Unauthorized"),
-            @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
-        }
+            summary = "Get all Usage Points",
+            description = "Retrieve all Usage Points accessible to the authenticated client",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Usage Points retrieved successfully",
+                            content = @Content(schema = @Schema(implementation = UsagePointDto.class))),
+                    @ApiResponse(responseCode = "401", description = "Unauthorized"),
+                    @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
+            }
     )
     @PreAuthorize("hasAuthority('SCOPE_DataCustodian_Admin_Access') or " +
-                 "hasAuthority('SCOPE_FB_15_READ_3rd_party') or " +
-                 "hasAuthority('SCOPE_FB_16_READ_3rd_party') or " +
-                 "hasAuthority('SCOPE_FB_36_READ_3rd_party')")
-    public ResponseEntity<List<UsagePointDto>> getAllUsagePoints(
-            @Parameter(description = "Maximum number of results to return", example = "50")
-            @RequestParam(defaultValue = "50") int limit,
-            @Parameter(description = "Offset for pagination", example = "0")
-            @RequestParam(defaultValue = "0") int offset,
-            Authentication authentication) {
-        
-        Pageable pageable = PageRequest.of(offset / limit, limit);
-        List<UsagePointEntity> usagePointEntities = usagePointRepository.findAll(pageable).getContent();
-        List<UsagePointDto> usagePoints = usagePointEntities.stream()
-            .map(usagePointMapper::toDto)
-            .toList();
-        return ResponseEntity.ok(usagePoints);
+            "hasAuthority('SCOPE_FB_15_READ_3rd_party') or " +
+            "hasAuthority('SCOPE_FB_16_READ_3rd_party') or " +
+            "hasAuthority('SCOPE_FB_36_READ_3rd_party')")
+    @GetMapping(value = "/UsagePoint", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    public ResponseEntity<StreamingResponseBody> getAllUsagePoints(@RequestParam(defaultValue = "50") int limit,
+                                                                   @RequestParam(defaultValue = "0") int offset) {
+
+        List<UsagePointDto> usagePoints =  usagePointRepository.findAll(PageRequest.of(offset, limit)).getContent().stream()
+                .map(usagePointMapper::toDto)
+                .toList();
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_XML)
+                .body(out -> {
+            usageExportService.exportDto(usagePoints, out);
+        });
     }
+
+//    public ResponseEntity<List<UsagePointDto>> getAllUsagePoints(
+//            @Parameter(description = "Maximum number of results to return", example = "50")
+//            @RequestParam(defaultValue = "50") int limit,
+//            @Parameter(description = "Offset for pagination", example = "0")
+//            @RequestParam(defaultValue = "0") int offset,
+//            Authentication authentication) {
+//
+//        Pageable pageable = PageRequest.of(offset / limit, limit);
+//        List<UsagePointEntity> usagePointEntities = usagePointRepository.findAll(pageable).getContent();
+//        List<UsagePointDto> usagePoints = usagePointEntities.stream()
+//            .map(usagePointMapper::toDto)
+//            .toList();
+//        return ResponseEntity.ok(usagePoints);
+//    }
 
     /**
      * Get specific Usage Point by ID (root resource).
@@ -120,15 +138,18 @@ public class UsagePointController {
                  "hasAuthority('SCOPE_FB_15_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_16_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_36_READ_3rd_party')")
-    public ResponseEntity<UsagePointDto> getUsagePoint(
+    public ResponseEntity<StreamingResponseBody> getUsagePoint(
             @Parameter(description = "Unique identifier of the Usage Point", required = true)
-            @PathVariable UUID usagePointId,
-            Authentication authentication) {
-        
-        return usagePointRepository.findById(usagePointId)
-            .map(usagePointMapper::toDto)
-            .map(usagePoint -> ResponseEntity.ok(usagePoint))
-            .orElse(ResponseEntity.notFound().build());
+            @PathVariable UUID usagePointId) {
+
+        UsagePointDto dto =  usagePointRepository.findById(usagePointId)
+                .map(usagePointMapper::toDto).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usage Point not found for id: " + usagePointId));
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_XML)
+                .body(out -> {
+            usageExportService.exportDto(dto, out);
+        });
     }
 
     /**
@@ -149,23 +170,25 @@ public class UsagePointController {
     @PreAuthorize("hasAuthority('SCOPE_FB_15_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_16_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_36_READ_3rd_party')")
-    public ResponseEntity<List<UsagePointDto>> getSubscriptionUsagePoints(
+    public ResponseEntity<StreamingResponseBody> getSubscriptionUsagePoints(
             @Parameter(description = "Unique identifier of the SubscriptionEntity", required = true)
             @PathVariable UUID subscriptionId,
             @Parameter(description = "Maximum number of results to return", example = "50")
             @RequestParam(defaultValue = "50") int limit,
             @Parameter(description = "Offset for pagination", example = "0")
-            @RequestParam(defaultValue = "0") int offset,
-            Authentication authentication) {
+            @RequestParam(defaultValue = "0") int offset) {
         
         // TODO: Implement subscription-based filtering when subscription relationship is available
         // For now, return all usage points with pagination as a temporary solution
-        Pageable pageable = PageRequest.of(offset / limit, limit);
-        List<UsagePointEntity> usagePointEntities = usagePointRepository.findAll(pageable).getContent();
-        List<UsagePointDto> usagePoints = usagePointEntities.stream()
+        List<UsagePointDto> usagePoints = usagePointRepository.findAll( PageRequest.of(offset, limit)).getContent().stream()
             .map(usagePointMapper::toDto)
             .toList();
-        return ResponseEntity.ok(usagePoints);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_XML)
+                .body(out -> {
+            usageExportService.exportDto(usagePoints, out);
+        });
     }
 
     /**
@@ -186,7 +209,7 @@ public class UsagePointController {
     @PreAuthorize("hasAuthority('SCOPE_FB_15_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_16_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_36_READ_3rd_party')")
-    public ResponseEntity<UsagePointDto> getSubscriptionUsagePoint(
+    public ResponseEntity<StreamingResponseBody> getSubscriptionUsagePoint(
             @Parameter(description = "Unique identifier of the SubscriptionEntity", required = true)
             @PathVariable UUID subscriptionId,
             @Parameter(description = "Unique identifier of the Usage Point", required = true)
@@ -195,9 +218,13 @@ public class UsagePointController {
         
         // TODO: Implement subscription-based validation when subscription relationship is available
         // For now, just return the usage point if it exists
-        return usagePointRepository.findById(usagePointId)
-            .map(usagePointMapper::toDto)
-            .map(usagePoint -> ResponseEntity.ok(usagePoint))
-            .orElse(ResponseEntity.notFound().build());
+        UsagePointDto dto =  usagePointRepository.findById(usagePointId)
+                .map(usagePointMapper::toDto).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usage Point not found for id: " + usagePointId));
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_XML)
+                .body(out -> {
+            usageExportService.exportDto(dto, out);
+        });
     }
 }

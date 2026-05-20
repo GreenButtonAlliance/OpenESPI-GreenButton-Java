@@ -31,7 +31,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -44,6 +47,7 @@ public class ApplicationInformationServiceImpl implements
 
 	private final ApplicationInformationRepository applicationInformationRepository;
 	private final ApplicationInformationMapper applicationInformationMapper;
+	private final ApplicationInformationExportService applicationInformationExportService;
 
 	@Override
 	public ApplicationInformationEntity findByClientId(String clientId) {
@@ -66,10 +70,8 @@ public class ApplicationInformationServiceImpl implements
 			String dataCustodianClientId) {
 		Assert.notNull(dataCustodianClientId, "dataCustodianClientId is required");
 		
-		// TODO: Add repository method findByDataCustodianClientId if needed
 		log.info("Finding ApplicationInformation by dataCustodianClientId: " + dataCustodianClientId);
-		
-		return null;
+		return applicationInformationRepository.findByDataCustodianId(dataCustodianClientId).orElse(null);
 	}
 
 	@Override
@@ -90,5 +92,45 @@ public class ApplicationInformationServiceImpl implements
 			log.error("Failed to import ApplicationInformation resource", e);
 			return null;
 		}
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<ApplicationInformationEntity> findAll() {
+		return applicationInformationRepository.findAll();
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public ApplicationInformationEntity findById(UUID id) {
+		return applicationInformationRepository.findById(id).orElse(null);
+	}
+
+	@Override
+	public ApplicationInformationEntity save(ApplicationInformationEntity entity) {
+		return applicationInformationRepository.save(entity);
+	}
+
+	@Override
+	public void deleteById(UUID id) {
+		applicationInformationRepository.deleteById(id);
+	}
+
+	@Override
+	public void export(List<ApplicationInformationEntity> entities, OutputStream outputStream) {
+		List<ApplicationInformationDto> dtos = entities.stream()
+				.map(applicationInformationMapper::toDto)
+				.toList();
+		applicationInformationExportService.exportDto(dtos, outputStream);
+	}
+
+	@Override
+	public void export(ApplicationInformationEntity entity, OutputStream outputStream) {
+		applicationInformationExportService.exportDto(applicationInformationMapper.toDto(entity), outputStream);
+	}
+
+	@Override
+	public ApplicationInformationEntity fromDto(ApplicationInformationDto dto) {
+		return applicationInformationMapper.toEntity(dto);
 	}
 }

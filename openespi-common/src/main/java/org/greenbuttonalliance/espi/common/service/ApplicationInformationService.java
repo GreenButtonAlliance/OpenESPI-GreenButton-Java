@@ -20,9 +20,12 @@
 package org.greenbuttonalliance.espi.common.service;
 
 import org.greenbuttonalliance.espi.common.domain.usage.ApplicationInformationEntity;
+import org.greenbuttonalliance.espi.common.dto.usage.ApplicationInformationDto;
 
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.List;
+import java.util.UUID;
 
 public interface ApplicationInformationService {
 
@@ -53,4 +56,17 @@ public interface ApplicationInformationService {
 	 */
 	public ApplicationInformationEntity importResource(InputStream stream);
 
+	List<ApplicationInformationEntity> findAll();
+
+	ApplicationInformationEntity findById(UUID id);
+
+	ApplicationInformationEntity save(ApplicationInformationEntity entity);
+
+	void deleteById(UUID id);
+
+	void export(List<ApplicationInformationEntity> entities, OutputStream outputStream);
+
+	void export(ApplicationInformationEntity entity, OutputStream outputStream);
+
+	ApplicationInformationEntity fromDto(ApplicationInformationDto dto);
 }
