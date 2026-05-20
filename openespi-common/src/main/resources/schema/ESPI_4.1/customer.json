@@ -1,0 +1,531 @@
+{
+  "feed": {
+    "id": "urn:uuid:1a2b3c4d-5e6f-5a7b-8c9d-0e1f2a3b4c5d",
+    "title": "Green Button Customer Feed",
+    "updated": "2026-02-26T12:00:00Z",
+    "links": [
+      {
+        "href": "https://server.example.com/DataCustodian/espi/1_1/resource/Batch/Subscription/2",
+        "rel": "self",
+        "type": "espi-feed/Subscription"
+      }
+    ],
+    "entries": [
+
+      {
+        "id": "urn:uuid:2b3c4d5e-6f7a-5b8c-9d0e-1f2a3b4c5d6e",
+        "title": "Jane Smith",
+        "published": "2024-06-01T00:00:00Z",
+        "updated": "2026-02-26T12:00:00Z",
+        "links": [
+          {
+            "href": "https://server.example.com/DataCustodian/espi/1_1/resource/RetailCustomer/1/Customer/1",
+            "rel": "self",
+            "type": "espi-entry/Customer"
+          },
+          {
+            "href": "https://server.example.com/DataCustodian/espi/1_1/resource/RetailCustomer/1/Customer",
+            "rel": "up",
+            "type": "espi-feed/Customer"
+          }
+        ],
+        "organisation": {
+          "streetAddress": {
+            "streetDetail": {
+              "number": "1425",
+              "name": "Oak Valley",
+              "type": "Drive",
+              "addressGeneral": "1425 Oak Valley Drive",
+              "withinTownLimits": true
+            },
+            "townDetail": {
+              "name": "San Rafael",
+              "county": "Marin",
+              "stateOrProvince": "CA",
+              "country": "US"
+            },
+            "postalCode": "94903"
+          },
+          "postalAddress": {
+            "townDetail": {
+              "name": "San Rafael",
+              "stateOrProvince": "CA",
+              "country": "US"
+            },
+            "postalCode": "94903",
+            "poBox": "PO Box 4521"
+          },
+          "phone1": {
+            "countryCode": "1",
+            "areaCode": "415",
+            "localNumber": "555-0142",
+            "ituPhone": "+14155550142"
+          },
+          "electronicAddress": {
+            "email1": "jane.smith@example.com",
+            "web": "https://www.example.com/jane"
+          },
+          "organisationName": "Smith Household"
+        },
+        "kind": "residential",
+        "specialNeed": "none",
+        "vip": false,
+        "pucNumber": "PUC-2024-001234",
+        "status": {
+          "value": "active",
+          "dateTime": 1717200000,
+          "remark": "Account in good standing"
+        },
+        "priority": {
+          "rank": 0,
+          "type": "normal"
+        },
+        "locale": "en-US",
+        "customerName": "Jane Smith"
+      },
+
+      {
+        "id": "urn:uuid:3c4d5e6f-7a8b-5c9d-0e1f-2a3b4c5d6e7f",
+        "title": "Smith Residential Account",
+        "published": "2024-06-01T00:00:00Z",
+        "updated": "2026-02-26T12:00:00Z",
+        "links": [
+          {
+            "href": "https://server.example.com/DataCustodian/espi/1_1/resource/RetailCustomer/1/Customer/1/CustomerAccount/1",
+            "rel": "self",
+            "type": "espi-entry/CustomerAccount"
+          },
+          {
+            "href": "https://server.example.com/DataCustodian/espi/1_1/resource/RetailCustomer/1/Customer/1/CustomerAccount",
+            "rel": "up",
+            "type": "espi-feed/CustomerAccount"
+          },
+          {
+            "href": "https://server.example.com/DataCustodian/espi/1_1/resource/RetailCustomer/1/Customer/1/CustomerAccount/1/CustomerAgreement",
+            "rel": "related",
+            "type": "espi-feed/CustomerAgreement"
+          }
+        ],
+        "document": {
+          "type": "residential",
+          "authorName": "Acme Power Billing System",
+          "createdDateTime": 1717200000,
+          "lastModifiedDateTime": 1740528000,
+          "revisionNumber": "3",
+          "subject": "Residential Electric Service Account",
+          "title": "Account ACCT-2024-56789",
+          "status": {
+            "value": "active",
+            "dateTime": 1717200000
+          }
+        },
+        "billingCycle": "15",
+        "budgetBill": "N",
+        "lastBillAmount": 15847000,
+        "notifications": [
+          {
+            "methodKind": "email",
+            "time": 1738368000,
+            "note": "January 2026 billing statement is available",
+            "customerNotificationKind": "billing"
+          },
+          {
+            "methodKind": "email",
+            "time": 1735689600,
+            "note": "Payment received - thank you",
+            "customerNotificationKind": "payment"
+          }
+        ],
+        "contactInfo": {
+          "phone1": {
+            "countryCode": "1",
+            "areaCode": "415",
+            "localNumber": "555-0142",
+            "ituPhone": "+14155550142"
+          },
+          "electronicAddress": {
+            "email1": "jane.smith@example.com"
+          },
+          "organisationName": "Jane Smith"
+        },
+        "accountId": "ACCT-2024-56789"
+      },
+
+      {
+        "id": "urn:uuid:4d5e6f7a-8b9c-5d0e-1f2a-3b4c5d6e7f8a",
+        "title": "Residential Service Agreement",
+        "published": "2024-06-01T00:00:00Z",
+        "updated": "2026-02-26T12:00:00Z",
+        "links": [
+          {
+            "href": "https://server.example.com/DataCustodian/espi/1_1/resource/RetailCustomer/1/Customer/1/CustomerAccount/1/CustomerAgreement/1",
+            "rel": "self",
+            "type": "espi-entry/CustomerAgreement"
+          },
+          {
+            "href": "https://server.example.com/DataCustodian/espi/1_1/resource/RetailCustomer/1/Customer/1/CustomerAccount/1/CustomerAgreement",
+            "rel": "up",
+            "type": "espi-feed/CustomerAgreement"
+          }
+        ],
+        "agreement": {
+          "document": {
+            "type": "serviceAgreement",
+            "createdDateTime": 1717200000,
+            "revisionNumber": "1",
+            "subject": "Residential Electric Service",
+            "title": "Service Agreement AGR-2025-001",
+            "status": {
+              "value": "active",
+              "dateTime": 1717200000
+            }
+          },
+          "signDate": 1717200000,
+          "validityInterval": {
+            "duration": 0,
+            "start": 1717200000
+          }
+        },
+        "loadMgmt": "LM-RES-01",
+        "isPrePay": false,
+        "DemandResponseProgram": [
+          {
+            "programName": "SmartAC",
+            "enrollmentStatus": "enrolled",
+            "programDescription": "https://www.acmepower.example.com/programs/smartac",
+            "programDate": [
+              {
+                "programDate": 1717200000,
+                "programDateDescription": "Enrollment"
+              }
+            ],
+            "capacityReservationLevel": {
+              "powerOfTenMultiplier": 3,
+              "uom": 38,
+              "value": 2
+            },
+            "DRProgramNomination": {
+              "powerOfTenMultiplier": 3,
+              "uom": 38,
+              "value": 3
+            }
+          },
+          {
+            "programName": "Peak Day Pricing",
+            "enrollmentStatus": "unenrolled",
+            "programDescription": "https://www.acmepower.example.com/programs/peakday"
+          }
+        ],
+        "PricingStructures": [
+          "https://server.example.com/DataCustodian/espi/1_1/resource/PricingStructure/TOU-A"
+        ],
+        "currency": 840,
+        "futureStatus": [
+          {
+            "value": "active",
+            "dateTime": 1751328000,
+            "remark": "Rate change effective July 2025",
+            "reason": "Annual rate adjustment"
+          }
+        ],
+        "agreementId": "AGR-2025-001"
+      },
+
+      {
+        "id": "urn:uuid:5e6f7a8b-9c0d-5e1f-2a3b-4c5d6e7f8a9b",
+        "title": "EndDevice - Smart Meter Gateway",
+        "published": "2024-06-15T00:00:00Z",
+        "updated": "2026-02-26T12:00:00Z",
+        "links": [
+          {
+            "href": "https://server.example.com/DataCustodian/espi/1_1/resource/RetailCustomer/1/Customer/1/CustomerAccount/1/CustomerAgreement/1/EndDevice/1",
+            "rel": "self",
+            "type": "espi-entry/EndDevice"
+          },
+          {
+            "href": "https://server.example.com/DataCustodian/espi/1_1/resource/RetailCustomer/1/Customer/1/CustomerAccount/1/CustomerAgreement/1/EndDevice",
+            "rel": "up",
+            "type": "espi-feed/EndDevice"
+          }
+        ],
+        "asset": {
+          "type": "AMI Meter",
+          "serialNumber": "SN-2024-AMI-78901",
+          "lotNumber": "LOT-2024-Q2-005",
+          "purchasePrice": 35000,
+          "critical": false,
+          "lifecycle": {
+            "manufacturedDate": 1711929600,
+            "purchaseDate": 1714521600,
+            "receivedDate": 1715126400,
+            "installationDate": 1718409600
+          },
+          "acceptanceTest": {
+            "type": "field_commissioning",
+            "success": true,
+            "dateTime": 1718409600
+          },
+          "initialCondition": "new",
+          "initialLossOfLife": 0,
+          "status": {
+            "value": "inService",
+            "dateTime": 1718409600
+          }
+        },
+        "isVirtual": false,
+        "isPan": false,
+        "installCode": "INST-2024-NE-042",
+        "amrSystem": "Itron OpenWay"
+      },
+
+      {
+        "id": "urn:uuid:6f7a8b9c-0d1e-5f2a-3b4c-5d6e7f8a9b0c",
+        "title": "Revenue Meter - 1425 Oak Valley Dr",
+        "published": "2024-06-15T00:00:00Z",
+        "updated": "2026-02-26T12:00:00Z",
+        "links": [
+          {
+            "href": "https://server.example.com/DataCustodian/espi/1_1/resource/RetailCustomer/1/Customer/1/CustomerAccount/1/CustomerAgreement/1/Meter/1",
+            "rel": "self",
+            "type": "espi-entry/Meter"
+          },
+          {
+            "href": "https://server.example.com/DataCustodian/espi/1_1/resource/RetailCustomer/1/Customer/1/CustomerAccount/1/CustomerAgreement/1/Meter",
+            "rel": "up",
+            "type": "espi-feed/Meter"
+          }
+        ],
+        "endDevice": {
+          "asset": {
+            "type": "Revenue Meter",
+            "serialNumber": "MTR-2024-56789012",
+            "lifecycle": {
+              "manufacturedDate": 1711929600,
+              "installationDate": 1718409600
+            },
+            "status": {
+              "value": "inService",
+              "dateTime": 1718409600
+            }
+          },
+          "isVirtual": false,
+          "isPan": false,
+          "amrSystem": "Itron OpenWay"
+        },
+        "formNumber": "16S",
+        "MeterMultipliers": [
+          {
+            "kind": "kH",
+            "value": 1.0
+          },
+          {
+            "kind": "kR",
+            "value": 1.0
+          },
+          {
+            "kind": "ctRatio",
+            "value": 200.0
+          }
+        ],
+        "intervalLength": 3600
+      },
+
+      {
+        "id": "urn:uuid:7a8b9c0d-1e2f-5a3b-4c5d-6e7f8a9b0c1d",
+        "title": "1425 Oak Valley Drive Service Location",
+        "published": "2024-06-01T00:00:00Z",
+        "updated": "2026-02-26T12:00:00Z",
+        "links": [
+          {
+            "href": "https://server.example.com/DataCustodian/espi/1_1/resource/RetailCustomer/1/Customer/1/CustomerAccount/1/CustomerAgreement/1/ServiceLocation/1",
+            "rel": "self",
+            "type": "espi-entry/ServiceLocation"
+          },
+          {
+            "href": "https://server.example.com/DataCustodian/espi/1_1/resource/RetailCustomer/1/Customer/1/CustomerAccount/1/CustomerAgreement/1/ServiceLocation",
+            "rel": "up",
+            "type": "espi-feed/ServiceLocation"
+          }
+        ],
+        "location": {
+          "type": "residential",
+          "mainAddress": {
+            "streetDetail": {
+              "number": "1425",
+              "name": "Oak Valley",
+              "type": "Drive",
+              "addressGeneral": "1425 Oak Valley Drive",
+              "withinTownLimits": true
+            },
+            "townDetail": {
+              "name": "San Rafael",
+              "county": "Marin",
+              "stateOrProvince": "CA",
+              "country": "US"
+            },
+            "postalCode": "94903"
+          },
+          "phone1": {
+            "countryCode": "1",
+            "areaCode": "415",
+            "localNumber": "555-0142"
+          },
+          "geoInfoReference": "GEO-MARIN-042-1425",
+          "direction": "NW corner of Oak Valley Dr and Elm St",
+          "status": {
+            "value": "active",
+            "dateTime": 1717200000
+          },
+          "positionPoints": [
+            {
+              "xPosition": "-122.531297",
+              "yPosition": "37.973535"
+            }
+          ]
+        },
+        "accessMethod": "Gate code 4521, meter on south side of house",
+        "siteAccessProblem": "Dog in backyard - call ahead",
+        "needsInspection": false,
+        "UsagePoints": [
+          "https://server.example.com/DataCustodian/espi/1_1/resource/UsagePoint/1"
+        ],
+        "outageBlock": "NE-042"
+      },
+
+      {
+        "id": "urn:uuid:8b9c0d1e-2f3a-5b4c-5d6e-7f8a9b0c1d2e",
+        "title": "Acme Power Company",
+        "published": "2024-01-01T00:00:00Z",
+        "updated": "2026-01-01T00:00:00Z",
+        "links": [
+          {
+            "href": "https://server.example.com/DataCustodian/espi/1_1/resource/RetailCustomer/1/Customer/1/CustomerAccount/1/CustomerAgreement/1/ServiceSupplier/1",
+            "rel": "self",
+            "type": "espi-entry/ServiceSupplier"
+          },
+          {
+            "href": "https://server.example.com/DataCustodian/espi/1_1/resource/RetailCustomer/1/Customer/1/CustomerAccount/1/CustomerAgreement/1/ServiceSupplier",
+            "rel": "up",
+            "type": "espi-feed/ServiceSupplier"
+          }
+        ],
+        "organisation": {
+          "streetAddress": {
+            "streetDetail": {
+              "number": "100",
+              "name": "Energy",
+              "type": "Boulevard",
+              "addressGeneral": "100 Energy Boulevard"
+            },
+            "townDetail": {
+              "name": "San Francisco",
+              "county": "San Francisco",
+              "stateOrProvince": "CA",
+              "country": "US"
+            },
+            "postalCode": "94105"
+          },
+          "phone1": {
+            "countryCode": "1",
+            "areaCode": "800",
+            "localNumber": "555-0100",
+            "ituPhone": "+18005550100"
+          },
+          "phone2": {
+            "countryCode": "1",
+            "areaCode": "415",
+            "localNumber": "555-0101"
+          },
+          "electronicAddress": {
+            "email1": "customerservice@acmepower.example.com",
+            "web": "https://www.acmepower.example.com"
+          },
+          "organisationName": "Acme Power Company"
+        },
+        "kind": "utility",
+        "issuerIdentificationNumber": "ISO-7812-ACME-001",
+        "effectiveDate": 946684800
+      },
+
+      {
+        "id": "urn:uuid:9c0d1e2f-3a4b-5c5d-6e7f-8a9b0c1d2e3f",
+        "title": "January 2026 Billing Statement",
+        "published": "2026-02-01T00:00:00Z",
+        "updated": "2026-02-01T00:00:00Z",
+        "links": [
+          {
+            "href": "https://server.example.com/DataCustodian/espi/1_1/resource/RetailCustomer/1/Customer/1/CustomerAccount/1/CustomerAgreement/1/Statement/1",
+            "rel": "self",
+            "type": "espi-entry/Statement"
+          },
+          {
+            "href": "https://server.example.com/DataCustodian/espi/1_1/resource/RetailCustomer/1/Customer/1/CustomerAccount/1/CustomerAgreement/1/Statement",
+            "rel": "up",
+            "type": "espi-feed/Statement"
+          }
+        ],
+        "issueDateTime": 1738368000,
+        "statementRef": [
+          {
+            "fileName": "Statement_ACCT-2024-56789_Jan2026.pdf",
+            "mediaType": "application/pdf",
+            "statementURL": "https://server.example.com/DataCustodian/statements/ACCT-2024-56789/2026-01.pdf"
+          },
+          {
+            "fileName": "Statement_ACCT-2024-56789_Jan2026.csv",
+            "mediaType": "text/csv",
+            "statementURL": "https://server.example.com/DataCustodian/statements/ACCT-2024-56789/2026-01.csv"
+          }
+        ]
+      },
+
+      {
+        "id": "urn:uuid:0d1e2f3a-4b5c-5d6e-7f8a-9b0c1d2e3f4a",
+        "title": "Customer Energy Efficiency Programs",
+        "published": "2025-01-01T00:00:00Z",
+        "updated": "2026-02-26T12:00:00Z",
+        "links": [
+          {
+            "href": "https://server.example.com/DataCustodian/espi/1_1/resource/RetailCustomer/1/Customer/1/ProgramDateIdMappings/1",
+            "rel": "self",
+            "type": "espi-entry/ProgramDateIdMappings"
+          },
+          {
+            "href": "https://server.example.com/DataCustodian/espi/1_1/resource/RetailCustomer/1/Customer/1/ProgramDateIdMappings",
+            "rel": "up",
+            "type": "espi-feed/ProgramDateIdMappings"
+          }
+        ],
+        "programDateIdMapping": {
+          "programDateType": "enrollment",
+          "code": "EE-SOLAR-01",
+          "name": "Residential Solar Rebate Program",
+          "note": "Customer enrolled in solar panel rebate program effective 2024-06-01"
+        }
+      },
+
+      {
+        "id": "urn:uuid:1e2f3a4b-5c6d-5e7f-8a9b-0c1d2e3f4a5b",
+        "title": "Pacific Time Zone Configuration",
+        "published": "2025-01-01T00:00:00Z",
+        "updated": "2025-01-01T00:00:00Z",
+        "links": [
+          {
+            "href": "https://server.example.com/DataCustodian/espi/1_1/resource/LocalTimeParameters/1",
+            "rel": "self",
+            "type": "espi-entry/LocalTimeParameters"
+          },
+          {
+            "href": "https://server.example.com/DataCustodian/espi/1_1/resource/LocalTimeParameters",
+            "rel": "up",
+            "type": "espi-feed/LocalTimeParameters"
+          }
+        ],
+        "dstEndRule": "B40E2000",
+        "dstOffset": 3600,
+        "dstStartRule": "360E2000",
+        "tzOffset": -28800
+      }
+    ]
+  }
+}

@@ -1,0 +1,581 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://naesb.org/espi/4.1/customer-json",
+  "title": "ESPI 4.1 Customer JSON Structure",
+  "description": "JSON representation of customer_4.1.xsd resources with Atom entry elements embedded in each IdentifiedObject resource. Namespace: http://naesb.org/espi/customer",
+
+  "$defs": {
+
+    "atomLink": {
+      "type": "object",
+      "description": "Atom link (atom:linkType)",
+      "properties": {
+        "href": { "type": "string", "format": "uri" },
+        "rel":  { "type": "string", "description": "self | up | related" },
+        "type": { "type": "string", "description": "espi-entry/{Resource} or espi-feed/{Resource}" }
+      },
+      "required": ["href", "rel", "type"]
+    },
+
+    "atomFeed": {
+      "type": "object",
+      "description": "Atom feed wrapper (atom:feedType)",
+      "properties": {
+        "id":      { "type": "string", "format": "uri" },
+        "title":   { "type": "string" },
+        "updated": { "type": "string", "format": "date-time" },
+        "links":   { "type": "array", "items": { "$ref": "#/$defs/atomLink" } }
+      },
+      "required": ["id", "title", "updated"]
+    },
+
+    "timeType":     { "type": "integer", "description": "Epoch seconds since 1970-01-01T00:00:00Z (signed 64-bit)" },
+    "hexBinary16":  { "type": "string", "pattern": "^[0-9a-fA-F]{0,4}$" },
+    "hexBinary32":  { "type": "string", "pattern": "^[0-9a-fA-F]{0,8}$" },
+
+    "dateTimeInterval": {
+      "type": "object",
+      "properties": {
+        "duration": { "type": "integer", "minimum": 0, "description": "Duration in seconds" },
+        "start":    { "$ref": "#/$defs/timeType" }
+      },
+      "required": ["duration", "start"]
+    },
+
+    "summaryMeasurement": {
+      "type": "object",
+      "properties": {
+        "powerOfTenMultiplier": { "type": "integer", "description": "UnitMultiplierKind" },
+        "timeStamp":           { "$ref": "#/$defs/timeType" },
+        "uom":                 { "type": "integer", "description": "UnitSymbolKind" },
+        "value":               { "type": "integer" },
+        "readingTypeRef":      { "type": "string", "format": "uri" }
+      }
+    },
+
+    "batchItemInfo": {
+      "type": "object",
+      "properties": {
+        "name":         { "$ref": "#/$defs/hexBinary16" },
+        "operation":    { "type": "integer", "description": "CRUDOperation: 0=Create, 1=Read, 2=Update, 3=Delete" },
+        "statusCode":   { "type": "integer" },
+        "statusReason": { "type": "string", "maxLength": 256 }
+      }
+    },
+
+    "telephoneNumber": {
+      "type": "object",
+      "properties": {
+        "countryCode":         { "type": "string", "maxLength": 256 },
+        "areaCode":            { "type": "string", "maxLength": 256 },
+        "cityCode":            { "type": "string", "maxLength": 256 },
+        "localNumber":         { "type": "string", "maxLength": 256 },
+        "ext":                 { "type": "string", "maxLength": 256 },
+        "dialOut":             { "type": "string", "maxLength": 256 },
+        "internationalPrefix": { "type": "string", "maxLength": 256 },
+        "ituPhone":            { "type": "string", "maxLength": 256 }
+      }
+    },
+
+    "electronicAddress": {
+      "type": "object",
+      "properties": {
+        "lan":      { "type": "string", "maxLength": 256 },
+        "mac":      { "type": "string", "maxLength": 256 },
+        "email1":   { "type": "string", "maxLength": 256 },
+        "email2":   { "type": "string", "maxLength": 256 },
+        "web":      { "type": "string", "maxLength": 256 },
+        "radio":    { "type": "string", "maxLength": 256 },
+        "userID":   { "type": "string", "maxLength": 256 },
+        "password": { "type": "string", "maxLength": 256 }
+      }
+    },
+
+    "streetDetail": {
+      "type": "object",
+      "properties": {
+        "number":          { "type": "string", "maxLength": 256 },
+        "name":            { "type": "string", "maxLength": 256 },
+        "suffix":          { "type": "string", "maxLength": 256 },
+        "prefix":          { "type": "string", "maxLength": 256 },
+        "type":            { "type": "string", "maxLength": 256 },
+        "code":            { "type": "string", "maxLength": 256 },
+        "buildingName":    { "type": "string", "maxLength": 256 },
+        "suiteNumber":     { "type": "string", "maxLength": 256 },
+        "addressGeneral":  { "type": "string", "maxLength": 256 },
+        "addressGeneral2": { "type": "string", "maxLength": 256 },
+        "addressGeneral3": { "type": "string", "maxLength": 256 },
+        "withinTownLimits": { "type": "boolean" }
+      }
+    },
+
+    "townDetail": {
+      "type": "object",
+      "properties": {
+        "code":            { "type": "string", "maxLength": 256 },
+        "section":         { "type": "string", "maxLength": 256 },
+        "name":            { "type": "string", "maxLength": 256 },
+        "county":          { "type": "string", "maxLength": 256 },
+        "stateOrProvince": { "type": "string", "maxLength": 256 },
+        "country":         { "type": "string", "maxLength": 256 }
+      }
+    },
+
+    "streetAddress": {
+      "type": "object",
+      "properties": {
+        "streetDetail": { "$ref": "#/$defs/streetDetail" },
+        "townDetail":   { "$ref": "#/$defs/townDetail" },
+        "status":       { "$ref": "#/$defs/status" },
+        "postalCode":   { "type": "string", "maxLength": 256 },
+        "poBox":        { "type": "string", "maxLength": 256 }
+      }
+    },
+
+    "status": {
+      "type": "object",
+      "properties": {
+        "value":    { "type": "string", "maxLength": 256 },
+        "dateTime": { "$ref": "#/$defs/timeType" },
+        "remark":   { "type": "string", "maxLength": 256 },
+        "reason":   { "type": "string", "maxLength": 256 }
+      }
+    },
+
+    "positionPoint": {
+      "type": "object",
+      "properties": {
+        "xPosition": { "type": "string", "maxLength": 256 },
+        "yPosition": { "type": "string", "maxLength": 256 },
+        "zPosition": { "type": "string", "maxLength": 256 }
+      }
+    },
+
+    "organisation": {
+      "type": "object",
+      "properties": {
+        "streetAddress":    { "$ref": "#/$defs/streetAddress" },
+        "postalAddress":    { "$ref": "#/$defs/streetAddress" },
+        "phone1":           { "$ref": "#/$defs/telephoneNumber" },
+        "phone2":           { "$ref": "#/$defs/telephoneNumber" },
+        "electronicAddress": { "$ref": "#/$defs/electronicAddress" },
+        "organisationName": { "type": "string", "maxLength": 256 }
+      }
+    },
+
+    "location": {
+      "type": "object",
+      "properties": {
+        "type":              { "type": "string", "maxLength": 256 },
+        "mainAddress":       { "$ref": "#/$defs/streetAddress" },
+        "secondaryAddress":  { "$ref": "#/$defs/streetAddress" },
+        "phone1":            { "$ref": "#/$defs/telephoneNumber" },
+        "phone2":            { "$ref": "#/$defs/telephoneNumber" },
+        "electronicAddress": { "$ref": "#/$defs/electronicAddress" },
+        "geoInfoReference":  { "type": "string", "maxLength": 256 },
+        "direction":         { "type": "string", "maxLength": 256 },
+        "status":            { "$ref": "#/$defs/status" },
+        "positionPoints":    { "type": "array", "items": { "$ref": "#/$defs/positionPoint" } }
+      }
+    },
+
+    "priority": {
+      "type": "object",
+      "properties": {
+        "rank":          { "type": "integer" },
+        "type":          { "type": "string", "maxLength": 256 },
+        "justification": { "type": "string", "maxLength": 256 }
+      },
+      "required": ["rank"]
+    },
+
+    "document": {
+      "type": "object",
+      "properties": {
+        "type":                 { "type": "string", "maxLength": 256 },
+        "authorName":           { "type": "string", "maxLength": 256 },
+        "createdDateTime":      { "$ref": "#/$defs/timeType" },
+        "lastModifiedDateTime": { "$ref": "#/$defs/timeType" },
+        "revisionNumber":       { "type": "string", "maxLength": 256 },
+        "electronicAddress":    { "$ref": "#/$defs/electronicAddress" },
+        "subject":              { "type": "string", "maxLength": 256 },
+        "title":                { "type": "string", "maxLength": 256 },
+        "docStatus":            { "$ref": "#/$defs/status" },
+        "status":               { "$ref": "#/$defs/status" },
+        "comment":              { "type": "string", "maxLength": 256 }
+      }
+    },
+
+    "acceptanceTest": {
+      "type": "object",
+      "properties": {
+        "type":     { "type": "string", "maxLength": 256 },
+        "success":  { "type": "boolean" },
+        "dateTime": { "$ref": "#/$defs/timeType" }
+      }
+    },
+
+    "lifecycleDate": {
+      "type": "object",
+      "properties": {
+        "manufacturedDate": { "$ref": "#/$defs/timeType" },
+        "purchaseDate":     { "$ref": "#/$defs/timeType" },
+        "receivedDate":     { "$ref": "#/$defs/timeType" },
+        "installationDate": { "$ref": "#/$defs/timeType" },
+        "removalDate":      { "$ref": "#/$defs/timeType" },
+        "retiredDate":      { "$ref": "#/$defs/timeType" }
+      }
+    },
+
+    "asset": {
+      "type": "object",
+      "properties": {
+        "type":              { "type": "string", "maxLength": 256 },
+        "utcNumber":         { "type": "string", "maxLength": 256 },
+        "serialNumber":      { "type": "string", "maxLength": 256 },
+        "lotNumber":         { "type": "string", "maxLength": 256 },
+        "purchasePrice":     { "type": "integer" },
+        "critical":          { "type": "boolean" },
+        "electronicAddress": { "$ref": "#/$defs/electronicAddress" },
+        "lifecycle":         { "$ref": "#/$defs/lifecycleDate" },
+        "acceptanceTest":    { "$ref": "#/$defs/acceptanceTest" },
+        "initialCondition":  { "type": "string", "maxLength": 256 },
+        "initialLossOfLife": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "status":            { "$ref": "#/$defs/status" }
+      }
+    },
+
+    "endDevice": {
+      "type": "object",
+      "properties": {
+        "asset":       { "$ref": "#/$defs/asset" },
+        "isVirtual":   { "type": "boolean" },
+        "isPan":       { "type": "boolean" },
+        "installCode": { "type": "string", "maxLength": 256 },
+        "amrSystem":   { "type": "string", "maxLength": 256 }
+      }
+    },
+
+    "meterMultiplier": {
+      "type": "object",
+      "properties": {
+        "kind":  { "type": "string", "description": "MeterMultiplierKind: kH, transformerRatio, kR, kE, ctRatio" },
+        "value": { "type": "number" }
+      }
+    },
+
+    "accountNotification": {
+      "type": "object",
+      "properties": {
+        "methodKind":               { "type": "string", "description": "NotificationMethodKind enum" },
+        "time":                     { "$ref": "#/$defs/timeType" },
+        "note":                     { "type": "string", "maxLength": 256 },
+        "customerNotificationKind": { "type": "string", "maxLength": 256 }
+      },
+      "required": ["methodKind", "time", "note", "customerNotificationKind"]
+    },
+
+    "agreement": {
+      "type": "object",
+      "properties": {
+        "document":         { "$ref": "#/$defs/document" },
+        "signDate":         { "$ref": "#/$defs/timeType" },
+        "validityInterval": { "$ref": "#/$defs/dateTimeInterval" }
+      }
+    },
+
+    "programDate": {
+      "type": "object",
+      "properties": {
+        "programDate":            { "$ref": "#/$defs/timeType" },
+        "programDateDescription": { "type": "string" }
+      }
+    },
+
+    "demandResponseProgram": {
+      "type": "object",
+      "properties": {
+        "programName":              { "type": "string", "maxLength": 256 },
+        "enrollmentStatus":        { "type": "string", "enum": ["unenrolled", "enrolled", "enrolledPending"] },
+        "programDescription":      { "type": "string", "format": "uri" },
+        "programDate":             { "type": "array", "items": { "$ref": "#/$defs/programDate" } },
+        "capacityReservationLevel": { "$ref": "#/$defs/summaryMeasurement" },
+        "DRProgramNomination":     { "$ref": "#/$defs/summaryMeasurement" }
+      }
+    },
+
+    "statementRef": {
+      "type": "object",
+      "properties": {
+        "fileName":     { "type": "string", "maxLength": 512 },
+        "mediaType":    { "type": "string", "description": "IANA media type" },
+        "statementURL": { "type": "string", "format": "uri" }
+      },
+      "required": ["statementURL"]
+    },
+
+    "programDateIdMapping": {
+      "type": "object",
+      "properties": {
+        "programDateType": { "type": "string", "description": "ProgramDateKind enum" },
+        "code":            { "type": "string", "maxLength": 64 },
+        "name":            { "type": "string", "maxLength": 256 },
+        "note":            { "type": "string", "maxLength": 256 }
+      },
+      "required": ["programDateType", "code", "name"]
+    },
+
+
+    "Customer": {
+      "type": "object",
+      "description": "Organisation receiving services (extends IdentifiedObject)",
+      "properties": {
+        "id":        { "type": "string", "format": "uri", "description": "Atom entry id (urn:uuid:...)" },
+        "title":     { "type": "string", "description": "Atom entry title" },
+        "published": { "type": "string", "format": "date-time", "description": "Atom entry published" },
+        "updated":   { "type": "string", "format": "date-time", "description": "Atom entry updated" },
+        "links":     { "type": "array", "items": { "$ref": "#/$defs/atomLink" }, "minItems": 2, "description": "Atom entry links (self + up minimum)" },
+        "batchItemInfo": { "$ref": "#/$defs/batchItemInfo" },
+        "organisation":  { "$ref": "#/$defs/organisation" },
+        "kind":          { "type": "string", "description": "CustomerKind: residential, commercialIndustrial, etc." },
+        "specialNeed":   { "type": "string", "maxLength": 256 },
+        "vip":           { "type": "boolean" },
+        "pucNumber":     { "type": "string", "maxLength": 256 },
+        "status":        { "$ref": "#/$defs/status" },
+        "priority":      { "$ref": "#/$defs/priority" },
+        "locale":        { "type": "string", "maxLength": 256 },
+        "customerName":  { "type": "string", "maxLength": 256 }
+      },
+      "required": ["id", "title", "published", "updated", "links"]
+    },
+
+    "CustomerAccount": {
+      "type": "object",
+      "description": "Customer billing/payment account (extends IdentifiedObject)",
+      "properties": {
+        "id":        { "type": "string", "format": "uri", "description": "Atom entry id (urn:uuid:...)" },
+        "title":     { "type": "string", "description": "Atom entry title" },
+        "published": { "type": "string", "format": "date-time", "description": "Atom entry published" },
+        "updated":   { "type": "string", "format": "date-time", "description": "Atom entry updated" },
+        "links":     { "type": "array", "items": { "$ref": "#/$defs/atomLink" }, "minItems": 2, "description": "Atom entry links (self + up minimum)" },
+        "batchItemInfo":  { "$ref": "#/$defs/batchItemInfo" },
+        "document":       { "$ref": "#/$defs/document" },
+        "billingCycle":   { "type": "string", "maxLength": 256 },
+        "budgetBill":     { "type": "string", "maxLength": 256 },
+        "lastBillAmount": { "type": "integer" },
+        "notifications":  { "type": "array", "items": { "$ref": "#/$defs/accountNotification" } },
+        "contactInfo":    { "$ref": "#/$defs/organisation" },
+        "accountId":      { "type": "string", "maxLength": 256 }
+      },
+      "required": ["id", "title", "published", "updated", "links"]
+    },
+
+    "CustomerAgreement": {
+      "type": "object",
+      "description": "Agreement for service at a specific location (extends IdentifiedObject)",
+      "properties": {
+        "id":        { "type": "string", "format": "uri", "description": "Atom entry id (urn:uuid:...)" },
+        "title":     { "type": "string", "description": "Atom entry title" },
+        "published": { "type": "string", "format": "date-time", "description": "Atom entry published" },
+        "updated":   { "type": "string", "format": "date-time", "description": "Atom entry updated" },
+        "links":     { "type": "array", "items": { "$ref": "#/$defs/atomLink" }, "minItems": 2, "description": "Atom entry links (self + up minimum)" },
+        "batchItemInfo":         { "$ref": "#/$defs/batchItemInfo" },
+        "agreement":             { "$ref": "#/$defs/agreement" },
+        "loadMgmt":              { "type": "string", "maxLength": 256 },
+        "isPrePay":              { "type": "boolean" },
+        "shutOffDateTime":       { "$ref": "#/$defs/timeType" },
+        "DemandResponseProgram": { "type": "array", "items": { "$ref": "#/$defs/demandResponseProgram" } },
+        "PricingStructures":     { "type": "array", "items": { "type": "string", "format": "uri" } },
+        "currency":              { "type": "integer", "description": "ISO 4217 numeric code" },
+        "futureStatus":          { "type": "array", "items": { "$ref": "#/$defs/status" } },
+        "agreementId":           { "type": "string", "maxLength": 256 }
+      },
+      "required": ["id", "title", "published", "updated", "links"]
+    },
+
+    "EndDevice": {
+      "type": "object",
+      "description": "Asset container performing end device functions (extends IdentifiedObject)",
+      "properties": {
+        "id":        { "type": "string", "format": "uri", "description": "Atom entry id (urn:uuid:...)" },
+        "title":     { "type": "string", "description": "Atom entry title" },
+        "published": { "type": "string", "format": "date-time", "description": "Atom entry published" },
+        "updated":   { "type": "string", "format": "date-time", "description": "Atom entry updated" },
+        "links":     { "type": "array", "items": { "$ref": "#/$defs/atomLink" }, "minItems": 2, "description": "Atom entry links (self + up minimum)" },
+        "batchItemInfo": { "$ref": "#/$defs/batchItemInfo" },
+        "asset":         { "$ref": "#/$defs/asset" },
+        "isVirtual":     { "type": "boolean" },
+        "isPan":         { "type": "boolean" },
+        "installCode":   { "type": "string", "maxLength": 256 },
+        "amrSystem":     { "type": "string", "maxLength": 256 }
+      },
+      "required": ["id", "title", "published", "updated", "links"]
+    },
+
+    "Meter": {
+      "type": "object",
+      "description": "Physical metering asset (extends IdentifiedObject)",
+      "properties": {
+        "id":        { "type": "string", "format": "uri", "description": "Atom entry id (urn:uuid:...)" },
+        "title":     { "type": "string", "description": "Atom entry title" },
+        "published": { "type": "string", "format": "date-time", "description": "Atom entry published" },
+        "updated":   { "type": "string", "format": "date-time", "description": "Atom entry updated" },
+        "links":     { "type": "array", "items": { "$ref": "#/$defs/atomLink" }, "minItems": 2, "description": "Atom entry links (self + up minimum)" },
+        "batchItemInfo":    { "$ref": "#/$defs/batchItemInfo" },
+        "endDevice":        { "$ref": "#/$defs/endDevice" },
+        "formNumber":       { "type": "string", "maxLength": 256 },
+        "MeterMultipliers": { "type": "array", "items": { "$ref": "#/$defs/meterMultiplier" } },
+        "intervalLength":   { "type": "integer", "minimum": 0, "description": "Interval in seconds" }
+      },
+      "required": ["id", "title", "published", "updated", "links"]
+    },
+
+    "ProgramDateIdMappings": {
+      "type": "object",
+      "description": "Collection of customer energy efficiency programs (extends IdentifiedObject)",
+      "properties": {
+        "id":        { "type": "string", "format": "uri", "description": "Atom entry id (urn:uuid:...)" },
+        "title":     { "type": "string", "description": "Atom entry title" },
+        "published": { "type": "string", "format": "date-time", "description": "Atom entry published" },
+        "updated":   { "type": "string", "format": "date-time", "description": "Atom entry updated" },
+        "links":     { "type": "array", "items": { "$ref": "#/$defs/atomLink" }, "minItems": 2, "description": "Atom entry links (self + up minimum)" },
+        "batchItemInfo":        { "$ref": "#/$defs/batchItemInfo" },
+        "programDateIdMapping": { "$ref": "#/$defs/programDateIdMapping" }
+      },
+      "required": ["id", "title", "published", "updated", "links"]
+    },
+
+    "ServiceLocation": {
+      "type": "object",
+      "description": "Real estate location / premises (extends IdentifiedObject)",
+      "properties": {
+        "id":        { "type": "string", "format": "uri", "description": "Atom entry id (urn:uuid:...)" },
+        "title":     { "type": "string", "description": "Atom entry title" },
+        "published": { "type": "string", "format": "date-time", "description": "Atom entry published" },
+        "updated":   { "type": "string", "format": "date-time", "description": "Atom entry updated" },
+        "links":     { "type": "array", "items": { "$ref": "#/$defs/atomLink" }, "minItems": 2, "description": "Atom entry links (self + up minimum)" },
+        "batchItemInfo":     { "$ref": "#/$defs/batchItemInfo" },
+        "location":          { "$ref": "#/$defs/location" },
+        "accessMethod":      { "type": "string", "maxLength": 256 },
+        "siteAccessProblem": { "type": "string", "maxLength": 256 },
+        "needsInspection":   { "type": "boolean" },
+        "UsagePoints":       { "type": "array", "items": { "type": "string", "format": "uri" }, "description": "URIs referencing associated UsagePoints" },
+        "outageBlock":       { "type": "string", "maxLength": 32 }
+      },
+      "required": ["id", "title", "published", "updated", "links"]
+    },
+
+    "ServiceSupplier": {
+      "type": "object",
+      "description": "Organisation providing services (extends IdentifiedObject)",
+      "properties": {
+        "id":        { "type": "string", "format": "uri", "description": "Atom entry id (urn:uuid:...)" },
+        "title":     { "type": "string", "description": "Atom entry title" },
+        "published": { "type": "string", "format": "date-time", "description": "Atom entry published" },
+        "updated":   { "type": "string", "format": "date-time", "description": "Atom entry updated" },
+        "links":     { "type": "array", "items": { "$ref": "#/$defs/atomLink" }, "minItems": 2, "description": "Atom entry links (self + up minimum)" },
+        "batchItemInfo":              { "$ref": "#/$defs/batchItemInfo" },
+        "organisation":               { "$ref": "#/$defs/organisation" },
+        "kind":                       { "type": "string", "description": "SupplierKind enum" },
+        "issuerIdentificationNumber": { "type": "string", "maxLength": 256 },
+        "effectiveDate":              { "$ref": "#/$defs/timeType" }
+      },
+      "required": ["id", "title", "published", "updated", "links"]
+    },
+
+    "Statement": {
+      "type": "object",
+      "description": "Billing statement (extends IdentifiedObject)",
+      "properties": {
+        "id":        { "type": "string", "format": "uri", "description": "Atom entry id (urn:uuid:...)" },
+        "title":     { "type": "string", "description": "Atom entry title" },
+        "published": { "type": "string", "format": "date-time", "description": "Atom entry published" },
+        "updated":   { "type": "string", "format": "date-time", "description": "Atom entry updated" },
+        "links":     { "type": "array", "items": { "$ref": "#/$defs/atomLink" }, "minItems": 2, "description": "Atom entry links (self + up minimum)" },
+        "batchItemInfo": { "$ref": "#/$defs/batchItemInfo" },
+        "issueDateTime": { "$ref": "#/$defs/timeType" },
+        "statementRef":  { "type": "array", "items": { "$ref": "#/$defs/statementRef" } }
+      },
+      "required": ["id", "title", "published", "updated", "links"]
+    },
+
+    "TimeConfiguration": {
+      "type": "object",
+      "description": "LocalTimeParameters (extends IdentifiedObject)",
+      "properties": {
+        "id":        { "type": "string", "format": "uri", "description": "Atom entry id (urn:uuid:...)" },
+        "title":     { "type": "string", "description": "Atom entry title" },
+        "published": { "type": "string", "format": "date-time", "description": "Atom entry published" },
+        "updated":   { "type": "string", "format": "date-time", "description": "Atom entry updated" },
+        "links":     { "type": "array", "items": { "$ref": "#/$defs/atomLink" }, "minItems": 2, "description": "Atom entry links (self + up minimum)" },
+        "batchItemInfo": { "$ref": "#/$defs/batchItemInfo" },
+        "dstEndRule":    { "$ref": "#/$defs/hexBinary32" },
+        "dstOffset":     { "$ref": "#/$defs/timeType" },
+        "dstStartRule":  { "$ref": "#/$defs/hexBinary32" },
+        "tzOffset":      { "$ref": "#/$defs/timeType" }
+      },
+      "required": ["id", "title", "published", "updated", "links", "dstEndRule", "dstOffset", "dstStartRule", "tzOffset"]
+    }
+  },
+
+
+  "type": "object",
+  "description": "Top-level Customer document: either a feed (collection) or a single entry",
+  "oneOf": [
+    {
+      "type": "object",
+      "title": "Customer Feed",
+      "properties": {
+        "feed": {
+          "allOf": [
+            { "$ref": "#/$defs/atomFeed" },
+            {
+              "type": "object",
+              "properties": {
+                "entries": {
+                  "type": "array",
+                  "items": {
+                    "oneOf": [
+                      { "$ref": "#/$defs/Customer" },
+                      { "$ref": "#/$defs/CustomerAccount" },
+                      { "$ref": "#/$defs/CustomerAgreement" },
+                      { "$ref": "#/$defs/EndDevice" },
+                      { "$ref": "#/$defs/Meter" },
+                      { "$ref": "#/$defs/ProgramDateIdMappings" },
+                      { "$ref": "#/$defs/ServiceLocation" },
+                      { "$ref": "#/$defs/ServiceSupplier" },
+                      { "$ref": "#/$defs/Statement" },
+                      { "$ref": "#/$defs/TimeConfiguration" }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "required": ["feed"]
+    },
+    {
+      "type": "object",
+      "title": "Customer Single Entry",
+      "properties": {
+        "entry": {
+          "oneOf": [
+            { "$ref": "#/$defs/Customer" },
+            { "$ref": "#/$defs/CustomerAccount" },
+            { "$ref": "#/$defs/CustomerAgreement" },
+            { "$ref": "#/$defs/EndDevice" },
+            { "$ref": "#/$defs/Meter" },
+            { "$ref": "#/$defs/ProgramDateIdMappings" },
+            { "$ref": "#/$defs/ServiceLocation" },
+            { "$ref": "#/$defs/ServiceSupplier" },
+            { "$ref": "#/$defs/Statement" },
+            { "$ref": "#/$defs/TimeConfiguration" }
+          ]
+        }
+      },
+      "required": ["entry"]
+    }
+  ]
+}

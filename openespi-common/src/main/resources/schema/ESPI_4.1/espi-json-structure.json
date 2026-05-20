@@ -1,0 +1,580 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://naesb.org/espi/4.1/espi-json",
+  "title": "ESPI 4.1 JSON Structure",
+  "description": "JSON representation of espi.xsd resources with Atom entry elements embedded in each IdentifiedObject resource. Namespace: http://naesb.org/espi",
+
+  "$defs": {
+
+    "atomLink": {
+      "type": "object",
+      "description": "Atom link (atom:linkType)",
+      "properties": {
+        "href": { "type": "string", "format": "uri" },
+        "rel":  { "type": "string", "description": "self | up | related" },
+        "type": { "type": "string", "description": "espi-entry/{Resource} or espi-feed/{Resource}" }
+      },
+      "required": ["href", "rel", "type"]
+    },
+
+    "atomFeed": {
+      "type": "object",
+      "description": "Atom feed wrapper (atom:feedType)",
+      "properties": {
+        "id":      { "type": "string", "format": "uri" },
+        "title":   { "type": "string" },
+        "updated": { "type": "string", "format": "date-time" },
+        "links":   { "type": "array", "items": { "$ref": "#/$defs/atomLink" } }
+      },
+      "required": ["id", "title", "updated"]
+    },
+
+    "timeType":          { "type": "integer", "description": "Epoch seconds since 1970-01-01T00:00:00Z (signed 64-bit)" },
+    "hexBinary16":       { "type": "string", "pattern": "^[0-9a-fA-F]{0,4}$" },
+    "hexBinary32":       { "type": "string", "pattern": "^[0-9a-fA-F]{0,8}$" },
+
+    "dateTimeInterval": {
+      "type": "object",
+      "properties": {
+        "duration": { "type": "integer", "minimum": 0, "description": "Duration in seconds" },
+        "start":    { "$ref": "#/$defs/timeType" }
+      }
+    },
+
+    "summaryMeasurement": {
+      "type": "object",
+      "properties": {
+        "powerOfTenMultiplier": { "type": "integer", "description": "UnitMultiplierKind" },
+        "timeStamp":           { "$ref": "#/$defs/timeType" },
+        "uom":                 { "type": "integer", "description": "UnitSymbolKind" },
+        "value":               { "type": "integer" },
+        "readingTypeRef":      { "type": "string", "format": "uri" }
+      }
+    },
+
+    "batchItemInfo": {
+      "type": "object",
+      "properties": {
+        "name":         { "$ref": "#/$defs/hexBinary16" },
+        "operation":    { "type": "integer", "description": "CRUDOperation: 0=Create, 1=Read, 2=Update, 3=Delete" },
+        "statusCode":   { "type": "integer" },
+        "statusReason": { "type": "string", "maxLength": 256 }
+      }
+    },
+
+    "rationalNumber": {
+      "type": "object",
+      "properties": {
+        "numerator":   { "type": "integer" },
+        "denominator": { "type": "integer" }
+      }
+    },
+
+    "readingInterharmonic": {
+      "type": "object",
+      "properties": {
+        "numerator":   { "type": "integer" },
+        "denominator": { "type": "integer" }
+      }
+    },
+
+    "readingQuality": {
+      "type": "object",
+      "properties": {
+        "quality": { "type": "integer", "description": "QualityOfReading enum" }
+      },
+      "required": ["quality"]
+    },
+
+    "intervalReading": {
+      "type": "object",
+      "properties": {
+        "cost":            { "type": "integer", "description": "In hundred-thousandths of currency" },
+        "ReadingQuality":  { "type": "array", "items": { "$ref": "#/$defs/readingQuality" } },
+        "timePeriod":      { "$ref": "#/$defs/dateTimeInterval" },
+        "value":           { "type": "integer" },
+        "consumptionTier": { "type": "integer" },
+        "tou":             { "type": "integer" },
+        "cpp":             { "type": "integer" }
+      }
+    },
+
+    "serviceCategory": {
+      "type": "object",
+      "properties": {
+        "kind": { "type": "integer", "description": "ServiceKind: 0=electricity, 1=gas, 2=water, etc." }
+      },
+      "required": ["kind"]
+    },
+
+    "serviceDeliveryPoint": {
+      "type": "object",
+      "properties": {
+        "name":              { "type": "string", "maxLength": 256 },
+        "tariffProfile":     { "type": "string", "maxLength": 256 },
+        "customerAgreement": { "type": "string", "maxLength": 256 },
+        "tariffRiderRefs":   { "$ref": "#/$defs/tariffRiderRefs" }
+      }
+    },
+
+    "lineItem": {
+      "type": "object",
+      "properties": {
+        "amount":      { "type": "integer" },
+        "rounding":    { "type": "integer" },
+        "dateTime":    { "$ref": "#/$defs/timeType" },
+        "note":        { "type": "string", "maxLength": 256 },
+        "measurement": { "$ref": "#/$defs/summaryMeasurement" },
+        "itemKind":    { "type": "integer", "description": "ItemKind: 1=GenerationFee..10=Information" },
+        "unitCost":    { "type": "integer" },
+        "itemPeriod":  { "$ref": "#/$defs/dateTimeInterval" }
+      },
+      "required": ["note", "itemKind"]
+    },
+
+    "pnodeRef": {
+      "type": "object",
+      "properties": {
+        "apnodeType":         { "type": "string", "description": "ApnodeType enum" },
+        "ref":                { "type": "string", "maxLength": 256 },
+        "startEffectiveDate": { "$ref": "#/$defs/timeType" },
+        "endEffectiveDate":   { "$ref": "#/$defs/timeType" }
+      },
+      "required": ["apnodeType", "ref"]
+    },
+
+    "aggregateNodeRef": {
+      "type": "object",
+      "properties": {
+        "anodeType":          { "type": "string", "description": "AnodeType enum" },
+        "ref":                { "type": "string", "maxLength": 256 },
+        "startEffectiveDate": { "$ref": "#/$defs/timeType" },
+        "endEffectiveDate":   { "$ref": "#/$defs/timeType" },
+        "pnodeRef":           { "type": "array", "items": { "$ref": "#/$defs/pnodeRef" } }
+      },
+      "required": ["anodeType", "ref"]
+    },
+
+    "pnodeRefs": {
+      "type": "object",
+      "properties": {
+        "pnodeRef": { "type": "array", "items": { "$ref": "#/$defs/pnodeRef" } }
+      }
+    },
+
+    "aggregateNodeRefs": {
+      "type": "object",
+      "properties": {
+        "aggregateNodeRef": { "type": "array", "items": { "$ref": "#/$defs/aggregateNodeRef" } }
+      }
+    },
+
+    "tariffRiderRef": {
+      "type": "object",
+      "properties": {
+        "riderType":        { "type": "string", "maxLength": 256 },
+        "enrollmentStatus": { "type": "string", "enum": ["unenrolled", "enrolled", "enrolledPending"] },
+        "effectiveDate":    { "$ref": "#/$defs/timeType" }
+      },
+      "required": ["riderType", "enrollmentStatus", "effectiveDate"]
+    },
+
+    "tariffRiderRefs": {
+      "type": "object",
+      "properties": {
+        "tariffRiderRef": { "type": "array", "items": { "$ref": "#/$defs/tariffRiderRef" } }
+      }
+    },
+
+    "billingChargeSource": {
+      "type": "object",
+      "properties": {
+        "agencyName": { "type": "string", "maxLength": 256 }
+      }
+    },
+
+    "programIdMapping": {
+      "type": "object",
+      "properties": {
+        "tOUorCPPorConsumptionTier": { "type": "string" },
+        "code": { "type": "string" },
+        "name": { "type": "string" },
+        "note": { "type": "string" }
+      },
+      "required": ["tOUorCPPorConsumptionTier", "code", "name"]
+    },
+
+
+    "ApplicationInformation": {
+      "type": "object",
+      "description": "Third Party Application registration (extends IdentifiedObject)",
+      "properties": {
+        "id":        { "type": "string", "format": "uri", "description": "Atom entry id (urn:uuid:...)" },
+        "title":     { "type": "string", "description": "Atom entry title" },
+        "published": { "type": "string", "format": "date-time", "description": "Atom entry published" },
+        "updated":   { "type": "string", "format": "date-time", "description": "Atom entry updated" },
+        "links":     { "type": "array", "items": { "$ref": "#/$defs/atomLink" }, "minItems": 2, "description": "Atom entry links (self + up minimum)" },
+        "batchItemInfo":                            { "$ref": "#/$defs/batchItemInfo" },
+        "dataCustodianId":                          { "type": "string", "maxLength": 64 },
+        "dataCustodianApplicationStatus":           { "type": "integer" },
+        "thirdPartyApplicationDescription":         { "type": "string", "maxLength": 256 },
+        "thirdPartyApplicationStatus":              { "type": "integer" },
+        "thirdPartyApplicationType":                { "type": "integer" },
+        "thirdPartyApplicationUse":                 { "type": "integer" },
+        "thirdPartyPhone":                          { "type": "string", "maxLength": 32 },
+        "authorizationServerUri":                   { "type": "string", "format": "uri" },
+        "thirdPartyNotifyUri":                      { "type": "string", "format": "uri" },
+        "authorizationServerAuthorizationEndpoint": { "type": "string", "format": "uri" },
+        "authorizationServerRegistrationEndpoint":  { "type": "string", "format": "uri" },
+        "authorizationServerTokenEndpoint":         { "type": "string", "format": "uri" },
+        "dataCustodianBulkRequestURI":              { "type": "string", "format": "uri" },
+        "dataCustodianResourceEndpoint":            { "type": "string", "format": "uri" },
+        "thirdPartyScopeSelectionScreenURI":        { "type": "string", "format": "uri" },
+        "thirdPartyUserPortalScreenURI":            { "type": "string", "format": "uri" },
+        "client_secret":                            { "type": "string", "maxLength": 512 },
+        "logo_uri":                                 { "type": "string", "format": "uri" },
+        "client_name":                              { "type": "string", "maxLength": 256 },
+        "client_uri":                               { "type": "string", "format": "uri" },
+        "redirect_uri":                             { "type": "array", "items": { "type": "string", "format": "uri" } },
+        "client_id":                                { "type": "string", "maxLength": 64 },
+        "tos_uri":                                  { "type": "string", "format": "uri" },
+        "policy_uri":                               { "type": "string", "format": "uri" },
+        "software_id":                              { "type": "string", "maxLength": 256 },
+        "software_version":                         { "type": "string", "maxLength": 32 },
+        "client_id_issued_at":                      { "$ref": "#/$defs/timeType" },
+        "client_secret_expires_at":                 { "$ref": "#/$defs/timeType" },
+        "contacts":                                 { "type": "array", "items": { "type": "string", "maxLength": 256 } },
+        "token_endpoint_auth_method":               { "type": "string", "enum": ["client_secret_basic"] },
+        "scope":                                    { "type": "array", "items": { "type": "string", "maxLength": 256 } },
+        "grant_types":                              { "type": "array", "items": { "type": "string", "enum": ["authorization_code", "client_credentials", "refresh_token"] }, "minItems": 2 },
+        "response_types":                           { "type": "string", "enum": ["code"] },
+        "registration_client_uri":                  { "type": "string" },
+        "registration_access_token":                { "type": "string" },
+        "dataCustodianScopeSelectionScreenURI":     { "type": "string" }
+      },
+      "required": ["id", "title", "published", "updated", "links", "dataCustodianId", "dataCustodianApplicationStatus", "thirdPartyNotifyUri", "authorizationServerAuthorizationEndpoint", "authorizationServerTokenEndpoint", "dataCustodianBulkRequestURI", "dataCustodianResourceEndpoint", "client_secret", "client_name", "client_id", "software_id", "software_version", "client_id_issued_at", "client_secret_expires_at", "token_endpoint_auth_method", "scope", "grant_types", "response_types"]
+    },
+
+    "Authorization": {
+      "type": "object",
+      "description": "Permission granted for resource access (extends IdentifiedObject)",
+      "properties": {
+        "id":        { "type": "string", "format": "uri", "description": "Atom entry id (urn:uuid:...)" },
+        "title":     { "type": "string", "description": "Atom entry title" },
+        "published": { "type": "string", "format": "date-time", "description": "Atom entry published" },
+        "updated":   { "type": "string", "format": "date-time", "description": "Atom entry updated" },
+        "links":     { "type": "array", "items": { "$ref": "#/$defs/atomLink" }, "minItems": 2, "description": "Atom entry links (self + up minimum)" },
+        "batchItemInfo":      { "$ref": "#/$defs/batchItemInfo" },
+        "authorizedPeriod":   { "$ref": "#/$defs/dateTimeInterval" },
+        "publishedPeriod":    { "$ref": "#/$defs/dateTimeInterval" },
+        "status":             { "type": "integer", "description": "AuthorizationStatus enum" },
+        "expires_at":         { "$ref": "#/$defs/timeType" },
+        "grant_type":         { "type": "string", "enum": ["authorization_code", "client_credentials", "refresh_token"] },
+        "scope":              { "type": "string", "maxLength": 256 },
+        "token_type":         { "type": "string", "enum": ["Bearer"] },
+        "error":              { "type": "string" },
+        "error_description":  { "type": "string", "maxLength": 256 },
+        "error_uri":          { "type": "string", "format": "uri" },
+        "resourceURI":        { "type": "string", "format": "uri" },
+        "authorizationURI":   { "type": "string", "format": "uri" },
+        "customerResourceURI": { "type": "string", "format": "uri" }
+      },
+      "required": ["id", "title", "published", "updated", "links", "status", "expires_at", "scope", "token_type", "resourceURI", "authorizationURI"]
+    },
+
+    "IntervalBlock": {
+      "type": "object",
+      "description": "Time sequence of Readings of the same ReadingType (extends IdentifiedObject)",
+      "properties": {
+        "id":        { "type": "string", "format": "uri", "description": "Atom entry id (urn:uuid:...)" },
+        "title":     { "type": "string", "description": "Atom entry title" },
+        "published": { "type": "string", "format": "date-time", "description": "Atom entry published" },
+        "updated":   { "type": "string", "format": "date-time", "description": "Atom entry updated" },
+        "links":     { "type": "array", "items": { "$ref": "#/$defs/atomLink" }, "minItems": 2, "description": "Atom entry links (self + up minimum)" },
+        "batchItemInfo":   { "$ref": "#/$defs/batchItemInfo" },
+        "interval":        { "$ref": "#/$defs/dateTimeInterval" },
+        "IntervalReading": { "type": "array", "items": { "$ref": "#/$defs/intervalReading" } }
+      },
+      "required": ["id", "title", "published", "updated", "links"]
+    },
+
+    "MeterReading": {
+      "type": "object",
+      "description": "Set of values obtained from the meter (extends IdentifiedObject)",
+      "properties": {
+        "id":        { "type": "string", "format": "uri", "description": "Atom entry id (urn:uuid:...)" },
+        "title":     { "type": "string", "description": "Atom entry title" },
+        "published": { "type": "string", "format": "date-time", "description": "Atom entry published" },
+        "updated":   { "type": "string", "format": "date-time", "description": "Atom entry updated" },
+        "links":     { "type": "array", "items": { "$ref": "#/$defs/atomLink" }, "minItems": 2, "description": "Atom entry links (self + up minimum)" },
+        "batchItemInfo": { "$ref": "#/$defs/batchItemInfo" }
+      },
+      "required": ["id", "title", "published", "updated", "links"]
+    },
+
+    "ReadingType": {
+      "type": "object",
+      "description": "Characteristics associated with all Readings in a MeterReading (extends IdentifiedObject)",
+      "properties": {
+        "id":        { "type": "string", "format": "uri", "description": "Atom entry id (urn:uuid:...)" },
+        "title":     { "type": "string", "description": "Atom entry title" },
+        "published": { "type": "string", "format": "date-time", "description": "Atom entry published" },
+        "updated":   { "type": "string", "format": "date-time", "description": "Atom entry updated" },
+        "links":     { "type": "array", "items": { "$ref": "#/$defs/atomLink" }, "minItems": 2, "description": "Atom entry links (self + up minimum)" },
+        "batchItemInfo":         { "$ref": "#/$defs/batchItemInfo" },
+        "accumulationBehaviour": { "type": "integer", "description": "AccumulationKind enum" },
+        "commodity":             { "type": "integer", "description": "CommodityKind enum" },
+        "consumptionTier":       { "type": "integer" },
+        "currency":              { "type": "integer", "description": "ISO 4217 numeric code" },
+        "dataQualifier":         { "type": "integer", "description": "DataQualifierKind enum" },
+        "defaultQuality":        { "type": "integer", "description": "QualityOfReading enum" },
+        "flowDirection":         { "type": "integer", "description": "FlowDirectionKind enum" },
+        "intervalLength":        { "type": "integer", "minimum": 0, "description": "Default interval in seconds" },
+        "kind":                  { "type": "integer", "description": "MeasurementKind enum" },
+        "phase":                 { "type": "integer", "description": "PhaseCodeKind enum" },
+        "powerOfTenMultiplier":  { "type": "integer", "description": "UnitMultiplierKind enum" },
+        "timeAttribute":         { "type": "integer", "description": "TimePeriodOfInterest enum" },
+        "tou":                   { "type": "integer" },
+        "uom":                   { "type": "integer", "description": "UnitSymbolKind enum" },
+        "cpp":                   { "type": "integer" },
+        "interharmonic":         { "$ref": "#/$defs/readingInterharmonic" },
+        "measuringPeriod":       { "type": "integer", "description": "TimeAttributeKind enum" },
+        "argument":              { "$ref": "#/$defs/rationalNumber" }
+      },
+      "required": ["id", "title", "published", "updated", "links"]
+    },
+
+    "UsagePoint": {
+      "type": "object",
+      "description": "Logical metering point on a network (extends IdentifiedObject)",
+      "properties": {
+        "id":        { "type": "string", "format": "uri", "description": "Atom entry id (urn:uuid:...)" },
+        "title":     { "type": "string", "description": "Atom entry title" },
+        "published": { "type": "string", "format": "date-time", "description": "Atom entry published" },
+        "updated":   { "type": "string", "format": "date-time", "description": "Atom entry updated" },
+        "links":     { "type": "array", "items": { "$ref": "#/$defs/atomLink" }, "minItems": 2, "description": "Atom entry links (self + up minimum)" },
+        "batchItemInfo":             { "$ref": "#/$defs/batchItemInfo" },
+        "roleFlags":                 { "$ref": "#/$defs/hexBinary16" },
+        "ServiceCategory":          { "$ref": "#/$defs/serviceCategory" },
+        "status":                   { "type": "integer", "description": "0=off, 1=on" },
+        "serviceDeliveryPoint":     { "$ref": "#/$defs/serviceDeliveryPoint" },
+        "amiBillingReady":          { "type": "integer", "description": "AmiBillingReadyKind enum" },
+        "checkBilling":             { "type": "boolean" },
+        "connectionState":          { "type": "integer", "description": "UsagePointConnectedKind enum" },
+        "estimatedLoad":            { "$ref": "#/$defs/summaryMeasurement" },
+        "grounded":                 { "type": "boolean" },
+        "isSdp":                    { "type": "boolean" },
+        "isVirtual":                { "type": "boolean" },
+        "minimalUsageExpected":     { "type": "boolean" },
+        "nominalServiceVoltage":    { "$ref": "#/$defs/summaryMeasurement" },
+        "outageRegion":             { "type": "string", "maxLength": 256 },
+        "phaseCode":                { "type": "integer", "description": "PhaseCodeKind enum" },
+        "ratedCurrent":             { "$ref": "#/$defs/summaryMeasurement" },
+        "ratedPower":               { "$ref": "#/$defs/summaryMeasurement" },
+        "readCycle":                { "type": "string", "maxLength": 256 },
+        "readRoute":                { "type": "string", "maxLength": 256 },
+        "serviceDeliveryRemark":    { "type": "string", "maxLength": 256 },
+        "servicePriority":          { "type": "string", "maxLength": 32 },
+        "pnodeRefs":                { "$ref": "#/$defs/pnodeRefs" },
+        "aggregateNodeRefs":        { "$ref": "#/$defs/aggregateNodeRefs" }
+      },
+      "required": ["id", "title", "published", "updated", "links"]
+    },
+
+    "ElectricPowerQualitySummary": {
+      "type": "object",
+      "description": "Summary of power quality events (extends IdentifiedObject)",
+      "properties": {
+        "id":        { "type": "string", "format": "uri", "description": "Atom entry id (urn:uuid:...)" },
+        "title":     { "type": "string", "description": "Atom entry title" },
+        "published": { "type": "string", "format": "date-time", "description": "Atom entry published" },
+        "updated":   { "type": "string", "format": "date-time", "description": "Atom entry updated" },
+        "links":     { "type": "array", "items": { "$ref": "#/$defs/atomLink" }, "minItems": 2, "description": "Atom entry links (self + up minimum)" },
+        "batchItemInfo":           { "$ref": "#/$defs/batchItemInfo" },
+        "flickerPlt":              { "type": "integer" },
+        "flickerPst":              { "type": "integer" },
+        "harmonicVoltage":         { "type": "integer" },
+        "longInterruptions":       { "type": "integer" },
+        "mainsVoltage":            { "type": "integer" },
+        "measurementProtocol":     { "type": "integer" },
+        "powerFrequency":          { "type": "integer" },
+        "rapidVoltageChanges":     { "type": "integer" },
+        "shortInterruptions":      { "type": "integer" },
+        "summaryInterval":         { "$ref": "#/$defs/dateTimeInterval" },
+        "supplyVoltageDips":       { "type": "integer" },
+        "supplyVoltageImbalance":  { "type": "integer" },
+        "supplyVoltageVariations": { "type": "integer" },
+        "tempOvervoltage":         { "type": "integer" }
+      },
+      "required": ["id", "title", "published", "updated", "links", "summaryInterval"]
+    },
+
+    "ElectricPowerUsageSummary": {
+      "type": "object",
+      "description": "[DEPRECATED] Summary of usage for a billing period (extends IdentifiedObject)",
+      "properties": {
+        "id":        { "type": "string", "format": "uri", "description": "Atom entry id (urn:uuid:...)" },
+        "title":     { "type": "string", "description": "Atom entry title" },
+        "published": { "type": "string", "format": "date-time", "description": "Atom entry published" },
+        "updated":   { "type": "string", "format": "date-time", "description": "Atom entry updated" },
+        "links":     { "type": "array", "items": { "$ref": "#/$defs/atomLink" }, "minItems": 2, "description": "Atom entry links (self + up minimum)" },
+        "batchItemInfo":                          { "$ref": "#/$defs/batchItemInfo" },
+        "billingPeriod":                          { "$ref": "#/$defs/dateTimeInterval" },
+        "billLastPeriod":                         { "type": "integer" },
+        "billToDate":                             { "type": "integer" },
+        "costAdditionalLastPeriod":               { "type": "integer" },
+        "costAdditionalDetailLastPeriod":         { "type": "array", "items": { "$ref": "#/$defs/lineItem" } },
+        "currency":                               { "type": "integer" },
+        "overallConsumptionLastPeriod":           { "$ref": "#/$defs/summaryMeasurement" },
+        "currentBillingPeriodOverAllConsumption": { "$ref": "#/$defs/summaryMeasurement" },
+        "currentDayLastYearNetConsumption":       { "$ref": "#/$defs/summaryMeasurement" },
+        "currentDayNetConsumption":               { "$ref": "#/$defs/summaryMeasurement" },
+        "currentDayOverallConsumption":           { "$ref": "#/$defs/summaryMeasurement" },
+        "peakDemand":                             { "$ref": "#/$defs/summaryMeasurement" },
+        "previousDayLastYearOverallConsumption":  { "$ref": "#/$defs/summaryMeasurement" },
+        "previousDayNetConsumption":              { "$ref": "#/$defs/summaryMeasurement" },
+        "previousDayOverallConsumption":          { "$ref": "#/$defs/summaryMeasurement" },
+        "qualityOfReading":                       { "type": "integer" },
+        "ratchetDemand":                          { "$ref": "#/$defs/summaryMeasurement" },
+        "ratchetDemandPeriod":                    { "$ref": "#/$defs/dateTimeInterval" },
+        "statusTimeStamp":                        { "$ref": "#/$defs/timeType" },
+        "commodity":                              { "type": "integer" }
+      },
+      "required": ["id", "title", "published", "updated", "links", "statusTimeStamp"]
+    },
+
+    "UsageSummary": {
+      "type": "object",
+      "description": "Summary of usage for a billing period (extends IdentifiedObject)",
+      "properties": {
+        "id":        { "type": "string", "format": "uri", "description": "Atom entry id (urn:uuid:...)" },
+        "title":     { "type": "string", "description": "Atom entry title" },
+        "published": { "type": "string", "format": "date-time", "description": "Atom entry published" },
+        "updated":   { "type": "string", "format": "date-time", "description": "Atom entry updated" },
+        "links":     { "type": "array", "items": { "$ref": "#/$defs/atomLink" }, "minItems": 2, "description": "Atom entry links (self + up minimum)" },
+        "batchItemInfo":                          { "$ref": "#/$defs/batchItemInfo" },
+        "billingPeriod":                          { "$ref": "#/$defs/dateTimeInterval" },
+        "billLastPeriod":                         { "type": "integer" },
+        "billToDate":                             { "type": "integer" },
+        "costAdditionalLastPeriod":               { "type": "integer" },
+        "costAdditionalDetailLastPeriod":         { "type": "array", "items": { "$ref": "#/$defs/lineItem" } },
+        "currency":                               { "type": "integer" },
+        "overallConsumptionLastPeriod":           { "$ref": "#/$defs/summaryMeasurement" },
+        "currentBillingPeriodOverAllConsumption": { "$ref": "#/$defs/summaryMeasurement" },
+        "currentDayLastYearNetConsumption":       { "$ref": "#/$defs/summaryMeasurement" },
+        "currentDayNetConsumption":               { "$ref": "#/$defs/summaryMeasurement" },
+        "currentDayOverallConsumption":           { "$ref": "#/$defs/summaryMeasurement" },
+        "peakDemand":                             { "$ref": "#/$defs/summaryMeasurement" },
+        "previousDayLastYearOverallConsumption":  { "$ref": "#/$defs/summaryMeasurement" },
+        "previousDayNetConsumption":              { "$ref": "#/$defs/summaryMeasurement" },
+        "previousDayOverallConsumption":          { "$ref": "#/$defs/summaryMeasurement" },
+        "qualityOfReading":                       { "type": "integer" },
+        "ratchetDemand":                          { "$ref": "#/$defs/summaryMeasurement" },
+        "ratchetDemandPeriod":                    { "$ref": "#/$defs/dateTimeInterval" },
+        "statusTimeStamp":                        { "$ref": "#/$defs/timeType" },
+        "commodity":                              { "type": "integer" },
+        "tariffProfile":                          { "type": "string", "maxLength": 256 },
+        "readCycle":                              { "type": "string", "maxLength": 256 },
+        "tariffRiderRefs":                        { "$ref": "#/$defs/tariffRiderRefs" },
+        "billingChargeSource":                    { "$ref": "#/$defs/billingChargeSource" }
+      },
+      "required": ["id", "title", "published", "updated", "links", "statusTimeStamp"]
+    },
+
+    "TimeConfiguration": {
+      "type": "object",
+      "description": "LocalTimeParameters (extends IdentifiedObject)",
+      "properties": {
+        "id":        { "type": "string", "format": "uri", "description": "Atom entry id (urn:uuid:...)" },
+        "title":     { "type": "string", "description": "Atom entry title" },
+        "published": { "type": "string", "format": "date-time", "description": "Atom entry published" },
+        "updated":   { "type": "string", "format": "date-time", "description": "Atom entry updated" },
+        "links":     { "type": "array", "items": { "$ref": "#/$defs/atomLink" }, "minItems": 2, "description": "Atom entry links (self + up minimum)" },
+        "batchItemInfo": { "$ref": "#/$defs/batchItemInfo" },
+        "dstEndRule":    { "$ref": "#/$defs/hexBinary32" },
+        "dstOffset":     { "$ref": "#/$defs/timeType" },
+        "dstStartRule":  { "$ref": "#/$defs/hexBinary32" },
+        "tzOffset":      { "$ref": "#/$defs/timeType" }
+      },
+      "required": ["id", "title", "published", "updated", "links", "dstEndRule", "dstOffset", "dstStartRule", "tzOffset"]
+    },
+
+    "ProgramIdMappings": {
+      "type": "object",
+      "description": "List of program ID mappings (extends IdentifiedObject)",
+      "properties": {
+        "id":        { "type": "string", "format": "uri", "description": "Atom entry id (urn:uuid:...)" },
+        "title":     { "type": "string", "description": "Atom entry title" },
+        "published": { "type": "string", "format": "date-time", "description": "Atom entry published" },
+        "updated":   { "type": "string", "format": "date-time", "description": "Atom entry updated" },
+        "links":     { "type": "array", "items": { "$ref": "#/$defs/atomLink" }, "minItems": 2, "description": "Atom entry links (self + up minimum)" },
+        "batchItemInfo":    { "$ref": "#/$defs/batchItemInfo" },
+        "programIdMapping": { "type": "array", "items": { "$ref": "#/$defs/programIdMapping" } }
+      },
+      "required": ["id", "title", "published", "updated", "links"]
+    }
+  },
+
+
+  "type": "object",
+  "description": "Top-level ESPI document: either a feed (collection) or a single entry",
+  "oneOf": [
+    {
+      "type": "object",
+      "title": "ESPI Feed",
+      "properties": {
+        "feed": {
+          "allOf": [
+            { "$ref": "#/$defs/atomFeed" },
+            {
+              "type": "object",
+              "properties": {
+                "entries": {
+                  "type": "array",
+                  "items": {
+                    "oneOf": [
+                      { "$ref": "#/$defs/ApplicationInformation" },
+                      { "$ref": "#/$defs/Authorization" },
+                      { "$ref": "#/$defs/IntervalBlock" },
+                      { "$ref": "#/$defs/MeterReading" },
+                      { "$ref": "#/$defs/ReadingType" },
+                      { "$ref": "#/$defs/UsagePoint" },
+                      { "$ref": "#/$defs/ElectricPowerQualitySummary" },
+                      { "$ref": "#/$defs/ElectricPowerUsageSummary" },
+                      { "$ref": "#/$defs/UsageSummary" },
+                      { "$ref": "#/$defs/TimeConfiguration" },
+                      { "$ref": "#/$defs/ProgramIdMappings" }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "required": ["feed"]
+    },
+    {
+      "type": "object",
+      "title": "ESPI Single Entry",
+      "properties": {
+        "entry": {
+          "oneOf": [
+            { "$ref": "#/$defs/ApplicationInformation" },
+            { "$ref": "#/$defs/Authorization" },
+            { "$ref": "#/$defs/IntervalBlock" },
+            { "$ref": "#/$defs/MeterReading" },
+            { "$ref": "#/$defs/ReadingType" },
+            { "$ref": "#/$defs/UsagePoint" },
+            { "$ref": "#/$defs/ElectricPowerQualitySummary" },
+            { "$ref": "#/$defs/ElectricPowerUsageSummary" },
+            { "$ref": "#/$defs/UsageSummary" },
+            { "$ref": "#/$defs/TimeConfiguration" },
+            { "$ref": "#/$defs/ProgramIdMappings" }
+          ]
+        }
+      },
+      "required": ["entry"]
+    }
+  ]
+}
