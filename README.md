@@ -128,13 +128,19 @@ mvn test -pl openespi-common
 ### Integration Tests with TestContainers
 
 **Prerequisites:**
-- Docker Desktop installed and running
+- A reachable Docker daemon (any of the following works):
+  - Docker Desktop on Windows (WSL2 backend) or macOS
+  - Docker Engine in WSL2 (without Docker Desktop)
+  - Docker Engine native on Linux
+  - Rancher Desktop or Podman with Docker socket compatibility
 - Minimum 4GB RAM allocated to Docker
-- Ports 3306 (MySQL) and 5432 (PostgreSQL) available
+- TestContainers auto-detects the Docker socket — no project configuration required
+
+> **Note for WSL2 users running Docker Engine without Docker Desktop:** make sure the daemon is running (`sudo systemctl start docker`) and your user is in the `docker` group (`sudo usermod -aG docker $USER`, then re-login). If `dockerd` fails to start, check `/etc/docker/daemon.json` for a `hosts` entry that conflicts with the systemd unit's `-H fd://` flag.
 
 **Quick Start:**
 ```bash
-# Verify Docker is running
+# Verify Docker is reachable (any setup above)
 docker --version && docker ps
 
 # Run all integration tests (H2, MySQL, PostgreSQL)
