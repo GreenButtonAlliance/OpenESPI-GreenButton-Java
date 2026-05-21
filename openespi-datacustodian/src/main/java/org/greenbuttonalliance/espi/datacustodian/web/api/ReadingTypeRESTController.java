@@ -39,8 +39,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.UUID;
 
@@ -82,7 +82,7 @@ public class ReadingTypeRESTController {
                  "hasAuthority('SCOPE_FB_15_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_16_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_36_READ_3rd_party')")
-    public ResponseEntity<StreamingResponseBody> getReadingTypeCollection(
+    public ResponseEntity<byte[]> getReadingTypeCollection(
             @Parameter(description = "Maximum number of results to return", example = "50")
             @RequestParam(defaultValue = "50") int limit,
             @Parameter(description = "Offset for pagination", example = "0")
@@ -93,11 +93,11 @@ public class ReadingTypeRESTController {
             .map(readingTypeMapper::toDto)
             .toList();
 
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        readingTypeExportService.exportDto(readingTypes, out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
-                .body(out -> {
-            readingTypeExportService.exportDto(readingTypes, out);
-        });
+                .body(out.toByteArray());
     }
 
     /**
@@ -119,7 +119,7 @@ public class ReadingTypeRESTController {
                  "hasAuthority('SCOPE_FB_15_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_16_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_36_READ_3rd_party')")
-    public ResponseEntity<StreamingResponseBody> getReadingType(
+    public ResponseEntity<byte[]> getReadingType(
             @Parameter(description = "Unique identifier of the Reading Type", required = true)
             @PathVariable UUID readingTypeId,
             Authentication authentication) {
@@ -128,10 +128,10 @@ public class ReadingTypeRESTController {
             .map(readingTypeMapper::toDto)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Reading Type not found for id: " + readingTypeId));
 
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        readingTypeExportService.exportDto(dto, out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
-                .body(out -> {
-            readingTypeExportService.exportDto(dto, out);
-        });
+                .body(out.toByteArray());
     }
 }

@@ -39,8 +39,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.UUID;
 
@@ -83,7 +83,7 @@ public class UsageSummaryRESTController {
                  "hasAuthority('SCOPE_FB_15_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_16_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_36_READ_3rd_party')")
-    public ResponseEntity<StreamingResponseBody> getUsageSummaryCollection(
+    public ResponseEntity<byte[]> getUsageSummaryCollection(
             @Parameter(description = "Maximum number of results to return", example = "50")
             @RequestParam(defaultValue = "50") int limit,
             @Parameter(description = "Offset for pagination", example = "0")
@@ -94,11 +94,11 @@ public class UsageSummaryRESTController {
             .map(usageSummaryMapper::toDto)
             .toList();
 
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        usageSummaryExportService.exportDto(usageSummaries, out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
-                .body(out -> {
-            usageSummaryExportService.exportDto(usageSummaries, out);
-        });
+                .body(out.toByteArray());
     }
 
     /**
@@ -120,7 +120,7 @@ public class UsageSummaryRESTController {
                  "hasAuthority('SCOPE_FB_15_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_16_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_36_READ_3rd_party')")
-    public ResponseEntity<StreamingResponseBody> getUsageSummary(
+    public ResponseEntity<byte[]> getUsageSummary(
             @Parameter(description = "Unique identifier of the Usage Summary", required = true)
             @PathVariable UUID usageSummaryId,
             Authentication authentication) {
@@ -129,11 +129,11 @@ public class UsageSummaryRESTController {
             .map(usageSummaryMapper::toDto)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usage Summary not found for id: " + usageSummaryId));
 
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        usageSummaryExportService.exportDto(dto, out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
-                .body(out -> {
-            usageSummaryExportService.exportDto(dto, out);
-        });
+                .body(out.toByteArray());
     }
 
     /**
@@ -151,7 +151,7 @@ public class UsageSummaryRESTController {
     @PreAuthorize("hasAuthority('SCOPE_FB_15_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_16_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_36_READ_3rd_party')")
-    public ResponseEntity<StreamingResponseBody> getSubscriptionUsageSummaries(
+    public ResponseEntity<byte[]> getSubscriptionUsageSummaries(
             @Parameter(description = "Unique identifier of the Subscription", required = true)
             @PathVariable UUID subscriptionId,
             @Parameter(description = "Unique identifier of the Usage Point", required = true)
@@ -161,17 +161,17 @@ public class UsageSummaryRESTController {
             @Parameter(description = "Offset for pagination", example = "0")
             @RequestParam(defaultValue = "0") int offset,
             Authentication authentication) {
-        
+
         // TODO: Implement subscription and usage point based filtering when relationships are available
         List<UsageSummaryDto> usageSummaries = usageSummaryRepository.findAll(PageRequest.of(offset, limit)).getContent().stream()
             .map(usageSummaryMapper::toDto)
             .toList();
 
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        usageSummaryExportService.exportDto(usageSummaries, out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
-                .body(out -> {
-            usageSummaryExportService.exportDto(usageSummaries, out);
-        });
+                .body(out.toByteArray());
     }
 
     /**
@@ -189,7 +189,7 @@ public class UsageSummaryRESTController {
     @PreAuthorize("hasAuthority('SCOPE_FB_15_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_16_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_36_READ_3rd_party')")
-    public ResponseEntity<StreamingResponseBody> getSubscriptionUsageSummary(
+    public ResponseEntity<byte[]> getSubscriptionUsageSummary(
             @Parameter(description = "Unique identifier of the Subscription", required = true)
             @PathVariable UUID subscriptionId,
             @Parameter(description = "Unique identifier of the Usage Point", required = true)
@@ -202,10 +202,10 @@ public class UsageSummaryRESTController {
             .map(usageSummaryMapper::toDto)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usage Summary not found for id: " + usageSummaryId));
 
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        usageSummaryExportService.exportDto(dto, out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
-                .body(out -> {
-            usageSummaryExportService.exportDto(dto, out);
-        });
+                .body(out.toByteArray());
     }
 }

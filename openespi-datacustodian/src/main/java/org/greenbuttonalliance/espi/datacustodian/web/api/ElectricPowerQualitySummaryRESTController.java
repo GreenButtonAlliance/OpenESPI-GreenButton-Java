@@ -39,8 +39,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.UUID;
 
@@ -86,7 +86,7 @@ public class ElectricPowerQualitySummaryRESTController {
                  "hasAuthority('SCOPE_FB_15_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_16_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_36_READ_3rd_party')")
-    public ResponseEntity<StreamingResponseBody> getElectricPowerQualitySummaryCollection(
+    public ResponseEntity<byte[]> getElectricPowerQualitySummaryCollection(
             @Parameter(description = "Maximum number of results to return", example = "50")
             @RequestParam(defaultValue = "50") int limit,
             @Parameter(description = "Offset for pagination", example = "0")
@@ -96,9 +96,11 @@ public class ElectricPowerQualitySummaryRESTController {
                 .map(electricPowerQualitySummaryMapper::toDto)
                 .toList();
 
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        electricPowerQualitySummaryExportService.exportDto(summaries, out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
-                .body(out -> electricPowerQualitySummaryExportService.exportDto(summaries, out));
+                .body(out.toByteArray());
     }
 
     /**
@@ -121,7 +123,7 @@ public class ElectricPowerQualitySummaryRESTController {
                  "hasAuthority('SCOPE_FB_15_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_16_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_36_READ_3rd_party')")
-    public ResponseEntity<StreamingResponseBody> getElectricPowerQualitySummary(
+    public ResponseEntity<byte[]> getElectricPowerQualitySummary(
             @Parameter(description = "Unique identifier of the ElectricPowerQualitySummary", required = true)
             @PathVariable UUID electricPowerQualitySummaryId) {
 
@@ -129,9 +131,11 @@ public class ElectricPowerQualitySummaryRESTController {
                 .map(electricPowerQualitySummaryMapper::toDto)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ElectricPowerQualitySummary not found for id: " + electricPowerQualitySummaryId));
 
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        electricPowerQualitySummaryExportService.exportDto(dto, out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
-                .body(out -> electricPowerQualitySummaryExportService.exportDto(dto, out));
+                .body(out.toByteArray());
     }
 
     /**
@@ -152,7 +156,7 @@ public class ElectricPowerQualitySummaryRESTController {
     @PreAuthorize("hasAuthority('SCOPE_FB_15_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_16_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_36_READ_3rd_party')")
-    public ResponseEntity<StreamingResponseBody> getSubscriptionElectricPowerQualitySummaries(
+    public ResponseEntity<byte[]> getSubscriptionElectricPowerQualitySummaries(
             @Parameter(description = "Unique identifier of the subscription", required = true)
             @PathVariable UUID subscriptionId,
             @Parameter(description = "Unique identifier of the usage point", required = true)
@@ -168,9 +172,11 @@ public class ElectricPowerQualitySummaryRESTController {
                 .map(electricPowerQualitySummaryMapper::toDto)
                 .toList();
 
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        electricPowerQualitySummaryExportService.exportDto(summaries, out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
-                .body(out -> electricPowerQualitySummaryExportService.exportDto(summaries, out));
+                .body(out.toByteArray());
     }
 
     /**
@@ -191,7 +197,7 @@ public class ElectricPowerQualitySummaryRESTController {
     @PreAuthorize("hasAuthority('SCOPE_FB_15_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_16_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_36_READ_3rd_party')")
-    public ResponseEntity<StreamingResponseBody> getSubscriptionElectricPowerQualitySummary(
+    public ResponseEntity<byte[]> getSubscriptionElectricPowerQualitySummary(
             @Parameter(description = "Unique identifier of the subscription", required = true)
             @PathVariable UUID subscriptionId,
             @Parameter(description = "Unique identifier of the usage point", required = true)
@@ -205,8 +211,10 @@ public class ElectricPowerQualitySummaryRESTController {
                 .map(electricPowerQualitySummaryMapper::toDto)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ElectricPowerQualitySummary not found for id: " + electricPowerQualitySummaryId));
 
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        electricPowerQualitySummaryExportService.exportDto(dto, out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
-                .body(out -> electricPowerQualitySummaryExportService.exportDto(dto, out));
+                .body(out.toByteArray());
     }
 }

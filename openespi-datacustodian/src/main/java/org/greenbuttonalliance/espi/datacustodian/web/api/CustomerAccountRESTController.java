@@ -40,9 +40,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.io.ByteArrayOutputStream;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
@@ -52,7 +52,7 @@ import java.util.UUID;
  * Green Button Alliance ESPI (Energy Services Provider Interface) specification.
  * <p>
  * This controller handles CustomerAccount operations with modern Spring Boot 3.5 patterns,
- * returning DTOs and supporting XML output via StreamingResponseBody.
+ * returning XML output via JAXB-marshalled responses.
  */
 @RestController
 @RequestMapping("/espi/1_1/resource")
@@ -82,7 +82,7 @@ public class CustomerAccountRESTController {
     )
     @PreAuthorize("hasAuthority('SCOPE_DataCustodian_Admin_Access') or " +
                  "hasAuthority('SCOPE_FB_15_READ_3rd_party')")
-    public ResponseEntity<StreamingResponseBody> getCustomerAccountCollection(
+    public ResponseEntity<byte[]> getCustomerAccountCollection(
             @Parameter(description = "Maximum number of results to return", example = "50")
             @RequestParam(defaultValue = "50") int limit,
             @Parameter(description = "Offset for pagination", example = "0")
@@ -92,9 +92,11 @@ public class CustomerAccountRESTController {
                 .map(customerAccountMapper::toDto)
                 .toList();
 
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        customerAccountExportService.exportDto(dtos, out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
-                .body(out -> customerAccountExportService.exportDto(dtos, out));
+                .body(out.toByteArray());
     }
 
     /**
@@ -114,7 +116,7 @@ public class CustomerAccountRESTController {
     )
     @PreAuthorize("hasAuthority('SCOPE_DataCustodian_Admin_Access') or " +
                  "hasAuthority('SCOPE_FB_15_READ_3rd_party')")
-    public ResponseEntity<StreamingResponseBody> getCustomerAccount(
+    public ResponseEntity<byte[]> getCustomerAccount(
             @Parameter(description = "Unique identifier of the CustomerAccount", required = true)
             @PathVariable UUID customerAccountId) {
 
@@ -122,9 +124,11 @@ public class CustomerAccountRESTController {
                 .map(customerAccountMapper::toDto)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CustomerAccount not found for id: " + customerAccountId));
 
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        customerAccountExportService.exportDto(dto, out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
-                .body(out -> customerAccountExportService.exportDto(dto, out));
+                .body(out.toByteArray());
     }
 
     /**

@@ -28,7 +28,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.web.servlet.MvcResult;
 
 import java.util.List;
 import java.util.Optional;
@@ -36,7 +35,6 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -66,12 +64,8 @@ public class IntervalBlockRESTControllerTest extends AbstractControllerMockTest 
             when(intervalBlockMapper.toDto(any(IntervalBlockEntity.class)))
                     .thenReturn(dto);
 
-            MvcResult result = mockMvc.perform(get("/espi/1_1/resource/IntervalBlock")
+            mockMvc.perform(get("/espi/1_1/resource/IntervalBlock")
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(request().asyncStarted())
-                    .andReturn();
-
-            mockMvc.perform(asyncDispatch(result))
                     .andExpect(status().isOk())
                     .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
         }
@@ -83,12 +77,8 @@ public class IntervalBlockRESTControllerTest extends AbstractControllerMockTest 
             when(intervalBlockRepository.findAll(any(Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of()));
 
-            MvcResult result = mockMvc.perform(get("/espi/1_1/resource/IntervalBlock")
+            mockMvc.perform(get("/espi/1_1/resource/IntervalBlock")
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(request().asyncStarted())
-                    .andReturn();
-
-            mockMvc.perform(asyncDispatch(result))
                     .andExpect(status().isOk())
                     .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
         }
@@ -124,12 +114,8 @@ public class IntervalBlockRESTControllerTest extends AbstractControllerMockTest 
             when(intervalBlockRepository.findById(id)).thenReturn(Optional.of(entity));
             when(intervalBlockMapper.toDto(entity)).thenReturn(dto);
 
-            MvcResult result = mockMvc.perform(get("/espi/1_1/resource/IntervalBlock/" + id)
+            mockMvc.perform(get("/espi/1_1/resource/IntervalBlock/" + id)
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(request().asyncStarted())
-                    .andReturn();
-
-            mockMvc.perform(asyncDispatch(result))
                     .andExpect(status().isOk())
                     .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
         }
@@ -165,12 +151,8 @@ public class IntervalBlockRESTControllerTest extends AbstractControllerMockTest 
             when(intervalBlockMapper.toDto(any(IntervalBlockEntity.class)))
                     .thenReturn(dto);
 
-            MvcResult result = mockMvc.perform(get("/espi/1_1/resource/Subscription/" + subId + "/UsagePoint/" + upId + "/MeterReading/" + mrId + "/IntervalBlock")
+            mockMvc.perform(get("/espi/1_1/resource/Subscription/" + subId + "/UsagePoint/" + upId + "/MeterReading/" + mrId + "/IntervalBlock")
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(request().asyncStarted())
-                    .andReturn();
-
-            mockMvc.perform(asyncDispatch(result))
                     .andExpect(status().isOk())
                     .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
         }
@@ -205,12 +187,8 @@ public class IntervalBlockRESTControllerTest extends AbstractControllerMockTest 
             when(intervalBlockRepository.findById(ibId)).thenReturn(Optional.of(entity));
             when(intervalBlockMapper.toDto(entity)).thenReturn(dto);
 
-            MvcResult result = mockMvc.perform(get("/espi/1_1/resource/Subscription/" + subId + "/UsagePoint/" + upId + "/MeterReading/" + mrId + "/IntervalBlock/" + ibId)
+            mockMvc.perform(get("/espi/1_1/resource/Subscription/" + subId + "/UsagePoint/" + upId + "/MeterReading/" + mrId + "/IntervalBlock/" + ibId)
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(request().asyncStarted())
-                    .andReturn();
-
-            mockMvc.perform(asyncDispatch(result))
                     .andExpect(status().isOk())
                     .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
         }

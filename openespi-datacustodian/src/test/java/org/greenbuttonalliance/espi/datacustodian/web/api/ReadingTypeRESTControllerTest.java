@@ -36,7 +36,6 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -67,12 +66,8 @@ public class ReadingTypeRESTControllerTest extends AbstractControllerMockTest {
             when(readingTypeMapper.toDto(any(ReadingTypeEntity.class)))
                     .thenReturn(dto);
 
-            org.springframework.test.web.servlet.MvcResult result = mockMvc.perform(get("/espi/1_1/resource/ReadingType")
+            mockMvc.perform(get("/espi/1_1/resource/ReadingType")
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(request().asyncStarted())
-                    .andReturn();
-
-            mockMvc.perform(asyncDispatch(result))
                     .andExpect(status().isOk())
                     .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
         }
@@ -84,12 +79,8 @@ public class ReadingTypeRESTControllerTest extends AbstractControllerMockTest {
             when(readingTypeRepository.findAll(any(Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of()));
 
-            org.springframework.test.web.servlet.MvcResult result = mockMvc.perform(get("/espi/1_1/resource/ReadingType")
+            mockMvc.perform(get("/espi/1_1/resource/ReadingType")
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(request().asyncStarted())
-                    .andReturn();
-
-            mockMvc.perform(asyncDispatch(result))
                     .andExpect(status().isOk())
                     .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
         }
@@ -125,12 +116,8 @@ public class ReadingTypeRESTControllerTest extends AbstractControllerMockTest {
             when(readingTypeRepository.findById(id)).thenReturn(Optional.of(entity));
             when(readingTypeMapper.toDto(entity)).thenReturn(dto);
 
-            org.springframework.test.web.servlet.MvcResult result = mockMvc.perform(get("/espi/1_1/resource/ReadingType/" + id)
+            mockMvc.perform(get("/espi/1_1/resource/ReadingType/" + id)
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(request().asyncStarted())
-                    .andReturn();
-
-            mockMvc.perform(asyncDispatch(result))
                     .andExpect(status().isOk())
                     .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
         }
