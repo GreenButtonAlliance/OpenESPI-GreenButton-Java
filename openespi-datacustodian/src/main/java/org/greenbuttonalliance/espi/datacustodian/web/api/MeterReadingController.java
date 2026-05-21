@@ -39,8 +39,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.UUID;
 
@@ -84,22 +84,22 @@ public class MeterReadingController {
                  "hasAuthority('SCOPE_FB_15_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_16_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_36_READ_3rd_party')")
-    public ResponseEntity<StreamingResponseBody> getAllMeterReadings(
+    public ResponseEntity<byte[]> getAllMeterReadings(
             @Parameter(description = "Maximum number of results to return", example = "50")
             @RequestParam(defaultValue = "50") int limit,
             @Parameter(description = "Offset for pagination", example = "0")
             @RequestParam(defaultValue = "0") int offset,
             Authentication authentication) {
-        
+
         List<MeterReadingDto> meterReadings = meterReadingRepository.findAll(PageRequest.of(offset, limit)).getContent().stream()
             .map(meterReadingMapper::toDto)
             .toList();
 
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        meterReadingExportService.exportDto(meterReadings, out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
-                .body(out -> {
-            meterReadingExportService.exportDto(meterReadings, out);
-        });
+                .body(out.toByteArray());
     }
 
     /**
@@ -121,7 +121,7 @@ public class MeterReadingController {
                  "hasAuthority('SCOPE_FB_15_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_16_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_36_READ_3rd_party')")
-    public ResponseEntity<StreamingResponseBody> getMeterReading(
+    public ResponseEntity<byte[]> getMeterReading(
             @Parameter(description = "Unique identifier of the Meter Reading", required = true)
             @PathVariable UUID meterReadingId,
             Authentication authentication) {
@@ -130,10 +130,10 @@ public class MeterReadingController {
             .map(meterReadingMapper::toDto)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Meter Reading not found for id: " + meterReadingId));
 
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        meterReadingExportService.exportDto(dto, out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
-                .body(out -> {
-            meterReadingExportService.exportDto(dto, out);
-        });
+                .body(out.toByteArray());
     }
 }

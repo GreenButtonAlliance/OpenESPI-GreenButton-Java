@@ -30,7 +30,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.web.servlet.MvcResult;
 
 import java.util.List;
 import java.util.Optional;
@@ -38,7 +37,6 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -76,12 +74,8 @@ public class UsagePointControllerTest extends AbstractControllerMockTest {
             when(usagePointMapper.toDto(any(UsagePointEntity.class)))
                     .thenReturn(dto);
 
-            org.springframework.test.web.servlet.MvcResult result = mockMvc.perform(get("/espi/1_1/resource/UsagePoint")
+            mockMvc.perform(get("/espi/1_1/resource/UsagePoint")
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(request().asyncStarted())
-                    .andReturn();
-
-            mockMvc.perform(asyncDispatch(result))
                     .andExpect(status().isOk())
                     .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
         }
@@ -93,12 +87,8 @@ public class UsagePointControllerTest extends AbstractControllerMockTest {
             when(usagePointRepository.findAll(any(Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of()));
 
-            org.springframework.test.web.servlet.MvcResult result = mockMvc.perform(get("/espi/1_1/resource/UsagePoint")
+            mockMvc.perform(get("/espi/1_1/resource/UsagePoint")
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(request().asyncStarted())
-                    .andReturn();
-
-            mockMvc.perform(asyncDispatch(result))
                     .andExpect(status().isOk())
                     .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
         }
@@ -134,12 +124,8 @@ public class UsagePointControllerTest extends AbstractControllerMockTest {
             when(usagePointRepository.findById(id)).thenReturn(Optional.of(entity));
             when(usagePointMapper.toDto(entity)).thenReturn(dto);
 
-            org.springframework.test.web.servlet.MvcResult result = mockMvc.perform(get("/espi/1_1/resource/UsagePoint/" + id)
+            mockMvc.perform(get("/espi/1_1/resource/UsagePoint/" + id)
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(request().asyncStarted())
-                    .andReturn();
-
-            mockMvc.perform(asyncDispatch(result))
                     .andExpect(status().isOk())
                     .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
         }
@@ -180,12 +166,8 @@ public class UsagePointControllerTest extends AbstractControllerMockTest {
             when(usagePointRepository.findAll(any(Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of()));
 
-            MvcResult result = mockMvc.perform(get("/espi/1_1/resource/Subscription/" + UUID.randomUUID() + "/UsagePoint")
+            mockMvc.perform(get("/espi/1_1/resource/Subscription/" + UUID.randomUUID() + "/UsagePoint")
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(request().asyncStarted())
-                    .andReturn();
-
-            mockMvc.perform(asyncDispatch(result))
                     .andExpect(status().isOk())
                     .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
         }
@@ -222,12 +204,8 @@ public class UsagePointControllerTest extends AbstractControllerMockTest {
             when(usagePointRepository.findById(upId)).thenReturn(Optional.of(entity));
             when(usagePointMapper.toDto(entity)).thenReturn(dto);
 
-            MvcResult result = mockMvc.perform(get("/espi/1_1/resource/Subscription/" + subId + "/UsagePoint/" + upId)
+            mockMvc.perform(get("/espi/1_1/resource/Subscription/" + subId + "/UsagePoint/" + upId)
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(request().asyncStarted())
-                    .andReturn();
-
-            mockMvc.perform(asyncDispatch(result))
                     .andExpect(status().isOk())
                     .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
         }

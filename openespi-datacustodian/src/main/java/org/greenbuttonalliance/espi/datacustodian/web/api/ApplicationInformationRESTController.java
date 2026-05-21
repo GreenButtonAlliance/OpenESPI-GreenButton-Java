@@ -37,9 +37,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.io.ByteArrayOutputStream;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
@@ -62,7 +62,7 @@ public class ApplicationInformationRESTController {
     /**
      * Gets all ApplicationInformation resources.
      *
-     * @return StreamingResponseBody for XML output
+     * @return XML response body
      */
     @GetMapping(produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @Operation(
@@ -76,19 +76,21 @@ public class ApplicationInformationRESTController {
         @ApiResponse(responseCode = "403", description = "Forbidden")
     })
     @PreAuthorize("hasAuthority('SCOPE_DataCustodian_Admin_Access') or hasAuthority('SCOPE_ThirdParty_Admin_Access')")
-    public ResponseEntity<StreamingResponseBody> getAllApplicationInformation() {
+    public ResponseEntity<byte[]> getAllApplicationInformation() {
         List<ApplicationInformationEntity> entities = applicationInformationService.findAll();
 
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        applicationInformationService.export(entities, out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
-                .body(outputStream -> applicationInformationService.export(entities, outputStream));
+                .body(out.toByteArray());
     }
 
     /**
      * Gets a specific ApplicationInformation resource by ID.
      *
      * @param applicationInformationId Unique identifier for the ApplicationInformation
-     * @return StreamingResponseBody for XML output
+     * @return XML response body
      */
     @GetMapping(value = "/{applicationInformationId}", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @Operation(
@@ -102,7 +104,7 @@ public class ApplicationInformationRESTController {
         @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     @PreAuthorize("hasAuthority('SCOPE_DataCustodian_Admin_Access') or hasAuthority('SCOPE_ThirdParty_Admin_Access')")
-    public ResponseEntity<StreamingResponseBody> getApplicationInformation(
+    public ResponseEntity<byte[]> getApplicationInformation(
             @Parameter(description = "Unique identifier of the ApplicationInformation", required = true)
             @PathVariable UUID applicationInformationId) {
 
@@ -111,9 +113,11 @@ public class ApplicationInformationRESTController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "ApplicationInformation not found");
         }
 
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        applicationInformationService.export(entity, out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
-                .body(outputStream -> applicationInformationService.export(entity, outputStream));
+                .body(out.toByteArray());
     }
 
     /**

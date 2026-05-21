@@ -36,7 +36,6 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -66,12 +65,8 @@ public class UsageSummaryRESTControllerTest extends AbstractControllerMockTest {
             when(usageSummaryMapper.toDto(any(UsageSummaryEntity.class)))
                     .thenReturn(dto);
 
-            org.springframework.test.web.servlet.MvcResult result = mockMvc.perform(get("/espi/1_1/resource/UsageSummary")
+            mockMvc.perform(get("/espi/1_1/resource/UsageSummary")
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(request().asyncStarted())
-                    .andReturn();
-
-            mockMvc.perform(asyncDispatch(result))
                     .andExpect(status().isOk())
                     .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
         }
@@ -83,12 +78,8 @@ public class UsageSummaryRESTControllerTest extends AbstractControllerMockTest {
             when(usageSummaryRepository.findAll(any(Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of()));
 
-            org.springframework.test.web.servlet.MvcResult result = mockMvc.perform(get("/espi/1_1/resource/UsageSummary")
+            mockMvc.perform(get("/espi/1_1/resource/UsageSummary")
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(request().asyncStarted())
-                    .andReturn();
-
-            mockMvc.perform(asyncDispatch(result))
                     .andExpect(status().isOk())
                     .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
         }
@@ -109,12 +100,8 @@ public class UsageSummaryRESTControllerTest extends AbstractControllerMockTest {
             when(usageSummaryRepository.findById(id)).thenReturn(Optional.of(entity));
             when(usageSummaryMapper.toDto(entity)).thenReturn(dto);
 
-            org.springframework.test.web.servlet.MvcResult result = mockMvc.perform(get("/espi/1_1/resource/UsageSummary/" + id)
+            mockMvc.perform(get("/espi/1_1/resource/UsageSummary/" + id)
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(request().asyncStarted())
-                    .andReturn();
-
-            mockMvc.perform(asyncDispatch(result))
                     .andExpect(status().isOk())
                     .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
         }
@@ -145,12 +132,8 @@ public class UsageSummaryRESTControllerTest extends AbstractControllerMockTest {
             when(usageSummaryRepository.findAll(any(Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of()));
 
-            org.springframework.test.web.servlet.MvcResult result = mockMvc.perform(get("/espi/1_1/resource/Subscription/" + subId + "/UsagePoint/" + upId + "/UsageSummary")
+            mockMvc.perform(get("/espi/1_1/resource/Subscription/" + subId + "/UsagePoint/" + upId + "/UsageSummary")
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(request().asyncStarted())
-                    .andReturn();
-
-            mockMvc.perform(asyncDispatch(result))
                     .andExpect(status().isOk());
         }
 
@@ -167,12 +150,8 @@ public class UsageSummaryRESTControllerTest extends AbstractControllerMockTest {
             when(usageSummaryRepository.findById(usId)).thenReturn(Optional.of(entity));
             when(usageSummaryMapper.toDto(entity)).thenReturn(dto);
 
-            org.springframework.test.web.servlet.MvcResult result = mockMvc.perform(get("/espi/1_1/resource/Subscription/" + subId + "/UsagePoint/" + upId + "/UsageSummary/" + usId)
+            mockMvc.perform(get("/espi/1_1/resource/Subscription/" + subId + "/UsagePoint/" + upId + "/UsageSummary/" + usId)
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(request().asyncStarted())
-                    .andReturn();
-
-            mockMvc.perform(asyncDispatch(result))
                     .andExpect(status().isOk());
         }
     }

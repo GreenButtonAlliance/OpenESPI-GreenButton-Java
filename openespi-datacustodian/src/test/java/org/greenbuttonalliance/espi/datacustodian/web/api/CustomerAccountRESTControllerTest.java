@@ -64,12 +64,8 @@ public class CustomerAccountRESTControllerTest extends AbstractControllerMockTes
             when(customerAccountMapper.toDto(any(CustomerAccountEntity.class)))
                     .thenReturn(dto);
 
-            org.springframework.test.web.servlet.MvcResult result = mockMvc.perform(get("/espi/1_1/resource/CustomerAccount")
+            mockMvc.perform(get("/espi/1_1/resource/CustomerAccount")
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(request().asyncStarted())
-                    .andReturn();
-
-            mockMvc.perform(asyncDispatch(result))
                     .andExpect(status().isOk())
                     .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
         }
@@ -105,12 +101,8 @@ public class CustomerAccountRESTControllerTest extends AbstractControllerMockTes
             when(customerAccountRepository.findById(id)).thenReturn(Optional.of(entity));
             when(customerAccountMapper.toDto(entity)).thenReturn(dto);
 
-            org.springframework.test.web.servlet.MvcResult result = mockMvc.perform(get("/espi/1_1/resource/CustomerAccount/" + id)
+            mockMvc.perform(get("/espi/1_1/resource/CustomerAccount/" + id)
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(request().asyncStarted())
-                    .andReturn();
-
-            mockMvc.perform(asyncDispatch(result))
                     .andExpect(status().isOk())
                     .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
         }

@@ -41,9 +41,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.io.ByteArrayOutputStream;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
@@ -53,7 +53,7 @@ import java.util.UUID;
  * Green Button Alliance ESPI (Energy Services Provider Interface) specification.
  * <p>
  * This controller handles Customer operations with modern Spring Boot 3.5 patterns,
- * returning DTOs and supporting XML output via StreamingResponseBody.
+ * returning XML output via JAXB-marshalled responses.
  */
 @RestController
 @RequestMapping("/espi/1_1/resource")
@@ -83,7 +83,7 @@ public class CustomerRESTController {
     )
     @PreAuthorize("hasAuthority('SCOPE_DataCustodian_Admin_Access') or " +
                  "hasAuthority('SCOPE_FB_15_READ_3rd_party')")
-    public ResponseEntity<StreamingResponseBody> getCustomerCollection(
+    public ResponseEntity<byte[]> getCustomerCollection(
             @Parameter(description = "Maximum number of results to return", example = "50")
             @RequestParam(defaultValue = "50") int limit,
             @Parameter(description = "Offset for pagination", example = "0")
@@ -93,9 +93,11 @@ public class CustomerRESTController {
                 .map(customerMapper::toDto)
                 .toList();
 
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        customerExportService.exportDto(dtos, out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
-                .body(out -> customerExportService.exportDto(dtos, out));
+                .body(out.toByteArray());
     }
 
     /**
@@ -115,7 +117,7 @@ public class CustomerRESTController {
     )
     @PreAuthorize("hasAuthority('SCOPE_DataCustodian_Admin_Access') or " +
                  "hasAuthority('SCOPE_FB_15_READ_3rd_party')")
-    public ResponseEntity<StreamingResponseBody> getCustomer(
+    public ResponseEntity<byte[]> getCustomer(
             @Parameter(description = "Unique identifier of the Customer", required = true)
             @PathVariable UUID customerId) {
 
@@ -123,9 +125,11 @@ public class CustomerRESTController {
                 .map(customerMapper::toDto)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer not found"));
 
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        customerExportService.exportDto(dto, out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
-                .body(out -> customerExportService.exportDto(dto, out));
+                .body(out.toByteArray());
     }
 
     /**

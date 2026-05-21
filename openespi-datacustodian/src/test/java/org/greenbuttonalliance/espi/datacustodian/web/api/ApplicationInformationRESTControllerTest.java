@@ -57,12 +57,8 @@ public class ApplicationInformationRESTControllerTest extends AbstractController
             ApplicationInformationEntity entity = new ApplicationInformationEntity();
             when(applicationInformationService.findAll()).thenReturn(List.of(entity));
 
-            org.springframework.test.web.servlet.MvcResult result = mockMvc.perform(get("/espi/1_1/resource/ApplicationInformation")
+            mockMvc.perform(get("/espi/1_1/resource/ApplicationInformation")
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(request().asyncStarted())
-                    .andReturn();
-
-            mockMvc.perform(asyncDispatch(result))
                     .andExpect(status().isOk())
                     .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
 
@@ -75,12 +71,8 @@ public class ApplicationInformationRESTControllerTest extends AbstractController
         void shouldReturn200ForThirdPartyAdmin() throws Exception {
             when(applicationInformationService.findAll()).thenReturn(List.of());
 
-            org.springframework.test.web.servlet.MvcResult result = mockMvc.perform(get("/espi/1_1/resource/ApplicationInformation")
+            mockMvc.perform(get("/espi/1_1/resource/ApplicationInformation")
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(request().asyncStarted())
-                    .andReturn();
-
-            mockMvc.perform(asyncDispatch(result))
                     .andExpect(status().isOk());
         }
 
@@ -112,12 +104,8 @@ public class ApplicationInformationRESTControllerTest extends AbstractController
             ApplicationInformationEntity entity = new ApplicationInformationEntity();
             when(applicationInformationService.findById(id)).thenReturn(entity);
 
-            org.springframework.test.web.servlet.MvcResult result = mockMvc.perform(get("/espi/1_1/resource/ApplicationInformation/" + id)
+            mockMvc.perform(get("/espi/1_1/resource/ApplicationInformation/" + id)
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(request().asyncStarted())
-                    .andReturn();
-
-            mockMvc.perform(asyncDispatch(result))
                     .andExpect(status().isOk())
                     .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
 

@@ -36,7 +36,6 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -67,12 +66,8 @@ public class ElectricPowerQualitySummaryRESTControllerTest extends AbstractContr
             when(electricPowerQualitySummaryMapper.toDto(any(ElectricPowerQualitySummaryEntity.class)))
                     .thenReturn(dto);
 
-            org.springframework.test.web.servlet.MvcResult result = mockMvc.perform(get("/espi/1_1/resource/ElectricPowerQualitySummary")
+            mockMvc.perform(get("/espi/1_1/resource/ElectricPowerQualitySummary")
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(request().asyncStarted())
-                    .andReturn();
-
-            mockMvc.perform(asyncDispatch(result))
                     .andExpect(status().isOk())
                     .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
         }
@@ -84,12 +79,8 @@ public class ElectricPowerQualitySummaryRESTControllerTest extends AbstractContr
             when(electricPowerQualitySummaryRepository.findAll(any(Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of()));
 
-            org.springframework.test.web.servlet.MvcResult result = mockMvc.perform(get("/espi/1_1/resource/ElectricPowerQualitySummary")
+            mockMvc.perform(get("/espi/1_1/resource/ElectricPowerQualitySummary")
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(request().asyncStarted())
-                    .andReturn();
-
-            mockMvc.perform(asyncDispatch(result))
                     .andExpect(status().isOk())
                     .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
         }
@@ -125,12 +116,8 @@ public class ElectricPowerQualitySummaryRESTControllerTest extends AbstractContr
             when(electricPowerQualitySummaryRepository.findById(id)).thenReturn(Optional.of(entity));
             when(electricPowerQualitySummaryMapper.toDto(entity)).thenReturn(dto);
 
-            org.springframework.test.web.servlet.MvcResult result = mockMvc.perform(get("/espi/1_1/resource/ElectricPowerQualitySummary/" + id)
+            mockMvc.perform(get("/espi/1_1/resource/ElectricPowerQualitySummary/" + id)
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(request().asyncStarted())
-                    .andReturn();
-
-            mockMvc.perform(asyncDispatch(result))
                     .andExpect(status().isOk())
                     .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
         }
@@ -168,12 +155,8 @@ public class ElectricPowerQualitySummaryRESTControllerTest extends AbstractContr
             when(electricPowerQualitySummaryRepository.findAll(any(Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of()));
 
-            org.springframework.test.web.servlet.MvcResult result = mockMvc.perform(get("/espi/1_1/resource/Subscription/" + subId + "/UsagePoint/" + upId + "/ElectricPowerQualitySummary")
+            mockMvc.perform(get("/espi/1_1/resource/Subscription/" + subId + "/UsagePoint/" + upId + "/ElectricPowerQualitySummary")
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(request().asyncStarted())
-                    .andReturn();
-
-            mockMvc.perform(asyncDispatch(result))
                     .andExpect(status().isOk())
                     .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
         }
@@ -191,12 +174,8 @@ public class ElectricPowerQualitySummaryRESTControllerTest extends AbstractContr
             when(electricPowerQualitySummaryRepository.findById(id)).thenReturn(Optional.of(entity));
             when(electricPowerQualitySummaryMapper.toDto(entity)).thenReturn(dto);
 
-            org.springframework.test.web.servlet.MvcResult result = mockMvc.perform(get("/espi/1_1/resource/Subscription/" + subId + "/UsagePoint/" + upId + "/ElectricPowerQualitySummary/" + id)
+            mockMvc.perform(get("/espi/1_1/resource/Subscription/" + subId + "/UsagePoint/" + upId + "/ElectricPowerQualitySummary/" + id)
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(request().asyncStarted())
-                    .andReturn();
-
-            mockMvc.perform(asyncDispatch(result))
                     .andExpect(status().isOk())
                     .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
         }

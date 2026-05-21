@@ -39,8 +39,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.UUID;
 
@@ -79,7 +79,7 @@ public class IntervalBlockRESTController {
                  "hasAuthority('SCOPE_FB_15_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_16_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_36_READ_3rd_party')")
-    public ResponseEntity<StreamingResponseBody> getIntervalBlockCollection(
+    public ResponseEntity<byte[]> getIntervalBlockCollection(
             @Parameter(description = "Maximum number of results to return", example = "50")
             @RequestParam(defaultValue = "50") int limit,
             @Parameter(description = "Offset for pagination", example = "0")
@@ -90,11 +90,11 @@ public class IntervalBlockRESTController {
             .map(intervalBlockMapper::toDto)
             .toList();
 
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        intervalBlockExportService.exportDto(dtos, out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
-                .body(out -> {
-            intervalBlockExportService.exportDto(dtos, out);
-        });
+                .body(out.toByteArray());
     }
 
     /**
@@ -116,7 +116,7 @@ public class IntervalBlockRESTController {
                  "hasAuthority('SCOPE_FB_15_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_16_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_36_READ_3rd_party')")
-    public ResponseEntity<StreamingResponseBody> getIntervalBlock(
+    public ResponseEntity<byte[]> getIntervalBlock(
             @Parameter(description = "Unique identifier of the Interval Block", required = true)
             @PathVariable UUID intervalBlockId,
             Authentication authentication) {
@@ -125,11 +125,11 @@ public class IntervalBlockRESTController {
             .map(intervalBlockMapper::toDto)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Interval Block not found for id: " + intervalBlockId));
 
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        intervalBlockExportService.exportDto(dto, out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
-                .body(out -> {
-            intervalBlockExportService.exportDto(dto, out);
-        });
+                .body(out.toByteArray());
     }
 
     /**
@@ -150,7 +150,7 @@ public class IntervalBlockRESTController {
     @PreAuthorize("hasAuthority('SCOPE_FB_15_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_16_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_36_READ_3rd_party')")
-    public ResponseEntity<StreamingResponseBody> getSubscriptionIntervalBlocks(
+    public ResponseEntity<byte[]> getSubscriptionIntervalBlocks(
             @Parameter(description = "Unique identifier of the Subscription", required = true)
             @PathVariable UUID subscriptionId,
             @Parameter(description = "Unique identifier of the Usage Point", required = true)
@@ -164,11 +164,11 @@ public class IntervalBlockRESTController {
             .map(intervalBlockMapper::toDto)
             .toList();
 
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        intervalBlockExportService.exportDto(dtos, out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
-                .body(out -> {
-            intervalBlockExportService.exportDto(dtos, out);
-        });
+                .body(out.toByteArray());
     }
 
     /**
@@ -189,7 +189,7 @@ public class IntervalBlockRESTController {
     @PreAuthorize("hasAuthority('SCOPE_FB_15_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_16_READ_3rd_party') or " +
                  "hasAuthority('SCOPE_FB_36_READ_3rd_party')")
-    public ResponseEntity<StreamingResponseBody> getSubscriptionIntervalBlock(
+    public ResponseEntity<byte[]> getSubscriptionIntervalBlock(
             @Parameter(description = "Unique identifier of the Subscription", required = true)
             @PathVariable UUID subscriptionId,
             @Parameter(description = "Unique identifier of the Usage Point", required = true)
@@ -206,10 +206,10 @@ public class IntervalBlockRESTController {
 
         // TODO: Validate relationship between intervalBlock and meterReading/usagePoint/subscription
 
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        intervalBlockExportService.exportDto(dto, out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
-                .body(out -> {
-            intervalBlockExportService.exportDto(dto, out);
-        });
+                .body(out.toByteArray());
     }
 }

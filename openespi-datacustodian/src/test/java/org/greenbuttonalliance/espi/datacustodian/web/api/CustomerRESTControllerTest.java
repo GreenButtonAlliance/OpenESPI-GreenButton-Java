@@ -28,7 +28,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.web.servlet.MvcResult;
 
 import java.util.List;
 import java.util.Optional;
@@ -65,12 +64,8 @@ public class CustomerRESTControllerTest extends AbstractControllerMockTest {
             when(customerMapper.toDto(any(CustomerEntity.class)))
                     .thenReturn(dto);
 
-            MvcResult result = mockMvc.perform(get("/espi/1_1/resource/Customer")
+            mockMvc.perform(get("/espi/1_1/resource/Customer")
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(request().asyncStarted())
-                    .andReturn();
-
-            mockMvc.perform(asyncDispatch(result))
                     .andExpect(status().isOk())
                     .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
         }
@@ -106,12 +101,8 @@ public class CustomerRESTControllerTest extends AbstractControllerMockTest {
             when(customerRepository.findById(id)).thenReturn(Optional.of(entity));
             when(customerMapper.toDto(entity)).thenReturn(dto);
 
-            MvcResult result = mockMvc.perform(get("/espi/1_1/resource/Customer/" + id)
+            mockMvc.perform(get("/espi/1_1/resource/Customer/" + id)
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(request().asyncStarted())
-                    .andReturn();
-
-            mockMvc.perform(asyncDispatch(result))
                     .andExpect(status().isOk())
                     .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
         }
