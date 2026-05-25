@@ -27,16 +27,20 @@ import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.jackson.SecurityJacksonModules;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
+import org.springframework.security.oauth2.server.authorization.jackson.OAuth2AuthorizationServerJacksonModule;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.StringUtils;
 import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JacksonModule;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -98,7 +102,18 @@ public class JdbcRegisteredClientRepository implements RegisteredClientRepositor
     public JdbcRegisteredClientRepository(JdbcTemplate jdbcTemplate, PasswordEncoder passwordEncoder) {
         this.jdbcTemplate = jdbcTemplate;
         this.passwordEncoder = passwordEncoder;
-        this.objectMapper = new ObjectMapper();
+        // Register Spring Security's Jackson modules so typed values inside
+        // ClientSettings / TokenSettings (e.g. OAuth2TokenFormat.REFERENCE)
+        // round-trip correctly through serialize -> DB -> deserialize. Without
+        // these modules, typed values come back as LinkedHashMap and crash
+        // downstream consumers with ClassCastException (see #127 for the
+        // architectural plan to swap to Spring's stock JdbcRegisteredClientRepository).
+        ClassLoader classLoader = JdbcRegisteredClientRepository.class.getClassLoader();
+        List<JacksonModule> securityModules = SecurityJacksonModules.getModules(classLoader);
+        this.objectMapper = JsonMapper.builder()
+                .addModules(securityModules)
+                .addModule(new OAuth2AuthorizationServerJacksonModule())
+                .build();
     }
 
     @Override
