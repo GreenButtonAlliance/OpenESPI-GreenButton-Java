@@ -93,6 +93,10 @@ spring:
     schemas: oauth2_authserver
     validate-on-migrate: true
     clean-disabled: true
+    # Skip V3+ pending ESPI 4.0 XSD-aligned schema repair (see issue #123).
+    # V1+V2 provide enough for OAuth2 grant + introspection; V3 onwards is
+    # seed/demo data that references columns missing from MySQL V1.
+    target: "2.0.0"
 
 # Logging Configuration - Production Levels
 logging:

@@ -64,7 +64,8 @@ CREATE TABLE oauth2_registered_client (
     scopes varchar(1000) NOT NULL,
     client_settings varchar(2000) NOT NULL,
     token_settings varchar(2000) NOT NULL,
-    PRIMARY KEY (id)
+    PRIMARY KEY (id),
+    CONSTRAINT uk_oauth2_registered_client_client_id UNIQUE (client_id)
 );
 
 -- ESPI Application Information mapping
@@ -105,7 +106,6 @@ CREATE TABLE espi_application_info (
 
 -- Create indexes for performance
 CREATE INDEX idx_oauth2_authorization_client_principal ON oauth2_authorization (registered_client_id, principal_name);
-CREATE INDEX idx_oauth2_registered_client_id ON oauth2_registered_client (client_id);
 CREATE INDEX idx_espi_application_client_id ON espi_application_info (client_id);
 
 -- Insert sample data for local development
