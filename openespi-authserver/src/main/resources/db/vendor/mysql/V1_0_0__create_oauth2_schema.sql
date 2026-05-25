@@ -64,7 +64,8 @@ CREATE TABLE oauth2_registered_client (
     scopes varchar(1000) NOT NULL,
     client_settings varchar(2000) NOT NULL,
     token_settings varchar(2000) NOT NULL,
-    PRIMARY KEY (id)
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_oauth2_registered_client_client_id (client_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ESPI Application Information mapping
@@ -109,5 +110,4 @@ CREATE INDEX idx_oauth2_authorization_client_principal ON oauth2_authorization (
 CREATE INDEX idx_oauth2_authorization_code ON oauth2_authorization (authorization_code_value(255));
 CREATE INDEX idx_oauth2_authorization_access_token ON oauth2_authorization (access_token_value(255));
 CREATE INDEX idx_oauth2_authorization_refresh_token ON oauth2_authorization (refresh_token_value(255));
-CREATE INDEX idx_oauth2_registered_client_id ON oauth2_registered_client (client_id);
 CREATE INDEX idx_espi_application_client_id ON espi_application_info (client_id);

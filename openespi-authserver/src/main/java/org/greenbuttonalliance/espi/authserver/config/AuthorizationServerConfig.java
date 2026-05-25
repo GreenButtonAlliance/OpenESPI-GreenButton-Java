@@ -136,11 +136,14 @@ public class AuthorizationServerConfig {
                                 new MediaTypeRequestMatcher(MediaType.TEXT_HTML)
                         )
                 )
-                // Accept access tokens for User Info and/or Client Registration
+                // Accept access tokens for User Info and/or Client Registration.
+                // OIDC auto-configures JWT validation for self-protected endpoints
+                // (id_token signing requires JWT). Outbound tokens to ESPI clients
+                // remain opaque via accessTokenFormat(REFERENCE) on each RegisteredClient.
+                // Cannot configure both .jwt() and .opaqueToken() on the same chain
+                // in Spring Security 7.x.
                 .oauth2ResourceServer(resourceServer -> resourceServer
-                        .opaqueToken(Customizer.withDefaults())
-
-                        //.jwt(Customizer.withDefaults())
+                        .jwt(Customizer.withDefaults())
                 )
                 // HTTPS Channel Security for Production
                 //should be able to use property server.ssl.enabled=true

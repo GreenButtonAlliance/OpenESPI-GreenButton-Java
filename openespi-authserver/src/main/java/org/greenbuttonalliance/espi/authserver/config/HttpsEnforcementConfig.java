@@ -98,7 +98,12 @@ public class HttpsEnforcementConfig {
      * 
      * Enforces TLS 1.3 for all requests in production environment (NAESB ESPI 4.0)
      */
-    @Bean
+    // DISABLED: this chain's securityMatcher("/**") at @Order(0) preempts the
+    // authorization-server filter chain at @Order(1), causing every OAuth2 endpoint
+    // to 404. Headers should be injected via a HeaderWriter or Filter, not via a
+    // SecurityFilterChain that monopolizes /**. AuthorizationServerConfig's own
+    // chain (@Order(1)) already configures equivalent security headers.
+    // @Bean
     @Profile("prod")
     @Order(0)
     public SecurityFilterChain httpsEnforcementFilterChain(HttpSecurity http) throws Exception {
@@ -151,7 +156,9 @@ public class HttpsEnforcementConfig {
      * 
      * Allows HTTP for development while still providing security headers
      */
-    @Bean
+    // DISABLED: same reason as httpsEnforcementFilterChain above — securityMatcher("/**")
+    // at @Order(0) blocks the auth-server endpoints.
+    // @Bean
     @Profile({"dev", "dev-mysql", "dev-postgresql", "local"})
     @Order(0)
     public SecurityFilterChain developmentSecurityFilterChain(HttpSecurity http) throws Exception {
