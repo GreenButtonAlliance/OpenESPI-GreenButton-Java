@@ -46,9 +46,9 @@ import org.springframework.security.oauth2.server.authorization.JdbcOAuth2Author
 import org.springframework.security.oauth2.server.authorization.JdbcOAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsentService;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
+import org.springframework.security.oauth2.server.authorization.client.JdbcRegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
-import org.greenbuttonalliance.espi.authserver.repository.JdbcRegisteredClientRepository;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
@@ -216,14 +216,25 @@ public class AuthorizationServerConfig {
      */
     @Bean
     @Primary
-    public RegisteredClientRepository registeredClientRepository(JdbcTemplate jdbcTemplate, PasswordEncoder passwordEncoder) {
-        JdbcRegisteredClientRepository repository = new JdbcRegisteredClientRepository(jdbcTemplate, passwordEncoder);
-        
-        // Initialize with default ESPI clients if they don't exist
-        // DataCustodian Admin Client (ROLE_DC_ADMIN)
+    public RegisteredClientRepository registeredClientRepository(JdbcTemplate jdbcTemplate) {
+        // Spring Authorization Server's stock JdbcRegisteredClientRepository:
+        //   - constructor takes JdbcOperations only (no PasswordEncoder); the
+        //     {prefix}value pattern in client_secret is resolved by Spring's
+        //     DelegatingPasswordEncoder at authentication time, not on save
+        //   - serializes ClientSettings/TokenSettings via the project's
+        //     OAuth2AuthorizationServerJacksonModule, so typed values like
+        //     OAuth2TokenFormat.REFERENCE round-trip correctly (the bug
+        //     fixed by the Jackson-modules workaround in #128 is now
+        //     simply absent — stock impl uses the right modules upstream)
+        JdbcRegisteredClientRepository repository = new JdbcRegisteredClientRepository(jdbcTemplate);
+
+        // Initialize with default ESPI clients if they don't exist.
+        // {noop}secret tells Spring's DelegatingPasswordEncoder to treat the
+        // remainder as cleartext — actual basic-auth password is just "secret".
+        // Production seeds would supply a pre-bcrypted hash via env vars instead.
         RegisteredClient datacustodianAdmin = RegisteredClient.withId(UUID.randomUUID().toString())
                 .clientId("data_custodian_admin")
-                .clientSecret("{bcrypt}secret")
+                .clientSecret("{noop}dc-secret")
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                 .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
                 .scope("DataCustodian_Admin_Access")
@@ -240,7 +251,7 @@ public class AuthorizationServerConfig {
         // ThirdParty Client (ROLE_USER) - Environment-aware redirect URIs
         RegisteredClient thirdPartyClient = RegisteredClient.withId(UUID.randomUUID().toString())
                 .clientId("third_party")
-                .clientSecret("{bcrypt}secret")
+                .clientSecret("{noop}tp-secret")
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
@@ -266,7 +277,7 @@ public class AuthorizationServerConfig {
         // ThirdParty Admin Client (ROLE_TP_ADMIN)
         RegisteredClient thirdPartyAdmin = RegisteredClient.withId(UUID.randomUUID().toString())
                 .clientId("third_party_admin")
-                .clientSecret("{bcrypt}secret")
+                .clientSecret("{noop}tpadmin-secret")
                 .clientIdIssuedAt(Instant.now())
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                 .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
@@ -287,18 +298,18 @@ public class AuthorizationServerConfig {
     }
     
     /**
-     * Initialize default ESPI clients if they don't exist in the database
+     * Initialize default ESPI clients if they don't exist in the database.
      */
-    private void initializeDefaultClients(JdbcRegisteredClientRepository repository, 
-                                        RegisteredClient... clients) {
+    private void initializeDefaultClients(RegisteredClientRepository repository,
+                                          RegisteredClient... clients) {
+        int seeded = 0;
         for (RegisteredClient client : clients) {
             if (repository.findByClientId(client.getClientId()) == null) {
-                 repository.save(client);
+                repository.save(client);
+                seeded++;
             }
         }
-
-        var savedClients = repository.findAll();
-        System.out.println("Default ESPI Clients: " + savedClients.size());
+        System.out.println("Default ESPI Clients seeded: " + seeded + " of " + clients.length);
     }
 
     @Bean

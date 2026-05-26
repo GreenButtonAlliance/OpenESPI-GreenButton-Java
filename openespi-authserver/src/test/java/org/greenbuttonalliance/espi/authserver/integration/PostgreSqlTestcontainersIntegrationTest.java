@@ -20,7 +20,8 @@
 
 package org.greenbuttonalliance.espi.authserver.integration;
 
-import org.greenbuttonalliance.espi.authserver.repository.JdbcRegisteredClientRepository;
+import org.greenbuttonalliance.espi.authserver.repository.RegisteredClientAdminDao;
+import org.springframework.security.oauth2.server.authorization.client.JdbcRegisteredClientRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -95,6 +96,9 @@ class PostgreSqlTestcontainersIntegrationTest {
 
     @Autowired
     private JdbcRegisteredClientRepository clientRepository;
+
+    @Autowired
+    private RegisteredClientAdminDao registeredClientAdminDao;
 
     @BeforeEach
     void setUp() {
@@ -528,11 +532,11 @@ class PostgreSqlTestcontainersIntegrationTest {
             }
 
             // Retrieve all clients
-            List<RegisteredClient> allClients = clientRepository.findAll();
+            List<String> allClientIds = registeredClientAdminDao.findAllClientIds();
             long endTime = System.currentTimeMillis();
 
             // Then
-            assertThat(allClients.size()).isGreaterThanOrEqualTo(clientCount + 2); // + default clients
+            assertThat(allClientIds.size()).isGreaterThanOrEqualTo(clientCount + 2); // + default clients
             assertThat(endTime - startTime).isLessThan(8000); // Should complete within 8 seconds for PostgreSQL
         }
 
@@ -544,11 +548,11 @@ class PostgreSqlTestcontainersIntegrationTest {
 
             // When
             long startTime = System.currentTimeMillis();
-            List<RegisteredClient> clients = clientRepository.findAll();
+            List<String> clientIds = registeredClientAdminDao.findAllClientIds();
             long endTime = System.currentTimeMillis();
 
             // Then
-            assertThat(clients).hasSizeGreaterThan(10);
+            assertThat(clientIds).hasSizeGreaterThan(10);
             assertThat(endTime - startTime).isLessThan(1000); // Should be fast
         }
 
