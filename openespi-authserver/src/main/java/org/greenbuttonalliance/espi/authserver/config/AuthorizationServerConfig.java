@@ -35,6 +35,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
+import org.springframework.security.config.annotation.web.configurers.oauth2.server.authorization.OAuth2AuthorizationServerConfigurer;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
@@ -118,42 +120,70 @@ public class AuthorizationServerConfig {
      */
     @Bean
     @Order(1)
-    public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) {
+    public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
+        // Canonical Spring Security 7.x Authorization Server setup.
+        // The Spring Authorization Server 1.x static
+        // OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http) was
+        // removed in Spring Security 7.x; the replacement pattern manually
+        // installs the configurer via http.with(...) and scopes the chain via
+        // http.securityMatcher(configurer.getEndpointsMatcher()), so THIS chain
+        // only claims the auth-server endpoints (/oauth2/authorize, /oauth2/token,
+        // /oauth2/jwks, /oauth2/introspect, /oauth2/revoke, /connect/register,
+        // /userinfo, etc.). Everything else falls through to
+        // defaultSecurityFilterChain @Order(2).
+        //
+        // Without this scoping, the resource-server bearer-token filter (added
+        // by .oauth2ResourceServer().jwt(...)) intercepts POST /oauth2/token
+        // before the token-endpoint filter can run its basic-auth handler.
+        OAuth2AuthorizationServerConfigurer authorizationServerConfigurer =
+                new OAuth2AuthorizationServerConfigurer();
+        authorizationServerConfigurer.oidc(Customizer.withDefaults()); // OIDC 1.0
+        RequestMatcher endpointsMatcher = authorizationServerConfigurer.getEndpointsMatcher();
 
         http
-                .authorizeHttpRequests((authorize) -> authorize
-                        .requestMatchers("/assets/**", "/webjars/**", "/login").permitAll())
-                .formLogin(Customizer.withDefaults())
-                .oauth2AuthorizationServer(authorizationServer ->
-                        authorizationServer.oidc(Customizer.withDefaults()) // Enable OpenID Connect 1.0
-                )
+                .securityMatcher(endpointsMatcher)
                 .authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated())
-                .csrf(Customizer.withDefaults())
-                // Redirect to the login page when not authenticated from the authorization endpoint
+                .csrf(csrf -> csrf.ignoringRequestMatchers(endpointsMatcher))
+                .with(authorizationServerConfigurer, Customizer.withDefaults())
+                // Redirect HTML user-agents to the login page when accessing the
+                // authorization endpoint without an active session
                 .exceptionHandling(exceptions -> exceptions
                         .defaultAuthenticationEntryPointFor(
                                 new LoginUrlAuthenticationEntryPoint("/login"),
                                 new MediaTypeRequestMatcher(MediaType.TEXT_HTML)
                         )
                 )
-                // Accept access tokens for User Info and/or Client Registration.
-                // OIDC auto-configures JWT validation for self-protected endpoints
-                // (id_token signing requires JWT). Outbound tokens to ESPI clients
-                // remain opaque via accessTokenFormat(REFERENCE) on each RegisteredClient.
-                // Cannot configure both .jwt() and .opaqueToken() on the same chain
-                // in Spring Security 7.x.
+                // Accept access tokens for /userinfo and /connect/register.
+                // OIDC always issues id_token as JWT, so JWT is the right token
+                // type here. Outbound tokens to ESPI clients remain opaque via
+                // accessTokenFormat(REFERENCE) on each RegisteredClient.
                 .oauth2ResourceServer(resourceServer -> resourceServer
                         .jwt(Customizer.withDefaults())
+                );
+
+        return http.build();
+    }
+
+    /**
+     * Default Security Filter Chain for everything NOT claimed by the
+     * authorization-server endpoints matcher: login form, static resources,
+     * H2 console (in dev), and any custom controllers.
+     */
+    @Bean
+    @Order(2)
+    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers(
+                                "/assets/**", "/webjars/**",
+                                "/login", "/error",
+                                "/.well-known/**",
+                                "/actuator/health", "/actuator/info"
+                        ).permitAll()
+                        .anyRequest().authenticated()
                 )
-                // HTTPS Channel Security for Production
-                //should be able to use property server.ssl.enabled=true
-                //todo - test this
-//                .requiresChannel(channel -> {
-//                    if (requireHttps) {
-//                        channel.anyRequest().requiresSecure();
-//                    }
-//                })
-                // Enhanced Security Headers for ESPI Compliance
+                .formLogin(Customizer.withDefaults())
+                .csrf(Customizer.withDefaults())
                 .headers(headers -> headers
                         .frameOptions(HeadersConfigurer.FrameOptionsConfig::deny)
                         .contentTypeOptions(Customizer.withDefaults())
@@ -171,62 +201,6 @@ public class AuthorizationServerConfig {
                         .maximumSessions(1)
                         .maxSessionsPreventsLogin(false)
                 );
-
-        return http.build();
-    }
-
-    /**
-     * Default Security Filter Chain for non-OAuth2 endpoints
-     * <p>
-     * Handles authentication for:
-     * - Login page
-     * - User consent page
-     * - Static resources
-     */
-    //todo remove if not needed
-   // @Bean
-   // @Order(2)
-    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http)
-            throws Exception {
-       // http
-                //********Moved to order 1
-//            .authorizeHttpRequests((authorize) -> authorize
-//                .requestMatchers("/assets/**", "/webjars/**", "/login").permitAll()
-//                .anyRequest().authenticated()
-//            )
-            // Form login handles the redirect to the login page from the
-            // authorization server filter chain
-                //******moved to order 1
-           // .formLogin(Customizer.withDefaults())
-            // HTTPS Channel Security for Production (Default Security Chain)
-                //should be able to use property server.ssl.enabled=true
-                //todo - test this
-//            .requiresChannel(channel -> {
-//                if (requireHttps) {
-//                    channel.anyRequest().requiresSecure();
-//                }
-//            })
-            // Enhanced Security Headers
-                // ****Dup of Order 1
-//            .headers(headers -> headers
-//                .frameOptions(HeadersConfigurer.FrameOptionsConfig::deny)
-//                .contentTypeOptions(Customizer.withDefaults())
-//                .httpStrictTransportSecurity(hstsConfig -> hstsConfig
-//                    .maxAgeInSeconds(31536000)
-//                    .includeSubDomains(true)
-//                    .preload(true)
-//                )
-//                .referrerPolicy(referrer -> referrer
-//                        .policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)
-//                )
-//            )
-            // Secure session configuration
-        // ******Moved to order 1
-//            .sessionManagement(session -> session
-//                .sessionCreationPolicy(org.springframework.security.config.http.SessionCreationPolicy.IF_REQUIRED)
-//                .maximumSessions(1)
-//                .maxSessionsPreventsLogin(false)
-//            );
 
         return http.build();
     }
