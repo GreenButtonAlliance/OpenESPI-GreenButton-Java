@@ -25,8 +25,8 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
-import org.greenbuttonalliance.espi.authserver.repository.JdbcRegisteredClientRepository;
 import org.greenbuttonalliance.espi.authserver.service.EspiTokenCustomizer;
+import org.springframework.security.oauth2.server.authorization.client.JdbcRegisteredClientRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -132,7 +132,7 @@ class AuthorizationServerConfigTest {
             when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(null);
 
             // When
-            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate, passwordEncoder);
+            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate);
 
             // Then
             assertThat(repository).isNotNull();
@@ -150,7 +150,7 @@ class AuthorizationServerConfigTest {
             when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(existingClient);
 
             // When
-            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate, passwordEncoder);
+            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate);
 
             // Then
             assertThat(repository).isNotNull();
@@ -168,7 +168,7 @@ class AuthorizationServerConfigTest {
             when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(null);
 
             // When
-            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate, passwordEncoder);
+            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate);
 
             // Then - Verify DataCustodian admin client configuration through method calls
             verify(jdbcTemplate, atLeastOnce()).queryForObject(anyString(), any(Class.class), eq("data_custodian_admin"));
@@ -181,7 +181,7 @@ class AuthorizationServerConfigTest {
             when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(null);
 
             // When
-            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate, passwordEncoder);
+            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate);
 
             // Then - Verify ThirdParty client configuration through method calls
             verify(jdbcTemplate, atLeastOnce()).queryForObject(anyString(), any(Class.class), eq("third_party"));
@@ -194,7 +194,7 @@ class AuthorizationServerConfigTest {
             when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(null);
 
             // When
-            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate, passwordEncoder);
+            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate);
 
             // Then - Verify ThirdParty admin client configuration through method calls
             verify(jdbcTemplate, atLeastOnce()).queryForObject(anyString(), any(Class.class), eq("third_party_admin"));
@@ -328,7 +328,7 @@ class AuthorizationServerConfigTest {
             when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(null);
 
             // When
-            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate, passwordEncoder);
+            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate);
 
             // Then
             // The verification is indirect through repository calls since we can't directly 
@@ -343,7 +343,7 @@ class AuthorizationServerConfigTest {
             when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(null);
 
             // When
-            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate, passwordEncoder);
+            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate);
 
             // Then
             // Verify that ThirdParty client is queried (which means it was configured)
@@ -357,7 +357,7 @@ class AuthorizationServerConfigTest {
             when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(null);
 
             // When
-            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate, passwordEncoder);
+            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate);
 
             // Then
             // Verify all default ESPI clients are configured
@@ -373,7 +373,7 @@ class AuthorizationServerConfigTest {
             when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(null);
 
             // When
-            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate, passwordEncoder);
+            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate);
 
             // Then
             // The token lifetimes are configured internally in the registered clients
@@ -388,7 +388,7 @@ class AuthorizationServerConfigTest {
             when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(null);
 
             // When
-            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate, passwordEncoder);
+            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate);
 
             // Then
             // Admin clients should not require consent, customer clients should
@@ -409,7 +409,7 @@ class AuthorizationServerConfigTest {
                     .thenThrow(new RuntimeException("Database error"));
 
             // When & Then - Should not throw exception
-            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate, passwordEncoder);
+            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate);
             
             assertThat(repository).isNotNull();
         }
@@ -419,7 +419,7 @@ class AuthorizationServerConfigTest {
         void shouldHandleNullJdbcTemplateGracefully() {
             // When & Then - Should throw appropriate exception
             try {
-                config.registeredClientRepository(null, null);
+                config.registeredClientRepository(null);
             } catch (Exception e) {
                 assertThat(e).isInstanceOf(NullPointerException.class);
             }
@@ -437,7 +437,7 @@ class AuthorizationServerConfigTest {
             when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(null);
 
             // When
-            RegisteredClientRepository clientRepository = config.registeredClientRepository(jdbcTemplate, passwordEncoder);
+            RegisteredClientRepository clientRepository = config.registeredClientRepository(jdbcTemplate);
             JWKSource<SecurityContext> jwkSource = config.jwkSource();
             JwtDecoder jwtDecoder = config.jwtDecoder(jwkSource);
             AuthorizationServerSettings serverSettings = config.authorizationServerSettings();
@@ -458,7 +458,7 @@ class AuthorizationServerConfigTest {
             when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(null);
 
             // When & Then
-            assertThat(config.registeredClientRepository(jdbcTemplate, passwordEncoder))
+            assertThat(config.registeredClientRepository(jdbcTemplate))
                     .isInstanceOf(JdbcRegisteredClientRepository.class);
             
             assertThat(config.jwkSource())
@@ -486,7 +486,7 @@ class AuthorizationServerConfigTest {
             when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(null);
 
             // When
-            RegisteredClientRepository clientRepository = config.registeredClientRepository(jdbcTemplate, passwordEncoder);
+            RegisteredClientRepository clientRepository = config.registeredClientRepository(jdbcTemplate);
             JWKSource<SecurityContext> jwkSource = config.jwkSource();
             JwtDecoder jwtDecoder = config.jwtDecoder(jwkSource);
             AuthorizationServerSettings serverSettings = config.authorizationServerSettings();
@@ -514,7 +514,7 @@ class AuthorizationServerConfigTest {
             when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(null);
 
             // When
-            RegisteredClientRepository clientRepository = config.registeredClientRepository(jdbcTemplate, passwordEncoder);
+            RegisteredClientRepository clientRepository = config.registeredClientRepository(jdbcTemplate);
             AuthorizationServerSettings serverSettings = config.authorizationServerSettings();
             OAuth2TokenCustomizer<JwtEncodingContext> tokenCustomizer = config.espiTokenCustomizer();
 

@@ -24,7 +24,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.annotation.Validated;
 
@@ -81,11 +81,19 @@ public class OAuth2ClientManagementConfig {
     private boolean enableSecurityMonitoring = true;
 
     /**
-     * Password encoder for client secrets
+     * Password encoder for client secrets.
+     *
+     * Delegating encoder honors the {id} prefix on stored secrets:
+     *   {bcrypt}... -> bcrypt-matched (production)
+     *   {noop}...   -> cleartext-matched (development seed clients)
+     * and encodes new, unprefixed secrets with bcrypt by default. This is the
+     * Spring Security-recommended encoder and is required for the stock
+     * JdbcRegisteredClientRepository, which stores secrets verbatim (prefix
+     * included) rather than re-encoding on save.
      */
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(12); // Strong password encoding
+        return PasswordEncoderFactories.createDelegatingPasswordEncoder();
     }
 
     // Getters and setters

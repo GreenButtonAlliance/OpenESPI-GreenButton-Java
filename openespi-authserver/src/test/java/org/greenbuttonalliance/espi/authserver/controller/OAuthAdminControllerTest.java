@@ -20,7 +20,7 @@
 
 package org.greenbuttonalliance.espi.authserver.controller;
 
-import org.greenbuttonalliance.espi.authserver.repository.JdbcRegisteredClientRepository;
+import org.greenbuttonalliance.espi.authserver.repository.RegisteredClientAdminDao;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -72,7 +72,7 @@ class OAuthAdminControllerTest {
     private RegisteredClientRepository registeredClientRepository;
 
     @Mock
-    private JdbcRegisteredClientRepository jdbcRegisteredClientRepository;
+    private RegisteredClientAdminDao registeredClientAdminDao;
 
     private OAuthAdminController controller;
     private MockMvc mockMvc;
@@ -80,7 +80,8 @@ class OAuthAdminControllerTest {
 
     @BeforeEach
     void setUp() {
-        controller = new OAuthAdminController(authorizationService, registeredClientRepository);
+        controller = new OAuthAdminController(
+                authorizationService, registeredClientRepository, registeredClientAdminDao);
         mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
         objectMapper = new ObjectMapper();
     }
@@ -215,17 +216,15 @@ class OAuthAdminControllerTest {
 
         @Test
         @WithMockUser(roles = "ADMIN")
-        @DisplayName("Should list all clients with JDBC repository")
-        void shouldListAllClientsWithJdbcRepository() throws Exception {
-            // Given
-            controller = new OAuthAdminController(authorizationService, jdbcRegisteredClientRepository);
-            mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
-
-            List<RegisteredClient> mockClients = List.of(
-                    createTestRegisteredClient("data_custodian_admin", "DataCustodian Admin"),
-                    createEspiRegisteredClient("third_party", "ThirdParty Application")
-            );
-            when(jdbcRegisteredClientRepository.findAll()).thenReturn(mockClients);
+        @DisplayName("Should list all clients via admin DAO + repository")
+        void shouldListAllClientsViaAdminDao() throws Exception {
+            // Given: admin DAO returns the client_ids, repository resolves each
+            when(registeredClientAdminDao.findAllClientIds())
+                    .thenReturn(List.of("data_custodian_admin", "third_party"));
+            when(registeredClientRepository.findByClientId("data_custodian_admin"))
+                    .thenReturn(createTestRegisteredClient("data_custodian_admin", "DataCustodian Admin"));
+            when(registeredClientRepository.findByClientId("third_party"))
+                    .thenReturn(createEspiRegisteredClient("third_party", "ThirdParty Application"));
 
             // When & Then
             mockMvc.perform(get("/admin/oauth2/clients"))
@@ -238,20 +237,7 @@ class OAuthAdminControllerTest {
                     .andExpect(jsonPath("$[1].clientId").value("third_party"))
                     .andExpect(jsonPath("$[1].clientName").value("ThirdParty Application"));
 
-            verify(jdbcRegisteredClientRepository).findAll();
-        }
-
-        @Test
-        @WithMockUser(roles = "ADMIN")
-        @DisplayName("Should return mock clients when JDBC repository unavailable")
-        void shouldReturnMockClientsWhenJdbcRepositoryUnavailable() throws Exception {
-            // When & Then
-            mockMvc.perform(get("/admin/oauth2/clients"))
-                    .andExpect(status().isOk())
-                    .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                    .andExpect(jsonPath("$").isArray())
-                    .andExpect(jsonPath("$[0].clientId").value("data_custodian_admin"))
-                    .andExpect(jsonPath("$[1].clientId").value("third_party"));
+            verify(registeredClientAdminDao).findAllClientIds();
         }
 
         @Test
@@ -259,10 +245,7 @@ class OAuthAdminControllerTest {
         @DisplayName("Should handle client listing errors gracefully")
         void shouldHandleClientListingErrorsGracefully() throws Exception {
             // Given
-            controller = new OAuthAdminController(authorizationService, jdbcRegisteredClientRepository);
-            mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
-
-            when(jdbcRegisteredClientRepository.findAll())
+            when(registeredClientAdminDao.findAllClientIds())
                     .thenThrow(new RuntimeException("Database error"));
 
             // When & Then
@@ -305,14 +288,11 @@ class OAuthAdminControllerTest {
 
         @Test
         @WithMockUser(roles = "ADMIN")
-        @DisplayName("Should delete client successfully with JDBC repository")
-        void shouldDeleteClientSuccessfullyWithJdbcRepository() throws Exception {
+        @DisplayName("Should delete client successfully via admin DAO")
+        void shouldDeleteClientSuccessfullyViaAdminDao() throws Exception {
             // Given
-            controller = new OAuthAdminController(authorizationService, jdbcRegisteredClientRepository);
-            mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
-
             RegisteredClient client = createTestRegisteredClient("test-client", "Test Client");
-            when(jdbcRegisteredClientRepository.findByClientId("test-client")).thenReturn(client);
+            when(registeredClientRepository.findByClientId("test-client")).thenReturn(client);
 
             // When & Then
             mockMvc.perform(delete("/admin/oauth2/clients/test-client"))
@@ -321,8 +301,8 @@ class OAuthAdminControllerTest {
                     .andExpect(jsonPath("$.clientId").value("test-client"))
                     .andExpect(jsonPath("$.message").value("Client successfully deleted"));
 
-            verify(jdbcRegisteredClientRepository).findByClientId("test-client");
-            verify(jdbcRegisteredClientRepository).deleteById(client.getId());
+            verify(registeredClientRepository).findByClientId("test-client");
+            verify(registeredClientAdminDao).deleteById(client.getId());
         }
 
         @Test
@@ -330,28 +310,14 @@ class OAuthAdminControllerTest {
         @DisplayName("Should return 404 when deleting non-existent client")
         void shouldReturn404WhenDeletingNonExistentClient() throws Exception {
             // Given
-            controller = new OAuthAdminController(authorizationService, jdbcRegisteredClientRepository);
-            mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
-
-            when(jdbcRegisteredClientRepository.findByClientId("non-existent")).thenReturn(null);
+            when(registeredClientRepository.findByClientId("non-existent")).thenReturn(null);
 
             // When & Then
             mockMvc.perform(delete("/admin/oauth2/clients/non-existent"))
                     .andExpect(status().isNotFound());
 
-            verify(jdbcRegisteredClientRepository).findByClientId("non-existent");
-            verify(jdbcRegisteredClientRepository, never()).deleteById(any());
-        }
-
-        @Test
-        @WithMockUser(roles = "ADMIN")
-        @DisplayName("Should handle client deletion errors with non-JDBC repository")
-        void shouldHandleClientDeletionErrorsWithNonJdbcRepository() throws Exception {
-            // When & Then
-            mockMvc.perform(delete("/admin/oauth2/clients/test-client"))
-                    .andExpect(status().isInternalServerError())
-                    .andExpect(jsonPath("$.status").value("error"))
-                    .andExpect(jsonPath("$.message").value("Client deletion not supported with current repository"));
+            verify(registeredClientRepository).findByClientId("non-existent");
+            verify(registeredClientAdminDao, never()).deleteById(any());
         }
 
         @Test
@@ -359,13 +325,10 @@ class OAuthAdminControllerTest {
         @DisplayName("Should handle client deletion database errors gracefully")
         void shouldHandleClientDeletionDatabaseErrorsGracefully() throws Exception {
             // Given
-            controller = new OAuthAdminController(authorizationService, jdbcRegisteredClientRepository);
-            mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
-
             RegisteredClient client = createTestRegisteredClient("error-client", "Error Client");
-            when(jdbcRegisteredClientRepository.findByClientId("error-client")).thenReturn(client);
+            when(registeredClientRepository.findByClientId("error-client")).thenReturn(client);
             doThrow(new RuntimeException("Database error"))
-                    .when(jdbcRegisteredClientRepository).deleteById(client.getId());
+                    .when(registeredClientAdminDao).deleteById(client.getId());
 
             // When & Then
             mockMvc.perform(delete("/admin/oauth2/clients/error-client"))

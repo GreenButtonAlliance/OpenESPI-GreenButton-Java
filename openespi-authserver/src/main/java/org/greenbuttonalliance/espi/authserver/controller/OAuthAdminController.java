@@ -27,7 +27,7 @@ import org.springframework.security.oauth2.server.authorization.OAuth2Authorizat
 import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
-import org.greenbuttonalliance.espi.authserver.repository.JdbcRegisteredClientRepository;
+import org.greenbuttonalliance.espi.authserver.repository.RegisteredClientAdminDao;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
@@ -59,12 +59,15 @@ public class OAuthAdminController {
 
     private final OAuth2AuthorizationService authorizationService;
     private final RegisteredClientRepository registeredClientRepository;
+    private final RegisteredClientAdminDao registeredClientAdminDao;
 
     public OAuthAdminController(
             OAuth2AuthorizationService authorizationService,
-            RegisteredClientRepository registeredClientRepository) {
+            RegisteredClientRepository registeredClientRepository,
+            RegisteredClientAdminDao registeredClientAdminDao) {
         this.authorizationService = authorizationService;
         this.registeredClientRepository = registeredClientRepository;
+        this.registeredClientAdminDao = registeredClientAdminDao;
     }
 
     /**
@@ -138,16 +141,9 @@ public class OAuthAdminController {
     @GetMapping("/clients")
     public ResponseEntity<List<ClientInfo>> listClients() {
         try {
-            // Use the custom findAll() method from JdbcRegisteredClientRepository
-            List<RegisteredClient> registeredClients;
-            if (registeredClientRepository instanceof JdbcRegisteredClientRepository jdbcRepo) {
-                registeredClients = jdbcRepo.findAll();
-            } else {
-                // Fallback to mock data if not using JDBC repository
-                return ResponseEntity.ok(getMockClients());
-            }
-
-            List<ClientInfo> clients = registeredClients.stream()
+            List<ClientInfo> clients = registeredClientAdminDao.findAllClientIds().stream()
+                    .map(registeredClientRepository::findByClientId)
+                    .filter(Objects::nonNull)
                     .map(this::mapToClientInfo)
                     .collect(Collectors.toList());
 
@@ -181,15 +177,7 @@ public class OAuthAdminController {
                 return ResponseEntity.notFound().build();
             }
 
-            // Use the custom deleteById() method from JdbcRegisteredClientRepository
-            if (registeredClientRepository instanceof JdbcRegisteredClientRepository jdbcRepo) {
-                jdbcRepo.deleteById(client.getId());
-            } else {
-                Map<String, String> error = new HashMap<>();
-                error.put("status", "error");
-                error.put("message", "Client deletion not supported with current repository");
-                return ResponseEntity.internalServerError().body(error);
-            }
+            registeredClientAdminDao.deleteById(client.getId());
 
             Map<String, String> response = new HashMap<>();
             response.put("status", "deleted");

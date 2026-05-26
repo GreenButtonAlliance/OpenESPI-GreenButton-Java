@@ -20,7 +20,8 @@
 
 package org.greenbuttonalliance.espi.authserver.integration;
 
-import org.greenbuttonalliance.espi.authserver.repository.JdbcRegisteredClientRepository;
+import org.greenbuttonalliance.espi.authserver.repository.RegisteredClientAdminDao;
+import org.springframework.security.oauth2.server.authorization.client.JdbcRegisteredClientRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -94,6 +95,9 @@ class MySqlTestcontainersIntegrationTest {
 
     @Autowired
     private JdbcRegisteredClientRepository clientRepository;
+
+    @Autowired
+    private RegisteredClientAdminDao registeredClientAdminDao;
 
     @BeforeEach
     void setUp() {
@@ -250,12 +254,11 @@ class MySqlTestcontainersIntegrationTest {
             // When
             clientRepository.save(client1);
             clientRepository.save(client2);
-            List<RegisteredClient> allClients = clientRepository.findAll();
+            List<String> allClientIds = registeredClientAdminDao.findAllClientIds();
 
             // Then
-            assertThat(allClients).hasSize(5); // 2 test clients + 3 default clients
-            assertThat(allClients.stream().map(RegisteredClient::getClientId))
-                    .contains("test-client-1", "test-client-2");
+            assertThat(allClientIds).hasSize(5); // 2 test clients + 3 default clients
+            assertThat(allClientIds).contains("test-client-1", "test-client-2");
         }
 
         @Test
@@ -266,7 +269,7 @@ class MySqlTestcontainersIntegrationTest {
             clientRepository.save(client);
 
             // When
-            clientRepository.deleteById(client.getId());
+            registeredClientAdminDao.deleteById(client.getId());
             RegisteredClient retrieved = clientRepository.findByClientId(client.getClientId());
 
             // Then
@@ -388,9 +391,9 @@ class MySqlTestcontainersIntegrationTest {
 
             // Then - Second save should update, not create duplicate
             clientRepository.save(client2);
-            List<RegisteredClient> allClients = clientRepository.findAll();
-            long duplicateCount = allClients.stream()
-                    .filter(c -> "duplicate-client".equals(c.getClientId()))
+            List<String> allClientIds = registeredClientAdminDao.findAllClientIds();
+            long duplicateCount = allClientIds.stream()
+                    .filter("duplicate-client"::equals)
                     .count();
 
             assertThat(duplicateCount).isEqualTo(1);
@@ -463,11 +466,11 @@ class MySqlTestcontainersIntegrationTest {
             }
 
             // Retrieve all clients
-            List<RegisteredClient> allClients = clientRepository.findAll();
+            List<String> allClientIds = registeredClientAdminDao.findAllClientIds();
             long endTime = System.currentTimeMillis();
 
             // Then
-            assertThat(allClients.size()).isGreaterThanOrEqualTo(clientCount + 3); // + default clients
+            assertThat(allClientIds.size()).isGreaterThanOrEqualTo(clientCount + 3); // + default clients
             assertThat(endTime - startTime).isLessThan(5000); // Should complete within 5 seconds
         }
     }
