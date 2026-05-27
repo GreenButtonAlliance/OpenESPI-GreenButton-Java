@@ -21,6 +21,7 @@
 package org.greenbuttonalliance.espi.authserver.integration;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -60,6 +61,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @DisplayName("Client Registration Endpoint Integration Tests")
 @Transactional
+@Disabled("OIDC Dynamic Client Registration (/connect/register) was removed in #134 — "
+        + "ESPI is opaque-only and OIDC is deferred until multi-utility Third-Party "
+        + "registration is built. Restore this suite when OIDC returns (see #122, #134). "
+        + "Broader auth-server test-suite repair is tracked in #129.")
 class ClientRegistrationEndpointIntegrationTest {
 
     @Autowired

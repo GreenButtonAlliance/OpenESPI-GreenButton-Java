@@ -215,8 +215,10 @@ public class SecurityConfiguration {
      * 1. Uses opaque token introspection (ESPI standard requirement)
      * 2. Connects to the AuthorizationEntity Server's introspection endpoint
      * 3. Uses client credentials for introspection authentication
-     * 
-     * Future enhancement: Add JWT support for dynamic client registration scenarios
+     *
+     * NOTE: JWT/JWK support is intentionally absent. ESPI 4.0 mandates opaque
+     * access tokens; the GBA Resource Server must contain no JWK/JWT functions
+     * (see issue #134 / #122).
      */
 
     /**

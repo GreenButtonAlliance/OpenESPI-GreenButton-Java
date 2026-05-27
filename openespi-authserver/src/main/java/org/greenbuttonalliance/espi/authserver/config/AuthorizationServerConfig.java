@@ -20,11 +20,6 @@
 
 package org.greenbuttonalliance.espi.authserver.config;
 
-import com.nimbusds.jose.jwk.JWKSet;
-import com.nimbusds.jose.jwk.RSAKey;
-import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
-import com.nimbusds.jose.jwk.source.JWKSource;
-import com.nimbusds.jose.proc.SecurityContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -33,7 +28,6 @@ import org.springframework.http.MediaType;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.annotation.web.configurers.oauth2.server.authorization.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.web.util.matcher.RequestMatcher;
@@ -41,7 +35,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.oidc.OidcScopes;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.authorization.JdbcOAuth2AuthorizationConsentService;
 import org.springframework.security.oauth2.server.authorization.JdbcOAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsentService;
@@ -65,10 +58,6 @@ import org.greenbuttonalliance.espi.authserver.service.EspiTokenCustomizer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.interfaces.RSAPublicKey;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
@@ -132,12 +121,13 @@ public class AuthorizationServerConfig {
         // /userinfo, etc.). Everything else falls through to
         // defaultSecurityFilterChain @Order(2).
         //
-        // Without this scoping, the resource-server bearer-token filter (added
-        // by .oauth2ResourceServer().jwt(...)) intercepts POST /oauth2/token
-        // before the token-endpoint filter can run its basic-auth handler.
+        // (No resource-server filter is configured on this chain — see below.)
         OAuth2AuthorizationServerConfigurer authorizationServerConfigurer =
                 new OAuth2AuthorizationServerConfigurer();
-        authorizationServerConfigurer.oidc(Customizer.withDefaults()); // OIDC 1.0
+        // OIDC intentionally NOT enabled. ESPI uses opaque access tokens only and the
+        // resource server carries no JWK/JWT (issue #134). OIDC is DEFERRED, not removed
+        // forever — it returns when multi-utility Third-Party registration is built
+        // (see #122). Re-add via authorizationServerConfigurer.oidc(...) at that time.
         RequestMatcher endpointsMatcher = authorizationServerConfigurer.getEndpointsMatcher();
 
         http
@@ -152,14 +142,11 @@ public class AuthorizationServerConfig {
                                 new LoginUrlAuthenticationEntryPoint("/login"),
                                 new MediaTypeRequestMatcher(MediaType.TEXT_HTML)
                         )
-                )
-                // Accept access tokens for /userinfo and /connect/register.
-                // OIDC always issues id_token as JWT, so JWT is the right token
-                // type here. Outbound tokens to ESPI clients remain opaque via
-                // accessTokenFormat(REFERENCE) on each RegisteredClient.
-                .oauth2ResourceServer(resourceServer -> resourceServer
-                        .jwt(Customizer.withDefaults())
                 );
+        // No .oauth2ResourceServer(): the auth-server issues opaque tokens and does not
+        // validate bearer tokens on its own endpoints. The OAuth2 protocol endpoints
+        // (token/introspect/revoke) authenticate clients via client_secret_basic; the
+        // admin/UI endpoints are protected by the @Order(2) session-login chain.
 
         return http.build();
     }
@@ -323,75 +310,36 @@ public class AuthorizationServerConfig {
     }
 
     /**
-     * JWK Source for JWT Token Signing
-     * 
-     * Generates RSA key pair for JWT signing and validation.
-     * 
-     * TODO: Use persistent key store for production
-     */
-    @Bean
-    public JWKSource<SecurityContext> jwkSource() {
-        KeyPair keyPair = generateRsaKey();
-        RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
-        RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
-        RSAKey rsaKey = new RSAKey.Builder(publicKey)
-                .privateKey(privateKey)
-                .keyID(UUID.randomUUID().toString())
-                .build();
-        JWKSet jwkSet = new JWKSet(rsaKey);
-        return new ImmutableJWKSet<>(jwkSet);
-    }
-
-//    /**
-//     * JWT Decoder for token validation
-//     */
-    @Bean
-    public JwtDecoder jwtDecoder(JWKSource<SecurityContext> jwkSource) {
-        return OAuth2AuthorizationServerConfiguration.jwtDecoder(jwkSource);
-    }
-
-    /**
      * Authorization Server Settings
      * 
      * Configures OAuth2 endpoint URLs and issuer
      */
     @Bean
     public AuthorizationServerSettings authorizationServerSettings() {
+        // No .jwkSetEndpoint(): the auth-server has no JWK source (opaque tokens only).
         return AuthorizationServerSettings.builder()
                 .issuer(issuerUri)
                 .authorizationEndpoint("/oauth2/authorize")
                 .tokenEndpoint("/oauth2/token")
-                .jwkSetEndpoint("/oauth2/jwks")
                 .tokenRevocationEndpoint("/oauth2/revoke")
                 .tokenIntrospectionEndpoint("/oauth2/introspect")
-                .oidcClientRegistrationEndpoint("/connect/register")
-                .oidcUserInfoEndpoint("/userinfo")
                 .build();
     }
 
     /**
-     * ESPI Token Customizer
-     * 
-     * Adds Green Button Alliance specific claims to JWT tokens
+     * ESPI Token Customizer.
+     *
+     * Holds the ESPI logic for adding resource/authorization URIs to the token.
+     * Currently an OAuth2TokenCustomizer&lt;JwtEncodingContext&gt; that only fires
+     * when espi.token.format=jwt (experimental); inert for the opaque ESPI flow.
+     * RETAINED intentionally: it is the sole home of the URI-augmentation logic to
+     * be migrated to the opaque token-response path (the Energy/Customer/Authorization
+     * URLs) — see #122 (token-response augmentation). NOT part of the #134 JWK/JWT
+     * signing strip.
      */
     @Bean
     public OAuth2TokenCustomizer<JwtEncodingContext> espiTokenCustomizer() {
         return new EspiTokenCustomizer();
     }
 
-    /**
-     * Generate RSA Key Pair for JWT signing
-     */
-    private static KeyPair generateRsaKey() {
-        KeyPair keyPair;
-        try {
-            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-            keyPairGenerator.initialize(2048);
-            keyPair = keyPairGenerator.generateKeyPair();
-        }
-        catch (Exception ex) {
-            throw new IllegalStateException(ex);
-        }
-        return keyPair;
-    }
 }

@@ -201,59 +201,8 @@ class AuthorizationServerConfigTest {
         }
     }
 
-    @Nested
-    @DisplayName("JWK Configuration Tests")
-    class JwkConfigurationTests {
-
-        @Test
-        @DisplayName("Should create JWK source with RSA key")
-        void shouldCreateJwkSourceWithRsaKey() throws Exception {
-            // When
-            JWKSource<SecurityContext> jwkSource = config.jwkSource();
-
-            // Then
-            assertThat(jwkSource).isNotNull();
-            
-            // Verify JWK set contains RSA key
-            List<JWK> jwkList = jwkSource.get(null, null);
-            assertThat(jwkList).isNotNull();
-            assertThat(jwkList).hasSize(1);
-            assertThat(jwkList.get(0)).isInstanceOf(RSAKey.class);
-            
-            RSAKey rsaKey = (RSAKey) jwkList.get(0);
-            assertThat(rsaKey.getKeyID()).isNotNull();
-            assertThat(rsaKey.toRSAPublicKey()).isNotNull();
-            assertThat(rsaKey.toRSAPrivateKey()).isNotNull();
-        }
-
-        @Test
-        @DisplayName("Should create JWT decoder from JWK source")
-        void shouldCreateJwtDecoderFromJwkSource() {
-            // Given
-            JWKSource<SecurityContext> jwkSource = config.jwkSource();
-
-            // When
-            //JwtDecoder jwtDecoder = config.jwtDecoder(jwkSource);
-
-            // Then
-           // assertThat(jwtDecoder).isNotNull();
-        }
-
-        @Test
-        @DisplayName("Should generate different keys on each call")
-        void shouldGenerateDifferentKeysOnEachCall() throws Exception {
-            // When
-            JWKSource<SecurityContext> jwkSource1 = config.jwkSource();
-            JWKSource<SecurityContext> jwkSource2 = config.jwkSource();
-
-            // Then
-            RSAKey key1 = (RSAKey) jwkSource1.get(null, null).get(0);
-            RSAKey key2 = (RSAKey) jwkSource2.get(null, null).get(0);
-            
-            assertThat(key1.getKeyID()).isNotEqualTo(key2.getKeyID());
-            assertThat(key1.toRSAPublicKey()).isNotEqualTo(key2.toRSAPublicKey());
-        }
-    }
+    // JWK Configuration Tests removed in #134 — the auth-server no longer exposes
+    // jwkSource()/jwtDecoder() (ESPI is opaque-only; no JWK/JWT).
 
     @Nested
     @DisplayName("Authorization Server Settings Tests")
@@ -438,15 +387,11 @@ class AuthorizationServerConfigTest {
 
             // When
             RegisteredClientRepository clientRepository = config.registeredClientRepository(jdbcTemplate);
-            JWKSource<SecurityContext> jwkSource = config.jwkSource();
-            JwtDecoder jwtDecoder = config.jwtDecoder(jwkSource);
             AuthorizationServerSettings serverSettings = config.authorizationServerSettings();
             OAuth2TokenCustomizer<JwtEncodingContext> tokenCustomizer = config.espiTokenCustomizer();
 
             // Then
             assertThat(clientRepository).isNotNull();
-            assertThat(jwkSource).isNotNull();
-            assertThat(jwtDecoder).isNotNull();
             assertThat(serverSettings).isNotNull();
             assertThat(tokenCustomizer).isNotNull();
         }
@@ -460,13 +405,7 @@ class AuthorizationServerConfigTest {
             // When & Then
             assertThat(config.registeredClientRepository(jdbcTemplate))
                     .isInstanceOf(JdbcRegisteredClientRepository.class);
-            
-            assertThat(config.jwkSource())
-                    .isInstanceOf(JWKSource.class);
-            
-            assertThat(config.jwtDecoder(config.jwkSource()))
-                    .isInstanceOf(JwtDecoder.class);
-            
+
             assertThat(config.authorizationServerSettings())
                     .isInstanceOf(AuthorizationServerSettings.class);
             
@@ -487,21 +426,14 @@ class AuthorizationServerConfigTest {
 
             // When
             RegisteredClientRepository clientRepository = config.registeredClientRepository(jdbcTemplate);
-            JWKSource<SecurityContext> jwkSource = config.jwkSource();
-            JwtDecoder jwtDecoder = config.jwtDecoder(jwkSource);
             AuthorizationServerSettings serverSettings = config.authorizationServerSettings();
             OAuth2TokenCustomizer<JwtEncodingContext> tokenCustomizer = config.espiTokenCustomizer();
 
             // Then - All components should work together
             assertThat(clientRepository).isNotNull();
-            assertThat(jwkSource).isNotNull();
-            assertThat(jwtDecoder).isNotNull();
             assertThat(serverSettings).isNotNull();
             assertThat(tokenCustomizer).isNotNull();
-            
-            // Test JWT decoder with JWK source
-            assertThat(jwtDecoder).isNotNull();
-            
+
             // Test server settings configuration
             assertThat(serverSettings.getIssuer()).isNotNull();
             assertThat(serverSettings.getTokenEndpoint()).isNotNull();
