@@ -11,10 +11,16 @@ server:
 spring:
   application:
     name: openespi-authorization-server
-  
+
+  # ESPI is opaque-token only — suppress the Spring Boot auto-config that would
+  # otherwise generate a JWKSource/JwtDecoder and stand up /oauth2/jwks (#134).
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.security.oauth2.server.authorization.autoconfigure.servlet.OAuth2AuthorizationServerJwtAutoConfiguration
+
   profiles:
     active: dev-mysql
-  
+
   # Security Configuration
   security:
     oauth2:
@@ -23,7 +29,6 @@ spring:
         endpoint:
           authorization-uri: /oauth2/authorize
           token-uri: /oauth2/token
-          jwk-set-uri: /oauth2/jwks
           token-revocation-uri: /oauth2/revoke
           token-introspection-uri: /oauth2/introspect
   
