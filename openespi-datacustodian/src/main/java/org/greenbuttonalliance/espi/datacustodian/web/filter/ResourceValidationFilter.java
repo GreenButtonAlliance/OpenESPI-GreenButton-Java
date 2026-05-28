@@ -21,7 +21,6 @@
 package org.greenbuttonalliance.espi.datacustodian.web.filter;
 
 import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
-import org.greenbuttonalliance.espi.common.domain.usage.SubscriptionEntity;
 import org.greenbuttonalliance.espi.common.service.AuthorizationService;
 import org.greenbuttonalliance.espi.common.service.SubscriptionService;
 import org.greenbuttonalliance.espi.common.repositories.usage.UsagePointRepository;
@@ -67,7 +66,6 @@ public class ResourceValidationFilter implements Filter {
 		Boolean resourceRequest = false;
 
 		AuthorizationEntity authorizationFromToken = null;
-		SubscriptionEntity subscription = null;
 		String resourceUri = null;
 		String authorizationUri = null;
 		Set<String> roles = null;
@@ -126,7 +124,6 @@ public class ResourceValidationFilter implements Filter {
 						resourceUri = authorizationFromToken.getResourceURI();
 						authorizationUri = authorizationFromToken
 								.getAuthorizationURI();
-						subscription = authorizationFromToken.getSubscription();
 
 					} catch (Exception e) {
 						System.out
@@ -263,8 +260,11 @@ public class ResourceValidationFilter implements Filter {
 
 				// or /resource/Batch/Subscription/{subscriptionId}/**
 				if (invalid && uri.contains("/resource/Subscription")) {
-					if (authorizationFromToken.getSubscription().getId()
-							.toString().equals(tokens[3])) {
+					// An authorization backs one or two subscriptions (energy + customer/PII);
+					// the requested {subscriptionId} must match one of them.
+					boolean matchesSubscription = authorizationFromToken.getSubscriptions().stream()
+							.anyMatch(s -> s.getId().toString().equals(tokens[3]));
+					if (matchesSubscription) {
 						invalid = false;
 					} else {
 						// not authorized for this resource

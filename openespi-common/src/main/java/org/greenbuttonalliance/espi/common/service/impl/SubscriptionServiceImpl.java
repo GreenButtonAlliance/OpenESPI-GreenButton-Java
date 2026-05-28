@@ -136,8 +136,8 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 	}
 
 	@Override
-	public SubscriptionEntity findByAuthorizationId(UUID id) {
-		return subscriptionRepository.findByAuthorization_Id(id).orElse(null);
+	public List<SubscriptionEntity> findByAuthorizationId(UUID id) {
+		return subscriptionRepository.findByAuthorization_Id(id);
 	}
 
 	@Override

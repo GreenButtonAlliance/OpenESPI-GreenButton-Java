@@ -74,7 +74,10 @@ public class AuthorizationServiceImpl implements AuthorizationService {
 		log.info("Creating authorization entity for subscription: " + subscription.getId());
 		AuthorizationEntity authorization = new AuthorizationEntity();
 		authorization.setAccessToken(accessToken);
-		authorization.setSubscription(subscription);
+		// Subscription is the owning side of the relationship; maintain both directions.
+		// cascade=ALL on AuthorizationEntity.subscriptions persists the subscription with the save.
+		subscription.setAuthorization(authorization);
+		authorization.getSubscriptions().add(subscription);
 		return authorizationRepository.save(authorization);
 	}
 

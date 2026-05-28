@@ -86,9 +86,9 @@ CREATE TABLE subscription_usage_points
 CREATE INDEX idx_subscription_usage_points_subscription ON subscription_usage_points (subscription_id);
 CREATE INDEX idx_subscription_usage_points_usage_point ON subscription_usage_points (usage_point_id);
 
--- Add foreign key constraint from authorizations to subscriptions
-ALTER TABLE authorizations ADD CONSTRAINT fk_authorization_subscription
-    FOREIGN KEY (subscription_id) REFERENCES subscriptions (id) ON DELETE SET NULL;
+-- The subscription↔authorization link is the FK subscriptions.authorization_id → authorizations.id
+-- (defined NOT NULL with ON DELETE CASCADE in V1). The authorization is the aggregate root: a
+-- subscription has no independent lifecycle, so there is no back-reference column on authorizations.
 
 -- Add foreign key constraint from usage_points to subscriptions
 ALTER TABLE usage_points ADD CONSTRAINT fk_usage_point_subscription

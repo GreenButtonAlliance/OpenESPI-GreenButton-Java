@@ -104,7 +104,7 @@ public interface AuthorizationMapper {
     @Mapping(target = "thirdParty", source = "thirdParty")
     @Mapping(target = "applicationInformation", ignore = true) // Complex mapping, handle separately
     @Mapping(target = "retailCustomer", ignore = true) // Complex mapping, handle separately
-    @Mapping(target = "subscription", ignore = true)
+    @Mapping(target = "subscriptions", ignore = true) // Aggregate children, managed via the subscription lifecycle
     AuthorizationEntity toEntity(AuthorizationDto dto);
 
 }

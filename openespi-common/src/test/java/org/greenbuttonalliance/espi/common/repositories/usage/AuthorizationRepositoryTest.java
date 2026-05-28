@@ -609,7 +609,6 @@ class AuthorizationRepositoryTest extends BaseRepositoryTest {
             AuthorizationEntity auth = createValidAuthorization();
             auth.setRetailCustomer(null);
             auth.setApplicationInformation(null);
-            auth.setSubscription(null);
             auth.setDescription("Authorization without Relationships");
 
             // Act
@@ -622,7 +621,7 @@ class AuthorizationRepositoryTest extends BaseRepositoryTest {
             AuthorizationEntity entity = retrieved.get();
             assertThat(entity.getRetailCustomer()).isNull();
             assertThat(entity.getApplicationInformation()).isNull();
-            assertThat(entity.getSubscription()).isNull();
+            assertThat(entity.getSubscriptions()).isEmpty();
         }
     }
 

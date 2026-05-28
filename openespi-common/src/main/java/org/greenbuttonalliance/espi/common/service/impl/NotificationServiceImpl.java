@@ -84,8 +84,6 @@ public class NotificationServiceImpl implements NotificationService {
 
 		if (retailCustomer != null) {
 
-			SubscriptionEntity subscription = null;
-
 			// find and iterate across all relevant authorizations
 			List<AuthorizationEntity> authorizationList = authorizationService
 					.findAllByRetailCustomerId(retailCustomer.getId());
@@ -95,17 +93,19 @@ public class NotificationServiceImpl implements NotificationService {
 			while (authorizationIterator.hasNext()) {
 				AuthorizationEntity authorization = authorizationIterator.next();
 
+				List<SubscriptionEntity> subscriptions;
 				try {
-					subscription = subscriptionService
+					// an authorization backs one or two subscriptions (energy + customer/PII)
+					subscriptions = subscriptionService
 							.findByAuthorizationId(authorization.getId());
 				} catch (Exception e) {
 					// an Authorization w/o an associated subscription breaks
 					// the propagation chain
 					// TODO: if we want to continue the propagation forward, we
 					// just need to hook in the subscription substructure
-
+					subscriptions = List.of();
 				}
-				if (subscription != null) {
+				for (SubscriptionEntity subscription : subscriptions) {
 					notify(subscription, startDate, endDate);
 				}
 			}
