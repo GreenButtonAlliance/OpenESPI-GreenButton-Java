@@ -40,7 +40,7 @@ public interface SubscriptionService {
 
 	List<UUID> findUsagePointIds(UUID subscriptionId);
 
-	SubscriptionEntity findByAuthorizationId(UUID id);
+	List<SubscriptionEntity> findByAuthorizationId(UUID id);
 
 	SubscriptionEntity addUsagePoint(SubscriptionEntity subscription,
 							   UsagePointEntity usagePoint);

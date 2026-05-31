@@ -67,7 +67,21 @@ class SubscriptionRepositoryTest extends BaseRepositoryTest {
     private SubscriptionEntity createValidSubscription() {
         SubscriptionEntity subscription = new SubscriptionEntity(UUID.randomUUID());
         subscription.setHashedId("hashed-" + faker.internet().uuid());
+        // authorization_id is NOT NULL: a subscription is always backed by an authorization.
+        // Tests needing a specific authorization override this via setAuthorization(...).
+        subscription.setAuthorization(createAndSaveAuthorization());
         return subscription;
+    }
+
+    /**
+     * Creates and persists a minimal valid AuthorizationEntity, the aggregate root a
+     * subscription must reference.
+     */
+    private AuthorizationEntity createAndSaveAuthorization() {
+        AuthorizationEntity auth = new AuthorizationEntity();
+        auth.setAccessToken("token-" + faker.internet().uuid());
+        auth.setStatus(AuthorizationEntity.STATUS_ACTIVE);
+        return authorizationRepository.save(auth);
     }
 
     /**
@@ -336,11 +350,51 @@ class SubscriptionRepositoryTest extends BaseRepositoryTest {
             flushAndClear();
 
             // Act
-            Optional<SubscriptionEntity> result = subscriptionRepository.findByAuthorization_Id(savedAuth.getId());
+            List<SubscriptionEntity> result = subscriptionRepository.findByAuthorization_Id(savedAuth.getId());
 
             // Assert
-            assertThat(result).isPresent();
-            assertThat(result.get().getAuthorization().getId()).isEqualTo(savedAuth.getId());
+            assertThat(result).hasSize(1)
+                    .first()
+                    .extracting(s -> s.getAuthorization().getId())
+                    .isEqualTo(savedAuth.getId());
+        }
+
+        @Test
+        @DisplayName("Should find both subscriptions backed by one authorization (energy + customer/PII)")
+        void shouldFindBothSubscriptionsForOneAuthorization() {
+            // Arrange
+            RetailCustomerEntity customer = TestDataBuilders.createValidRetailCustomer();
+            customer.setUsername("n1auth" + faker.number().digits(6));
+            RetailCustomerEntity savedCustomer = retailCustomerRepository.save(customer);
+
+            ApplicationInformationEntity app = createValidApplicationInformation();
+            ApplicationInformationEntity savedApp = applicationInformationRepository.save(app);
+
+            // One authorization is the aggregate root for both subscriptions
+            AuthorizationEntity savedAuth = createAndSaveAuthorization();
+
+            SubscriptionEntity energy = createValidSubscription();
+            energy.setRetailCustomer(savedCustomer);
+            energy.setApplicationInformation(savedApp);
+            energy.setAuthorization(savedAuth);
+
+            SubscriptionEntity customerPii = createValidSubscription();
+            customerPii.setRetailCustomer(savedCustomer);
+            customerPii.setApplicationInformation(savedApp);
+            customerPii.setAuthorization(savedAuth);
+
+            subscriptionRepository.saveAll(List.of(energy, customerPii));
+            flushAndClear();
+
+            // Act
+            List<SubscriptionEntity> result = subscriptionRepository.findByAuthorization_Id(savedAuth.getId());
+
+            // Assert
+            assertThat(result)
+                    .hasSize(2)
+                    .allSatisfy(s -> assertThat(s.getAuthorization().getId()).isEqualTo(savedAuth.getId()))
+                    .extracting(SubscriptionEntity::getId)
+                    .containsExactlyInAnyOrder(energy.getId(), customerPii.getId());
         }
 
         @Test
@@ -478,7 +532,7 @@ class SubscriptionRepositoryTest extends BaseRepositoryTest {
             SubscriptionEntity subscription = createValidSubscription();
             subscription.setRetailCustomer(savedCustomer);
             subscription.setApplicationInformation(savedApp);
-            // Leave authorization and usagePoints as null/empty
+            // usagePoints left empty (optional); authorization is required and set by the helper
 
             // Act
             SubscriptionEntity saved = subscriptionRepository.save(subscription);
@@ -490,7 +544,7 @@ class SubscriptionRepositoryTest extends BaseRepositoryTest {
             SubscriptionEntity entity = retrieved.get();
             assertThat(entity.getRetailCustomer().getId()).isEqualTo(savedCustomer.getId());
             assertThat(entity.getApplicationInformation().getId()).isEqualTo(savedApp.getId());
-            assertThat(entity.getAuthorization()).isNull();
+            assertThat(entity.getAuthorization()).isNotNull();
             assertThat(entity.getUsagePoints()).isEmpty();
         }
     }
@@ -577,6 +631,7 @@ class SubscriptionRepositoryTest extends BaseRepositoryTest {
             SubscriptionEntity subscription = new SubscriptionEntity(presetId);
             subscription.setRetailCustomer(savedCustomer);
             subscription.setApplicationInformation(savedApp);
+            subscription.setAuthorization(createAndSaveAuthorization());
 
             // Act
             SubscriptionEntity saved = persistAndFlush(subscription);
@@ -602,8 +657,9 @@ class SubscriptionRepositoryTest extends BaseRepositoryTest {
         @Test
         @DisplayName("Should check active status based on authorization")
         void shouldCheckActiveStatusBasedOnAuthorization() {
-            // Arrange
-            SubscriptionEntity subscription = createValidSubscription();
+            // Arrange — bare, unpersisted entity so the null-authorization branch can be exercised
+            // (in-memory only; the NOT NULL authorization constraint applies at persist time).
+            SubscriptionEntity subscription = new SubscriptionEntity(UUID.randomUUID());
 
             // Without authorization - should not be active
             assertThat(subscription.isActive()).isFalse();

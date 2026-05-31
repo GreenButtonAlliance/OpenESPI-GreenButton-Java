@@ -169,7 +169,6 @@ CREATE TABLE authorizations
     published_period_duration  BIGINT,
     application_information_id CHAR(36),
     retail_customer_id         BIGINT,
-    subscription_id            CHAR(36),
     access_token               VARCHAR(1024),
     refresh_token              VARCHAR(1024),
     code                       VARCHAR(1024),
@@ -282,10 +281,13 @@ CREATE TABLE subscriptions
 
     -- Foreign key relationships
     application_information_id     CHAR(36) NOT NULL,
-    authorization_id               CHAR(36),
+    -- A subscription has no independent lifecycle: it is always backed by an authorization
+    -- (the aggregate root). One authorization may back two subscriptions (energy + customer/PII).
+    authorization_id               CHAR(36) NOT NULL,
     retail_customer_id             BIGINT NOT NULL,
 
-    FOREIGN KEY (application_information_id) REFERENCES application_information (id) ON DELETE CASCADE
+    FOREIGN KEY (application_information_id) REFERENCES application_information (id) ON DELETE CASCADE,
+    FOREIGN KEY (authorization_id) REFERENCES authorizations (id) ON DELETE CASCADE
     -- FK constraint for retail_customer_id added in V2 after retail_customers table is created
 );
 

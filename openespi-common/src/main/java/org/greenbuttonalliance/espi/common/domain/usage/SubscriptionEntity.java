@@ -90,11 +90,19 @@ public class SubscriptionEntity implements Serializable {
     private RetailCustomerEntity retailCustomer;
 
     /**
-     * Authorization associated with this subscription.
-     * One-to-one relationship representing the OAuth2 authorization.
+     * Authorization that backs this subscription (owning side of the relationship).
+     * Many-to-one: a single OAuth2 authorization is the aggregate root for one or two
+     * subscriptions — an Energy subscription (via {@code authorizations.resource_uri}) and,
+     * when the grant includes Customer/PII scope, a Customer subscription (via
+     * {@code authorizations.customer_resource_uri}).
+     *
+     * <p>NOT NULL: a subscription has no independent lifecycle — it is created and removed only
+     * through its authorization. Cascade is DETACH only; the inverse delete cascade lives on
+     * {@link AuthorizationEntity#getSubscriptions()} (and the DB FK ON DELETE CASCADE).</p>
      */
-    @OneToOne(cascade = CascadeType.REMOVE, fetch = FetchType.LAZY)
-    @JoinColumn(name = "authorization_id")
+    @ManyToOne(cascade = CascadeType.DETACH, fetch = FetchType.LAZY)
+    @JoinColumn(name = "authorization_id", nullable = false)
+    @NotNull
     private AuthorizationEntity authorization;
 
     /**

@@ -47,13 +47,14 @@ public interface SubscriptionRepository extends JpaRepository<SubscriptionEntity
 	Optional<SubscriptionEntity> findByHashedId(String hashedId);
 
 	/**
-	 * Finds a subscription by its associated authorization ID.
-	 * Uses index: idx_subscription_authorization
+	 * Finds the subscriptions backed by an authorization.
+	 * An authorization is the aggregate root for one or two subscriptions
+	 * (Energy and, when granted, Customer/PII). Uses index: idx_subscription_authorization
 	 *
 	 * @param id the authorization UUID
-	 * @return the subscription if found
+	 * @return the subscriptions for that authorization (0, 1, or 2)
 	 */
-	Optional<SubscriptionEntity> findByAuthorization_Id(UUID id);
+	List<SubscriptionEntity> findByAuthorization_Id(UUID id);
 
 	/**
 	 * Finds all subscriptions for a retail customer.

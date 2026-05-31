@@ -29,6 +29,8 @@ import org.greenbuttonalliance.espi.common.utils.encryption.FieldEncryptionConve
 import org.hibernate.proxy.HibernateProxy;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -228,12 +230,18 @@ public class AuthorizationEntity extends IdentifiedObject {
     private RetailCustomerEntity retailCustomer;
 
     /**
-     * Subscription associated with this authorization.
-     * One-to-one relationship with optional subscription.
+     * Subscriptions produced by this authorization (inverse side; the authorization is the
+     * aggregate root). One authorization owns one or two subscriptions: an Energy subscription
+     * (via {@code resource_uri}) and, when the grant includes Customer/PII scope, a Customer
+     * subscription (via {@code customerResourceURI}).
+     *
+     * <p>A subscription has no independent lifecycle: {@code cascade = ALL} + {@code orphanRemoval}
+     * mean removing the authorization removes its subscriptions, and dropping a subscription from
+     * this collection (e.g. revoking Customer/PII access) deletes that subscription. The owning
+     * FK is {@code subscriptions.authorization_id}.</p>
      */
-    @OneToOne(cascade = CascadeType.REMOVE, fetch = FetchType.LAZY)
-    @JoinColumn(name = "subscription_id")
-    private SubscriptionEntity subscription;
+    @OneToMany(mappedBy = "authorization", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<SubscriptionEntity> subscriptions = new ArrayList<>();
 
     /**
      * Application information for the authorized application.
