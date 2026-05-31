@@ -134,6 +134,13 @@ espi:
     introspection-endpoint: ${AUTHORIZATION_SERVER_INTROSPECTION_ENDPOINT:http://localhost:8080/oauth2/introspect}
     client-id: ${AUTHORIZATION_SERVER_CLIENT_ID:datacustodian}
     client-secret: ${AUTHORIZATION_SERVER_CLIENT_SECRET:datacustodian-secret}
+
+  # AS↔DC back-channel (POST /internal/backchannel/v1/subscriptions).
+  # Implementation contract, NOT ESPI standard. Mounted on a dedicated security filter chain
+  # with HTTP Basic; network-level isolation is expected on top of this in production.
+  backchannel:
+    client-id: ${BACKCHANNEL_CLIENT_ID:as-backchannel}
+    client-secret: ${BACKCHANNEL_CLIENT_SECRET:change-me-in-production}
   
   # ESPI Resource Configuration
   resources:
