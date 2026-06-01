@@ -21,16 +21,33 @@ package org.greenbuttonalliance.espi.datacustodian.web;
 
 import org.greenbuttonalliance.espi.datacustodian.web.constants.Routes;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
-// @Controller - COMMENTED OUT: UI not needed in resource server
-// @Component
+/**
+ * Renders the customer / custodian login form.
+ *
+ * <p>Authentication itself is handled by Spring Security's {@code UsernamePasswordAuthentication
+ * Filter} on the same {@code /login} path, configured in {@code CustomerLoginSecurityConfiguration}.
+ * This controller only serves the GET that renders {@code login.html}.</p>
+ *
+ * <p>An optional {@code return_to} query parameter is preserved as a hidden form input so it
+ * round-trips through the POST to the success handler. The success handler honors it as the
+ * post-authentication redirect destination &mdash; the path used by the AS&rarr;DC delegation flow
+ * (PR C3) to bring the customer back to the AS once they've authenticated.</p>
+ */
+@Controller
 @RequestMapping(Routes.LOGIN)
 public class LoginController {
 
 	@GetMapping
-	public String index() {
+	public String index(@RequestParam(value = "return_to", required = false) String returnTo,
+						Model model) {
+		if (returnTo != null && !returnTo.isBlank()) {
+			model.addAttribute("returnTo", returnTo);
+		}
 		return "login";
 	}
 }

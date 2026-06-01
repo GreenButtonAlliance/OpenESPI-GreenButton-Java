@@ -1,182 +1,163 @@
 /*
+ * Copyright 2025 Green Button Alliance, Inc.
  *
- *        Copyright (c) 2025 Green Button Alliance, Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- *     Licensed under the Apache License, Version 2.0 (the "License");
- *     you may not use this file except in compliance with the License.
- *     You may obtain a copy of the License at
- *
- *         http://www.apache.org/licenses/LICENSE-2.0
- *
- *     Unless required by applicable law or agreed to in writing, software
- *     distributed under the License is distributed on an "AS IS" BASIS,
- *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *     See the License for the specific language governing permissions and
- *     limitations under the License.
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.greenbuttonalliance.espi.datacustodian.web.api;
 
-import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
-import org.greenbuttonalliance.espi.common.dto.usage.AuthorizationDto;
-import org.greenbuttonalliance.espi.common.mapper.usage.AuthorizationMapper;
-import org.greenbuttonalliance.espi.common.repositories.usage.AuthorizationRepository;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.restclient.RestTemplateBuilder;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
-import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@Disabled
+/**
+ * Security-boundary tests for the {@code /espi/1_1/resource/Authorization/**} endpoints.
+ *
+ * <p>The {@code /Authorization} API exposes OAuth2 authorization metadata and is reachable ONLY
+ * with a client-credentials token (DataCustodian admin or Third-Party admin). Customer-bearer
+ * tokens carrying FB-scoped authorities &mdash; the authorization-code flow's output &mdash; MUST
+ * be rejected; they grant access to the customer's energy data and customer/PII resources, not to
+ * the authorization metadata itself.</p>
+ *
+ * <p>This test verifies <em>only</em> the security boundary. The controller bodies are stubs
+ * (returning {@code null}) as of this PR; functional behavior (per-TP filtering when called with
+ * {@code SCOPE_ThirdParty_Admin_Access}, etc.) is a follow-up. Tests therefore assert that the
+ * security gate allows authorized callers through &mdash; the response body content is out of
+ * scope here.</p>
+ */
 @SpringBootTest
-@ActiveProfiles("local")
-@DisplayName("AuthorizationController Mock MVC Tests")
-public class AuthorizationControllerTest {
+@AutoConfigureMockMvc
+@ActiveProfiles("test")
+@DisplayName("AuthorizationController security boundary")
+class AuthorizationControllerTest {
 
-    private MockMvc mockMvc;
+	@Autowired private MockMvc mockMvc;
 
-    @Autowired
-    private org.springframework.web.context.WebApplicationContext context;
+	@Nested
+	@DisplayName("GET /espi/1_1/resource/Authorization")
+	class GetAllAuthorizations {
 
-    @MockitoBean
-    private AuthorizationRepository authorizationRepository;
+		@Test
+		@DisplayName("returns 401 when unauthenticated")
+		void unauthenticated_is_401() throws Exception {
+			mockMvc.perform(get("/espi/1_1/resource/Authorization"))
+					.andExpect(status().isUnauthorized());
+		}
 
-    @MockitoBean
-    private AuthorizationMapper authorizationMapper;
+		@Test
+		@DisplayName("returns 403 with a customer FB-scoped token (energy-data scope)")
+		void customerFbScope_is_403() throws Exception {
+			mockMvc.perform(get("/espi/1_1/resource/Authorization")
+							.with(opaqueAuthority("SCOPE_FB_15_READ_3rd_party")))
+					.andExpect(status().isForbidden());
+		}
 
-    @MockitoBean
-    private org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector opaqueTokenIntrospector;
+		@Test
+		@DisplayName("returns 403 with an arbitrary unrelated scope")
+		void unrelatedScope_is_403() throws Exception {
+			mockMvc.perform(get("/espi/1_1/resource/Authorization")
+							.with(opaqueAuthority("SCOPE_Some_Random_Scope")))
+					.andExpect(status().isForbidden());
+		}
 
-    @MockitoBean
-    private org.greenbuttonalliance.espi.common.repositories.usage.RetailCustomerRepository retailCustomerRepository;
+		@Test
+		@DisplayName("DataCustodian admin scope passes the security gate")
+		void dcAdmin_passes() throws Exception {
+			int httpStatus = mockMvc.perform(get("/espi/1_1/resource/Authorization")
+							.with(opaqueAuthority("SCOPE_DataCustodian_Admin_Access")))
+					.andReturn().getResponse().getStatus();
+			assertPassedSecurityGate(httpStatus);
+		}
 
-    @BeforeEach
-    void setUp() {
-        mockMvc = org.springframework.test.web.servlet.setup.MockMvcBuilders
-                .webAppContextSetup(context)
-                .apply(SecurityMockMvcConfigurers.springSecurity())
-                .build();
-    }
+		@Test
+		@DisplayName("ThirdParty admin scope (client_credentials) passes the security gate")
+		void tpAdmin_passes() throws Exception {
+			int httpStatus = mockMvc.perform(get("/espi/1_1/resource/Authorization")
+							.with(opaqueAuthority("SCOPE_ThirdParty_Admin_Access")))
+					.andReturn().getResponse().getStatus();
+			assertPassedSecurityGate(httpStatus);
+		}
+	}
 
-    @TestConfiguration
-    static class TestConfig {
-        @Bean
-        public RestTemplateBuilder restTemplateBuilder() {
-            return new RestTemplateBuilder();
-        }
-    }
+	@Nested
+	@DisplayName("GET /espi/1_1/resource/Authorization/{id}")
+	class GetAuthorization {
 
-    @Nested
-    @DisplayName("GET /espi/1_1/resource/Authorization")
-    class GetAllAuthorizations {
+		@Test
+		@DisplayName("returns 401 when unauthenticated")
+		void unauthenticated_is_401() throws Exception {
+			mockMvc.perform(get("/espi/1_1/resource/Authorization/" + UUID.randomUUID()))
+					.andExpect(status().isUnauthorized());
+		}
 
-        @Test
-        @DisplayName("Should return 401 Unauthorized when not authenticated")
-        void shouldReturn401WhenNotAuthenticated() throws Exception {
-            mockMvc.perform(get("/espi/1_1/resource/Authorization"))
-                    .andExpect(status().isUnauthorized());
-        }
+		@Test
+		@DisplayName("returns 403 with a customer FB-scoped token (PII scope)")
+		void customerPiiScope_is_403() throws Exception {
+			mockMvc.perform(get("/espi/1_1/resource/Authorization/" + UUID.randomUUID())
+							.with(opaqueAuthority("SCOPE_FB_54_READ_3rd_party")))
+					.andExpect(status().isForbidden());
+		}
 
-        @Test
-        @WithMockUser(authorities = "SCOPE_DataCustodian_Admin_Access")
-        @DisplayName("Should return 200 OK with list of authorizations for admin")
-        void shouldReturn200ForAdmin() throws Exception {
-            AuthorizationEntity entity = new AuthorizationEntity();
-            AuthorizationDto dto = new AuthorizationDto();
-            dto.setScope("FB=1_3_4_5_13_14_39");
-            dto.setResourceURI("https://api.example.com/espi/1_1/resource/Batch/Subscription/12345");
-            dto.setAuthorizationUri("https://api.example.com/espi/1_1/resource/Authorization/67890");
+		@Test
+		@DisplayName("DataCustodian admin scope passes the security gate")
+		void dcAdmin_passes() throws Exception {
+			int httpStatus = mockMvc.perform(get("/espi/1_1/resource/Authorization/" + UUID.randomUUID())
+							.with(opaqueAuthority("SCOPE_DataCustodian_Admin_Access")))
+					.andReturn().getResponse().getStatus();
+			assertPassedSecurityGate(httpStatus);
+		}
 
-            when(authorizationRepository.findAll(any(Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of(entity)));
-            when(authorizationMapper.toDto(any(AuthorizationEntity.class)))
-                    .thenReturn(dto);
+		@Test
+		@DisplayName("ThirdParty admin scope (client_credentials) passes the security gate")
+		void tpAdmin_passes() throws Exception {
+			int httpStatus = mockMvc.perform(get("/espi/1_1/resource/Authorization/" + UUID.randomUUID())
+							.with(opaqueAuthority("SCOPE_ThirdParty_Admin_Access")))
+					.andReturn().getResponse().getStatus();
+			assertPassedSecurityGate(httpStatus);
+		}
+	}
 
-            mockMvc.perform(get("/espi/1_1/resource/Authorization")
-                            .accept(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isOk())
-                    .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                    .andExpect(jsonPath("$[0].scope").value(dto.getScope()));
-        }
+	/**
+	 * Spring Security's {@code jwt()} request post-processor builds a Jwt-backed Authentication
+	 * with the supplied authorities. ESPI uses opaque tokens at runtime, but {@code jwt()} is the
+	 * Spring-Security-test idiomatic way to attach an authenticated principal with specific
+	 * authorities to a MockMvc request — the resource server doesn't care which token format
+	 * produced the authorities for {@code hasAuthority} / {@code hasAnyAuthority} checks.
+	 */
+	private static org.springframework.test.web.servlet.request.RequestPostProcessor opaqueAuthority(String scope) {
+		return jwt().authorities(new org.springframework.security.core.authority.SimpleGrantedAuthority(scope));
+	}
 
-        @Test
-        @WithMockUser(authorities = "SCOPE_Wrong_Authority")
-        @DisplayName("Should return 403 Forbidden for user without proper authority")
-        void shouldReturn403ForWrongAuthority() throws Exception {
-            mockMvc.perform(get("/espi/1_1/resource/Authorization"))
-                    .andExpect(status().isForbidden());
-        }
-    }
-
-    @Nested
-    @DisplayName("GET /espi/1_1/resource/Authorization/{authorizationId}")
-    class GetAuthorization {
-
-        @Test
-        @DisplayName("Should return 401 Unauthorized when not authenticated")
-        void shouldReturn401WhenNotAuthenticated() throws Exception {
-            mockMvc.perform(get("/espi/1_1/resource/Authorization/" + UUID.randomUUID()))
-                    .andExpect(status().isUnauthorized());
-        }
-
-        @Test
-        @WithMockUser(authorities = "SCOPE_DataCustodian_Admin_Access")
-        @DisplayName("Should return 200 OK when authorization exists and user is admin")
-        void shouldReturn200WhenExists() throws Exception {
-            UUID id = UUID.randomUUID();
-            AuthorizationEntity entity = new AuthorizationEntity();
-            AuthorizationDto dto = new AuthorizationDto();
-            dto.setScope("FB=1_3_4_5_13_14_39");
-            dto.setResourceURI("https://api.example.com/espi/1_1/resource/Batch/Subscription/12345");
-            dto.setAuthorizationUri("https://api.example.com/espi/1_1/resource/Authorization/67890");
-
-            when(authorizationRepository.findById(id)).thenReturn(Optional.of(entity));
-            when(authorizationMapper.toDto(entity)).thenReturn(dto);
-
-            mockMvc.perform(get("/espi/1_1/resource/Authorization/" + id)
-                            .accept(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isOk())
-                    .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                    .andExpect(jsonPath("$.scope").value(dto.getScope()));
-        }
-
-        @Test
-        @WithMockUser(authorities = "SCOPE_DataCustodian_Admin_Access")
-        @DisplayName("Should return 404 Not Found when authorization does not exist")
-        void shouldReturn404WhenNotExists() throws Exception {
-            UUID id = UUID.randomUUID();
-            when(authorizationRepository.findById(id)).thenReturn(Optional.empty());
-
-            mockMvc.perform(get("/espi/1_1/resource/Authorization/" + id))
-                    .andExpect(status().isNotFound());
-        }
-
-        @Test
-        @WithMockUser(authorities = "SCOPE_Wrong_Authority")
-        @DisplayName("Should return 403 Forbidden for user without proper authority")
-        void shouldReturn403ForWrongAuthority() throws Exception {
-            mockMvc.perform(get("/espi/1_1/resource/Authorization/" + UUID.randomUUID()))
-                    .andExpect(status().isForbidden());
-        }
-    }
+	/**
+	 * The security gate is what's under test. Anything that isn't 401 (unauthenticated) or 403
+	 * (forbidden) means the gate let the caller through. Body content / functional response codes
+	 * are tested elsewhere when the controller's stub is implemented.
+	 */
+	private static void assertPassedSecurityGate(int httpStatus) {
+		org.assertj.core.api.Assertions.assertThat(httpStatus)
+				.as("Expected security gate to allow the request through (i.e. NOT 401 or 403)")
+				.isNotEqualTo(401)
+				.isNotEqualTo(403);
+	}
 }
