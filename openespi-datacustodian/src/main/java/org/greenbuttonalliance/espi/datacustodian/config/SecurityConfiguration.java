@@ -104,8 +104,14 @@ public class SecurityConfiguration {
                 .requestMatchers(HttpMethod.GET, "/espi/1_1/resource/ApplicationInformation/**")
                     .hasAnyAuthority("SCOPE_DataCustodian_Admin_Access", "SCOPE_ThirdParty_Admin_Access")
                 
+                // /Authorization is admin (DataCustodian admin) or client (ThirdParty admin via
+                // client_credentials) only — never reachable with a customer FB-scoped token,
+                // because the resource exposes OAuth2 authorization metadata, not energy/PII data.
                 .requestMatchers(HttpMethod.GET, "/espi/1_1/resource/Authorization/**")
-                    .hasAnyAuthority("SCOPE_DataCustodian_Admin_Access")
+                    .hasAnyAuthority(
+                        "SCOPE_DataCustodian_Admin_Access",
+                        "SCOPE_ThirdParty_Admin_Access"
+                    )
                 
                 // ESPI Usage Point endpoints
                 .requestMatchers(HttpMethod.GET, "/espi/1_1/resource/UsagePoint/**")

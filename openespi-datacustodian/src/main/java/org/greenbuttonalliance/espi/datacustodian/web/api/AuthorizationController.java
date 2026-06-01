@@ -79,7 +79,7 @@ public class AuthorizationController {
             @ApiResponse(responseCode = "403", description = "Forbidden - admin access required")
         }
     )
-    @PreAuthorize("hasAuthority('SCOPE_DataCustodian_Admin_Access')")
+    @PreAuthorize("hasAnyAuthority('SCOPE_DataCustodian_Admin_Access', 'SCOPE_ThirdParty_Admin_Access')")
     public ResponseEntity<List<AuthorizationDto>> getAllAuthorizations(
             @Parameter(description = "Maximum number of results to return", example = "50")
             @RequestParam(defaultValue = "50") int limit,
@@ -113,7 +113,7 @@ public class AuthorizationController {
             @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
         }
     )
-    @PreAuthorize("hasAuthority('SCOPE_DataCustodian_Admin_Access')")
+    @PreAuthorize("hasAnyAuthority('SCOPE_DataCustodian_Admin_Access', 'SCOPE_ThirdParty_Admin_Access')")
     public ResponseEntity<AuthorizationDto> getAuthorization(
             @Parameter(description = "Unique identifier of the Authorization", required = true)
             @PathVariable UUID authorizationId,

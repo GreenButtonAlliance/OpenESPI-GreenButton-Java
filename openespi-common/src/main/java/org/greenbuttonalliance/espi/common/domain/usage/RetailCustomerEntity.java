@@ -23,7 +23,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -99,15 +98,19 @@ public class RetailCustomerEntity implements Serializable {
     private String lastName;
 
     /**
-     * Encrypted password for authentication.
-     * Automatically hashed using BCrypt before storage.
-     * Never included in JSON serialization for security.
+     * BCrypt-hashed password for authentication.
+     *
+     * <p>Never included in JSON serialization for security.</p>
+     *
+     * <p><strong>No JSR-303 pattern constraint on this field.</strong> Pattern validation belongs
+     * on the <em>cleartext</em> form input (enforced in the admin create flow), NOT on the stored
+     * bcrypt hash &mdash; bcrypt produces output containing {@code .} and {@code /} characters
+     * that any sensible cleartext-password regex would reject, so applying such a regex at the
+     * entity level would reject every successfully-hashed password. The cleartext strength check
+     * lives in {@link org.greenbuttonalliance.espi.common.utils.security.PasswordPolicy}.</p>
      */
     @JsonIgnore
     @Column(name = "password", length = 100)
-    @Size(min = 8, max = 100, message = "Password must be between 8 and 100 characters")
-    @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$", 
-             message = "Password must contain at least one lowercase letter, one uppercase letter, one digit, and one special character")
     private String password;
 
     /**

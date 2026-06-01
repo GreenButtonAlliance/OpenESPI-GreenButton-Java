@@ -24,6 +24,7 @@ import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.greenbuttonalliance.espi.common.service.RetailCustomerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.validation.BindingResult;
@@ -42,8 +43,15 @@ public class RetailCustomerController {
 	@Autowired
 	private RetailCustomerService service;
 
+	@Autowired
+	private PasswordEncoder customerPasswordEncoder;
+
 	public void setService(RetailCustomerService service) {
 		this.service = service;
+	}
+
+	public void setCustomerPasswordEncoder(PasswordEncoder customerPasswordEncoder) {
+		this.customerPasswordEncoder = customerPasswordEncoder;
 	}
 
 	@InitBinder
@@ -71,13 +79,16 @@ public class RetailCustomerController {
 			BindingResult result) {
 		if (result.hasErrors()) {
 			return "retailcustomers/form";
-		} else {
- 		try {
- 			service.save(retailCustomer);
- 			return "redirect:/custodian/retailcustomers";
- 		} catch (Exception e) {
- 			return "retailcustomers/form";
- 		}
+		}
+		try {
+			// BCrypt-hash the raw password before persistence; the form submits cleartext
+			// over the (presumed-TLS) admin chain, the DB stores the bcrypt hash.
+			retailCustomer.setPassword(customerPasswordEncoder.encode(retailCustomer.getPassword()));
+			service.save(retailCustomer);
+			return "redirect:/custodian/retailcustomers";
+		}
+		catch (Exception e) {
+			return "retailcustomers/form";
 		}
 	}
 
