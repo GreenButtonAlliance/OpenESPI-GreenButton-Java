@@ -141,6 +141,12 @@ espi:
   backchannel:
     client-id: ${BACKCHANNEL_CLIENT_ID:as-backchannel}
     client-secret: ${BACKCHANNEL_CLIENT_SECRET:change-me-in-production}
+
+  # Shared HMAC key for the AS↔DC signed-handoff (user-flow redirect parameter).
+  # MUST be at least 32 chars of high-entropy material. Same value MUST be configured on the
+  # Authorization Server. Set via ESPI_HANDOFF_SIGNING_KEY env var in production.
+  handoff:
+    signing-key: ${ESPI_HANDOFF_SIGNING_KEY:dev-only-handoff-signing-key-change-me}
   
   # ESPI Resource Configuration
   resources:
