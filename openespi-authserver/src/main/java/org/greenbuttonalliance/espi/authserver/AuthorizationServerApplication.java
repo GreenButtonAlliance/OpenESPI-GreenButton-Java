@@ -22,6 +22,8 @@ package org.greenbuttonalliance.espi.authserver;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.persistence.autoconfigure.EntityScan;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 /**
  * OpenESPI Authorization Server Application
@@ -43,7 +45,18 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * @version 1.0.0
  * @since Spring Boot 3.5
  */
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {
+    "org.greenbuttonalliance.espi.authserver",
+    "org.greenbuttonalliance.espi.handoff"
+})
+@EntityScan(basePackages = {
+    "org.greenbuttonalliance.espi.authserver",
+    "org.greenbuttonalliance.espi.handoff"
+})
+@EnableJpaRepositories(basePackages = {
+    "org.greenbuttonalliance.espi.authserver",
+    "org.greenbuttonalliance.espi.handoff"
+})
 public class AuthorizationServerApplication {
 
     public static void main(String[] args) {

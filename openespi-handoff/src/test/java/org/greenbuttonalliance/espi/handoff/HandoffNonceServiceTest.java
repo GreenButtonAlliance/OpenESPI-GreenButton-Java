@@ -14,12 +14,19 @@
  * limitations under the License.
  */
 
-package org.greenbuttonalliance.espi.common.handoff;
+package org.greenbuttonalliance.espi.handoff;
 
-import org.greenbuttonalliance.espi.common.test.BaseRepositoryTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration;
+import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.test.context.ContextConfiguration;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -33,8 +40,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Integration test for {@link HandoffNonceService} consume-once semantics. Uses {@code @DataJpaTest}
  * + H2 + the Flyway migration to exercise the real PK uniqueness constraint that detects replay.
  */
+@DataJpaTest
 @Import(HandoffNonceService.class)
-class HandoffNonceServiceTest extends BaseRepositoryTest {
+// @DataJpaTest excludes FlywayAutoConfiguration by default — re-import it so the
+// V4__Create_Handoff_Nonces.sql migration runs and the table exists for these tests.
+@ImportAutoConfiguration(FlywayAutoConfiguration.class)
+@ContextConfiguration(classes = HandoffNonceServiceTest.HandoffTestApplication.class)
+class HandoffNonceServiceTest {
 
 	@Autowired private HandoffNonceService service;
 	@Autowired private HandoffNonceRepository repository;
@@ -114,5 +126,19 @@ class HandoffNonceServiceTest extends BaseRepositoryTest {
 
 	private static Instant futureExpiry() {
 		return Instant.now().plus(Duration.ofMinutes(5));
+	}
+
+	/**
+	 * Minimal Spring Boot bootstrap for {@code @DataJpaTest} in this standalone module. Production
+	 * consumers (openespi-common &rarr; openespi-datacustodian; openespi-authserver) configure
+	 * scan paths in their own {@code @SpringBootApplication} classes.
+	 */
+	@SpringBootApplication
+	@EntityScan(basePackages = "org.greenbuttonalliance.espi.handoff")
+	@EnableJpaRepositories(basePackages = "org.greenbuttonalliance.espi.handoff")
+	static class HandoffTestApplication {
+		public static void main(String[] args) {
+			SpringApplication.run(HandoffTestApplication.class, args);
+		}
 	}
 }

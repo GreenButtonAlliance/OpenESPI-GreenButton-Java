@@ -48,6 +48,24 @@
     </properties>
 
     <dependencies>
+        <!-- Shared signed-handoff codec (single canonical implementation for both AS and DC).
+             Pure infrastructure (HMAC + Jackson + JPA); NOT a dependency on openespi-common
+             — the long-standing "authserver independent of common's domain" invariant is
+             preserved because openespi-handoff carries no ESPI domain types. -->
+        <dependency>
+            <groupId>org.greenbuttonalliance.espi</groupId>
+            <artifactId>OpenESPI-Handoff</artifactId>
+            <version>3.5.0-RC2</version>
+        </dependency>
+
+        <!-- Lombok for AS-side controllers / services (already used by openespi-handoff
+             which AS depends on; declaring directly here for AS-side classes that use it). -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+
         <!-- Spring Boot Starters -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

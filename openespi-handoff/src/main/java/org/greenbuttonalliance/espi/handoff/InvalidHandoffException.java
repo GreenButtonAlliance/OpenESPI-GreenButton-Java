@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.greenbuttonalliance.espi.common.handoff;
+package org.greenbuttonalliance.espi.handoff;
 
 /**
  * Thrown when a signed handoff token is malformed, tampered, expired, replayed, or otherwise
