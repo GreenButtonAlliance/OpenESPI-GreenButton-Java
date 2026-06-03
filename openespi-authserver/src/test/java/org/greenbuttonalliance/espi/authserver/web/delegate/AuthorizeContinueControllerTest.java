@@ -79,15 +79,18 @@ class AuthorizeContinueControllerTest {
 
 	private SignedHandoffCodec codec;
 	private DelegationStateService delegationStateService;
+	private org.greenbuttonalliance.espi.authserver.grant.GrantContextSessionStore grantContextSessionStore;
 	private MockMvc mockMvc;
 
 	@BeforeEach
 	void setUp() {
 		codec = new SignedHandoffCodec(SIGNING_KEY);
 		delegationStateService = new DelegationStateService();
+		grantContextSessionStore = new org.greenbuttonalliance.espi.authserver.grant.GrantContextSessionStore();
 
 		AuthorizeContinueController controller = new AuthorizeContinueController(
-				codec, nonceService, delegationStateService, consentService, registeredClientRepository);
+				codec, nonceService, delegationStateService, consentService, registeredClientRepository,
+				grantContextSessionStore);
 
 		// No custom view resolver: Spring's standalone setup handles "redirect:" directives natively
 		// (via RedirectView), and view().name(...) assertions match against the controller's return
@@ -128,7 +131,7 @@ class AuthorizeContinueControllerTest {
 			verify(consentService).save(cap.capture());
 			OAuth2AuthorizationConsent saved = cap.getValue();
 			assertThat(saved.getRegisteredClientId()).isEqualTo("client-internal-id-1");
-			assertThat(saved.getPrincipalName()).isEqualTo("customer-1");
+			assertThat(saved.getPrincipalName()).isEqualTo("42");
 			assertThat(saved.getScopes()).containsExactlyInAnyOrder("FB_1", "FB_4_5");
 
 			// Delegation state is single-use
@@ -234,7 +237,7 @@ class AuthorizeContinueControllerTest {
 			Instant past = Instant.now().minusSeconds(3600);
 			SignedHandoff.Return expired = SignedHandoff.Return.of(
 					"corr-expired", past.minusSeconds(600), past, "nonce-x",
-					"customer-1", List.of(), "https://dc.example/cust/1",
+					"42", List.of(), "https://dc.example/cust/1",
 					SignedHandoff.Return.CONSENT_ALLOW, "FB_1");
 			String token = codec.encode(expired);
 
@@ -288,7 +291,7 @@ class AuthorizeContinueControllerTest {
 		return SignedHandoff.Return.of(
 				cid, now, now.plusSeconds(120),
 				UUID.randomUUID().toString().replace("-", ""),
-				"customer-1",
+				"42",
 				List.of(),
 				"https://dc.example/RetailCustomer/1",
 				SignedHandoff.Return.CONSENT_ALLOW,
@@ -300,7 +303,7 @@ class AuthorizeContinueControllerTest {
 		return SignedHandoff.Return.of(
 				cid, now, now.plusSeconds(120),
 				UUID.randomUUID().toString().replace("-", ""),
-				"customer-1",
+				"42",
 				List.of(),
 				"https://dc.example/RetailCustomer/1",
 				SignedHandoff.Return.CONSENT_DENY,

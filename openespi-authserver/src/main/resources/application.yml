@@ -113,6 +113,15 @@ espi:
   handoff:
     signing-key: ${ESPI_HANDOFF_SIGNING_KEY:dev-only-handoff-signing-key-change-me}
 
+  # AS→DC back-channel (server-to-server) used at /oauth2/token mint time to provision the
+  # Authorization aggregate + Subscriptions and retrieve canonical resource URIs. Credentials
+  # MUST match the values DC's BackchannelSecurityConfiguration expects on espi.backchannel.*.
+  # Endpoint MUST be reachable from the AS server (not necessarily from the browser).
+  backchannel:
+    endpoint: ${DATACUSTODIAN_BACKCHANNEL_ENDPOINT:http://localhost:8081/DataCustodian}
+    client-id: ${ESPI_BACKCHANNEL_CLIENT_ID:as-backchannel}
+    client-secret: ${ESPI_BACKCHANNEL_CLIENT_SECRET:change-me-in-production}
+
 # Application Information
 info:
   app:

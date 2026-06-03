@@ -146,6 +146,21 @@ public class AuthorizationServerConfig {
         authorizationServerConfigurer.authorizationEndpoint(authorize -> authorize
                 .consentPage("/authorize/delegate"));
 
+        // Augment the /oauth2/token JSON response so ESPI 1.1/4.0 third parties see DC's canonical
+        // resource URIs (resourceURI, authorizationURI, customerResourceURI) alongside the standard
+        // access_token / token_type / expires_in / scope fields. The URIs are produced by
+        // GrantBackchannelTokenCustomizer at access-token mint time (C4.3) and persisted on the
+        // OAuth2Authorization's access-token claims. EspiTokenResponseSuccessHandler looks them up
+        // by the token value at response time and writes them as additionalParameters. Falls back
+        // to default behavior when no ESPI URI claims are present (e.g. admin client_credentials).
+        OAuth2AuthorizationService authorizationServiceForHandler =
+                http.getSharedObject(org.springframework.context.ApplicationContext.class)
+                        .getBean(OAuth2AuthorizationService.class);
+        authorizationServerConfigurer.tokenEndpoint(tokenEndpoint -> tokenEndpoint
+                .accessTokenResponseHandler(
+                        new org.greenbuttonalliance.espi.authserver.service
+                                .EspiTokenResponseSuccessHandler(authorizationServiceForHandler)));
+
         http
                 .securityMatcher(endpointsMatcher)
                 .authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated())
@@ -324,8 +339,18 @@ public class AuthorizationServerConfig {
     }
 
     @Bean
-    public OAuth2AuthorizationService authorizationService(JdbcTemplate jdbcTemplate, RegisteredClientRepository registeredClientRepository) {
-        return new JdbcOAuth2AuthorizationService(jdbcTemplate, registeredClientRepository);
+    public OAuth2AuthorizationService authorizationService(
+            JdbcTemplate jdbcTemplate,
+            RegisteredClientRepository registeredClientRepository,
+            org.greenbuttonalliance.espi.authserver.grant.GrantContextSessionStore grantContextSessionStore) {
+        // Wrap the standard JDBC service so the customer-selection context written into the HTTP
+        // session at /oauth2/authorize/continue gets stamped onto OAuth2Authorization.attributes
+        // at code-issue time. The wrapper is transparent for token-exchange (M2M, no session) and
+        // idempotent for repeated saves on the same authorization.
+        org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService delegate =
+                new JdbcOAuth2AuthorizationService(jdbcTemplate, registeredClientRepository);
+        return new org.greenbuttonalliance.espi.authserver.grant.GrantContextEnrichingAuthorizationService(
+                delegate, grantContextSessionStore);
     }
 
     @Bean
