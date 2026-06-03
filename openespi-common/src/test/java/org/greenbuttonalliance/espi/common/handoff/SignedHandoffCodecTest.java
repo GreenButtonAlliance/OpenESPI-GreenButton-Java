@@ -68,7 +68,8 @@ class SignedHandoffCodecTest {
 				"customer-42",
 				List.of(UUID.randomUUID(), UUID.randomUUID()),
 				"https://dc.example.com/.../Customer/abc",
-				SignedHandoff.Return.CONSENT_ALLOW);
+				SignedHandoff.Return.CONSENT_ALLOW,
+				"FB=4_5_15;IntervalDuration=3600");
 
 		String token = codec.encode(original);
 		SignedHandoff.Return decoded = codec.decodeReturn(token);
@@ -86,7 +87,8 @@ class SignedHandoffCodecTest {
 				"customer-42",
 				List.of(),
 				null,
-				SignedHandoff.Return.CONSENT_DENY);
+				SignedHandoff.Return.CONSENT_DENY,
+				null);
 
 		String token = codec.encode(original);
 		SignedHandoff.Return decoded = codec.decodeReturn(token);

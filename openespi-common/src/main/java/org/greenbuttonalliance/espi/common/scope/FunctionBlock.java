@@ -196,4 +196,83 @@ public enum FunctionBlock {
 		FunctionBlock fb = BY_ID.get(id);
 		return fb == null ? Optional.empty() : fb.getServiceKind();
 	}
+
+	// --- Authorization Screen role helpers (PR C2b) -------------------------------------------
+	//
+	// These predicates classify an FB by the consent-UI role it plays:
+	//   - implicit base   : structural prerequisite, never a customer-visible choice (FB 1, 4, 51)
+	//   - commodity       : ServiceKind discriminator, drives commodity sections
+	//   - data-shape mod. : display-only modifier on the energy-data response (e.g. UsageSummary)
+	//   - PII-selectable  : individual consent checkbox in the customer/PII section
+	//
+	// They are computed from {@link #getId()} / {@link #getCategory()} and are non-localized
+	// behavior. The customer-facing strings live in {@code messages.properties} (Spring i18n).
+
+	/**
+	 * Implicit-base FBs are structural prerequisites that must accompany any meaningful grant:
+	 * <ul>
+	 *   <li>{@code FB 1} &mdash; Common (Energy Usage): UsagePoint + ServiceCategory +
+	 *       LocalTimeParameters in the energy feed.</li>
+	 *   <li>{@code FB 4} &mdash; Interval Metering: MeterReading / ReadingType registry.</li>
+	 *   <li>{@code FB 51} &mdash; Common (Retail Customer): cust:LocalTimeParameters for the
+	 *       customer feed.</li>
+	 * </ul>
+	 * The Authorization Screen treats these as display-only context (a footer note), never as
+	 * customer-selectable checkboxes.
+	 */
+	public boolean isImplicitBase() {
+		return id == 1 || id == 4 || id == 51;
+	}
+
+	/** @see #isImplicitBase() */
+	public static boolean isImplicitBase(int id) {
+		return id == 1 || id == 4 || id == 51;
+	}
+
+	/**
+	 * Commodity FBs (FB 5&ndash;11, 29) name what kind of meter the data comes from
+	 * (electricity / gas / water / temperature) and, within a commodity, the measurement profile
+	 * (e.g. interval / demand / net / reverse / register). The Authorization Screen groups
+	 * customer usage points under their {@link ServiceKind}-matching commodity section and
+	 * displays the requested profiles as a sub-line; the customer toggles individual usage
+	 * points but not the profile FBs themselves.
+	 */
+	public boolean isCommodityProfile() {
+		return category == FunctionBlockCategory.COMMODITY;
+	}
+
+	/** @see #isCommodityProfile() */
+	public static boolean isCommodityProfile(int id) {
+		return byId(id).map(FunctionBlock::isCommodityProfile).orElse(false);
+	}
+
+	/**
+	 * Data-shape modifiers (FB 12, 15, 16, 17, 27, 28) shape <em>which response sections</em>
+	 * are emitted by the energy endpoint (UsageSummary, ElectricPowerQualitySummary, etc.) but
+	 * are orthogonal to the commodity. The Authorization Screen shows them as a display-only
+	 * "you will receive" sub-line under each commodity section; the customer cannot toggle
+	 * individual modifiers.
+	 */
+	public boolean isDataShapeModifier() {
+		return category == FunctionBlockCategory.ENERGY_DATA_SHAPE;
+	}
+
+	/** @see #isDataShapeModifier() */
+	public static boolean isDataShapeModifier(int id) {
+		return byId(id).map(FunctionBlock::isDataShapeModifier).orElse(false);
+	}
+
+	/**
+	 * Customer/PII FBs (FB 54&ndash;62) each carry a distinct {@code customer.xsd} resource
+	 * family. The Authorization Screen renders one individually-toggleable consent checkbox per
+	 * PII FB present in the requested scope, default-unchecked (explicit opt-in per FB).
+	 */
+	public boolean isPiiSelectable() {
+		return category == FunctionBlockCategory.CUSTOMER_PII;
+	}
+
+	/** @see #isPiiSelectable() */
+	public static boolean isPiiSelectable(int id) {
+		return byId(id).map(FunctionBlock::isPiiSelectable).orElse(false);
+	}
 }

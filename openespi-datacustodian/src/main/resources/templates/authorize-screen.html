@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head}">
+    <title th:text="#{screen.title(${viewModel.tpName})}">Authorize</title>
+</head>
+
+<body>
+    <nav th:replace="~{fragments/layout :: header}"></nav>
+
+    <div class="container">
+        <div class="row justify-content-center mt-4">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0" th:text="#{screen.heading(${viewModel.tpName})}">Authorize access</h4>
+                    </div>
+                    <div class="card-body">
+                        <p class="lead" th:text="#{screen.subheading(${viewModel.tpName})}">
+                            Review what this application is requesting access to.
+                        </p>
+
+                        <!-- th:action emits the CSRF token automatically -->
+                        <form th:action="@{/oauth/authorize-screen}" method="post">
+                            <input type="hidden" name="handoff" th:value="${viewModel.handoffToken}">
+
+                            <!-- Energy data sections (one per commodity) -->
+                            <div th:if="${not #lists.isEmpty(viewModel.commoditySections)}" class="mb-4">
+                                <h5 th:text="#{screen.energy.heading}">Energy data</h5>
+                                <div th:each="section : ${viewModel.commoditySections}" class="card mb-3">
+                                    <div class="card-header bg-light">
+                                        <strong th:text="${section.sectionTitle}">Commodity</strong>
+                                    </div>
+                                    <div class="card-body">
+                                        <!-- Usage points (customer-selectable, default-checked) -->
+                                        <div th:if="${not #lists.isEmpty(section.usagePoints)}">
+                                            <div th:each="up : ${section.usagePoints}" class="form-check">
+                                                <input class="form-check-input"
+                                                       type="checkbox"
+                                                       name="selected_usage_point_ids"
+                                                       th:value="${up.id}"
+                                                       th:id="'up_' + ${up.id}"
+                                                       checked>
+                                                <label class="form-check-label" th:for="'up_' + ${up.id}"
+                                                       th:text="${up.description}">Usage point</label>
+                                            </div>
+                                        </div>
+                                        <div th:if="${#lists.isEmpty(section.usagePoints)}"
+                                             class="alert alert-warning small mb-0">
+                                            <span th:text="#{screen.energy.empty}">No eligible usage points.</span>
+                                        </div>
+
+                                        <!-- Profile + data-shape modifiers (display-only) -->
+                                        <div th:if="${not #lists.isEmpty(section.profileLabels) or not #lists.isEmpty(section.dataShapeLabels)}"
+                                             class="mt-2 small text-muted">
+                                            <div th:text="#{screen.energy.includes}">This application will receive:</div>
+                                            <ul class="mb-0">
+                                                <li th:each="label : ${section.profileLabels}" th:text="${label}">Profile</li>
+                                                <li th:each="label : ${section.dataShapeLabels}" th:text="${label}">Data shape</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- PII consent options (each individually opt-in, default-unchecked) -->
+                            <div th:if="${not #lists.isEmpty(viewModel.piiOptions)}" class="mb-4">
+                                <h5 th:text="#{screen.pii.heading}">Personal information</h5>
+                                <p class="small text-muted" th:text="#{screen.pii.opt-in-note}">
+                                    Each of these is shared only if you explicitly check it.
+                                </p>
+                                <div th:each="pii : ${viewModel.piiOptions}" class="form-check mb-2">
+                                    <input class="form-check-input"
+                                           type="checkbox"
+                                           name="approved_pii_fbs"
+                                           th:value="${pii.fbId}"
+                                           th:id="'pii_' + ${pii.fbId}">
+                                    <label class="form-check-label" th:for="'pii_' + ${pii.fbId}">
+                                        <strong th:text="${pii.label}">PII label</strong>
+                                        <small class="text-muted d-block" th:text="${pii.description}">PII description</small>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Implicit base FBs (display-only footer) -->
+                            <div th:if="${not #lists.isEmpty(viewModel.implicitBaseLabels)}"
+                                 class="mb-4 small text-muted">
+                                <span th:text="#{screen.implicit.note(${#strings.listJoin(viewModel.implicitBaseLabels, ', ')})}">
+                                    Always included: ...
+                                </span>
+                            </div>
+
+                            <!-- Allow / Deny -->
+                            <div class="d-flex justify-content-end gap-2">
+                                <button type="submit" name="decision" value="deny"
+                                        class="btn btn-outline-secondary"
+                                        th:text="#{screen.deny}">Deny</button>
+                                <button type="submit" name="decision" value="allow"
+                                        class="btn btn-primary"
+                                        th:text="#{screen.allow}">Allow</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer th:replace="~{fragments/layout :: footer}"></footer>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+</body>
+</html>
