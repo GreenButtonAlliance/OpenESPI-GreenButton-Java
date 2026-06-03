@@ -124,6 +124,15 @@ public sealed interface SignedHandoff permits SignedHandoff.Outbound, SignedHand
 	 * @param customerResourceUri     absolute URI of the customer/PII resource the customer
 	 *                                approved sharing, or {@code null} if not granted
 	 * @param consent                 {@code "allow"} if the customer granted; {@code "deny"} if not
+	 * @param approvedScope           the effective scope after the customer's checkbox decisions
+	 *                                &mdash; subset of the originally-requested scope. The AS
+	 *                                mints the access token with <em>this</em> scope, not the
+	 *                                original. {@code null} on {@code consent="deny"}.
+	 *                                <p>Additive field introduced in PR C2b. Codec version remains
+	 *                                at 1 because old readers parsing this payload simply see
+	 *                                {@code approvedScope=null}; they had no use for it anyway
+	 *                                because the customer-checkbox UI (and the effective scope)
+	 *                                did not exist when C1 shipped.</p>
 	 */
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	record Return(
@@ -136,7 +145,8 @@ public sealed interface SignedHandoff permits SignedHandoff.Outbound, SignedHand
 			@JsonProperty("sub") String principal,
 			@JsonProperty("up") List<UUID> selectedUsagePointIds,
 			@JsonProperty("cust_uri") String customerResourceUri,
-			@JsonProperty("consent") String consent
+			@JsonProperty("consent") String consent,
+			@JsonProperty("approved_scope") String approvedScope
 	) implements SignedHandoff {
 
 		public static final String CONSENT_ALLOW = "allow";
@@ -145,9 +155,9 @@ public sealed interface SignedHandoff permits SignedHandoff.Outbound, SignedHand
 		/** Convenience factory that fills in {@code version} and {@code direction}. */
 		public static Return of(String correlationId, Instant issuedAt, Instant expiresAt, String nonce,
 								String principal, List<UUID> selectedUsagePointIds,
-								String customerResourceUri, String consent) {
+								String customerResourceUri, String consent, String approvedScope) {
 			return new Return(CURRENT_VERSION, DIRECTION_RETURN, correlationId, issuedAt, expiresAt,
-					nonce, principal, selectedUsagePointIds, customerResourceUri, consent);
+					nonce, principal, selectedUsagePointIds, customerResourceUri, consent, approvedScope);
 		}
 	}
 }
