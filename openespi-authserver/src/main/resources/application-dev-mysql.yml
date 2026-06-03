@@ -45,9 +45,14 @@ spring:
     user: ${spring.datasource.username}
     password: ${spring.datasource.password}
     url: ${spring.datasource.url}
-    # Skip V3+ pending ESPI 4.0 XSD-aligned schema repair (see issue #123).
-    # V1+V2 provide enough for OAuth2 grant + introspection; V3 onwards is seed/demo data.
-    target: "2.0.0"
+    # Apply through V7.0.0 (handoff_nonces, added in #122 PR C3.4 — required by AS).
+    # Original cap was V2.0.0 (issue #123 schema repair concern), but C3/C4 introduce a
+    # structural V7 that AS's JPA layer validates against at startup. V3 (seed/test-client
+    # data) and V4-V6 (datacustodian_integration_mapping, oauth2_user_info, certificate auth)
+    # are applied along the way; V4-V6 are largely vestigial after the OIDC/JWK strip but
+    # their CREATE TABLEs are harmless. If V3 fails to apply against the post-#123 schema
+    # we'll surface the specific INSERT error rather than silently skipping.
+    target: "7.0.0"
 
 # Development Logging
 logging:

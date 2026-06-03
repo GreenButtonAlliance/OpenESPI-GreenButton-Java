@@ -36,8 +36,13 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
  */
 @SpringBootApplication(scanBasePackages = {
     "org.greenbuttonalliance.espi.thirdparty",
-    "org.greenbuttonalliance.espi.common.service.impl",
-    "org.greenbuttonalliance.espi.common.utils"
+    // Scan the entire common package — matches DC's pattern. Previous narrow
+    // scan ('.service.impl' + '.utils' only) was missing the MapStruct mappers
+    // ('.mapper') AND non-impl services like EspiIdGeneratorService in '.service'.
+    // Broadening to '.common' covers all current and future common-module beans
+    // without playing whack-a-mole. Pre-existing TP bring-up gap, surfaced by
+    // manual end-to-end testing of #122 PR C4.
+    "org.greenbuttonalliance.espi.common"
 })
 @EntityScan(basePackages = {
     "org.greenbuttonalliance.espi.common.domain"

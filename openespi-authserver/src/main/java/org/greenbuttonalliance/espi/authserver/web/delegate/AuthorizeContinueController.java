@@ -18,8 +18,11 @@ package org.greenbuttonalliance.espi.authserver.web.delegate;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.greenbuttonalliance.espi.authserver.grant.GrantContext;
+import org.greenbuttonalliance.espi.authserver.grant.GrantContextSessionStore;
 import org.greenbuttonalliance.espi.handoff.HandoffNonceService;
 import org.greenbuttonalliance.espi.handoff.InvalidHandoffException;
 import org.greenbuttonalliance.espi.handoff.SignedHandoff;
@@ -95,6 +98,7 @@ public class AuthorizeContinueController {
 	private final DelegationStateService delegationStateService;
 	private final OAuth2AuthorizationConsentService consentService;
 	private final RegisteredClientRepository registeredClientRepository;
+	private final GrantContextSessionStore grantContextSessionStore;
 	private final SecurityContextRepository securityContextRepository =
 			new HttpSessionSecurityContextRepository();
 
@@ -136,6 +140,19 @@ public class AuthorizeContinueController {
 			consentBuilder.scope(fbTerm);
 		}
 		consentService.save(consentBuilder.build());
+
+		// Stash the grant context in the HTTP session so GrantContextEnrichingAuthorizationService
+		// can stamp it onto the OAuth2Authorization Spring AS creates when /oauth2/authorize is
+		// replayed below. Lifetime is the brief window between this redirect and Spring AS's
+		// auth-code persistence; consumed single-use by the enricher.
+		Long retailCustomerId = parseRetailCustomerId(payload.principal());
+		HttpSession session = request.getSession(true);
+		grantContextSessionStore.put(session, new GrantContext(
+				payload.correlationId(),
+				retailCustomerId,
+				payload.approvedScope(),
+				payload.selectedUsagePointIds(),
+				payload.customerResourceUri()));
 
 		// Redirect back to /oauth2/authorize with the original TP query params. Spring AS finds
 		// the saved authorization request (still in session), sees authenticated user + matching
@@ -203,6 +220,22 @@ public class AuthorizeContinueController {
 	 */
 	private static List<String> parseScopes(String espiScope) {
 		return List.of(espiScope.split(";"));
+	}
+
+	/**
+	 * Parse the Return handoff's opaque principal into the numeric customer id that DC's
+	 * back-channel ({@code SubscriptionProvisionRequest.retailCustomerId: Long}) requires.
+	 * A non-numeric principal indicates a contract violation between DC and AS — the DC sets
+	 * {@code String.valueOf(customer.getId())} on the Return handoff. Reject loudly rather than
+	 * silently substituting; the operator can see the cause in logs and fix the DC side.
+	 */
+	private static Long parseRetailCustomerId(String principal) {
+		try {
+			return Long.parseLong(principal);
+		} catch (NumberFormatException e) {
+			throw new InvalidHandoffException(
+					"non-numeric principal '" + principal + "'; cannot map to retail_customer_id");
+		}
 	}
 
 	@ExceptionHandler(InvalidHandoffException.class)
