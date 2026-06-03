@@ -37,11 +37,11 @@ import org.springframework.web.client.RestTemplate;
     "org.greenbuttonalliance.espi.common.domain.usage",
     "org.greenbuttonalliance.espi.common.domain.customer",
     "org.greenbuttonalliance.espi.common.domain.common",
-    "org.greenbuttonalliance.espi.common.handoff"
+    "org.greenbuttonalliance.espi.handoff"
 })
 @EnableJpaRepositories(basePackages = {
     "org.greenbuttonalliance.espi.common.repositories",
-    "org.greenbuttonalliance.espi.common.handoff"
+    "org.greenbuttonalliance.espi.handoff"
 })
 public class TestApplication {
 

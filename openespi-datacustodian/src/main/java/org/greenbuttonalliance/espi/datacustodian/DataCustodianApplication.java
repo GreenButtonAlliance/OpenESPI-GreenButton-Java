@@ -41,17 +41,18 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
  */
 @SpringBootApplication(scanBasePackages = {
     "org.greenbuttonalliance.espi.datacustodian",
-    "org.greenbuttonalliance.espi.common"
+    "org.greenbuttonalliance.espi.common",
+    "org.greenbuttonalliance.espi.handoff"
 })
 @EntityScan(basePackages = {
     "org.greenbuttonalliance.espi.common.domain.usage",
     "org.greenbuttonalliance.espi.common.domain.customer",
     "org.greenbuttonalliance.espi.common.domain.common",
-    "org.greenbuttonalliance.espi.common.handoff"
+    "org.greenbuttonalliance.espi.handoff"
 })
 @EnableJpaRepositories(basePackages = {
     "org.greenbuttonalliance.espi.common.repositories",
-    "org.greenbuttonalliance.espi.common.handoff"
+    "org.greenbuttonalliance.espi.handoff"
 })
 @EnableTransactionManagement
 public class DataCustodianApplication {

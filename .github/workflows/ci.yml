@@ -61,7 +61,10 @@ jobs:
         run: mvn test -pl openespi-thirdparty -am
 
       - name: Run integration tests with TestContainers
-        run: mvn verify -Pintegration-tests -pl openespi-common,openespi-datacustodian,openespi-thirdparty
+        # -am ("also make") builds upstream dependencies first — required so the new
+        # openespi-handoff module is rebuilt and reinstalled before the integration tests
+        # compile, matching the pattern used by the unit-test steps above.
+        run: mvn verify -Pintegration-tests -pl openespi-common,openespi-datacustodian,openespi-thirdparty -am
 
       # JaCoCo reports are automatically generated during test phase (configured in root pom.xml)
 

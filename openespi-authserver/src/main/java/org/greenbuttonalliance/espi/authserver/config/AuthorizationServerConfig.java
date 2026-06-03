@@ -130,16 +130,33 @@ public class AuthorizationServerConfig {
         // (see #122). Re-add via authorizationServerConfigurer.oidc(...) at that time.
         RequestMatcher endpointsMatcher = authorizationServerConfigurer.getEndpointsMatcher();
 
+        // Delegate both customer authentication AND consent to the Data Custodian. Spring AS's
+        // loginPage / consentPage hooks accept a static URL; the AS-side AuthorizeDelegateController
+        // at /authorize/delegate receives the redirect, builds a signed outbound handoff carrying
+        // (client_id, scope, return_url=/oauth2/authorize/continue), and re-redirects the user to
+        // DC's /oauth/authorize-screen?handoff=<signed>. DC handles its own customer login
+        // (PR C2a) and Authorization Screen (PR C2b), then redirects back to AS's
+        // /oauth2/authorize/continue with a signed return handoff (PR C3.3).
+        //
+        // Why a single delegate endpoint for both login AND consent: DC's authorize-screen sits
+        // behind DC's customer-login filter chain. When the user-agent hits the screen
+        // unauthenticated, DC's filter chain redirects to its own /login (preserving the screen
+        // URL in return_to) and back. So delegating only the consent path covers both — the
+        // login step is handled transparently inside DC.
+        authorizationServerConfigurer.authorizationEndpoint(authorize -> authorize
+                .consentPage("/authorize/delegate"));
+
         http
                 .securityMatcher(endpointsMatcher)
                 .authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated())
                 .csrf(csrf -> csrf.ignoringRequestMatchers(endpointsMatcher))
                 .with(authorizationServerConfigurer, Customizer.withDefaults())
-                // Redirect HTML user-agents to the login page when accessing the
-                // authorization endpoint without an active session
+                // For non-consent unauthenticated cases, the same delegate endpoint is the
+                // login page — Spring AS will append ?scope=...&client_id=...&state=... so the
+                // delegate has the same context it needs to build the outbound handoff.
                 .exceptionHandling(exceptions -> exceptions
                         .defaultAuthenticationEntryPointFor(
-                                new LoginUrlAuthenticationEntryPoint("/login"),
+                                new LoginUrlAuthenticationEntryPoint("/authorize/delegate"),
                                 new MediaTypeRequestMatcher(MediaType.TEXT_HTML)
                         )
                 );
@@ -165,7 +182,14 @@ public class AuthorizationServerConfig {
                                 "/assets/**", "/webjars/**",
                                 "/login", "/error",
                                 "/.well-known/**",
-                                "/actuator/health", "/actuator/info"
+                                "/actuator/health", "/actuator/info",
+                                // PR C3 — AS↔DC delegation handoff endpoints. Both must be reachable
+                                // without prior authentication: /authorize/delegate is hit BEFORE
+                                // the customer authenticates anywhere (its job is to delegate auth
+                                // to DC); /oauth2/authorize/continue receives the return handoff
+                                // and writes the SecurityContext itself.
+                                "/authorize/delegate",
+                                "/oauth2/authorize/continue"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

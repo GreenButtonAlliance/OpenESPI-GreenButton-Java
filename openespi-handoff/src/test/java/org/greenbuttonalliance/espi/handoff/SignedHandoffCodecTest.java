@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.greenbuttonalliance.espi.common.handoff;
+package org.greenbuttonalliance.espi.handoff;
 
 import org.junit.jupiter.api.Test;
 

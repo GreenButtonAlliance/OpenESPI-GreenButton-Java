@@ -45,8 +45,12 @@
         </license>
     </licenses>
 
-    <!-- All modules included - ThirdParty partially migrated but buildable -->
+    <!-- openespi-handoff is a tiny shared module for the AS↔DC signed-handoff codec.
+         Lives outside openespi-common because the auth-server (which can't depend on common's
+         ESPI domain types) needs the codec too. Pure infrastructure (HMAC + Jackson + JPA),
+         no ESPI domain types. -->
     <modules>
+        <module>openespi-handoff</module>
         <module>openespi-common</module>
         <module>openespi-datacustodian</module>
         <module>openespi-thirdparty</module>

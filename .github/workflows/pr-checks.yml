@@ -60,7 +60,12 @@ jobs:
       #   run: mvn spotless:check
 
       - name: Run quick tests
-        run: mvn test -pl openespi-common,openespi-datacustodian
+        # -am ("also make") builds upstream dependencies first — required so the new
+        # openespi-handoff module (depended on by openespi-common) gets installed into
+        # the local Maven repo before openespi-common's test compile starts. Without it,
+        # Maven attempts to resolve OpenESPI-Handoff from maven.pkg.github.com, which
+        # returns 401 because the artifact has never been published there.
+        run: mvn test -pl openespi-common,openespi-datacustodian -am
 
       # Aligned with ci.yml's Security Vulnerability Scan policy: the OWASP check
       # runs and reports findings on the PR, but does not block merging. As of

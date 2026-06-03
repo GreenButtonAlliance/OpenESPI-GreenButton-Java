@@ -101,6 +101,17 @@ espi:
     format: opaque  # Default to ESPI-compliant opaque tokens
   datacustodian:
     endpoint: http://localhost:8080
+    # Base URL of the Data Custodian — used by AuthorizeDelegateController to redirect the
+    # customer to DC's /oauth/authorize-screen for login + consent. MUST be reachable from the
+    # customer's browser, not just from the AS server (it's a 302 target).
+    baseUrl: ${DATACUSTODIAN_BASE_URL:http://localhost:8081/DataCustodian}
+
+  # Shared HMAC key for the AS↔DC signed-handoff (user-flow redirect parameter).
+  # MUST be at least 32 chars of high-entropy material AND identical to the value configured on
+  # the Data Custodian (the AS produces signatures the DC verifies, and vice versa). Set via
+  # ESPI_HANDOFF_SIGNING_KEY env var in production.
+  handoff:
+    signing-key: ${ESPI_HANDOFF_SIGNING_KEY:dev-only-handoff-signing-key-change-me}
 
 # Application Information
 info:

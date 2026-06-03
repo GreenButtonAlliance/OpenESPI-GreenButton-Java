@@ -21,7 +21,7 @@ import org.greenbuttonalliance.espi.common.domain.common.ServiceCategory;
 import org.greenbuttonalliance.espi.common.domain.usage.ApplicationInformationEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.enums.ServiceKind;
-import org.greenbuttonalliance.espi.common.handoff.InvalidHandoffException;
+import org.greenbuttonalliance.espi.handoff.InvalidHandoffException;
 import org.greenbuttonalliance.espi.common.repositories.usage.ApplicationInformationRepository;
 import org.greenbuttonalliance.espi.common.repositories.usage.UsagePointRepository;
 import org.greenbuttonalliance.espi.common.scope.EspiScope;
