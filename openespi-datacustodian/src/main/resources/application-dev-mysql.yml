@@ -21,7 +21,12 @@ spring:
         generate_statistics: true
         
   flyway:
-    locations: classpath:db/migration/mysql
+    # Common ships shared migrations at classpath:db/migration (V1, V3, plus handoff's V4)
+    # and vendor-specific migrations at classpath:db/vendor/<vendor> (V2 — retail_customers etc).
+    # DC needs both locations. The previous "classpath:db/migration/mysql" pointed at a path that
+    # didn't exist on any module's classpath, so Flyway silently found 0 migrations and JPA blew up
+    # later on missing tables.
+    locations: classpath:db/migration,classpath:db/vendor/mysql
     url: ${spring.datasource.url}
     user: ${spring.datasource.username}
     password: ${spring.datasource.password}
