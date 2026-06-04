@@ -326,25 +326,66 @@ public class AuthorizationServerConfig {
                     .build())
                 .build();
 
-        // Initialize default clients if they don't exist
+        // Seed default clients, and reconcile existing ones to the code definition (see below).
         initializeDefaultClients(repository, datacustodianAdmin, thirdPartyClient, thirdPartyAdmin);
-        
+
         return repository;
     }
-    
+
     /**
-     * Initialize default ESPI clients if they don't exist in the database.
+     * Seed the default ESPI clients, and <em>reconcile</em> any that already exist so that
+     * changes to a default client's code definition reach an already-seeded database.
+     *
+     * <p>The previous implementation only inserted when absent, so a default client created by an
+     * older revision kept its stale row forever — which silently shipped two defects to existing
+     * deployments: the missing {@code requireProofKey(false)} (#148, breaks the ESPI customer flow
+     * with a spurious PKCE {@code code_challenge} requirement) and the placeholder UUID
+     * {@code clientName}s (#149). These three clients are system-managed defaults — they are
+     * authoritative in code, not via the admin API — so reconciling them on startup is safe.</p>
+     *
+     * <p>Reconciliation preserves the existing primary-key {@code id} (the FK target of
+     * {@code oauth2_authorization}) and only writes when {@code clientName} or {@code requireProofKey}
+     * has drifted, so admin-tuned fields on other clients are never touched and steady-state startups
+     * issue no writes. Fix for existing deployments tracked by #154.</p>
      */
     private void initializeDefaultClients(RegisteredClientRepository repository,
                                           RegisteredClient... clients) {
         int seeded = 0;
+        int reconciled = 0;
         for (RegisteredClient client : clients) {
-            if (repository.findByClientId(client.getClientId()) == null) {
+            RegisteredClient existing = repository.findByClientId(client.getClientId());
+            if (existing == null) {
                 repository.save(client);
                 seeded++;
+            } else {
+                RegisteredClient drifted = reconcile(existing, client);
+                if (drifted != null) {
+                    repository.save(drifted);
+                    reconciled++;
+                }
             }
         }
-        System.out.println("Default ESPI Clients seeded: " + seeded + " of " + clients.length);
+        System.out.println("Default ESPI Clients: seeded " + seeded + ", reconciled " + reconciled
+                + " of " + clients.length);
+    }
+
+    /**
+     * Return the client to persist when an existing default client has drifted from its code
+     * definition, or {@code null} when it is already in sync.
+     *
+     * <p>Drift is detected on the two fields the default definitions actually manage —
+     * {@code clientName} and {@code requireProofKey}. When either differs, the full {@code desired}
+     * definition is adopted (re-pointed at {@code existing}'s primary-key id so the update lands on
+     * the same row rather than colliding on the unique {@code client_id}).</p>
+     */
+    static RegisteredClient reconcile(RegisteredClient existing, RegisteredClient desired) {
+        boolean nameDrift = !java.util.Objects.equals(existing.getClientName(), desired.getClientName());
+        boolean proofKeyDrift = existing.getClientSettings().isRequireProofKey()
+                != desired.getClientSettings().isRequireProofKey();
+        if (!nameDrift && !proofKeyDrift) {
+            return null;
+        }
+        return RegisteredClient.from(desired).id(existing.getId()).build();
     }
 
     @Bean
