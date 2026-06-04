@@ -8,14 +8,10 @@ spring:
   application:
     name: openespi-authorization-server-testcontainers
   
-  # Database configuration will be set dynamically by Testcontainers
-  datasource:
-    # These will be overridden by @DynamicPropertySource
-    url: placeholder
-    username: placeholder  
-    password: placeholder
-    driver-class-name: placeholder
-  
+  # Datasource is set entirely by each test's @DynamicPropertySource (Testcontainers
+  # JDBC URL/credentials). No placeholders here — a stray "placeholder" value would only
+  # surface as a confusing "Cannot load driver class" if a test forgot to wire the registry.
+
   # JPA Configuration for Testcontainers
   jpa:
     open-in-view: false
@@ -28,11 +24,13 @@ spring:
         jdbc:
           time_zone: UTC
   
-  # Flyway Configuration (location set dynamically by test)
+  # Flyway Configuration. Both location AND schemas are set per-test via @DynamicPropertySource:
+  # vendor-specific migration paths differ (db/vendor/mysql vs db/vendor/postgresql) and
+  # `schemas: public` is Postgres-only — on MySQL "public" is read as a database name the test
+  # user has no access to, which fails context load with "Unable to create schema `public`".
   flyway:
     enabled: true
     baseline-on-migrate: true
-    schemas: public
   
   # Security Configuration for Tests
   security:
