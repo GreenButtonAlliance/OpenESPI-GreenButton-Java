@@ -102,7 +102,7 @@ class SubscriptionProvisioningServiceImplTest {
 
 		assertThat(result.resourceSubscriptionId()).isNotNull();
 		assertThat(result.customerSubscriptionId()).isNull();
-		assertThat(result.resourceUri()).startsWith(BASE_URI + "/Subscription/");
+		assertThat(result.resourceUri()).startsWith(BASE_URI + "/Batch/Subscription/"); // ESPI standard Batch form (#160)
 		assertThat(result.authorizationUri()).startsWith(BASE_URI + "/Authorization/");
 		assertThat(result.customerResourceUri()).isNull();
 
@@ -134,10 +134,10 @@ class SubscriptionProvisioningServiceImplTest {
 
 		assertThat(result.resourceSubscriptionId()).isNotNull();
 		assertThat(result.customerSubscriptionId()).isNotNull();
-		assertThat(result.customerResourceUri()).isEqualTo(PII_CUSTOMER_URI);
+		assertThat(result.customerResourceUri()).isEqualTo(BASE_URI + "/Batch/RetailCustomer/" + CUSTOMER_ID);
 
 		AuthorizationEntity saved = captureSavedAuthorization();
-		assertThat(saved.getCustomerResourceURI()).isEqualTo(PII_CUSTOMER_URI);
+		assertThat(saved.getCustomerResourceURI()).isEqualTo(BASE_URI + "/Batch/RetailCustomer/" + CUSTOMER_ID);
 		assertThat(saved.getSubscriptions()).hasSize(2);
 	}
 
@@ -152,7 +152,7 @@ class SubscriptionProvisioningServiceImplTest {
 		assertThat(result.resourceSubscriptionId()).isNull();
 		assertThat(result.resourceUri()).isNull();
 		assertThat(result.customerSubscriptionId()).isNotNull();
-		assertThat(result.customerResourceUri()).isEqualTo(PII_CUSTOMER_URI);
+		assertThat(result.customerResourceUri()).isEqualTo(BASE_URI + "/Batch/RetailCustomer/" + CUSTOMER_ID);
 
 		AuthorizationEntity saved = captureSavedAuthorization();
 		assertThat(saved.getResourceURI()).isNull();

@@ -1,0 +1,10 @@
+{
+  "access_token": "OPAQUE_ACCESS_TOKEN",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "refresh_token": "OPAQUE_REFRESH_TOKEN",
+  "scope": "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13",
+  "resourceURI": "https://utilityapi.com/DataCustodian/espi/1_1/resource/Batch/Subscription/503888",
+  "authorizationURI": "https://utilityapi.com/DataCustodian/espi/1_1/resource/Authorization/503888",
+  "customerResourceURI": "https://utilityapi.com/DataCustodian/espi/1_1/resource/Batch/RetailCustomer/503888"
+}

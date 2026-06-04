@@ -186,9 +186,11 @@ class AuthCodeFlowOrchestrationIntegrationTest extends AbstractAuthserverIntegra
 				.andExpect(jsonPath("$.resourceURI").value(resourceUri))
 				.andExpect(jsonPath("$.authorizationURI").value(authorizationUri))
 				.andExpect(jsonPath("$.customerResourceURI").value(customerResourceUri))
-				.andExpect(jsonPath("$.authorization_id").value(authorizationId.toString()))
-				.andExpect(jsonPath("$.resource_subscription_id").value(resourceSubscriptionId.toString()))
-				.andExpect(jsonPath("$.customer_subscription_id").value(customerSubscriptionId.toString()));
+				// ESPI 4.0 token response carries only the three canonical URIs; the *_id claims were
+				// non-standard and removed in #160.
+				.andExpect(jsonPath("$.authorization_id").doesNotExist())
+				.andExpect(jsonPath("$.resource_subscription_id").doesNotExist())
+				.andExpect(jsonPath("$.customer_subscription_id").doesNotExist());
 
 		// The back-channel was called with the customer-selection context carried through the flow.
 		ArgumentCaptor<BackchannelRequest> captor = ArgumentCaptor.forClass(BackchannelRequest.class);
