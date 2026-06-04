@@ -106,9 +106,8 @@ class GrantBackchannelTokenCustomizerTest {
 				.containsEntry(GrantBackchannelTokenCustomizer.CLAIM_AUTHORIZATION_URI,
 						"https://dc.example/Authorization/" + AUTH_ID)
 				.containsEntry(GrantBackchannelTokenCustomizer.CLAIM_CUSTOMER_RESOURCE_URI,
-						"https://dc.example/RetailCustomer/42/Customer/" + CUST_SUB_ID)
-				.containsEntry(GrantBackchannelTokenCustomizer.CLAIM_AUTHORIZATION_ID,
-						AUTH_ID.toString());
+						"https://dc.example/RetailCustomer/42/Customer/" + CUST_SUB_ID);
+		// *_id claims removed in #160 — consumers parse ids from the canonical URIs (EspiBatchUri).
 	}
 
 	@Test
@@ -159,8 +158,7 @@ class GrantBackchannelTokenCustomizerTest {
 		assertThat(claims)
 				.containsEntry(GrantBackchannelTokenCustomizer.CLAIM_RESOURCE_URI,
 						"https://dc.example/Subscription/" + RES_SUB_ID)
-				.doesNotContainKey(GrantBackchannelTokenCustomizer.CLAIM_CUSTOMER_RESOURCE_URI)
-				.doesNotContainKey(GrantBackchannelTokenCustomizer.CLAIM_CUSTOMER_SUBSCRIPTION_ID);
+				.doesNotContainKey(GrantBackchannelTokenCustomizer.CLAIM_CUSTOMER_RESOURCE_URI);
 	}
 
 	@Test

@@ -28,6 +28,7 @@ import org.greenbuttonalliance.espi.common.repositories.usage.AuthorizationRepos
 import org.greenbuttonalliance.espi.common.repositories.usage.RetailCustomerRepository;
 import org.greenbuttonalliance.espi.common.repositories.usage.UsagePointRepository;
 import org.greenbuttonalliance.espi.common.scope.EspiScope;
+import org.greenbuttonalliance.espi.common.uri.EspiBatchUri;
 import org.greenbuttonalliance.espi.common.service.EspiIdGeneratorService;
 import org.greenbuttonalliance.espi.common.service.SubscriptionProvisioningService;
 import org.springframework.beans.factory.annotation.Value;
@@ -171,7 +172,12 @@ public class SubscriptionProvisioningServiceImpl implements SubscriptionProvisio
 		authorization.setThirdParty(command.clientId());
 		authorization.setStatus(AuthorizationEntity.STATUS_ACTIVE);
 		if (includesPii) {
-			authorization.setCustomerResourceURI(command.customerResourceUri());
+			// Build the canonical ESPI Batch/RetailCustomer URI from the retail-customer id DC already
+			// holds, rather than trusting the round-tripped handoff value (#160). The handoff's
+			// customer_resource_uri is now vestigial — removing it from the back-channel request/handoff
+			// is a follow-up structural cleanup.
+			authorization.setCustomerResourceURI(
+					EspiBatchUri.batchRetailCustomer(resourceBaseUri, command.retailCustomerId()));
 		}
 		return authorization;
 	}
@@ -191,11 +197,14 @@ public class SubscriptionProvisioningServiceImpl implements SubscriptionProvisio
 		return subscription;
 	}
 
+	// Canonical ESPI 4.0 Batch resource URIs via the single builder/parser shared with the consumers
+	// (DC ResourceValidationFilter) — see EspiBatchUri / #160. The previous "/Subscription/{id}" form
+	// omitted the required "/Batch/" segment and so failed DC's own resource validation.
 	private String subscriptionUri(UUID subscriptionId) {
-		return resourceBaseUri + "/Subscription/" + subscriptionId;
+		return EspiBatchUri.batchSubscription(resourceBaseUri, subscriptionId);
 	}
 
 	private String authorizationUri(UUID authorizationId) {
-		return resourceBaseUri + "/Authorization/" + authorizationId;
+		return EspiBatchUri.authorization(resourceBaseUri, authorizationId);
 	}
 }

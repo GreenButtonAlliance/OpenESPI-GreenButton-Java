@@ -60,10 +60,10 @@ import java.util.UUID;
  * </ol>
  *
  * <h2>Claim names</h2>
- * Match the ESPI 1.1/4.0 token-response wire format the third party expects:
- * {@code resourceURI}, {@code authorizationURI}, {@code customerResourceURI}. The auxiliary ids
- * ({@code authorization_id}, {@code resource_subscription_id}, {@code customer_subscription_id})
- * are surfaced as snake-case claims for AS-side audit and operator tooling.
+ * Exactly the ESPI 4.0 (REQ.21) token-response wire format the third party expects:
+ * {@code resourceURI}, {@code authorizationURI}, {@code customerResourceURI}. Consumers parse any
+ * needed ids out of those canonical URIs (see {@code EspiBatchUri}); the previously-emitted bare
+ * {@code *_id} claims were non-standard and were removed in #160.
  *
  * <h2>Failure handling</h2>
  * Any {@link DataCustodianBackchannelException} is rethrown as an {@link OAuth2AuthenticationException}
@@ -79,9 +79,6 @@ public class GrantBackchannelTokenCustomizer implements OAuth2TokenCustomizer<OA
 	public static final String CLAIM_RESOURCE_URI = "resourceURI";
 	public static final String CLAIM_AUTHORIZATION_URI = "authorizationURI";
 	public static final String CLAIM_CUSTOMER_RESOURCE_URI = "customerResourceURI";
-	public static final String CLAIM_AUTHORIZATION_ID = "authorization_id";
-	public static final String CLAIM_RESOURCE_SUBSCRIPTION_ID = "resource_subscription_id";
-	public static final String CLAIM_CUSTOMER_SUBSCRIPTION_ID = "customer_subscription_id";
 
 	private final DataCustodianBackchannelClient backchannelClient;
 
@@ -139,6 +136,10 @@ public class GrantBackchannelTokenCustomizer implements OAuth2TokenCustomizer<OA
 	}
 
 	private static void writeClaims(OAuth2TokenClaimsContext context, BackchannelResponse response) {
+		// ESPI 4.0 (REQ.21) token-response / introspection augmentation carries ONLY the three canonical
+		// URIs — resourceURI, authorizationURI, customerResourceURI. The bare *_id fields were
+		// non-standard duplicates of the ids already embedded in those URIs (and customer_subscription_id
+		// was mislabeled); consumers parse ids from the URIs via EspiBatchUri instead. Removed per #160.
 		var claims = context.getClaims();
 		if (response.resourceUri() != null) {
 			claims.claim(CLAIM_RESOURCE_URI, response.resourceUri());
@@ -148,15 +149,6 @@ public class GrantBackchannelTokenCustomizer implements OAuth2TokenCustomizer<OA
 		}
 		if (response.customerResourceUri() != null) {
 			claims.claim(CLAIM_CUSTOMER_RESOURCE_URI, response.customerResourceUri());
-		}
-		if (response.authorizationId() != null) {
-			claims.claim(CLAIM_AUTHORIZATION_ID, response.authorizationId().toString());
-		}
-		if (response.resourceSubscriptionId() != null) {
-			claims.claim(CLAIM_RESOURCE_SUBSCRIPTION_ID, response.resourceSubscriptionId().toString());
-		}
-		if (response.customerSubscriptionId() != null) {
-			claims.claim(CLAIM_CUSTOMER_SUBSCRIPTION_ID, response.customerSubscriptionId().toString());
 		}
 	}
 }

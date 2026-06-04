@@ -75,13 +75,12 @@ public class EspiTokenResponseSuccessHandler implements AuthenticationSuccessHan
 	private final OAuth2AuthorizationService authorizationService;
 	private final OAuth2AccessTokenResponseHttpWriter responseWriter = new OAuth2AccessTokenResponseHttpWriter();
 
+	// ESPI 4.0 (REQ.21) surfaces only the three canonical URIs in the token response; the bare *_id
+	// claims were non-standard and were removed in #160 (consumers parse ids from the URIs).
 	private static final Set<String> ESPI_URI_CLAIMS = Set.of(
 			GrantBackchannelTokenCustomizer.CLAIM_RESOURCE_URI,
 			GrantBackchannelTokenCustomizer.CLAIM_AUTHORIZATION_URI,
-			GrantBackchannelTokenCustomizer.CLAIM_CUSTOMER_RESOURCE_URI,
-			GrantBackchannelTokenCustomizer.CLAIM_AUTHORIZATION_ID,
-			GrantBackchannelTokenCustomizer.CLAIM_RESOURCE_SUBSCRIPTION_ID,
-			GrantBackchannelTokenCustomizer.CLAIM_CUSTOMER_SUBSCRIPTION_ID
+			GrantBackchannelTokenCustomizer.CLAIM_CUSTOMER_RESOURCE_URI
 	);
 
 	@Override

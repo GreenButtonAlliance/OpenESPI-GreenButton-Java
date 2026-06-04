@@ -1,0 +1,9 @@
+{
+  "access_token": "OPAQUE_ACCESS_TOKEN",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "scope": "FB=1_3_4_5_10_11_35;BlockDuration=daily;BR=1",
+  "resourceURI": "https://utilityapi.com/DataCustodian/espi/1_1/resource/Batch/Bulk/BULK_1",
+  "authorizationURI": "https://utilityapi.com/DataCustodian/espi/1_1/resource/Authorization/CLIENTCREDS",
+  "customerResourceURI": "https://utilityapi.com/DataCustodian/espi/1_1/resource/Batch/Bulk/BULK_RC_1"
+}
