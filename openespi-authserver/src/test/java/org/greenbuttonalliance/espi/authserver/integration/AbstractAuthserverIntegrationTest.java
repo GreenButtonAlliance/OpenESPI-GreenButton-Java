@@ -17,6 +17,7 @@
 package org.greenbuttonalliance.espi.authserver.integration;
 
 import org.greenbuttonalliance.espi.authserver.AuthorizationServerApplication;
+import org.junit.jupiter.api.Tag;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.ActiveProfiles;
@@ -45,6 +46,9 @@ import org.testcontainers.containers.MySQLContainer;
  * and Flyway wiring are inherited. The {@code testcontainers} Spring profile supplies the rest of the
  * AS test configuration (see {@code application-testcontainers.yml}).</p>
  */
+// Tagged so CI can run ONLY the Docker-backed integration tests (-Dgroups=testcontainers-it),
+// excluding the AS module's pre-existing broken H2-profile unit tests. Inherited by subclasses.
+@Tag("testcontainers-it")
 @SpringBootTest(classes = AuthorizationServerApplication.class)
 @AutoConfigureMockMvc
 @ActiveProfiles("testcontainers")
