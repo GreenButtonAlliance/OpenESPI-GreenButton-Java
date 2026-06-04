@@ -17,6 +17,7 @@
 package org.greenbuttonalliance.espi.authserver.integration;
 
 import org.greenbuttonalliance.espi.authserver.AuthorizationServerApplication;
+import org.junit.jupiter.api.Tag;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.ActiveProfiles;
@@ -45,21 +46,26 @@ import org.testcontainers.containers.MySQLContainer;
  * and Flyway wiring are inherited. The {@code testcontainers} Spring profile supplies the rest of the
  * AS test configuration (see {@code application-testcontainers.yml}).</p>
  */
+// Tagged so CI can run ONLY the Docker-backed integration tests (-Dgroups=testcontainers-it),
+// excluding the AS module's pre-existing broken H2-profile unit tests. Inherited by subclasses.
+@Tag("testcontainers-it")
 @SpringBootTest(classes = AuthorizationServerApplication.class)
 @AutoConfigureMockMvc
 @ActiveProfiles("testcontainers")
 public abstract class AbstractAuthserverIntegrationTest {
 
     /**
-     * Singleton container: started once, never stopped explicitly. Ryuk (Testcontainers' reaper)
-     * tears it down when the JVM exits. {@code withReuse(true)} additionally lets it survive across
-     * local runs when the developer has enabled container reuse, shaving startup off the inner loop.
+     * Singleton container: started once per JVM in the static initializer, never stopped explicitly
+     * (Ryuk, Testcontainers' reaper, tears it down at JVM exit). Deliberately NOT {@code withReuse}:
+     * the AS seeds its default clients at context startup with insert-if-absent semantics, so a
+     * container surviving across runs would carry stale seed rows and silently mask seed-definition
+     * changes (e.g. a client's {@code requireProofKey}). A fresh container per run keeps seed-dependent
+     * assertions deterministic in both CI and the local inner loop.
      */
     protected static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.0")
             .withDatabaseName("oauth2_authserver")
             .withUsername("test_user")
-            .withPassword("test_password")
-            .withReuse(true);
+            .withPassword("test_password");
 
     static {
         MYSQL.start();

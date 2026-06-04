@@ -66,6 +66,14 @@ jobs:
         # compile, matching the pattern used by the unit-test steps above.
         run: mvn verify -Pintegration-tests -pl openespi-common,openespi-datacustodian,openespi-thirdparty -am
 
+      - name: Run integration tests - openespi-authserver (TestContainers, tagged)
+        # The authserver module's UNIT tests are pre-existing-broken on the H2 local/test profiles
+        # and stay excluded from CI (see the commented full-module step above). This runs ONLY the
+        # Docker-backed integration tests tagged @Tag("testcontainers-it"): the MySQL schema/client
+        # suite and the Phase 2.0 auth-code-flow orchestration test (#148), against a real MySQL via
+        # Testcontainers. -Dgroups selects by tag, so the broken unit tests are not executed.
+        run: mvn test -pl openespi-authserver -am -Dgroups=testcontainers-it -DfailIfNoTests=false
+
       # JaCoCo reports are automatically generated during test phase (configured in root pom.xml)
 
       - name: Upload test results
