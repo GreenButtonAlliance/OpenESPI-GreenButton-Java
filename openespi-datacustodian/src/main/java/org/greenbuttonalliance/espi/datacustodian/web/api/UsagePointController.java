@@ -34,7 +34,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -85,10 +84,6 @@ public class UsagePointController {
                     @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
             }
     )
-    @PreAuthorize("hasAuthority('SCOPE_DataCustodian_Admin_Access') or " +
-            "hasAuthority('SCOPE_FB_15_READ_3rd_party') or " +
-            "hasAuthority('SCOPE_FB_16_READ_3rd_party') or " +
-            "hasAuthority('SCOPE_FB_36_READ_3rd_party')")
     @GetMapping(value = "/UsagePoint", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
     public ResponseEntity<byte[]> getAllUsagePoints(@RequestParam(defaultValue = "50") int limit,
                                                     @RequestParam(defaultValue = "0") int offset) {
@@ -134,10 +129,6 @@ public class UsagePointController {
             @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
         }
     )
-    @PreAuthorize("hasAuthority('SCOPE_DataCustodian_Admin_Access') or " +
-                 "hasAuthority('SCOPE_FB_15_READ_3rd_party') or " +
-                 "hasAuthority('SCOPE_FB_16_READ_3rd_party') or " +
-                 "hasAuthority('SCOPE_FB_36_READ_3rd_party')")
     public ResponseEntity<byte[]> getUsagePoint(
             @Parameter(description = "Unique identifier of the Usage Point", required = true)
             @PathVariable UUID usagePointId) {
@@ -167,9 +158,6 @@ public class UsagePointController {
             @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
         }
     )
-    @PreAuthorize("hasAuthority('SCOPE_FB_15_READ_3rd_party') or " +
-                 "hasAuthority('SCOPE_FB_16_READ_3rd_party') or " +
-                 "hasAuthority('SCOPE_FB_36_READ_3rd_party')")
     public ResponseEntity<byte[]> getSubscriptionUsagePoints(
             @Parameter(description = "Unique identifier of the SubscriptionEntity", required = true)
             @PathVariable UUID subscriptionId,
@@ -206,9 +194,6 @@ public class UsagePointController {
             @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
         }
     )
-    @PreAuthorize("hasAuthority('SCOPE_FB_15_READ_3rd_party') or " +
-                 "hasAuthority('SCOPE_FB_16_READ_3rd_party') or " +
-                 "hasAuthority('SCOPE_FB_36_READ_3rd_party')")
     public ResponseEntity<byte[]> getSubscriptionUsagePoint(
             @Parameter(description = "Unique identifier of the SubscriptionEntity", required = true)
             @PathVariable UUID subscriptionId,

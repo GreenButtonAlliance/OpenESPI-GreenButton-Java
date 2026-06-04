@@ -19,11 +19,16 @@
 
 package org.greenbuttonalliance.espi.datacustodian.config;
 
+import org.greenbuttonalliance.espi.common.scope.FunctionBlock;
+import org.greenbuttonalliance.espi.common.scope.FunctionBlockCategory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authorization.AuthorityAuthorizationManager;
+import org.springframework.security.authorization.AuthorizationManager;
+import org.springframework.security.authorization.AuthorizationManagers;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -33,12 +38,14 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector;
 import org.springframework.security.oauth2.server.resource.introspection.SpringOpaqueTokenIntrospector;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * Security configuration for the OpenESPI Data Custodian Resource Server.
@@ -75,20 +82,61 @@ public class SecurityConfiguration {
      */
     @Bean
     @Order(1)
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                                   OpaqueTokenIntrospector introspector) throws Exception {
+        // ESPI 4.0 Function-Block authorization managers. Authorities are minted by
+        // EspiScopeOpaqueTokenIntrospector: FB_<n> per granted function block, plus SCOPE_<scope>
+        // for admin/OIDC scopes. (Replaces the contractor's non-ESPI SCOPE_FB_n_READ/WRITE_3rd_party.)
+        AuthorizationManager<RequestAuthorizationContext> admin =
+                AuthorityAuthorizationManager.hasAuthority("SCOPE_DataCustodian_Admin_Access");
+        AuthorizationManager<RequestAuthorizationContext> adminOrTpAdmin =
+                AuthorityAuthorizationManager.hasAnyAuthority(
+                        "SCOPE_DataCustodian_Admin_Access", "SCOPE_ThirdParty_Admin_Access");
+
+        // Usage data (UsagePoint + its interval data: MeterReading, ReadingType, IntervalBlock,
+        // LocalTimeParameters, Batch). ESPI: base FB_4 (Interval Metering) AND at least one
+        // commodity FB (electricity/gas/water/temperature) — or DataCustodian admin.
+        AuthorizationManager<RequestAuthorizationContext> fb4 =
+                AuthorityAuthorizationManager.hasAuthority("FB_4");
+        AuthorizationManager<RequestAuthorizationContext> commodity =
+                AuthorityAuthorizationManager.hasAnyAuthority(commodityAuthorities());
+        AuthorizationManager<RequestAuthorizationContext> usageData =
+                AuthorizationManagers.anyOf(admin, AuthorizationManagers.allOf(fb4, commodity));
+
+        // Usage summaries (data-shape FBs) and power-quality summary (FB_17).
+        AuthorizationManager<RequestAuthorizationContext> usageSummary =
+                AuthorizationManagers.anyOf(admin,
+                        AuthorityAuthorizationManager.hasAnyAuthority("FB_15", "FB_16", "FB_27", "FB_28"));
+        AuthorizationManager<RequestAuthorizationContext> powerQuality =
+                AuthorizationManagers.anyOf(admin, AuthorityAuthorizationManager.hasAuthority("FB_17"));
+
+        // Customer / PII resources — least-privilege per the ESPI Customer-PII catalog: the base
+        // Connect-My-Data customer FB (FB_53) AND the resource-specific FB, or admin. FB→resource
+        // mapping is authoritative from the DMD-validator conformance XSLTs (FB_NN.xsl). Note: FB_55
+        // (Address) gates a field embedded in Customer, not an endpoint — deferred to response-shaping.
+        AuthorizationManager<RequestAuthorizationContext> customerBase = piiGate(admin, "FB_54");   // Customer
+        AuthorizationManager<RequestAuthorizationContext> customerAccount = piiGate(admin, "FB_56"); // billing
+        AuthorizationManager<RequestAuthorizationContext> customerAgreement = piiGate(admin, "FB_57");
+        AuthorizationManager<RequestAuthorizationContext> serviceLocation = piiGate(admin, "FB_58");
+        AuthorizationManager<RequestAuthorizationContext> serviceSupplier = piiGate(admin, "FB_59");
+        AuthorizationManager<RequestAuthorizationContext> meter = piiGate(admin, "FB_60");
+        AuthorizationManager<RequestAuthorizationContext> endDevice = piiGate(admin, "FB_61");
+        AuthorizationManager<RequestAuthorizationContext> programMapping = piiGate(admin, "FB_62");
+
         return http
             // Disable CSRF for API endpoints
             .csrf(AbstractHttpConfigurer::disable)
-            
+
             // Enable CORS
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            
+
             // Configure session management (stateless for OAuth2)
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
-            
-            // Configure authorization rules
+
+            // Configure authorization rules. ESPI customer FB scopes are READ-ONLY; every write is
+            // admin-gated (see the blanket write rule below).
             .authorizeHttpRequests(authz -> authz
                 // Public endpoints
                 .requestMatchers(
@@ -99,105 +147,81 @@ public class SecurityConfiguration {
                     "/swagger-ui.html",
                     "/h2-console/**"
                 ).permitAll()
-                
-                // ESPI root resource endpoints (require authentication)
+
+                // --- Admin-only resources (OAuth2 metadata, not energy/PII) ---
                 .requestMatchers(HttpMethod.GET, "/espi/1_1/resource/ApplicationInformation/**")
-                    .hasAnyAuthority("SCOPE_DataCustodian_Admin_Access", "SCOPE_ThirdParty_Admin_Access")
-                
-                // /Authorization is admin (DataCustodian admin) or client (ThirdParty admin via
-                // client_credentials) only — never reachable with a customer FB-scoped token,
-                // because the resource exposes OAuth2 authorization metadata, not energy/PII data.
+                    .access(adminOrTpAdmin)
                 .requestMatchers(HttpMethod.GET, "/espi/1_1/resource/Authorization/**")
-                    .hasAnyAuthority(
-                        "SCOPE_DataCustodian_Admin_Access",
-                        "SCOPE_ThirdParty_Admin_Access"
-                    )
-                
-                // ESPI Usage Point endpoints
-                .requestMatchers(HttpMethod.GET, "/espi/1_1/resource/UsagePoint/**")
-                    .hasAnyAuthority(
-                        "SCOPE_FB_15_READ_3rd_party", 
-                        "SCOPE_FB_16_READ_3rd_party", 
-                        "SCOPE_FB_36_READ_3rd_party",
-                        "SCOPE_DataCustodian_Admin_Access"
-                    )
-                
-                .requestMatchers(HttpMethod.POST, "/espi/1_1/resource/UsagePoint/**")
-                    .hasAnyAuthority(
-                        "SCOPE_FB_15_WRITE_3rd_party", 
-                        "SCOPE_FB_16_WRITE_3rd_party", 
-                        "SCOPE_FB_36_WRITE_3rd_party",
-                        "SCOPE_DataCustodian_Admin_Access"
-                    )
-                
-                // ESPI SubscriptionEntity-based endpoints
-                .requestMatchers(HttpMethod.GET, "/espi/1_1/resource/Subscription/*/UsagePoint/**")
-                    .hasAnyAuthority(
-                        "SCOPE_FB_15_READ_3rd_party", 
-                        "SCOPE_FB_16_READ_3rd_party", 
-                        "SCOPE_FB_36_READ_3rd_party"
-                    )
-                
-                .requestMatchers(HttpMethod.POST, "/espi/1_1/resource/Subscription/*/UsagePoint/**")
-                    .hasAnyAuthority(
-                        "SCOPE_FB_15_WRITE_3rd_party", 
-                        "SCOPE_FB_16_WRITE_3rd_party", 
-                        "SCOPE_FB_36_WRITE_3rd_party"
-                    )
-                
-                // ESPI Meter Reading endpoints
-                .requestMatchers(HttpMethod.GET, "/espi/1_1/resource/MeterReading/**")
-                    .hasAnyAuthority(
-                        "SCOPE_FB_15_READ_3rd_party", 
-                        "SCOPE_FB_16_READ_3rd_party", 
-                        "SCOPE_FB_36_READ_3rd_party",
-                        "SCOPE_DataCustodian_Admin_Access"
-                    )
-                
-                .requestMatchers(HttpMethod.POST, "/espi/1_1/resource/MeterReading/**")
-                    .hasAnyAuthority(
-                        "SCOPE_FB_15_WRITE_3rd_party", 
-                        "SCOPE_FB_16_WRITE_3rd_party", 
-                        "SCOPE_FB_36_WRITE_3rd_party",
-                        "SCOPE_DataCustodian_Admin_Access"
-                    )
-                
-                // ESPI Interval Reading endpoints
-                .requestMatchers(HttpMethod.GET, "/espi/1_1/resource/IntervalReading/**")
-                    .hasAnyAuthority(
-                        "SCOPE_FB_15_READ_3rd_party", 
-                        "SCOPE_FB_16_READ_3rd_party", 
-                        "SCOPE_FB_36_READ_3rd_party",
-                        "SCOPE_DataCustodian_Admin_Access"
-                    )
-                
-                // ESPI Batch endpoints
-                .requestMatchers(HttpMethod.GET, "/espi/1_1/resource/Batch/**")
-                    .hasAnyAuthority(
-                        "SCOPE_FB_15_READ_3rd_party", 
-                        "SCOPE_FB_16_READ_3rd_party", 
-                        "SCOPE_FB_36_READ_3rd_party",
-                        "SCOPE_DataCustodian_Admin_Access"
-                    )
-                
+                    .access(adminOrTpAdmin)
+
+                // --- Usage summaries (GET) : data-shape FBs, or admin. The summary/PQ leaf rules
+                //     (including Subscription-/RetailCustomer-scoped XPath forms) MUST precede the
+                //     broad usage-data rule, so a summary reached via /Subscription/.../UsageSummary is
+                //     gated by its own FB rather than FB_4+commodity. ---
+                .requestMatchers(HttpMethod.GET,
+                    "/espi/1_1/resource/UsageSummary/**",
+                    "/espi/1_1/resource/ElectricPowerUsageSummary/**",
+                    "/espi/1_1/resource/Subscription/*/UsagePoint/*/UsageSummary/**",
+                    "/espi/1_1/resource/Subscription/*/UsagePoint/*/ElectricPowerUsageSummary/**",
+                    "/espi/1_1/resource/RetailCustomer/*/UsagePoint/*/UsageSummary/**",
+                    "/espi/1_1/resource/RetailCustomer/*/UsagePoint/*/ElectricPowerUsageSummary/**")
+                    .access(usageSummary)
+
+                // --- Power-quality summary (GET) : FB_17, or admin ---
+                .requestMatchers(HttpMethod.GET,
+                    "/espi/1_1/resource/ElectricPowerQualitySummary/**",
+                    "/espi/1_1/resource/Subscription/*/UsagePoint/*/ElectricPowerQualitySummary/**",
+                    "/espi/1_1/resource/RetailCustomer/*/UsagePoint/*/ElectricPowerQualitySummary/**")
+                    .access(powerQuality)
+
+                // --- Usage data (GET, read-only) : FB_4 + commodity, or admin ---
+                .requestMatchers(HttpMethod.GET,
+                    "/espi/1_1/resource/UsagePoint/**",
+                    "/espi/1_1/resource/MeterReading/**",
+                    "/espi/1_1/resource/ReadingType/**",
+                    "/espi/1_1/resource/IntervalBlock/**",
+                    "/espi/1_1/resource/IntervalReading/**",
+                    "/espi/1_1/resource/LocalTimeParameter/**",
+                    "/espi/1_1/resource/LocalTimeParameters/**",
+                    "/espi/1_1/resource/Batch/**",
+                    "/espi/1_1/resource/Subscription/**",
+                    "/espi/1_1/resource/RetailCustomer/*/UsagePoint/**")
+                    .access(usageData)
+
+                // --- Customer / PII resources (GET) : FB_53 base + resource-specific FB, or admin ---
+                // ROOT forms are gated 1:1 per the conformance-XSLT FB mapping.
+                .requestMatchers(HttpMethod.GET, "/espi/1_1/resource/CustomerAccount/**").access(customerAccount)
+                .requestMatchers(HttpMethod.GET, "/espi/1_1/resource/CustomerAgreement/**").access(customerAgreement)
+                .requestMatchers(HttpMethod.GET, "/espi/1_1/resource/ServiceSupplier/**").access(serviceSupplier)
+                .requestMatchers(HttpMethod.GET, "/espi/1_1/resource/ServiceLocation/**").access(serviceLocation)
+                .requestMatchers(HttpMethod.GET, "/espi/1_1/resource/Meter/**").access(meter)
+                .requestMatchers(HttpMethod.GET, "/espi/1_1/resource/EndDevice/**").access(endDevice)
+                .requestMatchers(HttpMethod.GET, "/espi/1_1/resource/ProgramDateIdMappings/**").access(programMapping)
+                .requestMatchers(HttpMethod.GET, "/espi/1_1/resource/Customer/**").access(customerBase)
+                // XPath customer subtree: customer-base floor (FB_53+FB_54). Per-leaf XPath gating and
+                // FB_55 (Address, a Customer field) are response-shaping refinements — Phase 2.
+                .requestMatchers(HttpMethod.GET, "/espi/1_1/resource/RetailCustomer/*/Customer/**").access(customerBase)
+
+                // --- All resource writes are admin-only (ESPI third-party access is read-only) ---
+                .requestMatchers(HttpMethod.POST, "/espi/1_1/resource/**").access(admin)
+                .requestMatchers(HttpMethod.PUT, "/espi/1_1/resource/**").access(admin)
+                .requestMatchers(HttpMethod.DELETE, "/espi/1_1/resource/**").access(admin)
+
                 // Admin endpoints
-                .requestMatchers("/admin/**")
-                    .hasAuthority("SCOPE_DataCustodian_Admin_Access")
-                
+                .requestMatchers("/admin/**").access(admin)
+
                 // All other ESPI endpoints require authentication
                 .requestMatchers("/espi/**").authenticated()
-                
+
                 // All other requests require authentication
                 .anyRequest().authenticated()
             )
-            
-            // Configure OAuth2 Resource Server with opaque token introspection
-            // ESPI standard requires opaque tokens, not JWT tokens
+
+            // Configure OAuth2 Resource Server with opaque token introspection.
+            // ESPI standard requires opaque tokens, not JWT. The custom introspector
+            // (EspiScopeOpaqueTokenIntrospector) maps the ESPI FB scope to FB_<n> authorities.
             .oauth2ResourceServer(oauth2 -> oauth2
-                .opaqueToken(opaque -> opaque
-                    .introspectionUri(introspectionUri)
-                    .introspectionClientCredentials(clientId, clientSecret)
-                )
+                .opaqueToken(opaque -> opaque.introspector(introspector))
             )
             
             // Security headers configuration
@@ -228,14 +252,42 @@ public class SecurityConfiguration {
      */
 
     /**
-     * Configures the Opaque Token Introspector to validate tokens against the AuthorizationEntity Server.
+     * Configures the Opaque Token Introspector to validate tokens against the Authorization Server,
+     * wrapped so the ESPI FB scope is translated into FB_&lt;n&gt; authorities the resource rules enforce
+     * (see {@link EspiScopeOpaqueTokenIntrospector}).
      */
     @Bean
     public OpaqueTokenIntrospector introspector() {
-        return  SpringOpaqueTokenIntrospector.withIntrospectionUri(introspectionUri)
+        OpaqueTokenIntrospector delegate = SpringOpaqueTokenIntrospector.withIntrospectionUri(introspectionUri)
                 .clientId(clientId)
                 .clientSecret(clientSecret)
                 .build();
+        return new EspiScopeOpaqueTokenIntrospector(delegate);
+    }
+
+    /**
+     * The {@code FB_<n>} authorities for every commodity Function Block (electricity/gas/water/
+     * temperature), derived from the single ESPI FB catalog in {@link FunctionBlock} so this never
+     * drifts from the spec.
+     */
+    private static String[] commodityAuthorities() {
+        return Stream.of(FunctionBlock.values())
+                .filter(fb -> fb.getCategory() == FunctionBlockCategory.COMMODITY)
+                .map(fb -> "FB_" + fb.getId())
+                .toArray(String[]::new);
+    }
+
+    /**
+     * Customer-PII endpoint gate: {@code admin OR (FB_53 base AND the resource-specific FB)}.
+     * FB_53 (Connect My Data, Retail Customer) is the prerequisite base for any customer/PII access;
+     * the resource FB (54/56/57/58/59/60/61/62) enforces least privilege per the ESPI Customer-PII
+     * catalog (mapping derived from the DMD-validator conformance XSLTs).
+     */
+    private static AuthorizationManager<RequestAuthorizationContext> piiGate(
+            AuthorizationManager<RequestAuthorizationContext> admin, String resourceFb) {
+        AuthorizationManager<RequestAuthorizationContext> base = AuthorityAuthorizationManager.hasAuthority("FB_53");
+        AuthorizationManager<RequestAuthorizationContext> specific = AuthorityAuthorizationManager.hasAuthority(resourceFb);
+        return AuthorizationManagers.anyOf(admin, AuthorizationManagers.allOf(base, specific));
     }
 
 

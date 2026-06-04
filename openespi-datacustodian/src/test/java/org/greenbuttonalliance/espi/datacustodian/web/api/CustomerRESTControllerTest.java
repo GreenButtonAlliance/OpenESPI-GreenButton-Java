@@ -79,6 +79,50 @@ public class CustomerRESTControllerTest extends AbstractControllerMockTest {
         }
     }
 
+    /**
+     * ESPI Customer-PII least-privilege enforcement (#157): a customer token may read /Customer only
+     * with the base Connect-My-Data FB (FB_53) AND the Customer-specific FB (FB_54). FB_53 alone, the
+     * specific FB without the base, or a different resource's FB (e.g. FB_56 CustomerAccount) are all
+     * denied — proving the Customer-PII catalog is honored rather than collapsed to a single gate.
+     */
+    @Nested
+    @DisplayName("ESPI Customer-PII FB authorization (#157)")
+    class CustomerPiiScopeGating {
+
+        @Test
+        @WithMockUser(authorities = {"FB_53", "FB_54"})
+        @DisplayName("FB_53 base + FB_54 (Customer) -> 200 OK")
+        void baseAndCustomerFbReturns200() throws Exception {
+            when(customerRepository.findAll(any(Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(new CustomerEntity())));
+            when(customerMapper.toDto(any(CustomerEntity.class))).thenReturn(new CustomerDto());
+
+            mockMvc.perform(get("/espi/1_1/resource/Customer").accept(MediaType.APPLICATION_XML))
+                    .andExpect(status().isOk());
+        }
+
+        @Test
+        @WithMockUser(authorities = "FB_53")
+        @DisplayName("FB_53 base alone (no FB_54) -> 403 (least privilege)")
+        void baseWithoutCustomerFbForbidden() throws Exception {
+            mockMvc.perform(get("/espi/1_1/resource/Customer")).andExpect(status().isForbidden());
+        }
+
+        @Test
+        @WithMockUser(authorities = "FB_54")
+        @DisplayName("FB_54 without base FB_53 -> 403")
+        void customerFbWithoutBaseForbidden() throws Exception {
+            mockMvc.perform(get("/espi/1_1/resource/Customer")).andExpect(status().isForbidden());
+        }
+
+        @Test
+        @WithMockUser(authorities = {"FB_53", "FB_56"})
+        @DisplayName("FB_53 + FB_56 (CustomerAccount FB) -> 403 on Customer (wrong resource FB)")
+        void wrongResourceFbForbidden() throws Exception {
+            mockMvc.perform(get("/espi/1_1/resource/Customer")).andExpect(status().isForbidden());
+        }
+    }
+
     @Nested
     @DisplayName("GET /espi/1_1/resource/Customer/{customerId}")
     class GetCustomer {

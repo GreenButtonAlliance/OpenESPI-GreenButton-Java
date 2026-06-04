@@ -37,7 +37,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -80,8 +79,6 @@ public class CustomerAccountRESTController {
             @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
         }
     )
-    @PreAuthorize("hasAuthority('SCOPE_DataCustodian_Admin_Access') or " +
-                 "hasAuthority('SCOPE_FB_15_READ_3rd_party')")
     public ResponseEntity<byte[]> getCustomerAccountCollection(
             @Parameter(description = "Maximum number of results to return", example = "50")
             @RequestParam(defaultValue = "50") int limit,
@@ -114,8 +111,6 @@ public class CustomerAccountRESTController {
             @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
         }
     )
-    @PreAuthorize("hasAuthority('SCOPE_DataCustodian_Admin_Access') or " +
-                 "hasAuthority('SCOPE_FB_15_READ_3rd_party')")
     public ResponseEntity<byte[]> getCustomerAccount(
             @Parameter(description = "Unique identifier of the CustomerAccount", required = true)
             @PathVariable UUID customerAccountId) {
@@ -145,8 +140,6 @@ public class CustomerAccountRESTController {
             @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
         }
     )
-    @PreAuthorize("hasAuthority('SCOPE_DataCustodian_Admin_Access') or " +
-                 "hasAuthority('SCOPE_FB_16_WRITE_3rd_party')")
     public ResponseEntity<CustomerAccountDto> createCustomerAccount(@RequestBody CustomerAccountDto dto) {
         CustomerAccountEntity entity = customerAccountMapper.toEntity(dto);
         CustomerAccountEntity savedEntity = customerAccountService.save(entity);
@@ -175,8 +168,6 @@ public class CustomerAccountRESTController {
             @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
         }
     )
-    @PreAuthorize("hasAuthority('SCOPE_DataCustodian_Admin_Access') or " +
-                 "hasAuthority('SCOPE_FB_16_WRITE_3rd_party')")
     public ResponseEntity<CustomerAccountDto> updateCustomerAccount(
             @PathVariable UUID customerAccountId,
             @RequestBody CustomerAccountDto dto) {
@@ -206,8 +197,6 @@ public class CustomerAccountRESTController {
             @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
         }
     )
-    @PreAuthorize("hasAuthority('SCOPE_DataCustodian_Admin_Access') or " +
-                 "hasAuthority('SCOPE_FB_16_WRITE_3rd_party')")
     public ResponseEntity<Void> deleteCustomerAccount(@PathVariable UUID customerAccountId) {
         if (!customerAccountRepository.existsById(customerAccountId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "CustomerAccount not found for id: " + customerAccountId);

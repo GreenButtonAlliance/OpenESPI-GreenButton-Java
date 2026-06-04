@@ -69,7 +69,7 @@ class AuthorizationControllerTest {
 		@DisplayName("returns 403 with a customer FB-scoped token (energy-data scope)")
 		void customerFbScope_is_403() throws Exception {
 			mockMvc.perform(get("/espi/1_1/resource/Authorization")
-							.with(opaqueAuthority("SCOPE_FB_15_READ_3rd_party")))
+							.with(opaqueAuthority("FB_15")))
 					.andExpect(status().isForbidden());
 		}
 
@@ -115,7 +115,7 @@ class AuthorizationControllerTest {
 		@DisplayName("returns 403 with a customer FB-scoped token (PII scope)")
 		void customerPiiScope_is_403() throws Exception {
 			mockMvc.perform(get("/espi/1_1/resource/Authorization/" + UUID.randomUUID())
-							.with(opaqueAuthority("SCOPE_FB_54_READ_3rd_party")))
+							.with(opaqueAuthority("FB_54")))
 					.andExpect(status().isForbidden());
 		}
 

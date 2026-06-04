@@ -38,7 +38,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -81,8 +80,6 @@ public class CustomerRESTController {
             @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
         }
     )
-    @PreAuthorize("hasAuthority('SCOPE_DataCustodian_Admin_Access') or " +
-                 "hasAuthority('SCOPE_FB_15_READ_3rd_party')")
     public ResponseEntity<byte[]> getCustomerCollection(
             @Parameter(description = "Maximum number of results to return", example = "50")
             @RequestParam(defaultValue = "50") int limit,
@@ -115,8 +112,6 @@ public class CustomerRESTController {
             @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
         }
     )
-    @PreAuthorize("hasAuthority('SCOPE_DataCustodian_Admin_Access') or " +
-                 "hasAuthority('SCOPE_FB_15_READ_3rd_party')")
     public ResponseEntity<byte[]> getCustomer(
             @Parameter(description = "Unique identifier of the Customer", required = true)
             @PathVariable UUID customerId) {
@@ -147,8 +142,6 @@ public class CustomerRESTController {
             @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
         }
     )
-    @PreAuthorize("hasAuthority('SCOPE_DataCustodian_Admin_Access') or " +
-                 "hasAuthority('SCOPE_FB_15_WRITE_3rd_party')")
     public ResponseEntity<CustomerDto> createCustomer(@Valid @RequestBody CustomerDto customerDto) {
         CustomerEntity entity = customerMapper.toEntity(customerDto);
         CustomerEntity savedEntity = customerService.save(entity);
@@ -178,8 +171,6 @@ public class CustomerRESTController {
             @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
         }
     )
-    @PreAuthorize("hasAuthority('SCOPE_DataCustodian_Admin_Access') or " +
-                 "hasAuthority('SCOPE_FB_15_WRITE_3rd_party')")
     public ResponseEntity<CustomerDto> updateCustomer(
             @Parameter(description = "Unique identifier of the Customer", required = true)
             @PathVariable UUID customerId,
@@ -209,8 +200,6 @@ public class CustomerRESTController {
             @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
         }
     )
-    @PreAuthorize("hasAuthority('SCOPE_DataCustodian_Admin_Access') or " +
-                 "hasAuthority('SCOPE_FB_15_WRITE_3rd_party')")
     public ResponseEntity<Void> deleteCustomer(
             @Parameter(description = "Unique identifier of the Customer", required = true)
             @PathVariable UUID customerId) {
