@@ -299,6 +299,12 @@ public class AuthorizationServerConfig {
                     .build())
                 .clientSettings(ClientSettings.builder()
                     .requireAuthorizationConsent(true)
+                    // ESPI does not support PKCE. Spring Authorization Server 7.x requires
+                    // code_challenge for the authorization_code grant unless requireProofKey is
+                    // explicitly false, so the ESPI customer flow (which sends no code_challenge)
+                    // fails with "OAuth 2.0 Parameter: code_challenge" without this. Surfaced by the
+                    // Phase 2.0 end-to-end orchestration test (#148).
+                    .requireProofKey(false)
                     .build())
                 .build();
 
