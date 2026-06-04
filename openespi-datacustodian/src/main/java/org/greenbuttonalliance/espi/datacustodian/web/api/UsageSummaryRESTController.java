@@ -35,7 +35,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -79,10 +78,6 @@ public class UsageSummaryRESTController {
             @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
         }
     )
-    @PreAuthorize("hasAuthority('SCOPE_DataCustodian_Admin_Access') or " +
-                 "hasAuthority('SCOPE_FB_15_READ_3rd_party') or " +
-                 "hasAuthority('SCOPE_FB_16_READ_3rd_party') or " +
-                 "hasAuthority('SCOPE_FB_36_READ_3rd_party')")
     public ResponseEntity<byte[]> getUsageSummaryCollection(
             @Parameter(description = "Maximum number of results to return", example = "50")
             @RequestParam(defaultValue = "50") int limit,
@@ -116,10 +111,6 @@ public class UsageSummaryRESTController {
             @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
         }
     )
-    @PreAuthorize("hasAuthority('SCOPE_DataCustodian_Admin_Access') or " +
-                 "hasAuthority('SCOPE_FB_15_READ_3rd_party') or " +
-                 "hasAuthority('SCOPE_FB_16_READ_3rd_party') or " +
-                 "hasAuthority('SCOPE_FB_36_READ_3rd_party')")
     public ResponseEntity<byte[]> getUsageSummary(
             @Parameter(description = "Unique identifier of the Usage Summary", required = true)
             @PathVariable UUID usageSummaryId,
@@ -148,9 +139,6 @@ public class UsageSummaryRESTController {
             @ApiResponse(responseCode = "404", description = "Subscription or Usage Point not found")
         }
     )
-    @PreAuthorize("hasAuthority('SCOPE_FB_15_READ_3rd_party') or " +
-                 "hasAuthority('SCOPE_FB_16_READ_3rd_party') or " +
-                 "hasAuthority('SCOPE_FB_36_READ_3rd_party')")
     public ResponseEntity<byte[]> getSubscriptionUsageSummaries(
             @Parameter(description = "Unique identifier of the Subscription", required = true)
             @PathVariable UUID subscriptionId,
@@ -186,9 +174,6 @@ public class UsageSummaryRESTController {
             @ApiResponse(responseCode = "404", description = "Usage Summary, Subscription, or Usage Point not found")
         }
     )
-    @PreAuthorize("hasAuthority('SCOPE_FB_15_READ_3rd_party') or " +
-                 "hasAuthority('SCOPE_FB_16_READ_3rd_party') or " +
-                 "hasAuthority('SCOPE_FB_36_READ_3rd_party')")
     public ResponseEntity<byte[]> getSubscriptionUsageSummary(
             @Parameter(description = "Unique identifier of the Subscription", required = true)
             @PathVariable UUID subscriptionId,

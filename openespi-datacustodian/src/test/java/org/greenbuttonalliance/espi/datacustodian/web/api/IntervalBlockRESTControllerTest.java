@@ -71,7 +71,7 @@ public class IntervalBlockRESTControllerTest extends AbstractControllerMockTest 
         }
 
         @Test
-        @WithMockUser(authorities = "SCOPE_FB_15_READ_3rd_party")
+        @WithMockUser(authorities = {"FB_4", "FB_5"})
         @DisplayName("Should return 200 OK for FB_15 scope")
         void shouldReturn200ForFB15() throws Exception {
             when(intervalBlockRepository.findAll(any(Pageable.class)))
@@ -137,7 +137,7 @@ public class IntervalBlockRESTControllerTest extends AbstractControllerMockTest 
     class GetSubscriptionIntervalBlocks {
 
         @Test
-        @WithMockUser(authorities = "SCOPE_FB_15_READ_3rd_party")
+        @WithMockUser(authorities = {"FB_4", "FB_5"})
         @DisplayName("Should return 200 OK with list of interval blocks")
         void shouldReturn200() throws Exception {
             UUID subId = UUID.randomUUID();
@@ -174,7 +174,7 @@ public class IntervalBlockRESTControllerTest extends AbstractControllerMockTest 
     class GetSubscriptionIntervalBlock {
 
         @Test
-        @WithMockUser(authorities = "SCOPE_FB_15_READ_3rd_party")
+        @WithMockUser(authorities = {"FB_4", "FB_5"})
         @DisplayName("Should return 200 OK when interval block exists")
         void shouldReturn200WhenExists() throws Exception {
             UUID subId = UUID.randomUUID();

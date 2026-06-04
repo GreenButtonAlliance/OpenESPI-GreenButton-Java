@@ -73,7 +73,7 @@ public class ElectricPowerQualitySummaryRESTControllerTest extends AbstractContr
         }
 
         @Test
-        @WithMockUser(authorities = "SCOPE_FB_15_READ_3rd_party")
+        @WithMockUser(authorities = "FB_17")
         @DisplayName("Should return 200 OK for FB_15 scope")
         void shouldReturn200ForFB15() throws Exception {
             when(electricPowerQualitySummaryRepository.findAll(any(Pageable.class)))
@@ -146,7 +146,7 @@ public class ElectricPowerQualitySummaryRESTControllerTest extends AbstractContr
     @DisplayName("Subscription scoped GET tests")
     class SubscriptionTests {
         @Test
-        @WithMockUser(authorities = "SCOPE_FB_15_READ_3rd_party")
+        @WithMockUser(authorities = "FB_17")
         @DisplayName("Should return 200 OK for subscription collection")
         void shouldReturn200ForSubscriptionCollection() throws Exception {
             UUID subId = UUID.randomUUID();
@@ -162,7 +162,7 @@ public class ElectricPowerQualitySummaryRESTControllerTest extends AbstractContr
         }
 
         @Test
-        @WithMockUser(authorities = "SCOPE_FB_15_READ_3rd_party")
+        @WithMockUser(authorities = "FB_17")
         @DisplayName("Should return 200 OK for subscription resource")
         void shouldReturn200ForSubscriptionResource() throws Exception {
             UUID subId = UUID.randomUUID();

@@ -72,7 +72,7 @@ public class UsageSummaryRESTControllerTest extends AbstractControllerMockTest {
         }
 
         @Test
-        @WithMockUser(authorities = "SCOPE_FB_15_READ_3rd_party")
+        @WithMockUser(authorities = "FB_15")
         @DisplayName("Should return 200 OK for FB_15 scope")
         void shouldReturn200ForFB15() throws Exception {
             when(usageSummaryRepository.findAll(any(Pageable.class)))
@@ -123,7 +123,7 @@ public class UsageSummaryRESTControllerTest extends AbstractControllerMockTest {
     class SubscriptionScopedTests {
 
         @Test
-        @WithMockUser(authorities = "SCOPE_FB_15_READ_3rd_party")
+        @WithMockUser(authorities = "FB_15")
         @DisplayName("GET /Subscription/{subscriptionId}/UsagePoint/{usagePointId}/UsageSummary should return 200 OK")
         void shouldReturn200ForSubscriptionCollection() throws Exception {
             UUID subId = UUID.randomUUID();
@@ -138,7 +138,7 @@ public class UsageSummaryRESTControllerTest extends AbstractControllerMockTest {
         }
 
         @Test
-        @WithMockUser(authorities = "SCOPE_FB_15_READ_3rd_party")
+        @WithMockUser(authorities = "FB_15")
         @DisplayName("GET /Subscription/{subscriptionId}/UsagePoint/{usagePointId}/UsageSummary/{usageSummaryId} should return 200 OK")
         void shouldReturn200ForSubscriptionResource() throws Exception {
             UUID subId = UUID.randomUUID();

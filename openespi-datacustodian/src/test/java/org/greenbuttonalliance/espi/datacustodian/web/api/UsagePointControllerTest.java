@@ -81,7 +81,7 @@ public class UsagePointControllerTest extends AbstractControllerMockTest {
         }
 
         @Test
-        @WithMockUser(authorities = "SCOPE_FB_15_READ_3rd_party")
+        @WithMockUser(authorities = {"FB_4", "FB_5"})
         @DisplayName("Should return 200 OK for FB_15 scope")
         void shouldReturn200ForFB15() throws Exception {
             when(usagePointRepository.findAll(any(Pageable.class)))
@@ -160,7 +160,7 @@ public class UsagePointControllerTest extends AbstractControllerMockTest {
         }
 
         @Test
-        @WithMockUser(authorities = "SCOPE_FB_15_READ_3rd_party")
+        @WithMockUser(authorities = {"FB_4", "FB_5"})
         @DisplayName("Should return 200 OK for FB_15 scope")
         void shouldReturn200ForFB15() throws Exception {
             when(usagePointRepository.findAll(any(Pageable.class)))
@@ -193,7 +193,7 @@ public class UsagePointControllerTest extends AbstractControllerMockTest {
         }
 
         @Test
-        @WithMockUser(authorities = "SCOPE_FB_15_READ_3rd_party")
+        @WithMockUser(authorities = {"FB_4", "FB_5"})
         @DisplayName("Should return 200 OK when usage point exists and user has scope")
         void shouldReturn200WhenExists() throws Exception {
             UUID subId = UUID.randomUUID();
@@ -211,7 +211,7 @@ public class UsagePointControllerTest extends AbstractControllerMockTest {
         }
 
         @Test
-        @WithMockUser(authorities = "SCOPE_FB_15_READ_3rd_party")
+        @WithMockUser(authorities = {"FB_4", "FB_5"})
         @DisplayName("Should return 404 Not Found when usage point does not exist")
         void shouldReturn404WhenNotExists() throws Exception {
             UUID subId = UUID.randomUUID();
