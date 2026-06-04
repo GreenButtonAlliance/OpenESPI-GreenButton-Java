@@ -260,6 +260,7 @@ public class AuthorizationServerConfig {
         // Production seeds would supply a pre-bcrypted hash via env vars instead.
         RegisteredClient datacustodianAdmin = RegisteredClient.withId(UUID.randomUUID().toString())
                 .clientId("data_custodian_admin")
+                .clientName("DataCustodian Admin")
                 .clientSecret("{noop}dc-secret")
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                 .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
@@ -277,6 +278,7 @@ public class AuthorizationServerConfig {
         // ThirdParty Client (ROLE_USER) - Environment-aware redirect URIs
         RegisteredClient thirdPartyClient = RegisteredClient.withId(UUID.randomUUID().toString())
                 .clientId("third_party")
+                .clientName("ThirdParty Application")
                 .clientSecret("{noop}tp-secret")
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
@@ -303,6 +305,7 @@ public class AuthorizationServerConfig {
         // ThirdParty Admin Client (ROLE_TP_ADMIN)
         RegisteredClient thirdPartyAdmin = RegisteredClient.withId(UUID.randomUUID().toString())
                 .clientId("third_party_admin")
+                .clientName("ThirdParty Admin")
                 .clientSecret("{noop}tpadmin-secret")
                 .clientIdIssuedAt(Instant.now())
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)

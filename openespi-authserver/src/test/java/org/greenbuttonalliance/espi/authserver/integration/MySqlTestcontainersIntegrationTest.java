@@ -80,9 +80,12 @@ class MySqlTestcontainersIntegrationTest {
         registry.add("spring.datasource.password", mysqlContainer::getPassword);
         registry.add("spring.datasource.driver-class-name", () -> "com.mysql.cj.jdbc.Driver");
         
-        // Flyway configuration for MySQL
+        // Flyway configuration for MySQL. AS vendor migrations live at db/vendor/mysql
+        // (V1/V2/V7); the old "db/migration/mysql" path does not exist on the classpath, so
+        // Flyway silently found 0 migrations and ddl-auto=validate then failed on missing tables.
+        // No spring.flyway.schemas here — on MySQL the database is selected by the JDBC URL.
         registry.add("spring.flyway.enabled", () -> true);
-        registry.add("spring.flyway.locations", () -> "classpath:db/migration/mysql");
+        registry.add("spring.flyway.locations", () -> "classpath:db/vendor/mysql");
         registry.add("spring.flyway.baseline-on-migrate", () -> true);
         
         // JPA configuration
@@ -136,8 +139,9 @@ class MySqlTestcontainersIntegrationTest {
                 String.class
             );
 
-            // Then
-            assertThat(indexes).contains("idx_oauth2_registered_client_client_id");
+            // Then - client_id is indexed via the UNIQUE KEY declared in V1_0_0 (a unique constraint
+            // is backed by an index, so it surfaces in INFORMATION_SCHEMA.STATISTICS under its key name).
+            assertThat(indexes).contains("uk_oauth2_registered_client_client_id");
         }
 
         @Test
@@ -382,20 +386,25 @@ class MySqlTestcontainersIntegrationTest {
         @Test
         @DisplayName("Should enforce unique client_id constraint")
         void shouldEnforceUniqueClientIdConstraint() {
-            // Given
+            // Given two distinct rows (different primary-key id) that share a client_id.
             RegisteredClient client1 = createEspiTestClient("duplicate-client", "First Client");
             RegisteredClient client2 = createEspiTestClient("duplicate-client", "Second Client");
 
             // When
             clientRepository.save(client1);
 
-            // Then - Second save should update, not create duplicate
-            clientRepository.save(client2);
+            // Then - Spring's stock JdbcRegisteredClientRepository upserts by primary-key id, NOT by
+            // client_id. A second row with a new id but the same client_id is a constraint violation,
+            // not an update, so save() rejects it. (The old custom repo silently upserted by client_id;
+            // this assertion documents the behaviour change from the #130 stock-repo swap.)
+            org.assertj.core.api.Assertions.assertThatThrownBy(() -> clientRepository.save(client2))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("duplicate client identifier");
+
             List<String> allClientIds = registeredClientAdminDao.findAllClientIds();
             long duplicateCount = allClientIds.stream()
                     .filter("duplicate-client"::equals)
                     .count();
-
             assertThat(duplicateCount).isEqualTo(1);
         }
 
@@ -482,10 +491,14 @@ class MySqlTestcontainersIntegrationTest {
     }
 
     private RegisteredClient createEspiTestClient(String clientId, String clientName) {
-        return RegisteredClient.withId("test-" + UUID.randomUUID().toString())
+        // Unique secret per client: Spring's stock JdbcRegisteredClientRepository (adopted in #130)
+        // rejects a save whose client_secret duplicates an existing row ("Found duplicate client
+        // secret"). The previous shared "{noop}secret" broke every test that persists >1 client.
+        String unique = UUID.randomUUID().toString();
+        return RegisteredClient.withId("test-" + unique)
                 .clientId(clientId)
                 .clientName(clientName)
-                .clientSecret("{noop}secret")
+                .clientSecret("{noop}secret-" + unique)
                 .clientIdIssuedAt(Instant.now())
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
