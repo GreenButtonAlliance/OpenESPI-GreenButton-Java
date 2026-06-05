@@ -107,7 +107,7 @@ class NotificationServiceImplWireContractTest {
 
 		// repositories/services are unused by the subscription notify path
 		NotificationServiceImpl service =
-				new NotificationServiceImpl(RestClient.create(), null, null, null);
+				new NotificationServiceImpl(RestClient.builder(), null, null, null);
 
 		service.notify(subscription, start, end);
 
