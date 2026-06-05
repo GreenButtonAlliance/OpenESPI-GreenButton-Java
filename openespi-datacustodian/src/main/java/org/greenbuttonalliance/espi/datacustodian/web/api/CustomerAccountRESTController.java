@@ -27,11 +27,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerAccountEntity;
 import org.greenbuttonalliance.espi.common.dto.customer.CustomerAccountDto;
 import org.greenbuttonalliance.espi.common.mapper.customer.CustomerAccountMapper;
 import org.greenbuttonalliance.espi.common.repositories.customer.CustomerAccountRepository;
-import org.greenbuttonalliance.espi.common.service.customer.CustomerAccountService;
 import org.greenbuttonalliance.espi.common.service.impl.CustomerAccountExportService;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -39,19 +37,18 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.io.ByteArrayOutputStream;
-import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
 /**
- * Modern RESTful controller for managing CustomerAccount resources according to the
+ * Modern RESTful controller for reading CustomerAccount resources according to the
  * Green Button Alliance ESPI (Energy Services Provider Interface) specification.
  * <p>
- * This controller handles CustomerAccount operations with modern Spring Boot 3.5 patterns,
- * returning XML output via JAXB-marshalled responses.
+ * GET-only, returning XML via JAXB-marshalled responses. The CRUD write endpoints
+ * (POST/PUT/DELETE) are deferred — they are admin/sandbox-DB management APIs to be delivered
+ * in the separate admin-CRUD track (see issue #119 build plan).
  */
 @RestController
 @RequestMapping("/espi/1_1/resource")
@@ -63,7 +60,6 @@ public class CustomerAccountRESTController {
     private final CustomerAccountRepository customerAccountRepository;
     private final CustomerAccountMapper customerAccountMapper;
     private final CustomerAccountExportService customerAccountExportService;
-    private final CustomerAccountService customerAccountService;
 
     /**
      * Get all Customer Accounts (root collection).
@@ -124,84 +120,5 @@ public class CustomerAccountRESTController {
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
                 .body(out.toByteArray());
-    }
-
-    /**
-     * Create a new Customer Account.
-     */
-    @PostMapping(value = "/CustomerAccount", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(
-        summary = "Create CustomerAccount",
-        description = "Creates a new CustomerAccount resource.",
-        responses = {
-            @ApiResponse(responseCode = "201", description = "Successfully created CustomerAccount"),
-            @ApiResponse(responseCode = "400", description = "Invalid data"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized"),
-            @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
-        }
-    )
-    public ResponseEntity<CustomerAccountDto> createCustomerAccount(@RequestBody CustomerAccountDto dto) {
-        CustomerAccountEntity entity = customerAccountMapper.toEntity(dto);
-        CustomerAccountEntity savedEntity = customerAccountService.save(entity);
-        CustomerAccountDto savedDto = customerAccountMapper.toDto(savedEntity);
-
-        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
-                .path("/{id}")
-                .buildAndExpand(savedEntity.getId())
-                .toUri();
-
-        return ResponseEntity.created(location).body(savedDto);
-    }
-
-    /**
-     * Update an existing Customer Account.
-     */
-    @PutMapping(value = "/CustomerAccount/{customerAccountId}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(
-        summary = "Update CustomerAccount",
-        description = "Updates an existing CustomerAccount resource.",
-        responses = {
-            @ApiResponse(responseCode = "200", description = "Successfully updated CustomerAccount"),
-            @ApiResponse(responseCode = "404", description = "CustomerAccount not found"),
-            @ApiResponse(responseCode = "400", description = "Invalid data"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized"),
-            @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
-        }
-    )
-    public ResponseEntity<CustomerAccountDto> updateCustomerAccount(
-            @PathVariable UUID customerAccountId,
-            @RequestBody CustomerAccountDto dto) {
-
-        if (!customerAccountRepository.existsById(customerAccountId)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "CustomerAccount not found for id: " + customerAccountId);
-        }
-
-        CustomerAccountEntity entity = customerAccountMapper.toEntity(dto);
-        entity.setId(customerAccountId);
-        CustomerAccountEntity updatedEntity = customerAccountService.save(entity);
-
-        return ResponseEntity.ok(customerAccountMapper.toDto(updatedEntity));
-    }
-
-    /**
-     * Delete a Customer Account.
-     */
-    @DeleteMapping("/CustomerAccount/{customerAccountId}")
-    @Operation(
-        summary = "Delete CustomerAccount",
-        description = "Deletes an existing CustomerAccount resource.",
-        responses = {
-            @ApiResponse(responseCode = "204", description = "Successfully deleted CustomerAccount"),
-            @ApiResponse(responseCode = "404", description = "CustomerAccount not found"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized"),
-            @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
-        }
-    )
-    public ResponseEntity<Void> deleteCustomerAccount(@PathVariable UUID customerAccountId) {
-        if (!customerAccountRepository.existsById(customerAccountId)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "CustomerAccount not found for id: " + customerAccountId);
-        }
-        customerAccountRepository.deleteById(customerAccountId);
-        return ResponseEntity.noContent().build();
     }
 }

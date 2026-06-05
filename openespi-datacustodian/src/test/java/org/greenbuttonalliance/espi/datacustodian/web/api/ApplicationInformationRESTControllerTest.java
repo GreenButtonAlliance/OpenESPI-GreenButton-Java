@@ -21,7 +21,6 @@
 package org.greenbuttonalliance.espi.datacustodian.web.api;
 
 import org.greenbuttonalliance.espi.common.domain.usage.ApplicationInformationEntity;
-import org.greenbuttonalliance.espi.common.dto.usage.ApplicationInformationDto;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -120,101 +119,6 @@ public class ApplicationInformationRESTControllerTest extends AbstractController
             when(applicationInformationService.findById(id)).thenReturn(null);
 
             mockMvc.perform(get("/espi/1_1/resource/ApplicationInformation/" + id))
-                    .andExpect(status().isNotFound());
-        }
-    }
-
-    @Nested
-    @DisplayName("POST /espi/1_1/resource/ApplicationInformation")
-    class CreateApplicationInformation {
-
-        @Test
-        @WithMockUser(authorities = "SCOPE_DataCustodian_Admin_Access")
-        @DisplayName("Should return 201 Created and the created application")
-        void shouldReturn201Created() throws Exception {
-            ApplicationInformationDto dto = new ApplicationInformationDto();
-            dto.setClientId("test-client");
-            ApplicationInformationEntity entity = new ApplicationInformationEntity();
-            entity.setId(UUID.randomUUID());
-
-            when(applicationInformationService.fromDto(any(ApplicationInformationDto.class))).thenReturn(entity);
-            when(applicationInformationService.save(any(ApplicationInformationEntity.class))).thenReturn(entity);
-
-            mockMvc.perform(post("/espi/1_1/resource/ApplicationInformation")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(dto)))
-                    .andExpect(status().isCreated())
-                    .andExpect(header().exists("Location"));
-        }
-    }
-
-    @Nested
-    @DisplayName("PUT /espi/1_1/resource/ApplicationInformation/{applicationInformationId}")
-    class UpdateApplicationInformation {
-
-        @Test
-        @WithMockUser(authorities = "SCOPE_DataCustodian_Admin_Access")
-        @DisplayName("Should return 200 OK and the updated application")
-        void shouldReturn200Ok() throws Exception {
-            UUID id = UUID.randomUUID();
-            ApplicationInformationDto dto = new ApplicationInformationDto();
-            ApplicationInformationEntity entity = new ApplicationInformationEntity();
-            entity.setId(id);
-
-            when(applicationInformationService.findById(id)).thenReturn(entity);
-            when(applicationInformationService.fromDto(any(ApplicationInformationDto.class))).thenReturn(entity);
-            when(applicationInformationService.save(any(ApplicationInformationEntity.class))).thenReturn(entity);
-
-            mockMvc.perform(put("/espi/1_1/resource/ApplicationInformation/" + id)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(dto)))
-                    .andExpect(status().isOk());
-        }
-
-        @Test
-        @WithMockUser(authorities = "SCOPE_DataCustodian_Admin_Access")
-        @DisplayName("Should return 404 Not Found when application does not exist")
-        void shouldReturn404WhenNotExists() throws Exception {
-            UUID id = UUID.randomUUID();
-            ApplicationInformationDto dto = new ApplicationInformationDto();
-
-            when(applicationInformationService.findById(id)).thenReturn(null);
-
-            mockMvc.perform(put("/espi/1_1/resource/ApplicationInformation/" + id)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(dto)))
-                    .andExpect(status().isNotFound());
-        }
-    }
-
-    @Nested
-    @DisplayName("DELETE /espi/1_1/resource/ApplicationInformation/{applicationInformationId}")
-    class DeleteApplicationInformation {
-
-        @Test
-        @WithMockUser(authorities = "SCOPE_DataCustodian_Admin_Access")
-        @DisplayName("Should return 204 No Content when application is deleted")
-        void shouldReturn204NoContent() throws Exception {
-            UUID id = UUID.randomUUID();
-            ApplicationInformationEntity entity = new ApplicationInformationEntity();
-
-            when(applicationInformationService.findById(id)).thenReturn(entity);
-
-            mockMvc.perform(delete("/espi/1_1/resource/ApplicationInformation/" + id))
-                    .andExpect(status().isNoContent());
-
-            verify(applicationInformationService).deleteById(id);
-        }
-
-        @Test
-        @WithMockUser(authorities = "SCOPE_DataCustodian_Admin_Access")
-        @DisplayName("Should return 404 Not Found when application does not exist")
-        void shouldReturn404WhenNotExists() throws Exception {
-            UUID id = UUID.randomUUID();
-
-            when(applicationInformationService.findById(id)).thenReturn(null);
-
-            mockMvc.perform(delete("/espi/1_1/resource/ApplicationInformation/" + id))
                     .andExpect(status().isNotFound());
         }
     }

@@ -37,18 +37,17 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.io.ByteArrayOutputStream;
-import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
 /**
- * Modern RESTful controller for managing ApplicationInformation resources according to the
+ * Modern RESTful controller for reading ApplicationInformation resources according to the
  * Green Button Alliance ESPI (Energy Services Provider Interface) specification.
  * <p>
- * This controller uses ApplicationInformationService and modern Spring Boot 3.5 patterns.
+ * GET-only. The CRUD write endpoints (POST/PUT/DELETE) are deferred — they are admin/sandbox-DB
+ * management APIs to be delivered in the separate admin-CRUD track (see issue #119 build plan).
  */
 @RestController
 @RequestMapping("/espi/1_1/resource/ApplicationInformation")
@@ -118,102 +117,5 @@ public class ApplicationInformationRESTController {
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
                 .body(out.toByteArray());
-    }
-
-    /**
-     * Creates a new ApplicationInformation resource.
-     *
-     * @param dto ApplicationInformationDto to create
-     * @return created ApplicationInformationDto
-     */
-    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(
-        summary = "Create ApplicationInformation",
-        description = "Creates a new ApplicationInformation resource"
-    )
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "201", description = "Successfully created ApplicationInformation"),
-        @ApiResponse(responseCode = "400", description = "Invalid ApplicationInformation data")
-    })
-    @PreAuthorize("hasAuthority('SCOPE_DataCustodian_Admin_Access')")
-    public ResponseEntity<ApplicationInformationEntity> createApplicationInformation(
-            @Parameter(description = "ApplicationInformation data to create", required = true)
-            @RequestBody ApplicationInformationDto dto) {
-
-        ApplicationInformationEntity entity = applicationInformationService.fromDto(dto);
-        ApplicationInformationEntity savedEntity = applicationInformationService.save(entity);
-
-        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
-                .path("/{id}")
-                .buildAndExpand(savedEntity.getId())
-                .toUri();
-
-        return ResponseEntity.created(location).body(savedEntity);
-    }
-
-    /**
-     * Updates an existing ApplicationInformation resource.
-     *
-     * @param applicationInformationId Unique identifier for the ApplicationInformation to update
-     * @param dto Updated ApplicationInformationDto data
-     * @return updated ApplicationInformationEntity
-     */
-    @PutMapping(value = "/{applicationInformationId}",
-               consumes = MediaType.APPLICATION_JSON_VALUE,
-               produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(
-        summary = "Update ApplicationInformation",
-        description = "Updates an existing ApplicationInformation resource"
-    )
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully updated ApplicationInformation"),
-        @ApiResponse(responseCode = "404", description = "ApplicationInformation not found"),
-        @ApiResponse(responseCode = "400", description = "Invalid ApplicationInformation data")
-    })
-    @PreAuthorize("hasAuthority('SCOPE_DataCustodian_Admin_Access')")
-    public ResponseEntity<ApplicationInformationEntity> updateApplicationInformation(
-            @Parameter(description = "Unique identifier of the ApplicationInformation to update", required = true)
-            @PathVariable UUID applicationInformationId,
-            @Parameter(description = "Updated ApplicationInformation data", required = true)
-            @RequestBody ApplicationInformationDto dto) {
-
-        ApplicationInformationEntity existing = applicationInformationService.findById(applicationInformationId);
-        if (existing == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "ApplicationInformation not found");
-        }
-
-        ApplicationInformationEntity entity = applicationInformationService.fromDto(dto);
-        entity.setId(applicationInformationId);
-        ApplicationInformationEntity updatedEntity = applicationInformationService.save(entity);
-
-        return ResponseEntity.ok(updatedEntity);
-    }
-
-    /**
-     * Deletes an ApplicationInformation resource.
-     *
-     * @param applicationInformationId Unique identifier for the ApplicationInformation to delete
-     */
-    @DeleteMapping("/{applicationInformationId}")
-    @Operation(
-        summary = "Delete ApplicationInformation",
-        description = "Deletes an ApplicationInformation resource"
-    )
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "204", description = "Successfully deleted ApplicationInformation"),
-        @ApiResponse(responseCode = "404", description = "ApplicationInformation not found")
-    })
-    @PreAuthorize("hasAuthority('SCOPE_DataCustodian_Admin_Access')")
-    public ResponseEntity<Void> deleteApplicationInformation(
-            @Parameter(description = "Unique identifier of the ApplicationInformation to delete", required = true)
-            @PathVariable UUID applicationInformationId) {
-
-        ApplicationInformationEntity existing = applicationInformationService.findById(applicationInformationId);
-        if (existing == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "ApplicationInformation not found");
-        }
-
-        applicationInformationService.deleteById(applicationInformationId);
-        return ResponseEntity.noContent().build();
     }
 }
