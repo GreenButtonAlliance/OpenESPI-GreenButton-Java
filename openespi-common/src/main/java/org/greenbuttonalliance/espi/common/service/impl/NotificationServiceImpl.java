@@ -19,17 +19,21 @@
 
 package org.greenbuttonalliance.espi.common.service.impl;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.greenbuttonalliance.espi.common.domain.usage.*;
+import org.greenbuttonalliance.espi.common.dto.usage.BatchListDto;
 import org.greenbuttonalliance.espi.common.repositories.usage.AuthorizationRepository;
 import org.greenbuttonalliance.espi.common.service.AuthorizationService;
 import org.greenbuttonalliance.espi.common.service.NotificationService;
 import org.greenbuttonalliance.espi.common.service.SubscriptionService;
+import org.greenbuttonalliance.espi.common.uri.EspiBatchUri;
+import org.greenbuttonalliance.espi.common.xml.BatchListXmlCodec;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
 
 import javax.xml.datatype.XMLGregorianCalendar;
 import java.util.*;
@@ -42,13 +46,38 @@ import java.util.Map.Entry;
 @Slf4j
 @Service
 @Transactional
-@RequiredArgsConstructor
 public class NotificationServiceImpl implements NotificationService {
 
-	private final RestTemplate restTemplate;
+	private final RestClient restClient;
 	private final AuthorizationRepository authorizationRepository;
 	private final AuthorizationService authorizationService;
 	private final SubscriptionService subscriptionService;
+
+	/**
+	 * Production constructor. Builds a standalone {@link RestClient} for posting ESPI
+	 * {@code BatchList} notifications to Third Party {@code thirdPartyNotifyUri} endpoints.
+	 * Replaces the legacy {@code RestTemplate} (#158).
+	 */
+	@Autowired
+	public NotificationServiceImpl(AuthorizationRepository authorizationRepository,
+								   AuthorizationService authorizationService,
+								   SubscriptionService subscriptionService) {
+		this(RestClient.create(), authorizationRepository, authorizationService, subscriptionService);
+	}
+
+	/**
+	 * Test/seam constructor allowing a pre-configured {@link RestClient} (e.g. pointed at a
+	 * stub receiver) to be injected.
+	 */
+	public NotificationServiceImpl(RestClient restClient,
+								   AuthorizationRepository authorizationRepository,
+								   AuthorizationService authorizationService,
+								   SubscriptionService subscriptionService) {
+		this.restClient = restClient;
+		this.authorizationRepository = authorizationRepository;
+		this.authorizationService = authorizationService;
+		this.subscriptionService = subscriptionService;
+	}
 
 	@Override
 	public void notify(SubscriptionEntity subscription,
@@ -57,11 +86,11 @@ public class NotificationServiceImpl implements NotificationService {
 		String thirdPartyNotificationURI = subscription
 				.getApplicationInformation().getThirdPartyNotifyUri();
 		String separator = "?";
-		String subscriptionURI = subscription.getApplicationInformation()
-				.getDataCustodianResourceEndpoint()
-				+ "/Batch/Subscription/"
-				+ subscription.getId();
-		
+		// Canonical ESPI Batch/Subscription form, built via the single source of truth (#160).
+		String subscriptionURI = EspiBatchUri.batchSubscription(
+				subscription.getApplicationInformation().getDataCustodianResourceEndpoint(),
+				String.valueOf(subscription.getId()));
+
 		if (startDate != null) {
 			subscriptionURI = subscriptionURI + separator + "published-min="
 					+ startDate.toXMLFormat();
@@ -120,7 +149,14 @@ public class NotificationServiceImpl implements NotificationService {
 
 		if(thirdPartyNotificationURI != null){
 			try {
-				restTemplate.postForLocation(thirdPartyNotificationURI, batchList);
+				// Wire type is the JAXB DTO, serialized through the single canonical codec (#158).
+				String xml = BatchListXmlCodec.marshal(new BatchListDto(batchList.getResources()));
+				restClient.post()
+						.uri(thirdPartyNotificationURI)
+						.contentType(MediaType.APPLICATION_ATOM_XML)
+						.body(xml)
+						.retrieve()
+						.toBodilessEntity();
 			} catch (Exception e) {
 				if(log.isErrorEnabled()) {
 					log.info("NotificationServiceImpl: notifyInternal - POST for " + thirdPartyNotificationURI +

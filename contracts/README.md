@@ -1,10 +1,11 @@
-# Cross-service wire contracts (AS ↔ DC)
+# Cross-service wire contracts (AS ↔ DC, DC → TP)
 
-Canonical JSON examples of the HTTP wire formats exchanged between the Authorization
-Server and the Data Custodian. These files are the **single source of truth** both
-services bind to in their own tests — a lightweight, framework-free consumer-driven
-contract suited to standalone Spring Boot services (deployed independently on EC2),
-**not** a Spring Cloud microservice mesh.
+Canonical examples of the HTTP wire formats exchanged between the OpenESPI services:
+the **Authorization Server ↔ Data Custodian** token/introspection format (JSON) and the
+**Data Custodian → Third Party** notification format (XML). These files are the
+**single source of truth** both services bind to in their own tests — a lightweight,
+framework-free consumer-driven contract suited to standalone Spring Boot services
+(deployed independently on EC2), **not** a Spring Cloud microservice mesh.
 
 ## How the contract is enforced (no Spring Cloud, no Pact broker)
 
@@ -40,3 +41,23 @@ reproduce that standard shape for the two grant types:
 
 UUIDs/ids/tokens in the fixtures are illustrative; the contract is the **shape** — field names,
 the `Batch/{Subscription|Bulk|RetailCustomer}` URI forms, and the ESPI `FB=...` scope grammar.
+
+### DC → TP notification (BatchList, XML)
+
+When new/updated data is available, the Data Custodian POSTs an ESPI `BatchList` document to
+the Third Party's registered `thirdPartyNotifyUri` (`POST {tpBase}/espi/1_1/Notification`,
+`Content-Type: application/atom+xml`, `200 OK` on success). The body lists the canonical
+`Batch/...` resource URIs the TP should fetch back.
+
+| File | Endpoint | Content-Type |
+|------|----------|--------------|
+| `notification-batchlist.xml` | `POST {tpBase}/espi/1_1/Notification` | `application/atom+xml` |
+
+- **Producer** (DC `NotificationServiceImpl`) builds the resource URI via `EspiBatchUri`
+  (`Batch/Subscription/{id}?published-min=…&published-max=…`) and serializes the `BatchListDto`
+  through `BatchListXmlCodec` — the single canonical BatchList wire codec.
+- **Consumer** (TP `NotificationController`) parses the document through the same
+  `BatchListXmlCodec` and parses ids out of each resource URI via `EspiBatchUri`.
+
+The wire type is the JAXB-annotated `BatchListDto` (root `<BatchList xmlns="http://naesb.org/espi">`,
+repeating `<resources>` elements), never the JPA entity — per the project's JAXB/JPA separation rule.

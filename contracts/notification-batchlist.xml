@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<BatchList xmlns="http://naesb.org/espi">
+    <resources>https://utilityapi.com/DataCustodian/espi/1_1/resource/Batch/Subscription/503888?published-min=2025-01-01T00:00:00Z&amp;published-max=2025-02-01T00:00:00Z</resources>
+</BatchList>

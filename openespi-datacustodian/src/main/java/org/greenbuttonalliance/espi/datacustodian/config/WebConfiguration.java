@@ -25,7 +25,6 @@ import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.Marshaller;
 import jakarta.xml.bind.Unmarshaller;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.restclient.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
@@ -34,7 +33,6 @@ import org.springframework.http.converter.HttpMessageConverters;
 import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
 import org.springframework.http.converter.xml.MarshallingHttpMessageConverter;
 import org.springframework.oxm.jaxb.Jaxb2Marshaller;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.config.annotation.*;
 import tools.jackson.databind.SerializationFeature;
 import tools.jackson.databind.json.JsonMapper;
@@ -219,20 +217,9 @@ public class WebConfiguration implements WebMvcConfigurer {
     /**
      * JAXB Unmarshaller for ESPI XML import.
      */
-    @Bean 
+    @Bean
     public Unmarshaller espiUnmarshaller(Jaxb2Marshaller jaxb2Marshaller) throws JAXBException {
         return jaxb2Marshaller.createUnmarshaller();
-    }
-
-    /**
-     * Creates a RestTemplate bean using the auto-configured RestTemplateBuilder.
-     *
-     * @param builder the RestTemplateBuilder provided by Spring Boot.
-     * @return a new instance of RestTemplate.
-     */
-    @Bean
-    public RestTemplate restTemplate(RestTemplateBuilder builder) {
-        return builder.build();
     }
 
 }
