@@ -33,8 +33,8 @@ import java.util.UUID;
  * <ul>
  *   <li>Always creates exactly one <em>energy</em> Subscription (the {@code resource_uri} target).</li>
  *   <li>Creates a <em>customer/PII</em> Subscription only when the granted scope includes a
- *       Customer/PII Function Block (FB 54&ndash;62). The {@code customer_resource_uri} from the
- *       command is stored verbatim on the Authorization aggregate.</li>
+ *       Customer/PII Function Block (FB 54&ndash;62). DC builds the canonical
+ *       {@code customerResourceURI} itself and stores it on the Authorization aggregate.</li>
  *   <li>Persistence happens through the Authorization aggregate; Subscriptions are never saved
  *       independently.</li>
  * </ul>
@@ -70,16 +70,13 @@ public interface SubscriptionProvisioningService {
 	 *                                 ids; tracked separately from the UUID5 migration)
 	 * @param selectedUsagePointIds    usage points the customer chose to share with this TP; may be
 	 *                                 empty for grants that include only customer/PII scope
-	 * @param customerResourceUri      absolute URI for the customer/PII resource the TP may GET;
-	 *                                 must be present iff the scope includes a Customer/PII FB
 	 */
 	record SubscriptionProvisionCommand(
 			String correlationId,
 			String clientId,
 			String grantedScope,
 			Long retailCustomerId,
-			List<UUID> selectedUsagePointIds,
-			String customerResourceUri
+			List<UUID> selectedUsagePointIds
 	) {}
 
 	/**

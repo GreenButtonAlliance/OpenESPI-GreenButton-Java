@@ -75,8 +75,7 @@ class GrantContextEnrichingAuthorizationServiceTest {
 		MockHttpSession session = new MockHttpSession();
 		request.setSession(session);
 		GrantContext ctx = new GrantContext(
-				"corr-1", 42L, "FB_1;FB_4_5", List.of(UP_1, UP_2),
-				"https://dc.example/RetailCustomer/42");
+				"corr-1", 42L, "FB_1;FB_4_5", List.of(UP_1, UP_2));
 		sessionStore.put(session, ctx);
 
 		service.save(blankAuthorization("auth-1"));
@@ -93,9 +92,6 @@ class GrantContextEnrichingAuthorizationServiceTest {
 		assertThat(saved.<String>getAttribute(
 				GrantContextEnrichingAuthorizationService.ATTR_CORRELATION_ID))
 				.isEqualTo("corr-1");
-		assertThat(saved.<String>getAttribute(
-				GrantContextEnrichingAuthorizationService.ATTR_CUSTOMER_RESOURCE_URI))
-				.isEqualTo("https://dc.example/RetailCustomer/42");
 
 		// Selected UPs round-trip via parseUuids
 		String serialized = saved.getAttribute(
@@ -109,7 +105,7 @@ class GrantContextEnrichingAuthorizationServiceTest {
 	void sessionConsumedSingleUse() {
 		MockHttpSession session = new MockHttpSession();
 		request.setSession(session);
-		GrantContext ctx = new GrantContext("corr-2", 1L, "FB_1", List.of(), null);
+		GrantContext ctx = new GrantContext("corr-2", 1L, "FB_1", List.of());
 		sessionStore.put(session, ctx);
 
 		service.save(blankAuthorization("auth-2a"));
@@ -132,7 +128,7 @@ class GrantContextEnrichingAuthorizationServiceTest {
 		MockHttpSession session = new MockHttpSession();
 		request.setSession(session);
 		// Session has fresh context...
-		sessionStore.put(session, new GrantContext("corr-3", 1L, "FB_1", List.of(), null));
+		sessionStore.put(session, new GrantContext("corr-3", 1L, "FB_1", List.of()));
 
 		// ...but the incoming authorization already has the marker attribute, so the wrapper
 		// must leave it alone.

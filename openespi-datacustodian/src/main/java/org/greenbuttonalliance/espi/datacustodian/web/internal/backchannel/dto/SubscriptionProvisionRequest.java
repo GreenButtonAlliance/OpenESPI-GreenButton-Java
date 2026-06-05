@@ -38,8 +38,6 @@ import java.util.UUID;
  * @param retailCustomerId      DC primary key of the authenticated customer
  * @param selectedUsagePointIds UUIDs of the usage points the customer chose to share with this TP;
  *                              may be empty for grants that include only customer/PII scope
- * @param customerResourceUri   absolute URI for the customer/PII resource; must be present iff the
- *                              scope includes a Customer/PII FB (54&ndash;62)
  */
 public record SubscriptionProvisionRequest(
 		@JsonProperty("correlation_id")
@@ -55,8 +53,5 @@ public record SubscriptionProvisionRequest(
 		@NotNull Long retailCustomerId,
 
 		@JsonProperty("selected_usage_point_ids")
-		List<UUID> selectedUsagePointIds,
-
-		@JsonProperty("customer_resource_uri")
-		String customerResourceUri
+		List<UUID> selectedUsagePointIds
 ) {}

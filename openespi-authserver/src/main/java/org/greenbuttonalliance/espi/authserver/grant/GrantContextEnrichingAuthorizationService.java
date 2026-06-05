@@ -71,7 +71,6 @@ public class GrantContextEnrichingAuthorizationService implements OAuth2Authoriz
 	public static final String ATTR_RETAIL_CUSTOMER_ID = "espi.retail_customer_id";
 	public static final String ATTR_GRANTED_SCOPE = "espi.granted_scope";
 	public static final String ATTR_SELECTED_USAGE_POINT_IDS = "espi.selected_usage_point_ids";
-	public static final String ATTR_CUSTOMER_RESOURCE_URI = "espi.customer_resource_uri";
 	public static final String ATTR_CORRELATION_ID = "espi.correlation_id";
 
 	private final OAuth2AuthorizationService delegate;
@@ -131,9 +130,6 @@ public class GrantContextEnrichingAuthorizationService implements OAuth2Authoriz
 				.attribute(ATTR_GRANTED_SCOPE, ctx.approvedScope())
 				.attribute(ATTR_SELECTED_USAGE_POINT_IDS, serializeUuids(ctx.selectedUsagePointIds()))
 				.attribute(ATTR_CORRELATION_ID, ctx.correlationId());
-		if (ctx.customerResourceUri() != null && !ctx.customerResourceUri().isBlank()) {
-			b.attribute(ATTR_CUSTOMER_RESOURCE_URI, ctx.customerResourceUri());
-		}
 		return b.build();
 	}
 

@@ -67,7 +67,6 @@ class SignedHandoffCodecTest {
 				"nonce-2",
 				"customer-42",
 				List.of(UUID.randomUUID(), UUID.randomUUID()),
-				"https://dc.example.com/.../Customer/abc",
 				SignedHandoff.Return.CONSENT_ALLOW,
 				"FB=4_5_15;IntervalDuration=3600");
 
@@ -78,7 +77,7 @@ class SignedHandoffCodecTest {
 	}
 
 	@Test
-	void return_withDenyAndNoCustomerUri_roundTrips() {
+	void return_withDeny_roundTrips() {
 		SignedHandoff.Return original = SignedHandoff.Return.of(
 				"corr-2",
 				NOW,
@@ -86,7 +85,6 @@ class SignedHandoffCodecTest {
 				"nonce-3",
 				"customer-42",
 				List.of(),
-				null,
 				SignedHandoff.Return.CONSENT_DENY,
 				null);
 

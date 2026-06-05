@@ -74,8 +74,7 @@ class GrantBackchannelTokenCustomizerTest {
 	void withGrantContextWritesClaims() {
 		OAuth2Authorization auth = authorizationWithGrantContext(
 				"corr-9", 42L, "FB_1;FB_4_5",
-				UP_1 + ";" + UP_2,
-				"https://dc.example/RetailCustomer/42");
+				UP_1 + ";" + UP_2);
 
 		when(client.provision(any())).thenReturn(new BackchannelResponse(
 				AUTH_ID, RES_SUB_ID, CUST_SUB_ID,
@@ -93,10 +92,8 @@ class GrantBackchannelTokenCustomizerTest {
 				.extracting(BackchannelRequest::correlationId,
 						BackchannelRequest::clientId,
 						BackchannelRequest::grantedScope,
-						BackchannelRequest::retailCustomerId,
-						BackchannelRequest::customerResourceUri)
-				.containsExactly("corr-9", "tp-1", "FB_1;FB_4_5", 42L,
-						"https://dc.example/RetailCustomer/42");
+						BackchannelRequest::retailCustomerId)
+				.containsExactly("corr-9", "tp-1", "FB_1;FB_4_5", 42L);
 		assertThat(sent.selectedUsagePointIds()).containsExactly(UP_1, UP_2);
 
 		Map<String, Object> claims = ctx.getClaims().build().getClaims();
@@ -127,7 +124,7 @@ class GrantBackchannelTokenCustomizerTest {
 	@DisplayName("back-channel failure surfaces as OAuth2AuthenticationException(server_error)")
 	void backchannelFailureSurfacesAsOAuth2Error() {
 		OAuth2Authorization auth = authorizationWithGrantContext(
-				"corr-fail", 7L, "FB_1", "", null);
+				"corr-fail", 7L, "FB_1", "");
 		when(client.provision(any())).thenThrow(new DataCustodianBackchannelException("DC 503"));
 
 		OAuth2TokenClaimsContext ctx = buildContext(auth);
@@ -144,7 +141,7 @@ class GrantBackchannelTokenCustomizerTest {
 	@DisplayName("response with only resource URI (PII-less grant): customer claim omitted")
 	void piiLessGrantOmitsCustomerClaim() {
 		OAuth2Authorization auth = authorizationWithGrantContext(
-				"corr-pii-less", 8L, "FB_1", UP_1.toString(), null);
+				"corr-pii-less", 8L, "FB_1", UP_1.toString());
 		when(client.provision(any())).thenReturn(new BackchannelResponse(
 				AUTH_ID, RES_SUB_ID, null,
 				"https://dc.example/Subscription/" + RES_SUB_ID,
@@ -165,7 +162,7 @@ class GrantBackchannelTokenCustomizerTest {
 	@DisplayName("refresh-token customization: skipped")
 	void refreshTokenSkipped() {
 		OAuth2Authorization auth = authorizationWithGrantContext(
-				"corr-ref", 1L, "FB_1", "", null);
+				"corr-ref", 1L, "FB_1", "");
 
 		OAuth2TokenClaimsContext ctx = OAuth2TokenClaimsContext
 				.with(OAuth2TokenClaimsSet.builder())
@@ -199,8 +196,7 @@ class GrantBackchannelTokenCustomizerTest {
 	}
 
 	private static OAuth2Authorization authorizationWithGrantContext(String cid, long retailCustomerId,
-																	 String scope, String selectedUps,
-																	 String customerResourceUri) {
+																	 String scope, String selectedUps) {
 		OAuth2Authorization.Builder b = OAuth2Authorization.withRegisteredClient(registeredClient())
 				.id("auth-" + cid)
 				.principalName(String.valueOf(retailCustomerId))
@@ -211,10 +207,6 @@ class GrantBackchannelTokenCustomizerTest {
 				.attribute(GrantContextEnrichingAuthorizationService.ATTR_GRANTED_SCOPE, scope)
 				.attribute(GrantContextEnrichingAuthorizationService.ATTR_SELECTED_USAGE_POINT_IDS,
 						selectedUps == null ? "" : selectedUps);
-		if (customerResourceUri != null) {
-			b.attribute(GrantContextEnrichingAuthorizationService.ATTR_CUSTOMER_RESOURCE_URI,
-					customerResourceUri);
-		}
 		return b.build();
 	}
 

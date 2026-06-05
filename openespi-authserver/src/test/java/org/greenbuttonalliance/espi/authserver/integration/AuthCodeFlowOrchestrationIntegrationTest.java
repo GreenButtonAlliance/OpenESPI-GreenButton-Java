@@ -79,7 +79,6 @@ class AuthCodeFlowOrchestrationIntegrationTest extends AbstractAuthserverIntegra
 	private static final String REDIRECT_URI = "https://tp.example/cb";
 	private static final String SCOPE = "FB_1";
 	private static final String CUSTOMER_ID = "42";
-	private static final String CUSTOMER_RESOURCE_URI = "https://dc.example/RetailCustomer/42";
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -148,7 +147,6 @@ class AuthCodeFlowOrchestrationIntegrationTest extends AbstractAuthserverIntegra
 				UUID.randomUUID().toString().replace("-", ""), // single-use nonce
 				CUSTOMER_ID,
 				List.of(selectedUsagePoint),
-				CUSTOMER_RESOURCE_URI,
 				SignedHandoff.Return.CONSENT_ALLOW,
 				SCOPE));
 
@@ -175,7 +173,7 @@ class AuthCodeFlowOrchestrationIntegrationTest extends AbstractAuthserverIntegra
 		assertThat(code).isNotBlank();
 
 		// 3) Exchange the code at /oauth2/token -> back-channel fires, response augmented with URIs.
-		mockMvc.perform(post("/oauth2/token")
+		MvcResult tokenResult = mockMvc.perform(post("/oauth2/token")
 						.with(httpBasic(clientId, clientSecret))
 						.param("grant_type", "authorization_code")
 						.param("code", code)
@@ -190,7 +188,10 @@ class AuthCodeFlowOrchestrationIntegrationTest extends AbstractAuthserverIntegra
 				// non-standard and removed in #160.
 				.andExpect(jsonPath("$.authorization_id").doesNotExist())
 				.andExpect(jsonPath("$.resource_subscription_id").doesNotExist())
-				.andExpect(jsonPath("$.customer_subscription_id").doesNotExist());
+				.andExpect(jsonPath("$.customer_subscription_id").doesNotExist())
+				.andReturn();
+		String accessToken = new com.fasterxml.jackson.databind.ObjectMapper()
+				.readTree(tokenResult.getResponse().getContentAsString()).get("access_token").asText();
 
 		// The back-channel was called with the customer-selection context carried through the flow.
 		ArgumentCaptor<BackchannelRequest> captor = ArgumentCaptor.forClass(BackchannelRequest.class);
@@ -201,7 +202,22 @@ class AuthCodeFlowOrchestrationIntegrationTest extends AbstractAuthserverIntegra
 		assertThat(sent.grantedScope()).isEqualTo(SCOPE);
 		assertThat(sent.retailCustomerId()).isEqualTo(42L);
 		assertThat(sent.selectedUsagePointIds()).containsExactly(selectedUsagePoint);
-		assertThat(sent.customerResourceUri()).isEqualTo(CUSTOMER_RESOURCE_URI);
+
+		// 4) Introspection (#160 follow-up): /oauth2/introspect must surface the SAME ESPI URI claims
+		//    + active + FB-grammar scope, and must NOT carry the removed *_id fields. (Verifies the C4
+		//    claims actually reach introspection, not just the /oauth2/token response.)
+		mockMvc.perform(post("/oauth2/introspect")
+						.with(httpBasic(clientId, clientSecret))
+						.param("token", accessToken))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.active").value(true))
+				.andExpect(jsonPath("$.scope").value(SCOPE))
+				.andExpect(jsonPath("$.resourceURI").value(resourceUri))
+				.andExpect(jsonPath("$.authorizationURI").value(authorizationUri))
+				.andExpect(jsonPath("$.customerResourceURI").value(customerResourceUri))
+				.andExpect(jsonPath("$.authorization_id").doesNotExist())
+				.andExpect(jsonPath("$.resource_subscription_id").doesNotExist())
+				.andExpect(jsonPath("$.customer_subscription_id").doesNotExist());
 	}
 
 	@Test

@@ -106,8 +106,6 @@ public class GrantBackchannelTokenCustomizer implements OAuth2TokenCustomizer<OA
 				GrantContextEnrichingAuthorizationService.ATTR_CORRELATION_ID);
 		String selectedUpsSerialized = authorization.getAttribute(
 				GrantContextEnrichingAuthorizationService.ATTR_SELECTED_USAGE_POINT_IDS);
-		String customerResourceUri = authorization.getAttribute(
-				GrantContextEnrichingAuthorizationService.ATTR_CUSTOMER_RESOURCE_URI);
 
 		String clientId = context.getRegisteredClient().getClientId();
 		List<UUID> selectedUps = GrantContextEnrichingAuthorizationService
@@ -118,8 +116,7 @@ public class GrantBackchannelTokenCustomizer implements OAuth2TokenCustomizer<OA
 				clientId,
 				grantedScope,
 				Long.valueOf(retailCustomerIdStr),
-				selectedUps,
-				customerResourceUri);
+				selectedUps);
 
 		BackchannelResponse response;
 		try {

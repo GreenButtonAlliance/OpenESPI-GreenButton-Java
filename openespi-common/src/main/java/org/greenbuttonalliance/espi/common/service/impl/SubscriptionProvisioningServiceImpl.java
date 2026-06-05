@@ -92,14 +92,6 @@ public class SubscriptionProvisioningServiceImpl implements SubscriptionProvisio
 			throw new IllegalArgumentException(
 					"Grant must include at least one selected usage point OR a Customer/PII FB scope");
 		}
-		if (includesPii && (command.customerResourceUri() == null || command.customerResourceUri().isBlank())) {
-			throw new IllegalArgumentException(
-					"customer_resource_uri is required when scope includes a Customer/PII FB (54-62)");
-		}
-		if (!includesPii && command.customerResourceUri() != null && !command.customerResourceUri().isBlank()) {
-			throw new IllegalArgumentException(
-					"customer_resource_uri must be absent when scope does not include a Customer/PII FB");
-		}
 
 		AuthorizationEntity authorization = newAuthorization(command, application, customer, includesPii);
 
@@ -173,9 +165,7 @@ public class SubscriptionProvisioningServiceImpl implements SubscriptionProvisio
 		authorization.setStatus(AuthorizationEntity.STATUS_ACTIVE);
 		if (includesPii) {
 			// Build the canonical ESPI Batch/RetailCustomer URI from the retail-customer id DC already
-			// holds, rather than trusting the round-tripped handoff value (#160). The handoff's
-			// customer_resource_uri is now vestigial — removing it from the back-channel request/handoff
-			// is a follow-up structural cleanup.
+			// holds (#160). DC owns this value end-to-end; it is never round-tripped through the AS.
 			authorization.setCustomerResourceURI(
 					EspiBatchUri.batchRetailCustomer(resourceBaseUri, command.retailCustomerId()));
 		}
