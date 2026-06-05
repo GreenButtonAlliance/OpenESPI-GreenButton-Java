@@ -28,7 +28,6 @@ import org.greenbuttonalliance.espi.common.service.NotificationService;
 import org.greenbuttonalliance.espi.common.service.SubscriptionService;
 import org.greenbuttonalliance.espi.common.uri.EspiBatchUri;
 import org.greenbuttonalliance.espi.common.xml.BatchListXmlCodec;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -54,26 +53,18 @@ public class NotificationServiceImpl implements NotificationService {
 	private final SubscriptionService subscriptionService;
 
 	/**
-	 * Production constructor. Builds a standalone {@link RestClient} for posting ESPI
-	 * {@code BatchList} notifications to Third Party {@code thirdPartyNotifyUri} endpoints.
-	 * Replaces the legacy {@code RestTemplate} (#158).
+	 * Builds the {@link RestClient} once from the autoconfigured {@link RestClient.Builder} for
+	 * posting ESPI {@code BatchList} notifications to Third Party {@code thirdPartyNotifyUri}
+	 * endpoints. Replaces the legacy {@code RestTemplate} (#158).
+	 *
+	 * <p>This is the sole constructor, so Spring selects it for injection without {@code @Autowired}.
+	 * Tests pass their own {@code RestClient.builder()} (e.g. pointed at a stub receiver).</p>
 	 */
-	@Autowired
-	public NotificationServiceImpl(AuthorizationRepository authorizationRepository,
-								   AuthorizationService authorizationService,
-								   SubscriptionService subscriptionService) {
-		this(RestClient.create(), authorizationRepository, authorizationService, subscriptionService);
-	}
-
-	/**
-	 * Test/seam constructor allowing a pre-configured {@link RestClient} (e.g. pointed at a
-	 * stub receiver) to be injected.
-	 */
-	public NotificationServiceImpl(RestClient restClient,
+	public NotificationServiceImpl(RestClient.Builder restClientBuilder,
 								   AuthorizationRepository authorizationRepository,
 								   AuthorizationService authorizationService,
 								   SubscriptionService subscriptionService) {
-		this.restClient = restClient;
+		this.restClient = restClientBuilder.build();
 		this.authorizationRepository = authorizationRepository;
 		this.authorizationService = authorizationService;
 		this.subscriptionService = subscriptionService;
