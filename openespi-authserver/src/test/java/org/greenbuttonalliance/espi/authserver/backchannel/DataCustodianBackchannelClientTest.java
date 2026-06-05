@@ -18,6 +18,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
 
@@ -33,6 +35,12 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
  * MockRestServiceServer-driven coverage of {@link DataCustodianBackchannelClient}. Verifies the
  * wire request shape (URL, method, JSON body), happy-path response parsing, and the four failure
  * modes the client translates into {@link DataCustodianBackchannelException}.
+ *
+ * <p>The happy path is the AS <em>consumer</em> side of the AS↔DC back-channel wire contract
+ * (Contract 1 of #150): it asserts the client emits exactly the shared
+ * {@code contracts/backchannel-subscription-request.json} and correctly parses
+ * {@code contracts/backchannel-subscription-response.json}. The DC provider test
+ * ({@code BackchannelWireContractTest}) binds the same fixtures, so neither side can drift.</p>
  */
 @DisplayName("DataCustodianBackchannelClient")
 class DataCustodianBackchannelClientTest {
@@ -41,6 +49,8 @@ class DataCustodianBackchannelClientTest {
 	private static final UUID AUTH_ID = UUID.fromString("11111111-1111-5111-8111-111111111111");
 	private static final UUID RES_SUB_ID = UUID.fromString("22222222-2222-5222-8222-222222222222");
 	private static final UUID CUST_SUB_ID = UUID.fromString("33333333-3333-5333-8333-333333333333");
+	private static final String RESOURCE_BASE =
+			"https://utilityapi.com/DataCustodian/espi/1_1/resource";
 
 	private RestClient.Builder builder;
 	private MockRestServiceServer server;
@@ -54,35 +64,22 @@ class DataCustodianBackchannelClientTest {
 	}
 
 	@Test
-	@DisplayName("provisions and parses the response on 201 happy path")
-	void happyPath() {
+	@DisplayName("provisions and parses the response on 201 happy path (shared contract fixtures)")
+	void happyPath() throws Exception {
 		server.expect(requestTo("http://dc.example/internal/backchannel/v1/subscriptions"))
 				.andExpect(method(org.springframework.http.HttpMethod.POST))
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON))
-				.andExpect(content().json("""
-						{
-						  "correlation_id": "corr-1",
-						  "client_id": "tp-1",
-						  "granted_scope": "FB_1;FB_4_5",
-						  "retail_customer_id": 42,
-						  "selected_usage_point_ids": ["%s"]
-						}
-						""".formatted(UP_1)))
+				// AS consumer must emit exactly the shared request contract.
+				.andExpect(content().json(readContract("backchannel-subscription-request.json")))
 				.andRespond(withStatus(HttpStatus.CREATED)
 						.contentType(MediaType.APPLICATION_JSON)
-						.body("""
-								{
-								  "authorization_id": "%s",
-								  "resource_subscription_id": "%s",
-								  "customer_subscription_id": "%s",
-								  "resource_uri": "https://dc.example/Subscription/%s",
-								  "authorization_uri": "https://dc.example/Authorization/%s",
-								  "customer_resource_uri": "https://dc.example/RetailCustomer/42/Customer/%s"
-								}
-								""".formatted(AUTH_ID, RES_SUB_ID, CUST_SUB_ID, RES_SUB_ID, AUTH_ID, CUST_SUB_ID)));
+						// ...and correctly parse the shared response contract.
+						.body(readContract("backchannel-subscription-response.json")));
 
 		BackchannelResponse response = client.provision(new BackchannelRequest(
-				"corr-1", "tp-1", "FB_1;FB_4_5", 42L, List.of(UP_1)));
+				"corr-7f3a1c20", "third_party",
+				"FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13",
+				42L, List.of(UP_1)));
 
 		assertThat(response)
 				.extracting(BackchannelResponse::authorizationId,
@@ -92,9 +89,9 @@ class DataCustodianBackchannelClientTest {
 						BackchannelResponse::authorizationUri,
 						BackchannelResponse::customerResourceUri)
 				.containsExactly(AUTH_ID, RES_SUB_ID, CUST_SUB_ID,
-						"https://dc.example/Subscription/" + RES_SUB_ID,
-						"https://dc.example/Authorization/" + AUTH_ID,
-						"https://dc.example/RetailCustomer/42/Customer/" + CUST_SUB_ID);
+						RESOURCE_BASE + "/Batch/Subscription/" + RES_SUB_ID,
+						RESOURCE_BASE + "/Authorization/" + AUTH_ID,
+						RESOURCE_BASE + "/Batch/RetailCustomer/42");
 
 		server.verify();
 	}
@@ -140,5 +137,16 @@ class DataCustodianBackchannelClientTest {
 				new BackchannelRequest("c", "tp", "FB_1", 1L, List.of())))
 				.isInstanceOf(DataCustodianBackchannelException.class)
 				.hasMessageContaining("418");
+	}
+
+	/** Reads a shared wire-contract fixture from the repo-root {@code contracts/} directory. */
+	private static String readContract(String name) throws Exception {
+		for (Path candidate : new Path[] { Path.of("..", "contracts"), Path.of("contracts") }) {
+			if (Files.isDirectory(candidate)) {
+				return Files.readString(candidate.resolve(name));
+			}
+		}
+		throw new IllegalStateException(
+				"contracts/ directory not found from " + Path.of("").toAbsolutePath());
 	}
 }

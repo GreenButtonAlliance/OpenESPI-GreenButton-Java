@@ -1,0 +1,7 @@
+{
+  "correlation_id": "corr-7f3a1c20",
+  "client_id": "third_party",
+  "granted_scope": "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13",
+  "retail_customer_id": 42,
+  "selected_usage_point_ids": ["00000000-0000-5000-8000-000000000001"]
+}

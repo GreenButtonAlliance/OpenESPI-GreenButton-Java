@@ -42,6 +42,35 @@ reproduce that standard shape for the two grant types:
 UUIDs/ids/tokens in the fixtures are illustrative; the contract is the **shape** — field names,
 the `Batch/{Subscription|Bulk|RetailCustomer}` URI forms, and the ESPI `FB=...` scope grammar.
 
+### AS → DC back-channel subscription provisioning (JSON)
+
+At token-mint time the Authorization Server calls the Data Custodian to provision the
+Authorization + Subscription(s) the customer approved on the DC-hosted Authorization Screen
+(`POST {dc}/internal/backchannel/v1/subscriptions`, `201 Created` on success). This is an
+**implementation** contract (not part of the ESPI standard). The introspection / token-response
+contract above (#160) is the ESPI-standard companion; together they are "#150".
+
+| File | Direction | Bound by |
+|------|-----------|----------|
+| `backchannel-subscription-request.json` | AS → DC request | AS consumer / DC provider |
+| `backchannel-subscription-response.json` | DC → AS `201` response | AS consumer / DC provider |
+
+- Request fields: `correlation_id`, `client_id`, `granted_scope` (ESPI `FB=...` grammar),
+  `retail_customer_id`, `selected_usage_point_ids`.
+- Response fields: `authorization_id`, `resource_subscription_id`, `customer_subscription_id`,
+  `resource_uri`, `authorization_uri`, `customer_resource_uri`. The three `*_uri` fields are the
+  canonical `Batch/...` / `Authorization/...` forms built by `EspiBatchUri`; the AS surfaces these
+  (not the internal `*_id` fields) in the ESPI token/introspection body.
+- **Provider** (DC `SubscriptionProvisioningController` / `SubscriptionProvisioningServiceImpl`) —
+  `BackchannelWireContractTest` asserts DC consumes the request shape and produces the response
+  shape (URIs via `EspiBatchUri`, scope via `EspiScope`).
+- **Consumer** (AS `DataCustodianBackchannelClient`) — `DataCustodianBackchannelClientTest` asserts
+  the client emits the request fixture and parses the response fixture.
+
+> The AS keeps its own copy of these record DTOs (`BackchannelRequest`/`BackchannelResponse`) — the
+> Authorization Server does not depend on `openespi-common`. The shared fixtures are what keep the
+> two independent DTO copies in sync.
+
 ### DC → TP notification (BatchList, XML)
 
 When new/updated data is available, the Data Custodian POSTs an ESPI `BatchList` document to
