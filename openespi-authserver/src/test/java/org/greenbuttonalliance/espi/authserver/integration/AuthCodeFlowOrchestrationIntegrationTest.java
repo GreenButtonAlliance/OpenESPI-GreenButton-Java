@@ -79,7 +79,6 @@ class AuthCodeFlowOrchestrationIntegrationTest extends AbstractAuthserverIntegra
 	private static final String REDIRECT_URI = "https://tp.example/cb";
 	private static final String SCOPE = "FB_1";
 	private static final String CUSTOMER_ID = "42";
-	private static final String CUSTOMER_RESOURCE_URI = "https://dc.example/RetailCustomer/42";
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -148,7 +147,6 @@ class AuthCodeFlowOrchestrationIntegrationTest extends AbstractAuthserverIntegra
 				UUID.randomUUID().toString().replace("-", ""), // single-use nonce
 				CUSTOMER_ID,
 				List.of(selectedUsagePoint),
-				CUSTOMER_RESOURCE_URI,
 				SignedHandoff.Return.CONSENT_ALLOW,
 				SCOPE));
 
@@ -204,7 +202,6 @@ class AuthCodeFlowOrchestrationIntegrationTest extends AbstractAuthserverIntegra
 		assertThat(sent.grantedScope()).isEqualTo(SCOPE);
 		assertThat(sent.retailCustomerId()).isEqualTo(42L);
 		assertThat(sent.selectedUsagePointIds()).containsExactly(selectedUsagePoint);
-		assertThat(sent.customerResourceUri()).isEqualTo(CUSTOMER_RESOURCE_URI);
 
 		// 4) Introspection (#160 follow-up): /oauth2/introspect must surface the SAME ESPI URI claims
 		//    + active + FB-grammar scope, and must NOT carry the removed *_id fields. (Verifies the C4

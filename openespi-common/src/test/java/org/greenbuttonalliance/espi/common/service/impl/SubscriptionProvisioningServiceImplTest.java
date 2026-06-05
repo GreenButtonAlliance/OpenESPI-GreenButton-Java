@@ -60,7 +60,6 @@ class SubscriptionProvisioningServiceImplTest {
 	private static final String CLIENT_ID = "test-tp";
 	private static final String CORRELATION_ID = "corr-123";
 	private static final Long CUSTOMER_ID = 42L;
-	private static final String PII_CUSTOMER_URI = BASE_URI + "/RetailCustomer/42/Customer/xyz";
 
 	@Mock private AuthorizationRepository authorizationRepository;
 	@Mock private ApplicationInformationRepository applicationInformationRepository;
@@ -98,7 +97,7 @@ class SubscriptionProvisioningServiceImplTest {
 		when(applicationInformationRepository.findByClientId(CLIENT_ID)).thenReturn(Optional.of(application));
 
 		SubscriptionProvisionResult result = service.provisionFromGrant(new SubscriptionProvisionCommand(
-				CORRELATION_ID, CLIENT_ID, "FB=4_5_15", CUSTOMER_ID, List.of(upId), null));
+				CORRELATION_ID, CLIENT_ID, "FB=4_5_15", CUSTOMER_ID, List.of(upId)));
 
 		assertThat(result.resourceSubscriptionId()).isNotNull();
 		assertThat(result.customerSubscriptionId()).isNull();
@@ -130,7 +129,7 @@ class SubscriptionProvisioningServiceImplTest {
 		when(applicationInformationRepository.findByClientId(CLIENT_ID)).thenReturn(Optional.of(application));
 
 		SubscriptionProvisionResult result = service.provisionFromGrant(new SubscriptionProvisionCommand(
-				CORRELATION_ID, CLIENT_ID, "FB=4_5_15_54", CUSTOMER_ID, List.of(upId), PII_CUSTOMER_URI));
+				CORRELATION_ID, CLIENT_ID, "FB=4_5_15_54", CUSTOMER_ID, List.of(upId)));
 
 		assertThat(result.resourceSubscriptionId()).isNotNull();
 		assertThat(result.customerSubscriptionId()).isNotNull();
@@ -147,7 +146,7 @@ class SubscriptionProvisioningServiceImplTest {
 		when(applicationInformationRepository.findByClientId(CLIENT_ID)).thenReturn(Optional.of(application));
 
 		SubscriptionProvisionResult result = service.provisionFromGrant(new SubscriptionProvisionCommand(
-				CORRELATION_ID, CLIENT_ID, "FB=4_54", CUSTOMER_ID, List.of(), PII_CUSTOMER_URI));
+				CORRELATION_ID, CLIENT_ID, "FB=4_54", CUSTOMER_ID, List.of()));
 
 		assertThat(result.resourceSubscriptionId()).isNull();
 		assertThat(result.resourceUri()).isNull();
@@ -165,33 +164,9 @@ class SubscriptionProvisioningServiceImplTest {
 		when(applicationInformationRepository.findByClientId(CLIENT_ID)).thenReturn(Optional.of(application));
 
 		assertThatThrownBy(() -> service.provisionFromGrant(new SubscriptionProvisionCommand(
-				CORRELATION_ID, CLIENT_ID, "FB=4", CUSTOMER_ID, List.of(), null)))
+				CORRELATION_ID, CLIENT_ID, "FB=4", CUSTOMER_ID, List.of())))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessageContaining("at least one selected usage point OR a Customer/PII");
-	}
-
-	@Test
-	void piiScopeWithoutCustomerUri_isRejected() {
-		UUID upId = stubUsagePoint(customer);
-		when(retailCustomerRepository.findById(CUSTOMER_ID)).thenReturn(Optional.of(customer));
-		when(applicationInformationRepository.findByClientId(CLIENT_ID)).thenReturn(Optional.of(application));
-
-		assertThatThrownBy(() -> service.provisionFromGrant(new SubscriptionProvisionCommand(
-				CORRELATION_ID, CLIENT_ID, "FB=4_54", CUSTOMER_ID, List.of(upId), null)))
-				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessageContaining("customer_resource_uri is required");
-	}
-
-	@Test
-	void customerUriWithoutPiiScope_isRejected() {
-		UUID upId = stubUsagePoint(customer);
-		when(retailCustomerRepository.findById(CUSTOMER_ID)).thenReturn(Optional.of(customer));
-		when(applicationInformationRepository.findByClientId(CLIENT_ID)).thenReturn(Optional.of(application));
-
-		assertThatThrownBy(() -> service.provisionFromGrant(new SubscriptionProvisionCommand(
-				CORRELATION_ID, CLIENT_ID, "FB=4_5_15", CUSTOMER_ID, List.of(upId), PII_CUSTOMER_URI)))
-				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessageContaining("customer_resource_uri must be absent");
 	}
 
 	@Test
@@ -199,7 +174,7 @@ class SubscriptionProvisioningServiceImplTest {
 		when(applicationInformationRepository.findByClientId("ghost")).thenReturn(Optional.empty());
 
 		assertThatThrownBy(() -> service.provisionFromGrant(new SubscriptionProvisionCommand(
-				CORRELATION_ID, "ghost", "FB=4_5_15", CUSTOMER_ID, List.of(UUID.randomUUID()), null)))
+				CORRELATION_ID, "ghost", "FB=4_5_15", CUSTOMER_ID, List.of(UUID.randomUUID()))))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessageContaining("Unknown client_id");
 	}
@@ -210,7 +185,7 @@ class SubscriptionProvisioningServiceImplTest {
 		when(retailCustomerRepository.findById(999L)).thenReturn(Optional.empty());
 
 		assertThatThrownBy(() -> service.provisionFromGrant(new SubscriptionProvisionCommand(
-				CORRELATION_ID, CLIENT_ID, "FB=4_5_15", 999L, List.of(UUID.randomUUID()), null)))
+				CORRELATION_ID, CLIENT_ID, "FB=4_5_15", 999L, List.of(UUID.randomUUID()))))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessageContaining("Unknown retail_customer_id");
 	}
@@ -229,7 +204,7 @@ class SubscriptionProvisioningServiceImplTest {
 		when(usagePointRepository.findById(upId)).thenReturn(Optional.of(foreign));
 
 		assertThatThrownBy(() -> service.provisionFromGrant(new SubscriptionProvisionCommand(
-				CORRELATION_ID, CLIENT_ID, "FB=4_5_15", CUSTOMER_ID, List.of(upId), null)))
+				CORRELATION_ID, CLIENT_ID, "FB=4_5_15", CUSTOMER_ID, List.of(upId))))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessageContaining("does not belong to retail_customer_id");
 	}
@@ -242,7 +217,7 @@ class SubscriptionProvisioningServiceImplTest {
 		when(usagePointRepository.findById(upId)).thenReturn(Optional.empty());
 
 		assertThatThrownBy(() -> service.provisionFromGrant(new SubscriptionProvisionCommand(
-				CORRELATION_ID, CLIENT_ID, "FB=4_5_15", CUSTOMER_ID, List.of(upId), null)))
+				CORRELATION_ID, CLIENT_ID, "FB=4_5_15", CUSTOMER_ID, List.of(upId))))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessageContaining("Unknown usage_point_id");
 	}
@@ -253,22 +228,22 @@ class SubscriptionProvisioningServiceImplTest {
 		when(retailCustomerRepository.findById(CUSTOMER_ID)).thenReturn(Optional.of(customer));
 
 		assertThatThrownBy(() -> service.provisionFromGrant(new SubscriptionProvisionCommand(
-				CORRELATION_ID, CLIENT_ID, "FB=not_a_number", CUSTOMER_ID, List.of(), null)))
+				CORRELATION_ID, CLIENT_ID, "FB=not_a_number", CUSTOMER_ID, List.of())))
 				.isInstanceOf(IllegalArgumentException.class);
 	}
 
 	@Test
 	void blankRequiredFields_areRejected() {
 		assertThatThrownBy(() -> service.provisionFromGrant(new SubscriptionProvisionCommand(
-				CORRELATION_ID, "", "FB=4_5_15", CUSTOMER_ID, List.of(), null)))
+				CORRELATION_ID, "", "FB=4_5_15", CUSTOMER_ID, List.of())))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessageContaining("client_id");
 		assertThatThrownBy(() -> service.provisionFromGrant(new SubscriptionProvisionCommand(
-				CORRELATION_ID, CLIENT_ID, "  ", CUSTOMER_ID, List.of(), null)))
+				CORRELATION_ID, CLIENT_ID, "  ", CUSTOMER_ID, List.of())))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessageContaining("granted_scope");
 		assertThatThrownBy(() -> service.provisionFromGrant(new SubscriptionProvisionCommand(
-				CORRELATION_ID, CLIENT_ID, "FB=4_5_15", null, List.of(), null)))
+				CORRELATION_ID, CLIENT_ID, "FB=4_5_15", null, List.of())))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessageContaining("retail_customer_id");
 	}

@@ -61,8 +61,7 @@ public class SubscriptionProvisioningController {
 						request.clientId(),
 						request.grantedScope(),
 						request.retailCustomerId(),
-						request.selectedUsagePointIds(),
-						request.customerResourceUri()));
+						request.selectedUsagePointIds()));
 
 		SubscriptionProvisionResponse body = new SubscriptionProvisionResponse(
 				result.authorizationId(),

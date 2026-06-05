@@ -37,8 +37,7 @@ class GrantContextSessionStoreTest {
 	void putThenConsumeReturnsContextOnce() {
 		GrantContext ctx = new GrantContext(
 				"corr-1", 42L, "FB_1;FB_4_5",
-				List.of(UUID.fromString("00000000-0000-5000-8000-000000000001")),
-				"https://dc.example/cust/42");
+				List.of(UUID.fromString("00000000-0000-5000-8000-000000000001")));
 		store.put(session, ctx);
 
 		assertThat(store.consume(session)).isEqualTo(ctx);
@@ -55,7 +54,7 @@ class GrantContextSessionStoreTest {
 	@Test
 	@DisplayName("peek does not remove the entry")
 	void peekDoesNotRemove() {
-		GrantContext ctx = new GrantContext("corr-2", 99L, "FB_1", List.of(), null);
+		GrantContext ctx = new GrantContext("corr-2", 99L, "FB_1", List.of());
 		store.put(session, ctx);
 
 		assertThat(store.peek(session)).isEqualTo(ctx);

@@ -144,8 +144,6 @@ public class AuthorizeScreenController {
 				nonceService.generate(),
 				String.valueOf(customer.getId()),
 				List.copyOf(selectedUps),
-				/* customerResourceUri */ null, // DC produces the actual URI in PR B2's flow; the
-				                                // Return handoff just signals approvalshapes
 				consent,
 				approvedScope);
 

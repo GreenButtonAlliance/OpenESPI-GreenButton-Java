@@ -82,7 +82,7 @@ class DataCustodianBackchannelClientTest {
 								""".formatted(AUTH_ID, RES_SUB_ID, CUST_SUB_ID, RES_SUB_ID, AUTH_ID, CUST_SUB_ID)));
 
 		BackchannelResponse response = client.provision(new BackchannelRequest(
-				"corr-1", "tp-1", "FB_1;FB_4_5", 42L, List.of(UP_1), null));
+				"corr-1", "tp-1", "FB_1;FB_4_5", 42L, List.of(UP_1)));
 
 		assertThat(response)
 				.extracting(BackchannelResponse::authorizationId,
@@ -110,7 +110,7 @@ class DataCustodianBackchannelClientTest {
 								"""));
 
 		assertThatThrownBy(() -> client.provision(
-				new BackchannelRequest("c", "tp", "", 1L, List.of(), null)))
+				new BackchannelRequest("c", "tp", "", 1L, List.of())))
 				.isInstanceOf(DataCustodianBackchannelException.class)
 				.hasMessageContaining("400")
 				.hasMessageContaining("granted_scope is missing");
@@ -125,7 +125,7 @@ class DataCustodianBackchannelClientTest {
 						.body("{\"error\":\"internal\"}"));
 
 		assertThatThrownBy(() -> client.provision(
-				new BackchannelRequest("c", "tp", "FB_1", 1L, List.of(), null)))
+				new BackchannelRequest("c", "tp", "FB_1", 1L, List.of())))
 				.isInstanceOf(DataCustodianBackchannelException.class)
 				.hasMessageContaining("500");
 	}
@@ -137,7 +137,7 @@ class DataCustodianBackchannelClientTest {
 				.andRespond(withRawStatus(418).body("no coffee"));
 
 		assertThatThrownBy(() -> client.provision(
-				new BackchannelRequest("c", "tp", "FB_1", 1L, List.of(), null)))
+				new BackchannelRequest("c", "tp", "FB_1", 1L, List.of())))
 				.isInstanceOf(DataCustodianBackchannelException.class)
 				.hasMessageContaining("418");
 	}

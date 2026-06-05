@@ -36,7 +36,6 @@ public record BackchannelRequest(
 		@JsonProperty("client_id") String clientId,
 		@JsonProperty("granted_scope") String grantedScope,
 		@JsonProperty("retail_customer_id") Long retailCustomerId,
-		@JsonProperty("selected_usage_point_ids") List<UUID> selectedUsagePointIds,
-		@JsonProperty("customer_resource_uri") String customerResourceUri
+		@JsonProperty("selected_usage_point_ids") List<UUID> selectedUsagePointIds
 ) {
 }

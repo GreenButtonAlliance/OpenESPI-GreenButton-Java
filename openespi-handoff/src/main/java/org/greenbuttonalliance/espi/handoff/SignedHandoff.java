@@ -121,8 +121,6 @@ public sealed interface SignedHandoff permits SignedHandoff.Outbound, SignedHand
 	 * @param principal               DC's authenticated retail-customer identifier
 	 * @param selectedUsagePointIds   usage points the customer chose to share; empty list for a
 	 *                                PII-only or denied grant
-	 * @param customerResourceUri     absolute URI of the customer/PII resource the customer
-	 *                                approved sharing, or {@code null} if not granted
 	 * @param consent                 {@code "allow"} if the customer granted; {@code "deny"} if not
 	 * @param approvedScope           the effective scope after the customer's checkbox decisions
 	 *                                &mdash; subset of the originally-requested scope. The AS
@@ -144,7 +142,6 @@ public sealed interface SignedHandoff permits SignedHandoff.Outbound, SignedHand
 			@JsonProperty("nonce") String nonce,
 			@JsonProperty("sub") String principal,
 			@JsonProperty("up") List<UUID> selectedUsagePointIds,
-			@JsonProperty("cust_uri") String customerResourceUri,
 			@JsonProperty("consent") String consent,
 			@JsonProperty("approved_scope") String approvedScope
 	) implements SignedHandoff {
@@ -155,9 +152,9 @@ public sealed interface SignedHandoff permits SignedHandoff.Outbound, SignedHand
 		/** Convenience factory that fills in {@code version} and {@code direction}. */
 		public static Return of(String correlationId, Instant issuedAt, Instant expiresAt, String nonce,
 								String principal, List<UUID> selectedUsagePointIds,
-								String customerResourceUri, String consent, String approvedScope) {
+								String consent, String approvedScope) {
 			return new Return(CURRENT_VERSION, DIRECTION_RETURN, correlationId, issuedAt, expiresAt,
-					nonce, principal, selectedUsagePointIds, customerResourceUri, consent, approvedScope);
+					nonce, principal, selectedUsagePointIds, consent, approvedScope);
 		}
 	}
 }

@@ -42,14 +42,11 @@ import java.util.UUID;
  *                              narrowing); {@code ;}-delimited ESPI tokens
  * @param selectedUsagePointIds usage points the customer chose to share with the TP; may be empty
  *                              for grants that include only Customer/PII scope
- * @param customerResourceUri   absolute URI for the customer/PII resource; non-null iff the scope
- *                              includes a Customer/PII Function Block (54&ndash;62)
  */
 public record GrantContext(
 		String correlationId,
 		Long retailCustomerId,
 		String approvedScope,
-		List<UUID> selectedUsagePointIds,
-		String customerResourceUri
+		List<UUID> selectedUsagePointIds
 ) implements Serializable {
 }

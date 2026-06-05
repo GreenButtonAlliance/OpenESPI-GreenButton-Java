@@ -237,7 +237,7 @@ class AuthorizeContinueControllerTest {
 			Instant past = Instant.now().minusSeconds(3600);
 			SignedHandoff.Return expired = SignedHandoff.Return.of(
 					"corr-expired", past.minusSeconds(600), past, "nonce-x",
-					"42", List.of(), "https://dc.example/cust/1",
+					"42", List.of(),
 					SignedHandoff.Return.CONSENT_ALLOW, "FB_1");
 			String token = codec.encode(expired);
 
@@ -293,7 +293,6 @@ class AuthorizeContinueControllerTest {
 				UUID.randomUUID().toString().replace("-", ""),
 				"42",
 				List.of(),
-				"https://dc.example/RetailCustomer/1",
 				SignedHandoff.Return.CONSENT_ALLOW,
 				approvedScope);
 	}
@@ -305,7 +304,6 @@ class AuthorizeContinueControllerTest {
 				UUID.randomUUID().toString().replace("-", ""),
 				"42",
 				List.of(),
-				"https://dc.example/RetailCustomer/1",
 				SignedHandoff.Return.CONSENT_DENY,
 				null);
 	}

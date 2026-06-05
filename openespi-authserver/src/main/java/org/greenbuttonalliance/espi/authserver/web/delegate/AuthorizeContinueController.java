@@ -151,8 +151,7 @@ public class AuthorizeContinueController {
 				payload.correlationId(),
 				retailCustomerId,
 				payload.approvedScope(),
-				payload.selectedUsagePointIds(),
-				payload.customerResourceUri()));
+				payload.selectedUsagePointIds()));
 
 		// Redirect back to /oauth2/authorize with the original TP query params. Spring AS finds
 		// the saved authorization request (still in session), sees authenticated user + matching

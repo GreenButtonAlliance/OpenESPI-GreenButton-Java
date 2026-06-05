@@ -189,8 +189,7 @@ class SubscriptionProvisioningControllerTest {
 				  "client_id": "test-tp",
 				  "granted_scope": "FB=4",
 				  "retail_customer_id": 42,
-				  "selected_usage_point_ids": [],
-				  "customer_resource_uri": "https://x/Customer/1"
+				  "selected_usage_point_ids": []
 				}
 				""";
 		var parsed = objectMapper.readValue(json,
@@ -200,6 +199,5 @@ class SubscriptionProvisioningControllerTest {
 		assertThat(parsed.grantedScope()).isEqualTo("FB=4");
 		assertThat(parsed.retailCustomerId()).isEqualTo(42L);
 		assertThat(parsed.selectedUsagePointIds()).isEqualTo(List.of());
-		assertThat(parsed.customerResourceUri()).isEqualTo("https://x/Customer/1");
 	}
 }
