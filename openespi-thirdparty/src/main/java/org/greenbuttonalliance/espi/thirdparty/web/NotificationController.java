@@ -22,8 +22,10 @@ package org.greenbuttonalliance.espi.thirdparty.web;
 import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.BatchListEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
+import org.greenbuttonalliance.espi.common.dto.usage.BatchListDto;
 //  // TODO: Find correct Routes import
 import org.greenbuttonalliance.espi.common.service.*;
+import org.greenbuttonalliance.espi.common.xml.BatchListXmlCodec;
 import org.greenbuttonalliance.espi.thirdparty.service.WebClientService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +33,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.*;
-import org.springframework.oxm.jaxb.Jaxb2Marshaller;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -41,12 +42,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
-import jakarta.servlet.http.HttpServletResponse;
-import javax.xml.transform.stream.StreamSource;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.concurrent.CompletableFuture;
 
 @Controller
 public class NotificationController extends BaseController {
@@ -74,17 +70,15 @@ public class NotificationController extends BaseController {
 	@Autowired
 	private AuthorizationService authorizationService;
 
-	@Autowired(required = false)
-	public Jaxb2Marshaller marshaller;
-
 	@PostMapping("/espi/1_1/Notification") // TODO: Use Routes.THIRD_PARTY_NOTIFICATION when available
 	public ResponseEntity<Void> notification(@RequestBody String xmlPayload) {
 
 		try {
-			ByteArrayInputStream inputStream = new ByteArrayInputStream(xmlPayload.getBytes());
-			BatchListEntity batchList = (BatchListEntity) marshaller.unmarshal(new StreamSource(inputStream));
+			// Parse the ESPI BatchList through the single canonical codec (#158) — the wire type is
+			// the JAXB DTO, not the JPA entity (per the project's strict JAXB/JPA separation rule).
+			BatchListDto batchList = BatchListXmlCodec.unmarshal(xmlPayload);
 
-			batchListService.save(batchList);
+			batchListService.save(new BatchListEntity(batchList.getResources()));
 
 			for (String resourceUri : batchList.getResources()) {
 				doImportAsynchronously(resourceUri);
@@ -231,9 +225,5 @@ public class NotificationController extends BaseController {
 
 	public WebClient getWebClient() {
 		return webClient;
-	}
-
-	public void setMarshaller(Jaxb2Marshaller marshaller) {
-		this.marshaller = marshaller;
 	}
 }
