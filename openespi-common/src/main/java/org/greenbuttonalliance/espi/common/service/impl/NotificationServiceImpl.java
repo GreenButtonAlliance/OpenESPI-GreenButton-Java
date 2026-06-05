@@ -28,6 +28,7 @@ import org.greenbuttonalliance.espi.common.service.NotificationService;
 import org.greenbuttonalliance.espi.common.service.SubscriptionService;
 import org.greenbuttonalliance.espi.common.uri.EspiBatchUri;
 import org.greenbuttonalliance.espi.common.xml.BatchListXmlCodec;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -57,6 +58,7 @@ public class NotificationServiceImpl implements NotificationService {
 	 * {@code BatchList} notifications to Third Party {@code thirdPartyNotifyUri} endpoints.
 	 * Replaces the legacy {@code RestTemplate} (#158).
 	 */
+	@Autowired
 	public NotificationServiceImpl(AuthorizationRepository authorizationRepository,
 								   AuthorizationService authorizationService,
 								   SubscriptionService subscriptionService) {
