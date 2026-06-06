@@ -21,6 +21,8 @@ package org.greenbuttonalliance.espi.common.repositories.usage;
 
 import org.greenbuttonalliance.espi.common.domain.usage.SubscriptionEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -73,4 +75,15 @@ public interface SubscriptionRepository extends JpaRepository<SubscriptionEntity
 	 * @return list of subscriptions
 	 */
 	List<SubscriptionEntity> findByApplicationInformation_Id(UUID id);
+
+	/**
+	 * Returns the ids of the UsagePoints granted to a subscription, projected directly so callers
+	 * (e.g. the resource-server scope resolver, #119) can resolve a subscription's granted set
+	 * without traversing the lazy {@code usagePoints} collection outside a transaction.
+	 *
+	 * @param subscriptionId the subscription UUID
+	 * @return the granted UsagePoint ids (empty if none / unknown subscription)
+	 */
+	@Query("select up.id from SubscriptionEntity s join s.usagePoints up where s.id = :subscriptionId")
+	List<UUID> findUsagePointIdsBySubscriptionId(@Param("subscriptionId") UUID subscriptionId);
 }
