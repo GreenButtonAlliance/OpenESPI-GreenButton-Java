@@ -46,5 +46,8 @@ espi:
   datacustodian:
     base-url: http://localhost:8081/DataCustodian
   authorization-server:
-    issuer-uri: http://localhost:8080
-    jwk-set-uri: http://localhost:8080/.well-known/jwks.json
+    # Local sandbox AS runs on :9999. Opaque-token introspection (ESPI standard) points here;
+    # client-id/secret default to datacustodian/datacustodian-secret (seeded on the AS).
+    issuer-uri: http://localhost:9999
+    introspection-endpoint: http://localhost:9999/oauth2/introspect
+    jwk-set-uri: http://localhost:9999/.well-known/jwks.json  # unused (opaque tokens; no JWT/JWK)

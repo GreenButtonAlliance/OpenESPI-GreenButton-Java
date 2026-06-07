@@ -326,8 +326,26 @@ public class AuthorizationServerConfig {
                     .build())
                 .build();
 
+        // DataCustodian resource-server introspection client. The DC resource server calls
+        // POST /oauth2/introspect with these credentials (client_secret_basic) to validate opaque
+        // tokens; any registered confidential client may introspect. Matches DC's default
+        // espi.authorization-server.client-id / client-secret (datacustodian / datacustodian-secret),
+        // so the local sandbox introspects out of the box.
+        RegisteredClient dataCustodianIntrospection = RegisteredClient.withId(UUID.randomUUID().toString())
+                .clientId("datacustodian")
+                .clientName("DataCustodian Introspection")
+                .clientSecret("{noop}datacustodian-secret")
+                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                .clientIdIssuedAt(Instant.now())
+                .clientSettings(ClientSettings.builder()
+                    .requireAuthorizationConsent(false)
+                    .build())
+                .build();
+
         // Seed default clients, and reconcile existing ones to the code definition (see below).
-        initializeDefaultClients(repository, datacustodianAdmin, thirdPartyClient, thirdPartyAdmin);
+        initializeDefaultClients(repository, datacustodianAdmin, thirdPartyClient, thirdPartyAdmin,
+                dataCustodianIntrospection);
 
         return repository;
     }
