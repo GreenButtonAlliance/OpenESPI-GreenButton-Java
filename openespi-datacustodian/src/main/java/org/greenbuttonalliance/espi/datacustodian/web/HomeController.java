@@ -23,17 +23,18 @@ import org.greenbuttonalliance.espi.datacustodian.web.constants.Routes;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 
-// @Controller - COMMENTED OUT: UI not needed in resource server
-// @Component
+// Re-enabled (#173): the portal navbar links "Home" to "/"; without this the root 404s → /error →
+// resource-server chain → 401. Renders templates/home.html (public landing).
+@Controller
 public class HomeController {
 
 	@GetMapping(Routes.ROOT)
 	public String index() {
-		return "/home";
+		return "home";
 	}
 
 	@GetMapping(Routes.HOME)
 	public String home() {
-		return "/home";
+		return "home";
 	}
 }

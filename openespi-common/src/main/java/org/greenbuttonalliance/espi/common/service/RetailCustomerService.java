@@ -36,4 +36,6 @@ public interface RetailCustomerService {
 
 	RetailCustomerEntity findByUsername(String username);
 
+	void deleteById(Long retailCustomerId);
+
 }

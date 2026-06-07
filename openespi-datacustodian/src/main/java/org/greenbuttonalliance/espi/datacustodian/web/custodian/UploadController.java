@@ -22,6 +22,7 @@ package org.greenbuttonalliance.espi.datacustodian.web.custodian;
 
 import org.greenbuttonalliance.espi.common.repositories.usage.UsagePointRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.ObjectError;
@@ -29,13 +30,15 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.xml.sax.SAXException;
 
 import jakarta.xml.bind.JAXBException;
 import java.io.IOException;
 
-// @Controller - COMMENTED OUT: UI not needed in resource server
-// @Component
+// Re-enabled (#173): the custodian portal needs the bulk-upload admin page. The actual import is
+// still stubbed (ImportService was never migrated); the POST handler reports that to the user
+// rather than silently doing nothing.
+@Controller
+@PreAuthorize("hasRole('ROLE_CUSTODIAN')")
 @RequestMapping("/custodian/upload")
 public class UploadController {
 
@@ -55,7 +58,7 @@ public class UploadController {
 
 	@GetMapping
 	public String upload() {
-		return "/custodian/upload";
+		return "custodian/upload";
 	}
 
 	@PostMapping
@@ -66,13 +69,13 @@ public class UploadController {
 			// TODO: Implement ImportService
 			// importService.importData(uploadForm.getFile().getInputStream(), null);
 			result.addError(new ObjectError("uploadForm", "Import functionality not yet implemented"));
-			return "/custodian/upload";
+			return "custodian/upload";
 			
 		} catch (Exception e) {
 				
 			result.addError(new ObjectError("uploadForm",
 						"Unable to process file"));
-			return "/custodian/upload";
+			return "custodian/upload";
 		} 
 	}
 

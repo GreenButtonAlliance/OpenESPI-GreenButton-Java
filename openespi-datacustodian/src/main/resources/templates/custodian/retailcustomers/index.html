@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head}">
+    <title>Custodian Portal - Retail Customers</title>
+</head>
+
+<body>
+    <nav th:replace="~{fragments/layout :: custodianHeader}"></nav>
+
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mt-4">
+            <h2 class="mb-0">Retail Customers</h2>
+            <a th:href="@{/custodian/retailcustomers/form}" class="btn btn-primary">
+                <i class="bi bi-plus-lg"></i> Add new customer
+            </a>
+        </div>
+
+        <div th:if="${message}" class="alert alert-info mt-3" th:text="${message}"></div>
+
+        <div class="card mt-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                            <th>Role</th>
+                            <th>Enabled</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="customer : ${customers}">
+                            <td>
+                                <a th:href="@{/custodian/retailcustomers/{id}/show(id=${customer.id})}"
+                                   th:text="${customer.username}">username</a>
+                            </td>
+                            <td th:text="${customer.firstName}">First</td>
+                            <td th:text="${customer.lastName}">Last</td>
+                            <td><span class="badge bg-secondary" th:text="${customer.role}">ROLE_USER</span></td>
+                            <td>
+                                <span class="badge"
+                                      th:classappend="${customer.enabled} ? 'bg-success' : 'bg-danger'"
+                                      th:text="${customer.enabled} ? 'Yes' : 'No'">Yes</span>
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a th:href="@{/custodian/retailcustomers/{id}/show(id=${customer.id})}"
+                                       class="btn btn-outline-primary">View</a>
+                                    <a th:href="@{/custodian/retailcustomers/{id}/edit(id=${customer.id})}"
+                                       class="btn btn-outline-secondary">Edit</a>
+                                    <form th:action="@{/custodian/retailcustomers/{id}/delete(id=${customer.id})}"
+                                          method="post" class="d-inline"
+                                          onsubmit="return confirm('Delete this customer?');">
+                                        <button type="submit" class="btn btn-outline-danger">Delete</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(customers)}">
+                            <td colspan="6" class="text-center text-muted py-4">No retail customers found.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <hr class="my-5">
+        <footer th:replace="~{fragments/layout :: footer}"></footer>
+    </div>
+</body>
+</html>

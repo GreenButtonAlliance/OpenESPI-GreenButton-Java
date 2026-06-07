@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head}">
+    <title>Custodian Portal - Data Upload</title>
+</head>
+
+<body>
+    <nav th:replace="~{fragments/layout :: custodianHeader}"></nav>
+
+    <div class="container">
+        <h2 class="mt-4">Data Upload</h2>
+        <p class="text-muted">Upload customer usage data as an ESPI Atom (XML) document.</p>
+
+        <div th:if="${#fields.hasErrors('uploadForm.*')}" class="alert alert-danger">
+            <div th:each="err : ${#fields.errors('uploadForm.*')}" th:text="${err}">error</div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-body">
+                <form th:action="@{/custodian/upload}" th:object="${uploadForm}"
+                      method="post" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="file" class="form-label">File</label>
+                        <input type="file" id="file" name="file" class="form-control" required/>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-upload"></i> Upload
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <hr class="my-5">
+        <footer th:replace="~{fragments/layout :: footer}"></footer>
+    </div>
+</body>
+</html>
