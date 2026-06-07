@@ -23,8 +23,11 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-// @Controller - COMMENTED OUT: UI not needed in resource server
-// @Component
+// The custodian login flow (C2a) redirects to /custodian/home on success
+// (CustomerLoginSecurityConfiguration DEFAULT_SUCCESS_URL), so this landing controller must be
+// enabled — otherwise the post-login redirect 404s and is re-dispatched to /error, which the
+// resource-server chain returns as 401. Template: templates/custodian/home.html.
+@Controller
 @RequestMapping("/custodian/home")
 public class CustodianHomeController {
 
