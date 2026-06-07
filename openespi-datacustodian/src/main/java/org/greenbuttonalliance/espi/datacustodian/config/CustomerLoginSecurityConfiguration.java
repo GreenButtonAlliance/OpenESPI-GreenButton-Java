@@ -26,6 +26,7 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.config.Customizer;
@@ -88,7 +89,13 @@ public class CustomerLoginSecurityConfiguration {
 		provider.setPasswordEncoder(customerPasswordEncoder);
 
 		PathPatternRequestMatcher.Builder pp = PathPatternRequestMatcher.withDefaults();
+		// This session/form-login chain owns the human-facing UI surface. The public landing
+		// ("/", "/home") is included so the shared navbar "Home" link is session-aware and does not
+		// fall through to the stateless resource-server chain (which would 401 it). The ESPI API
+		// (/espi/**) stays on the resource-server chain.
 		RequestMatcher matcher = new OrRequestMatcher(
+				pp.matcher("/"),
+				pp.matcher("/home"),
 				pp.matcher("/login"),
 				pp.matcher("/logout"),
 				pp.matcher("/custodian/**"),
@@ -103,7 +110,7 @@ public class CustomerLoginSecurityConfiguration {
 				// session-stored token. Right shape for vanilla form login.
 				.csrf(Customizer.withDefaults())
 				.authorizeHttpRequests(authz -> authz
-						.requestMatchers(pp.matcher("/login")).permitAll()
+						.requestMatchers(pp.matcher("/"), pp.matcher("/home"), pp.matcher("/login")).permitAll()
 						.anyRequest().authenticated())
 				.formLogin(form -> form
 						.loginPage("/login")
@@ -136,10 +143,22 @@ public class CustomerLoginSecurityConfiguration {
 					getRedirectStrategy().sendRedirect(request, response, returnTo);
 				}
 				else {
-					getRedirectStrategy().sendRedirect(request, response, DEFAULT_SUCCESS_URL);
+					getRedirectStrategy().sendRedirect(request, response, landingFor(authentication));
 				}
 			}
 		};
+	}
+
+	/**
+	 * Role-aware default landing. Only custodians/admins may see {@code /custodian/home}
+	 * (it is {@code @PreAuthorize("hasRole('ROLE_CUSTODIAN')")}); a regular customer logging in
+	 * would otherwise be redirected there and denied, so they land on the public home page.
+	 */
+	private static String landingFor(Authentication authentication) {
+		boolean custodian = authentication.getAuthorities().stream()
+				.map(GrantedAuthority::getAuthority)
+				.anyMatch(a -> a.equals("ROLE_CUSTODIAN") || a.equals("ROLE_ADMIN"));
+		return custodian ? DEFAULT_SUCCESS_URL : "/";
 	}
 
 	/**

@@ -69,4 +69,9 @@ public class RetailCustomerServiceImpl implements RetailCustomerService {
 		}
 	}
 
+	@Override
+	public void deleteById(Long retailCustomerId) {
+		retailCustomerRepository.deleteById(retailCustomerId);
+	}
+
 }

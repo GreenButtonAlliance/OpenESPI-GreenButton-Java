@@ -21,9 +21,11 @@ package org.greenbuttonalliance.espi.datacustodian.config;
 
 import org.greenbuttonalliance.espi.common.scope.FunctionBlock;
 import org.greenbuttonalliance.espi.common.scope.FunctionBlockCategory;
+import org.springframework.boot.security.autoconfigure.web.servlet.PathRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authorization.AuthorityAuthorizationManager;
@@ -76,6 +78,19 @@ public class SecurityConfiguration {
     
     @Value("${espi.authorization-server.client-secret:datacustodian-secret}")
     private String clientSecret;
+
+    /**
+     * Exclude the portal's static web assets (CSS/JS/images/webjars/favicon) from the security
+     * filter chains entirely. These are public, non-sensitive files; routing them through the
+     * stateless OAuth2 resource-server chain otherwise 401s them and the admin/customer portal
+     * renders unstyled (#173). {@link PathRequest#toStaticResources()} covers Spring Boot's
+     * standard static locations.
+     */
+    @Bean
+    public WebSecurityCustomizer staticResourceSecurityCustomizer() {
+        return web -> web.ignoring().requestMatchers(
+                PathRequest.toStaticResources().atCommonLocations());
+    }
 
     /**
      * Main security filter chain for ESPI Resource Server endpoints.
@@ -140,6 +155,7 @@ public class SecurityConfiguration {
             .authorizeHttpRequests(authz -> authz
                 // Public endpoints
                 .requestMatchers(
+                    "/error",
                     "/actuator/health",
                     "/actuator/info",
                     "/api-docs/**",

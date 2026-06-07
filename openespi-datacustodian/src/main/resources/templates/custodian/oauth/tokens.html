@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head}">
+    <title>Custodian Portal - OAuth Tokens</title>
+</head>
+
+<body>
+    <nav th:replace="~{fragments/layout :: custodianHeader}"></nav>
+
+    <div class="container">
+        <h2 class="mt-4">OAuth Token Management</h2>
+        <p class="text-muted">Read-only view of authorization grants held by the Data Custodian.</p>
+
+        <div class="card mt-3">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Customer</th>
+                            <th>Third Party</th>
+                            <th>Scope</th>
+                            <th>Grant</th>
+                            <th>Status</th>
+                            <th>Access Token</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="token : ${tokens}">
+                            <td th:text="${token.customer()}">customer</td>
+                            <td th:text="${token.thirdParty()} ?: '—'">third party</td>
+                            <td><code th:text="${token.scope()} ?: '—'">scope</code></td>
+                            <td th:text="${token.grantType()}">grant</td>
+                            <td>
+                                <span class="badge"
+                                      th:classappend="${token.status() == 'ACTIVE'} ? 'bg-success'
+                                          : (${token.status() == 'REVOKED'} ? 'bg-danger'
+                                          : (${token.status() == 'EXPIRED'} ? 'bg-secondary' : 'bg-warning text-dark'))"
+                                      th:text="${token.status()}">STATUS</span>
+                            </td>
+                            <td><code th:text="${token.maskedToken()}">••••</code></td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(tokens)}">
+                            <td colspan="6" class="text-center text-muted py-4">No authorization grants found.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <hr class="my-5">
+        <footer th:replace="~{fragments/layout :: footer}"></footer>
+    </div>
+</body>
+</html>

@@ -19,45 +19,45 @@
         <!-- Custodian Management Cards -->
         <div class="row mt-5">
             <div class="col-lg-3 col-md-6 mb-4">
-                <div class="card">
-                    <div class="card-body text-center">
+                <div class="card h-100">
+                    <div class="card-body text-center d-flex flex-column">
                         <i class="bi bi-people fs-1 text-primary"></i>
                         <h5 class="card-title mt-3">Retail Customers</h5>
-                        <p class="card-text">Manage customer accounts and their usage points.</p>
-                        <a href="/custodian/retailcustomers" class="btn btn-primary">Manage Customers</a>
+                        <p class="card-text flex-grow-1">Manage customer accounts and their usage points.</p>
+                        <a th:href="@{/custodian/retailcustomers}" class="btn btn-primary">Manage Customers</a>
                     </div>
                 </div>
             </div>
 
             <div class="col-lg-3 col-md-6 mb-4">
-                <div class="card">
-                    <div class="card-body text-center">
+                <div class="card h-100">
+                    <div class="card-body text-center d-flex flex-column">
                         <i class="bi bi-key fs-1 text-success"></i>
                         <h5 class="card-title mt-3">OAuth Tokens</h5>
-                        <p class="card-text">Monitor and manage OAuth access tokens.</p>
-                        <a href="/custodian/oauth/tokens" class="btn btn-success">View Tokens</a>
+                        <p class="card-text flex-grow-1">Monitor and manage OAuth access tokens.</p>
+                        <a th:href="@{/custodian/oauth/tokens}" class="btn btn-success">View Tokens</a>
                     </div>
                 </div>
             </div>
 
             <div class="col-lg-3 col-md-6 mb-4">
-                <div class="card">
-                    <div class="card-body text-center">
+                <div class="card h-100">
+                    <div class="card-body text-center d-flex flex-column">
                         <i class="bi bi-upload fs-1 text-info"></i>
                         <h5 class="card-title mt-3">Data Upload</h5>
-                        <p class="card-text">Upload customer usage data in bulk.</p>
-                        <a href="/custodian/upload" class="btn btn-info">Upload Data</a>
+                        <p class="card-text flex-grow-1">Upload customer usage data in bulk.</p>
+                        <a th:href="@{/custodian/upload}" class="btn btn-info">Upload Data</a>
                     </div>
                 </div>
             </div>
 
             <div class="col-lg-3 col-md-6 mb-4">
-                <div class="card">
-                    <div class="card-body text-center">
+                <div class="card h-100">
+                    <div class="card-body text-center d-flex flex-column">
                         <i class="bi bi-gear fs-1 text-warning"></i>
                         <h5 class="card-title mt-3">System Settings</h5>
-                        <p class="card-text">Configure system-wide settings and preferences.</p>
-                        <a href="/custodian/settings" class="btn btn-warning">Settings</a>
+                        <p class="card-text flex-grow-1">Configure system-wide settings and preferences.</p>
+                        <a th:href="@{/custodian/settings}" class="btn btn-warning">Settings</a>
                     </div>
                 </div>
             </div>
@@ -133,8 +133,5 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
 </body>
 </html>

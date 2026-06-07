@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head}">
+    <title>Custodian Portal - Customer Detail</title>
+</head>
+
+<body>
+    <nav th:replace="~{fragments/layout :: custodianHeader}"></nav>
+
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mt-4">
+            <h2 class="mb-0" th:text="${retailCustomer.fullName}">Customer Name</h2>
+            <div class="d-flex gap-2">
+                <a th:href="@{/custodian/retailcustomers/{id}/edit(id=${retailCustomer.id})}"
+                   class="btn btn-outline-secondary"><i class="bi bi-pencil"></i> Edit</a>
+                <form th:action="@{/custodian/retailcustomers/{id}/delete(id=${retailCustomer.id})}"
+                      method="post"
+                      onsubmit="return confirm('Delete this customer?');">
+                    <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash"></i> Delete</button>
+                </form>
+                <a th:href="@{/custodian/retailcustomers}" class="btn btn-outline-primary">
+                    <i class="bi bi-arrow-left"></i> Back to list
+                </a>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header fw-semibold">Profile</div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-3">Username</dt>
+                    <dd class="col-sm-9" th:text="${retailCustomer.username}">username</dd>
+
+                    <dt class="col-sm-3">First Name</dt>
+                    <dd class="col-sm-9" th:text="${retailCustomer.firstName}">First</dd>
+
+                    <dt class="col-sm-3">Last Name</dt>
+                    <dd class="col-sm-9" th:text="${retailCustomer.lastName}">Last</dd>
+
+                    <dt class="col-sm-3">Email</dt>
+                    <dd class="col-sm-9" th:text="${retailCustomer.email} ?: '—'">email</dd>
+
+                    <dt class="col-sm-3">Phone</dt>
+                    <dd class="col-sm-9" th:text="${retailCustomer.phone} ?: '—'">phone</dd>
+
+                    <dt class="col-sm-3">Role</dt>
+                    <dd class="col-sm-9">
+                        <span class="badge bg-secondary" th:text="${retailCustomer.role}">ROLE_USER</span>
+                    </dd>
+
+                    <dt class="col-sm-3">Enabled</dt>
+                    <dd class="col-sm-9">
+                        <span class="badge"
+                              th:classappend="${retailCustomer.enabled} ? 'bg-success' : 'bg-danger'"
+                              th:text="${retailCustomer.enabled} ? 'Yes' : 'No'">Yes</span>
+                    </dd>
+                </dl>
+            </div>
+        </div>
+
+        <div class="alert alert-secondary mt-4 mb-0">
+            <i class="bi bi-info-circle"></i>
+            Usage-point association from this screen is not yet wired (deferred — the association
+            write was not part of the resource-server migration).
+        </div>
+
+        <hr class="my-5">
+        <footer th:replace="~{fragments/layout :: footer}"></footer>
+    </div>
+</body>
+</html>

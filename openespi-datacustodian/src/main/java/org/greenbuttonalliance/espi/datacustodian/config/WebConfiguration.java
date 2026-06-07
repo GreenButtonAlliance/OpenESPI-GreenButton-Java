@@ -167,7 +167,19 @@ public class WebConfiguration implements WebMvcConfigurer {
         registry.addResourceHandler("/static/**")
             .addResourceLocations("classpath:/static/")
             .setCachePeriod(3600);
-        
+
+        // @EnableWebMvc disables Spring Boot's default static-resource mappings, so the portal's
+        // CSS/JS/images must be registered explicitly; otherwise the templates' /css and /js links
+        // 404 and the portal renders unstyled (#173). These paths are also security-ignored via the
+        // WebSecurityCustomizer in SecurityConfiguration.
+        registry.addResourceHandler("/css/**")
+            .addResourceLocations("classpath:/static/css/")
+            .setCachePeriod(3600);
+
+        registry.addResourceHandler("/js/**")
+            .addResourceLocations("classpath:/static/js/")
+            .setCachePeriod(3600);
+
         registry.addResourceHandler("/images/**")
             .addResourceLocations("classpath:/static/images/")
             .setCachePeriod(86400);
