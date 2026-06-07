@@ -17,6 +17,11 @@
     <!-- Favicon -->
     <link rel="icon" type="image/png" th:href="@{/images/favicon.png}">
 
+    <!-- Bootstrap bundle (incl. Popper). Loaded once here, deferred so it executes after the DOM is
+         parsed — every page that includes this head fragment gets working navbar dropdowns/collapse
+         without each template loading its own copy (double-loading breaks the dropdown toggle). -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" defer></script>
+
     <!-- Additional CSS block for page-specific styles -->
     <th:block th:fragment="additionalCss"></th:block>
 </head>

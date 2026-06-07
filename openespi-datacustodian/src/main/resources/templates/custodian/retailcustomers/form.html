@@ -8,7 +8,7 @@
     <nav th:replace="~{fragments/layout :: custodianHeader}"></nav>
 
     <div class="container">
-        <h2 class="mt-4" th:text="${editMode} ? 'Edit Retail Customer' : 'New Retail Customer'">Retail Customer</h2>
+        <h2 class="mt-4" th:text="${editMode} ? 'Edit User Account' : 'New User Account'">User Account</h2>
 
         <div class="card mt-4">
             <div class="card-body">
@@ -33,6 +33,13 @@
                                th:field="*{lastName}" th:errorclass="is-invalid"/>
                         <div class="invalid-feedback" th:if="${#fields.hasErrors('lastName')}"
                              th:errors="*{lastName}">Last name error</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="role" class="form-label">Account type</label>
+                        <select id="role" class="form-select" th:field="*{role}">
+                            <option value="ROLE_USER">Customer</option>
+                            <option value="ROLE_CUSTODIAN">Administrator (Custodian)</option>
+                        </select>
                     </div>
                     <div class="mb-3">
                         <label for="password" class="form-label">Password</label>

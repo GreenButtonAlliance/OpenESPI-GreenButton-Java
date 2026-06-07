@@ -138,6 +138,9 @@ public class RetailCustomerController {
 		existing.setUsername(form.getUsername());
 		existing.setFirstName(form.getFirstName());
 		existing.setLastName(form.getLastName());
+		if (form.getRole() != null && !form.getRole().isBlank()) {
+			existing.setRole(form.getRole());
+		}
 		if (form.getPassword() != null && !form.getPassword().isBlank()) {
 			existing.setPassword(customerPasswordEncoder.encode(form.getPassword()));
 		}
