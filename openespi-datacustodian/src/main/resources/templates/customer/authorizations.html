@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head}">
+    <title>Customer Portal - My Authorizations</title>
+</head>
+
+<body>
+    <nav th:replace="~{fragments/layout :: customerHeader}"></nav>
+
+    <div class="container">
+        <h2 class="mt-4">My Authorizations</h2>
+        <p class="text-muted">
+            Third parties you have granted access to your energy data. Revoke any you no longer want.
+        </p>
+
+        <div th:if="${message}" class="alert alert-info" th:text="${message}"></div>
+
+        <div class="card mt-3">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Third Party</th>
+                            <th>Shared Data (scope)</th>
+                            <th>Status</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="auth : ${authorizations}">
+                            <td th:text="${auth.thirdParty()} ?: '—'">Third Party</td>
+                            <td><code th:text="${auth.scope()} ?: '—'">scope</code></td>
+                            <td>
+                                <span class="badge"
+                                      th:classappend="${auth.status() == 'ACTIVE'} ? 'bg-success'
+                                          : (${auth.status() == 'REVOKED'} ? 'bg-danger'
+                                          : (${auth.status() == 'EXPIRED'} ? 'bg-secondary' : 'bg-warning text-dark'))"
+                                      th:text="${auth.status()}">STATUS</span>
+                            </td>
+                            <td class="text-end">
+                                <span th:if="${auth.terminal()}" class="text-muted small">—</span>
+                                <form th:unless="${auth.terminal()}"
+                                      th:action="@{/customer/authorizations/{id}/revoke(id=${auth.id()})}"
+                                      method="post" class="d-inline"
+                                      onsubmit="return confirm('Revoke this third party’s access to your data?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Revoke</button>
+                                </form>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(authorizations)}">
+                            <td colspan="4" class="text-center text-muted py-4">
+                                You have not granted access to any third parties.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <hr class="my-5">
+        <footer th:replace="~{fragments/layout :: footer}"></footer>
+    </div>
+</body>
+</html>

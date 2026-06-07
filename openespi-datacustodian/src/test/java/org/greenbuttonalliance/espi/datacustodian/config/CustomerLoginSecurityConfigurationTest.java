@@ -93,9 +93,11 @@ class CustomerLoginSecurityConfigurationTest {
 
 	@Test
 	void good_customer_credentials_authenticate() throws Exception {
+		// Role-aware landing (#173): a retail customer (ROLE_USER) lands on their self-service
+		// authorizations page, not the custodian-only dashboard.
 		mockMvc.perform(formLogin("/login").user(CUSTOMER_USERNAME).password(PASSWORD))
 				.andExpect(authenticated().withUsername(CUSTOMER_USERNAME))
-				.andExpect(redirectedUrl("/custodian/home"));
+				.andExpect(redirectedUrl("/customer/authorizations"));
 	}
 
 	@Test

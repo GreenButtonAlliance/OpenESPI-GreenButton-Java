@@ -99,6 +99,7 @@ public class CustomerLoginSecurityConfiguration {
 				pp.matcher("/login"),
 				pp.matcher("/logout"),
 				pp.matcher("/custodian/**"),
+				pp.matcher("/customer/**"),
 				pp.matcher("/oauth/authorize-screen/**"));
 
 		return http
@@ -158,7 +159,9 @@ public class CustomerLoginSecurityConfiguration {
 		boolean custodian = authentication.getAuthorities().stream()
 				.map(GrantedAuthority::getAuthority)
 				.anyMatch(a -> a.equals("ROLE_CUSTODIAN") || a.equals("ROLE_ADMIN"));
-		return custodian ? DEFAULT_SUCCESS_URL : "/";
+		// Custodians land on the admin dashboard; retail customers on their self-service
+		// authorizations page (#173).
+		return custodian ? DEFAULT_SUCCESS_URL : "/customer/authorizations";
 	}
 
 	/**
