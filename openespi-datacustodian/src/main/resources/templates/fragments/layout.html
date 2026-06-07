@@ -76,7 +76,11 @@
             <div class="collapse navbar-collapse" id="customerNav">
                 <ul class="navbar-nav me-auto">
                     <!-- Only the self-service authorizations page is migrated; Usage Points /
-                         Third Parties pages are not yet available, so no dead links are shown. -->
+                         Third Parties pages are not yet available, so no dead links are shown.
+                         A Home link is always present so no page is a dead end (#175). -->
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/}">Home</a>
+                    </li>
                     <li class="nav-item">
                         <a class="nav-link" th:href="@{/customer/authorizations}">My Authorizations</a>
                     </li>
@@ -109,6 +113,9 @@
 
             <div class="collapse navbar-collapse" id="custodianNav">
                 <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/}">Home</a>
+                    </li>
                     <li class="nav-item">
                         <a class="nav-link" th:href="@{/custodian/home}">Dashboard</a>
                     </li>
