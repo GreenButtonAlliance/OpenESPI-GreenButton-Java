@@ -37,7 +37,8 @@ spring:
   # Jackson JSON Configuration
   jackson:
     serialization:
-      write-dates-as-timestamps: false
+      # write-dates-as-timestamps removed: not a SerializationFeature in Jackson 3 (Spring Boot 4);
+      # date/time-as-timestamp handling moved to the Jackson 3 DateTime features.
       indent-output: true
     deserialization:
       fail-on-unknown-properties: false

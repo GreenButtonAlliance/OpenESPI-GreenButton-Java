@@ -127,6 +127,16 @@ public class SecurityConfiguration {
     }
 
     /**
+     * {@link RestClient.Builder} for components scanned from openespi-common (e.g.
+     * {@code NotificationServiceImpl}) that inject it. Spring Boot's RestClient autoconfiguration
+     * doesn't supply one in this context, so provide it explicitly.
+     */
+    @Bean
+    public org.springframework.web.client.RestClient.Builder restClientBuilder() {
+        return org.springframework.web.client.RestClient.builder();
+    }
+
+    /**
      * Legacy RestTemplate bean for backward compatibility.
      * TODO: Replace all RestTemplate usage with OAuth2-enabled WebClient.
      * @deprecated Use webClient() bean instead for OAuth2-aware HTTP calls.
