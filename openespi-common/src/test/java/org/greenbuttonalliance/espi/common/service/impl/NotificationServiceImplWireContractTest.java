@@ -126,4 +126,52 @@ class NotificationServiceImplWireContractTest {
 				.satisfies(uri ->
 						assertThat(EspiBatchUri.subscriptionId(uri)).contains(subscriptionId.toString()));
 	}
+
+	@Test
+	@DisplayName("notifyBatchList() POSTs all supplied resource URLs as one BatchList (#177)")
+	void notifyBatchListPostsAllResources() throws Exception {
+		String notifyUri = "http://" + stub.getAddress().getHostString()
+				+ ":" + stub.getAddress().getPort() + "/ThirdParty/espi/1_1/Notification";
+
+		java.util.List<String> urls = java.util.List.of(
+				DC_RESOURCE_BASE + "/ApplicationInformation/app-1",
+				DC_RESOURCE_BASE + "/Authorization",
+				DC_RESOURCE_BASE + "/Authorization/auth-1",
+				DC_RESOURCE_BASE + "/Subscription/sub-1");
+
+		NotificationServiceImpl service =
+				new NotificationServiceImpl(RestClient.builder(), null, null, null);
+		// Blank entries are dropped; the four real URLs must all be carried.
+		java.util.List<String> withBlank = new java.util.ArrayList<>(urls);
+		withBlank.add("  ");
+		service.notifyBatchList(notifyUri, withBlank);
+
+		assertThat(received.await(5, TimeUnit.SECONDS))
+				.as("TP stub must have received the notification POST").isTrue();
+		assertThat(capturedMethod.get()).isEqualTo("POST");
+		assertThat(capturedContentType.get()).startsWith("application/atom+xml");
+
+		BatchListDto sent = BatchListXmlCodec.unmarshal(capturedBody.get());
+		assertThat(sent.getResources()).containsExactlyElementsOf(urls);
+	}
+
+	@Test
+	@DisplayName("notifyBatchList() rejects a blank notification URI (#177)")
+	void notifyBatchListRejectsBlankUri() {
+		NotificationServiceImpl service =
+				new NotificationServiceImpl(RestClient.builder(), null, null, null);
+		assertThat(org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+				() -> service.notifyBatchList("  ", java.util.List.of("http://x/Subscription/1"))))
+				.hasMessageContaining("notification URL");
+	}
+
+	@Test
+	@DisplayName("notifyBatchList() rejects an empty resource list (#177)")
+	void notifyBatchListRejectsEmptyResources() {
+		NotificationServiceImpl service =
+				new NotificationServiceImpl(RestClient.builder(), null, null, null);
+		assertThat(org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+				() -> service.notifyBatchList("http://tp/Notification", java.util.List.of("   "))))
+				.hasMessageContaining("resource URL");
+	}
 }

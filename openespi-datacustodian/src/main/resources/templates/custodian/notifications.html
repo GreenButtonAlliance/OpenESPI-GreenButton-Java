@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head}">
+    <title>Custodian Portal - Notify Third Party</title>
+</head>
+
+<body>
+    <nav th:replace="~{fragments/layout :: custodianHeader}"></nav>
+
+    <div class="container">
+        <h2 class="mt-4">Notify Third Party</h2>
+        <p class="text-muted">
+            Compose an ESPI <code>BatchList</code> of resource URLs and POST it to a Third Party's
+            notification endpoint. Leave a field blank to omit that resource.
+        </p>
+
+        <div th:if="${message}" class="alert"
+             th:classappend="${messageType == 'success'} ? 'alert-success' : 'alert-danger'"
+             th:text="${message}">result</div>
+
+        <div class="card mt-3">
+            <div class="card-body">
+                <form th:action="@{/custodian/notifications/send}" th:object="${notifyForm}" method="post">
+                    <div class="mb-3">
+                        <label for="notificationUri" class="form-label">Third Party notification URL</label>
+                        <input type="url" id="notificationUri" class="form-control"
+                               th:field="*{notificationUri}" list="notifyUriOptions" required/>
+                        <datalist id="notifyUriOptions">
+                            <option th:each="uri : ${notifyUris}" th:value="${uri}"></option>
+                        </datalist>
+                        <div class="form-text">Registered third-party endpoints are suggested; you may edit.</div>
+                    </div>
+
+                    <hr>
+                    <h6 class="text-muted">BatchList resources</h6>
+
+                    <div class="mb-3">
+                        <label for="applicationInformationUrl" class="form-label">ApplicationInformation URL</label>
+                        <input type="text" id="applicationInformationUrl" class="form-control"
+                               th:field="*{applicationInformationUrl}"/>
+                    </div>
+                    <div class="mb-3">
+                        <label for="authorizationFeedUrl" class="form-label">Authorization feed URL</label>
+                        <input type="text" id="authorizationFeedUrl" class="form-control"
+                               th:field="*{authorizationFeedUrl}"/>
+                    </div>
+                    <div class="mb-3">
+                        <label for="authorizationEntryUrl" class="form-label">Authorization entry URL</label>
+                        <input type="text" id="authorizationEntryUrl" class="form-control"
+                               th:field="*{authorizationEntryUrl}"/>
+                    </div>
+                    <div class="mb-3">
+                        <label for="subscriptionUrl" class="form-label">Subscription URL</label>
+                        <input type="text" id="subscriptionUrl" class="form-control"
+                               th:field="*{subscriptionUrl}"/>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-send"></i> Send BatchList
+                        </button>
+                        <a th:href="@{/custodian/home}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <hr class="my-5">
+        <footer th:replace="~{fragments/layout :: footer}"></footer>
+    </div>
+</body>
+</html>
