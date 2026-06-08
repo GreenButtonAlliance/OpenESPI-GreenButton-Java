@@ -15,6 +15,11 @@ spring:
   
   jpa:
     show-sql: true
+    # Dev sandbox: the Third Party module ships no Flyway migrations yet, so let Hibernate create
+    # the schema (e.g. batch_lists) for local DC→TP notification testing. (Full TP schema/Flyway
+    # bring-up is tracked under #146.)
+    hibernate:
+      ddl-auto: update
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
