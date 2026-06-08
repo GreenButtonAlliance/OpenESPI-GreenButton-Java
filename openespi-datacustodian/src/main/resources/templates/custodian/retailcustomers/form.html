@@ -41,6 +41,11 @@
                             <option value="ROLE_CUSTODIAN">Administrator (Custodian)</option>
                         </select>
                     </div>
+                    <div class="form-check form-switch mb-3">
+                        <input type="checkbox" id="enabled" class="form-check-input" role="switch"
+                               th:field="*{enabled}"/>
+                        <label for="enabled" class="form-check-label">Enabled (account may sign in)</label>
+                    </div>
                     <div class="mb-3">
                         <label for="password" class="form-label">Password</label>
                         <input type="password" id="password" class="form-control"
