@@ -21,6 +21,7 @@ package org.greenbuttonalliance.espi.thirdparty.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -58,6 +59,11 @@ public class SecurityConfiguration {
         http
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/", "/home", "/login", "/css/**", "/js/**", "/images/**").permitAll()
+                // ESPI notification receipt: the Data Custodian POSTs a BatchList here without an
+                // OAuth token — this endpoint is secured at the transport layer (TLS), not with an
+                // OAuth access token. (The Third Party, as an OAuth client, presents its access token
+                // only when it later fetches the source URLs carried in the BatchList.)
+                .requestMatchers(HttpMethod.POST, "/espi/1_1/Notification").permitAll()
                 .requestMatchers("/h2-console/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )

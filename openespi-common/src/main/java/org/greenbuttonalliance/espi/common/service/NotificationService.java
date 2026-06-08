@@ -25,6 +25,7 @@ import org.greenbuttonalliance.espi.common.domain.usage.SubscriptionEntity;
 import org.springframework.stereotype.Service;
 
 import javax.xml.datatype.XMLGregorianCalendar;
+import java.util.List;
 
 @Service
 public interface NotificationService {
@@ -37,5 +38,17 @@ public interface NotificationService {
 	void notifyAllNeed();
 
 	void notify(ApplicationInformationEntity applicationInformation, Long bulkId);
+
+	/**
+	 * Send an ad-hoc ESPI {@code BatchList} of resource URLs to a Third Party notification endpoint,
+	 * <strong>synchronously</strong> (#177). Unlike the fire-and-forget {@code notify(...)} methods,
+	 * this surfaces failures to the caller so an admin UI can report success/error.
+	 *
+	 * @param thirdPartyNotificationUri the Third Party endpoint to POST the BatchList to
+	 * @param resourceUris              the resource URLs to include; blank entries are ignored
+	 * @throws IllegalArgumentException if the URI is blank or no usable resource URL is supplied
+	 * @throws RuntimeException         if the POST fails (connection/HTTP error)
+	 */
+	void notifyBatchList(String thirdPartyNotificationUri, List<String> resourceUris);
 
 }

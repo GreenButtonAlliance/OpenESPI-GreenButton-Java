@@ -261,6 +261,33 @@ public class NotificationServiceImpl implements NotificationService {
 
 
 	@Override
+	public void notifyBatchList(String thirdPartyNotificationUri, List<String> resourceUris) {
+		if (thirdPartyNotificationUri == null || thirdPartyNotificationUri.isBlank()) {
+			throw new IllegalArgumentException("Third Party notification URL is required");
+		}
+		List<String> resources = (resourceUris == null ? List.<String>of() : resourceUris).stream()
+				.filter(uri -> uri != null && !uri.isBlank())
+				.map(String::trim)
+				.toList();
+		if (resources.isEmpty()) {
+			throw new IllegalArgumentException("At least one resource URL is required");
+		}
+
+		// Synchronous send so the caller (admin UI) gets the outcome. retrieve() throws on a 4xx/5xx
+		// response and the underlying client throws on a connection failure.
+		String xml = BatchListXmlCodec.marshal(new BatchListDto(resources));
+		restClient.post()
+				.uri(thirdPartyNotificationUri)
+				.contentType(MediaType.APPLICATION_ATOM_XML)
+				.body(xml)
+				.retrieve()
+				.toBodilessEntity();
+		if (log.isInfoEnabled()) {
+			log.info("notifyBatchList: POSTed {} resource(s) to {}", resources.size(), thirdPartyNotificationUri);
+		}
+	}
+
+	@Override
 	public void notify(ApplicationInformationEntity applicationInformation,
 					   Long bulkId) {
 		String bulkRequestUri = applicationInformation

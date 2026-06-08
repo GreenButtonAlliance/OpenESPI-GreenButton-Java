@@ -19,30 +19,19 @@
 
 package org.greenbuttonalliance.espi.thirdparty.web;
 
-import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.BatchListEntity;
-import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.greenbuttonalliance.espi.common.dto.usage.BatchListDto;
-//  // TODO: Find correct Routes import
 import org.greenbuttonalliance.espi.common.service.*;
 import org.greenbuttonalliance.espi.common.xml.BatchListXmlCodec;
 import org.greenbuttonalliance.espi.thirdparty.service.WebClientService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.*;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
-
-import java.io.IOException;
 
 @Controller
 public class NotificationController extends BaseController {
@@ -73,15 +62,22 @@ public class NotificationController extends BaseController {
 	@PostMapping("/espi/1_1/Notification") // TODO: Use Routes.THIRD_PARTY_NOTIFICATION when available
 	public ResponseEntity<Void> notification(@RequestBody String xmlPayload) {
 
+		BatchListDto batchList;
 		try {
 			// Parse the ESPI BatchList through the single canonical codec (#158) — the wire type is
 			// the JAXB DTO, not the JPA entity (per the project's strict JAXB/JPA separation rule).
-			BatchListDto batchList = BatchListXmlCodec.unmarshal(xmlPayload);
+			batchList = BatchListXmlCodec.unmarshal(xmlPayload);
+		} catch (Exception e) {
+			// A payload we cannot parse is a bad request, not a server fault.
+			logger.warn("Notification: unparseable BatchList payload", e);
+			return ResponseEntity.badRequest().build();
+		}
 
+		try {
 			batchListService.save(new BatchListEntity(batchList.getResources()));
 
 			for (String resourceUri : batchList.getResources()) {
-				doImportAsynchronously(resourceUri);
+				importResource(resourceUri);
 			}
 
 			logger.info("Successfully processed notification with {} resources", batchList.getResources().size());
@@ -92,119 +88,43 @@ public class NotificationController extends BaseController {
 		}
 	}
 
-	@Async
-	protected void doImportAsynchronously(String subscriptionUri) {
+	/**
+	 * Pull and import a single source URL advertised in the received BatchList.
+	 *
+	 * <p>ESPI flow: each {@code <resource>} element is a URL; the Third Party — acting as an OAuth
+	 * client — performs an authenticated {@code GET} on that URL to retrieve the resource data from
+	 * the Data Custodian, then persists it. (The inbound notification POST itself is not OAuth-
+	 * protected — it is secured at the transport layer, TLS; the access token is required only on
+	 * this outbound fetch.)</p>
+	 *
+	 * <p>The GET is issued through the OAuth2-enabled {@link WebClient}, which attaches the access
+	 * token of the authorized client. Two pieces complete a fully-functional fetch: selecting the
+	 * correct OAuth token for the resource's Authorization (the unattended-notification token source,
+	 * #146) and unmarshalling/persisting the returned ESPI payload (the import pipeline, #89). A fetch
+	 * failure for one resource is logged and does not abort the others.</p>
+	 *
+	 * <p>(The legacy {@code sftp://} delivery branch has been removed: the current ESPI standard no
+	 * longer permits SFTP notification delivery.)</p>
+	 */
+	protected void importResource(String resourceUri) {
+		try {
+			// As an OAuth client, GET the source URL with an access token (attached by the
+			// OAuth2-enabled WebClient) to obtain the resource data.
+			String payload = webClient.get()
+					.uri(resourceUri)
+					.retrieve()
+					.bodyToMono(String.class)
+					.block();
 
-		// The import related to a subscription is performed here (in a separate
-		// thread)
-		// This must be provably secure b/c the access_token is visible here
-		String threadName = Thread.currentThread().getName();
-		logger.debug("Start Asynchronous Input: {}: {}", threadName, subscriptionUri);
-
-		String resourceUri = subscriptionUri;
-		String accessToken = "";
-		AuthorizationEntity authorization = null;
-		RetailCustomerEntity retailCustomer = null;
-
-		if (subscriptionUri.indexOf("?") > -1) { // Does message contain a query
-													// element
-			resourceUri = subscriptionUri.substring(0,
-					subscriptionUri.indexOf("?")); // Yes, remove the query
-													// element
+			// TODO(#89): unmarshal the returned ESPI Atom payload and persist the resources.
+			logger.info("Notification: fetched resource {} ({} bytes) for import",
+					resourceUri, payload == null ? 0 : payload.length());
 		}
-		if (resourceUri.contains("sftp://")) {
-
-			try {
-				String command = "sftp mget "
-						+ resourceUri.substring(resourceUri.indexOf("sftp://"));
-
-				logger.info("[Manage] Restricted Management Interface");
-				logger.info("[Manage] Request: {}", command);
-
-				Process p = Runtime.getRuntime().exec(command);
-
-				// the sftp script will get the file and make a RESTful api call
-				// to add it into the workspace.
-
-			} catch (IOException e1) {
-				logger.error("**** [Manage] IO Error: {}", e1.toString());
-
-			} catch (Exception e) {
-				logger.error("**** [Manage] Error: {}", e.toString());
-			}
-
-		} else {
-			try {
-				if ((resourceUri.contains("/Batch/Bulk"))
-						|| (resourceUri.contains("/Authorization"))) {
-					// mutate the resourceUri to be of the form .../Batch/Bulk
-					resourceUri = (resourceUri.substring(
-							0,
-							resourceUri.indexOf("/resource/")
-									+ "/resource/".length())
-							.concat("Batch/Bulk"));
-
-				} else {
-					if (resourceUri.contains("/Subscription")) {
-						// mutate the resourceUri for the form
-						// /Subscription/{subscriptionId}/**
-						String temp = resourceUri.substring(resourceUri
-								.indexOf("/Subscription/")
-								+ "/Subscription/".length());
-						if (temp.contains("/")) {
-							resourceUri = resourceUri.substring(
-									0,
-									resourceUri.indexOf("/Subscription")
-											+ "/Subscription".length()).concat(
-									temp.substring(0, temp.indexOf("/")));
-						}
-					}
-				}
-
-				// Authorization x = resourceService.findById(2L,
-				// 		AuthorizationEntity.class);
-
-				// if (x.getResourceURI().equals(resourceUri)) {
-				// 	logger.debug("ResourceURIs Equal: {}", resourceUri);
-				// } else {
-				// 	logger.debug("ResourceURIs Not Equal: {}", resourceUri);
-				// }
-				// authorization = resourceService.findByResourceUri(resourceUri,
-				// 		AuthorizationEntity.class);
-				// retailCustomer = authorization.getRetailCustomer();
-				// accessToken = authorization.getAccessToken();
-
-				try {
-					// Create authenticated WebClient for resource access
-					WebClient authenticatedClient = webClientService.createAuthenticatedWebClient(accessToken);
-
-					// Get the subscription data using WebClient
-					String responseBody = webClientService.getForObject(
-						authenticatedClient, subscriptionUri, String.class);
-
-					// if (responseBody != null) {
-					// 	// Import data into the repository
-					// 	ByteArrayInputStream bs = new ByteArrayInputStream(responseBody.getBytes());
-					// 	importService.importData(bs, retailCustomer.getId());
-					// 	logger.debug("Successfully imported data from subscription: {}", subscriptionUri);
-					// } else {
-					// 	logger.warn("No data received from subscription: {}", subscriptionUri);
-					// }
-
-				} catch (WebClientResponseException e) {
-					logger.error("HTTP error during subscription import: {} - {}", 
-						e.getStatusCode(), e.getResponseBodyAsString());
-				} catch (Exception e) {
-					logger.error("Error during asynchronous import from subscription: {}", subscriptionUri, e);
-				}
-
-			} catch (EmptyResultDataAccessException e) {
-				// No authorization found - data will be imported later when authorization is available
-				logger.info("No authorization found for resource URI: {} - will import later", resourceUri);
-			}
+		catch (Exception e) {
+			// e.g. no OAuth token resolvable for this resource yet (#146), or the DC returns 401/4xx.
+			logger.warn("Notification: could not fetch resource {} for import: {}",
+					resourceUri, e.getMessage());
 		}
-
-		logger.debug("Asynchronous import completed for thread {}: {}", threadName, resourceUri);
 	}
 
 	public void setBatchListService(BatchListService batchListService) {
