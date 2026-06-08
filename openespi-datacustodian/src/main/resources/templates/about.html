@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head}">
+    <title>About - Green Button Data Custodian</title>
+</head>
+
+<body>
+    <nav th:replace="~{fragments/layout :: header}"></nav>
+
+    <div class="container">
+        <h2 class="mt-4">About</h2>
+        <p class="text-muted">
+            A reference implementation of the NAESB ESPI (Green Button) Data Custodian, maintained by the
+            <a href="https://www.greenbuttonalliance.org">Green Button Alliance</a>.
+        </p>
+
+        <div class="card mt-3">
+            <div class="table-responsive">
+                <table class="table table-striped mb-0">
+                    <tbody>
+                        <tr th:each="entry : ${info}">
+                            <th class="w-25" th:text="${entry.key}">Key</th>
+                            <td th:text="${entry.value}">value</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <hr class="my-5">
+        <footer th:replace="~{fragments/layout :: footer}"></footer>
+    </div>
+</body>
+</html>

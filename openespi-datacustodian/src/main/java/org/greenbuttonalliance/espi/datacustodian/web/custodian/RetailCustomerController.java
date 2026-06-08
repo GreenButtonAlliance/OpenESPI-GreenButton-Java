@@ -138,6 +138,12 @@ public class RetailCustomerController {
 		existing.setUsername(form.getUsername());
 		existing.setFirstName(form.getFirstName());
 		existing.setLastName(form.getLastName());
+		if (form.getRole() != null && !form.getRole().isBlank()) {
+			existing.setRole(form.getRole());
+		}
+		// Checkbox bound via th:field renders a hidden field, so a non-null value always arrives;
+		// default to enabled if somehow absent.
+		existing.setEnabled(form.getEnabled() != null ? form.getEnabled() : Boolean.TRUE);
 		if (form.getPassword() != null && !form.getPassword().isBlank()) {
 			existing.setPassword(customerPasswordEncoder.encode(form.getPassword()));
 		}

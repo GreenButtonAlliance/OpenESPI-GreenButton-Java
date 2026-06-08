@@ -96,6 +96,7 @@ public class CustomerLoginSecurityConfiguration {
 		RequestMatcher matcher = new OrRequestMatcher(
 				pp.matcher("/"),
 				pp.matcher("/home"),
+				pp.matcher("/about"),
 				pp.matcher("/login"),
 				pp.matcher("/logout"),
 				pp.matcher("/custodian/**"),
@@ -111,7 +112,8 @@ public class CustomerLoginSecurityConfiguration {
 				// session-stored token. Right shape for vanilla form login.
 				.csrf(Customizer.withDefaults())
 				.authorizeHttpRequests(authz -> authz
-						.requestMatchers(pp.matcher("/"), pp.matcher("/home"), pp.matcher("/login")).permitAll()
+						.requestMatchers(pp.matcher("/"), pp.matcher("/home"), pp.matcher("/about"),
+								pp.matcher("/login")).permitAll()
 						.anyRequest().authenticated())
 				.formLogin(form -> form
 						.loginPage("/login")

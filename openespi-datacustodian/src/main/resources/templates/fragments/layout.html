@@ -17,6 +17,11 @@
     <!-- Favicon -->
     <link rel="icon" type="image/png" th:href="@{/images/favicon.png}">
 
+    <!-- Bootstrap bundle (incl. Popper). Loaded once here, deferred so it executes after the DOM is
+         parsed — every page that includes this head fragment gets working navbar dropdowns/collapse
+         without each template loading its own copy (double-loading breaks the dropdown toggle). -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" defer></script>
+
     <!-- Additional CSS block for page-specific styles -->
     <th:block th:fragment="additionalCss"></th:block>
 </head>
@@ -36,8 +41,11 @@
                     <li class="nav-item">
                         <a class="nav-link" th:href="@{/}">Home</a>
                     </li>
-                    <!-- The customer self-service portal (/customer/**) is not yet migrated, so no
-                         "My Usage Points" link is shown to ROLE_USER — it would be a dead link. -->
+                    <!-- Customer self-service: only the authorizations page is migrated, so that is
+                         the single ROLE_USER link (no dead "My Usage Points"). -->
+                    <li class="nav-item" sec:authorize="hasRole('ROLE_USER')">
+                        <a class="nav-link" th:href="@{/customer/authorizations}">My Authorizations</a>
+                    </li>
                     <li class="nav-item" sec:authorize="hasRole('ROLE_CUSTODIAN')">
                         <a class="nav-link" th:href="@{/custodian/home}">Custodian Portal</a>
                     </li>
@@ -76,20 +84,31 @@
             <div class="collapse navbar-collapse" id="customerNav">
                 <ul class="navbar-nav me-auto">
                     <!-- Only the self-service authorizations page is migrated; Usage Points /
-                         Third Parties pages are not yet available, so no dead links are shown. -->
+                         Third Parties pages are not yet available, so no dead links are shown.
+                         A Home link is always present so no page is a dead end (#175). -->
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/}">Home</a>
+                    </li>
                     <li class="nav-item">
                         <a class="nav-link" th:href="@{/customer/authorizations}">My Authorizations</a>
                     </li>
                 </ul>
 
                 <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <span class="navbar-text">Welcome, <span sec:authentication="name">Customer</span></span>
-                    </li>
-                    <li class="nav-item">
-                        <form th:action="@{/logout}" method="post" class="d-inline">
-                            <button type="submit" class="nav-link btn btn-link border-0 bg-transparent">Logout</button>
-                        </form>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="customerUserDropdown" role="button"
+                           data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-person-circle"></i> <span sec:authentication="name">Customer</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="customerUserDropdown">
+                            <li><span class="dropdown-item-text text-muted small">Signed in</span></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form th:action="@{/logout}" method="post" class="m-0">
+                                    <button type="submit" class="dropdown-item">Logout</button>
+                                </form>
+                            </li>
+                        </ul>
                     </li>
                 </ul>
             </div>
@@ -110,6 +129,9 @@
             <div class="collapse navbar-collapse" id="custodianNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
+                        <a class="nav-link" th:href="@{/}">Home</a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" th:href="@{/custodian/home}">Dashboard</a>
                     </li>
                     <li class="nav-item">
@@ -127,13 +149,20 @@
                 </ul>
 
                 <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <span class="navbar-text">Custodian: <span sec:authentication="name">Admin</span></span>
-                    </li>
-                    <li class="nav-item">
-                        <form th:action="@{/logout}" method="post" class="d-inline">
-                            <button type="submit" class="nav-link btn btn-link border-0 bg-transparent">Logout</button>
-                        </form>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="custodianUserDropdown" role="button"
+                           data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-person-circle"></i> <span sec:authentication="name">Admin</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="custodianUserDropdown">
+                            <li><span class="dropdown-item-text text-muted small">Signed in as custodian</span></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form th:action="@{/logout}" method="post" class="m-0">
+                                    <button type="submit" class="dropdown-item">Logout</button>
+                                </form>
+                            </li>
+                        </ul>
                     </li>
                 </ul>
             </div>
@@ -152,9 +181,7 @@
                 </div>
                 <div class="col-md-6 text-end">
                     <p class="text-muted mb-0">
-                        <a th:href="@{/about}">About</a> |
-                        <a th:href="@{/TermsOfService}">Terms of Service</a> |
-                        <a th:href="@{/UsagePolicy}">Usage Policy</a>
+                        <a th:href="@{/about}">About</a>
                     </p>
                 </div>
             </div>
