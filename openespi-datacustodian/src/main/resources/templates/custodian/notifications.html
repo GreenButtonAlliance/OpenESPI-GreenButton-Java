@@ -10,8 +10,8 @@
     <div class="container">
         <h2 class="mt-4">Notify Third Party</h2>
         <p class="text-muted">
-            Compose an ESPI <code>BatchList</code> of resource URLs and POST it to a Third Party's
-            notification endpoint. Leave a field blank to omit that resource.
+            Choose which resource URLs to include, then POST them as an ESPI <code>BatchList</code> to a
+            Third Party's notification endpoint. Only checked rows with a non-blank URL are sent.
         </p>
 
         <div th:if="${message}" class="alert"
@@ -28,31 +28,75 @@
                         <datalist id="notifyUriOptions">
                             <option th:each="uri : ${notifyUris}" th:value="${uri}"></option>
                         </datalist>
-                        <div class="form-text">Registered third-party endpoints are suggested; you may edit.</div>
                     </div>
 
                     <hr>
-                    <h6 class="text-muted">BatchList resources</h6>
+                    <h6 class="text-muted">BatchList resources — select which to send</h6>
 
-                    <div class="mb-3">
-                        <label for="applicationInformationUrl" class="form-label">ApplicationInformation URL</label>
-                        <input type="text" id="applicationInformationUrl" class="form-control"
-                               th:field="*{applicationInformationUrl}"/>
+                    <div class="row g-2 align-items-center mb-2">
+                        <div class="col-auto form-check">
+                            <input type="checkbox" id="includeApplicationInformation" class="form-check-input"
+                                   th:field="*{includeApplicationInformation}"/>
+                        </div>
+                        <label for="applicationInformationUrl" class="col-sm-3 col-form-label">ApplicationInformation</label>
+                        <div class="col">
+                            <input type="text" id="applicationInformationUrl" class="form-control"
+                                   th:field="*{applicationInformationUrl}"/>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label for="authorizationFeedUrl" class="form-label">Authorization feed URL</label>
-                        <input type="text" id="authorizationFeedUrl" class="form-control"
-                               th:field="*{authorizationFeedUrl}"/>
+
+                    <div class="row g-2 align-items-center mb-2">
+                        <div class="col-auto form-check">
+                            <input type="checkbox" id="includeAuthorizationFeed" class="form-check-input"
+                                   th:field="*{includeAuthorizationFeed}"/>
+                        </div>
+                        <label for="authorizationFeedUrl" class="col-sm-3 col-form-label">Authorization feed</label>
+                        <div class="col">
+                            <input type="text" id="authorizationFeedUrl" class="form-control"
+                                   th:field="*{authorizationFeedUrl}"/>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label for="authorizationEntryUrl" class="form-label">Authorization entry URL</label>
-                        <input type="text" id="authorizationEntryUrl" class="form-control"
-                               th:field="*{authorizationEntryUrl}"/>
+
+                    <div class="row g-2 align-items-center mb-2">
+                        <div class="col-auto form-check">
+                            <input type="checkbox" id="includeAuthorizationEntry" class="form-check-input"
+                                   th:field="*{includeAuthorizationEntry}"/>
+                        </div>
+                        <label for="authorizationEntryUrl" class="col-sm-3 col-form-label">Authorization entry</label>
+                        <div class="col">
+                            <input type="text" id="authorizationEntryUrl" class="form-control"
+                                   th:field="*{authorizationEntryUrl}"/>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label for="subscriptionUrl" class="form-label">Subscription URL</label>
-                        <input type="text" id="subscriptionUrl" class="form-control"
-                               th:field="*{subscriptionUrl}"/>
+
+                    <div class="row g-2 align-items-center mb-2">
+                        <div class="col-auto form-check">
+                            <input type="checkbox" id="includeEnergySubscription" class="form-check-input"
+                                   th:field="*{includeEnergySubscription}"/>
+                        </div>
+                        <label for="energySubscriptionUrl" class="col-sm-3 col-form-label">
+                            Subscription — energy
+                            <span class="d-block text-muted small">/Batch/Subscription/{id}</span>
+                        </label>
+                        <div class="col">
+                            <input type="text" id="energySubscriptionUrl" class="form-control"
+                                   th:field="*{energySubscriptionUrl}"/>
+                        </div>
+                    </div>
+
+                    <div class="row g-2 align-items-center mb-3">
+                        <div class="col-auto form-check">
+                            <input type="checkbox" id="includePiiSubscription" class="form-check-input"
+                                   th:field="*{includePiiSubscription}"/>
+                        </div>
+                        <label for="piiSubscriptionUrl" class="col-sm-3 col-form-label">
+                            Subscription — PII / customer
+                            <span class="d-block text-muted small">/Batch/RetailCustomer/{id}</span>
+                        </label>
+                        <div class="col">
+                            <input type="text" id="piiSubscriptionUrl" class="form-control"
+                                   th:field="*{piiSubscriptionUrl}"/>
+                        </div>
                     </div>
 
                     <div class="d-flex gap-2">

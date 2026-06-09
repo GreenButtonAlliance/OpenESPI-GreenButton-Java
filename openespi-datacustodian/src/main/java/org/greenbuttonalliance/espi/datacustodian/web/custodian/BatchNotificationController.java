@@ -22,6 +22,7 @@ package org.greenbuttonalliance.espi.datacustodian.web.custodian;
 import org.greenbuttonalliance.espi.common.domain.usage.ApplicationInformationEntity;
 import org.greenbuttonalliance.espi.common.service.ApplicationInformationService;
 import org.greenbuttonalliance.espi.common.service.NotificationService;
+import org.greenbuttonalliance.espi.common.uri.EspiBatchUri;
 import org.springframework.core.env.Environment;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -31,14 +32,20 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
 
 /**
- * Custodian "Notify Third Party" page (#177). Lets an admin compose and send an ESPI
- * {@code BatchList} (Atom) of resource URLs — ApplicationInformation, Authorization feed,
- * Authorization entry, Subscription — to a Third Party notification endpoint, reusing the #158
- * notification contract via {@link NotificationService#notifyBatchList}.
+ * Custodian "Notify Third Party" page (#177, #181). The admin composes an ESPI {@code BatchList}
+ * (Atom) and POSTs it to a Third Party notification endpoint, reusing the #158 notification contract
+ * via {@link NotificationService#notifyBatchList}.
+ *
+ * <p>The admin <strong>selects which and how many</strong> of the available resource URLs to include
+ * (each has an "include" checkbox and an editable URL). The available set covers ApplicationInformation,
+ * the Authorization feed, an Authorization entry, and the two subscription formats — an <em>energy</em>
+ * subscription ({@code …/Batch/Subscription/{id}}) and a <em>PII/customer</em> subscription
+ * ({@code …/Batch/RetailCustomer/{id}}), built via {@link EspiBatchUri}. Only checked, non-blank URLs
+ * are marshalled into the BatchList.</p>
  */
 @Controller
 @PreAuthorize("hasRole('ROLE_CUSTODIAN')")
@@ -77,13 +84,14 @@ public class BatchNotificationController {
 
 	@PostMapping("/custodian/notifications/send")
 	public String send(@ModelAttribute("notifyForm") NotifyForm form, RedirectAttributes redirectAttributes) {
-		List<String> resources = Stream.of(
-						form.getApplicationInformationUrl(),
-						form.getAuthorizationFeedUrl(),
-						form.getAuthorizationEntryUrl(),
-						form.getSubscriptionUrl())
-				.filter(u -> u != null && !u.isBlank())
-				.toList();
+		// Only the checked, non-blank URLs go into the BatchList — the admin chooses which/how many.
+		List<String> resources = new ArrayList<>();
+		addIf(resources, form.isIncludeApplicationInformation(), form.getApplicationInformationUrl());
+		addIf(resources, form.isIncludeAuthorizationFeed(), form.getAuthorizationFeedUrl());
+		addIf(resources, form.isIncludeAuthorizationEntry(), form.getAuthorizationEntryUrl());
+		addIf(resources, form.isIncludeEnergySubscription(), form.getEnergySubscriptionUrl());
+		addIf(resources, form.isIncludePiiSubscription(), form.getPiiSubscriptionUrl());
+
 		try {
 			notificationService.notifyBatchList(form.getNotificationUri(), resources);
 			redirectAttributes.addFlashAttribute("message",
@@ -94,9 +102,15 @@ public class BatchNotificationController {
 			redirectAttributes.addFlashAttribute("message", "Failed to send BatchList: " + e.getMessage());
 			redirectAttributes.addFlashAttribute("messageType", "danger");
 		}
-		// Preserve what the admin typed so they can correct and resend.
+		// Preserve what the admin selected/typed so they can correct and resend.
 		redirectAttributes.addFlashAttribute("notifyForm", form);
 		return "redirect:/custodian/notifications";
+	}
+
+	private static void addIf(List<String> resources, boolean include, String url) {
+		if (include && url != null && !url.isBlank()) {
+			resources.add(url.trim());
+		}
 	}
 
 	private NotifyForm defaultForm(List<ApplicationInformationEntity> apps) {
@@ -112,27 +126,53 @@ public class BatchNotificationController {
 		f.setApplicationInformationUrl(resourceBase + "/ApplicationInformation/{applicationInformationId}");
 		f.setAuthorizationFeedUrl(resourceBase + "/Authorization");
 		f.setAuthorizationEntryUrl(resourceBase + "/Authorization/{authorizationId}");
-		f.setSubscriptionUrl(resourceBase + "/Subscription/{subscriptionId}");
+		// Two distinct ESPI subscription formats, built from the canonical URI builder (#160).
+		f.setEnergySubscriptionUrl(EspiBatchUri.batchSubscription(resourceBase, "{subscriptionId}"));
+		f.setPiiSubscriptionUrl(EspiBatchUri.batchRetailCustomer(resourceBase, "{retailCustomerId}"));
 		return f;
 	}
 
-	/** Backing form for the notify page. */
+	/** Backing form: each candidate resource has an include flag + an editable URL. */
 	public static class NotifyForm {
 		private String notificationUri;
+
+		private boolean includeApplicationInformation = true;
 		private String applicationInformationUrl;
+		private boolean includeAuthorizationFeed = true;
 		private String authorizationFeedUrl;
+		private boolean includeAuthorizationEntry = true;
 		private String authorizationEntryUrl;
-		private String subscriptionUrl;
+		private boolean includeEnergySubscription = true;
+		private String energySubscriptionUrl;
+		private boolean includePiiSubscription = true;
+		private String piiSubscriptionUrl;
 
 		public String getNotificationUri() { return notificationUri; }
-		public void setNotificationUri(String notificationUri) { this.notificationUri = notificationUri; }
+		public void setNotificationUri(String v) { this.notificationUri = v; }
+
+		public boolean isIncludeApplicationInformation() { return includeApplicationInformation; }
+		public void setIncludeApplicationInformation(boolean v) { this.includeApplicationInformation = v; }
 		public String getApplicationInformationUrl() { return applicationInformationUrl; }
 		public void setApplicationInformationUrl(String v) { this.applicationInformationUrl = v; }
+
+		public boolean isIncludeAuthorizationFeed() { return includeAuthorizationFeed; }
+		public void setIncludeAuthorizationFeed(boolean v) { this.includeAuthorizationFeed = v; }
 		public String getAuthorizationFeedUrl() { return authorizationFeedUrl; }
 		public void setAuthorizationFeedUrl(String v) { this.authorizationFeedUrl = v; }
+
+		public boolean isIncludeAuthorizationEntry() { return includeAuthorizationEntry; }
+		public void setIncludeAuthorizationEntry(boolean v) { this.includeAuthorizationEntry = v; }
 		public String getAuthorizationEntryUrl() { return authorizationEntryUrl; }
 		public void setAuthorizationEntryUrl(String v) { this.authorizationEntryUrl = v; }
-		public String getSubscriptionUrl() { return subscriptionUrl; }
-		public void setSubscriptionUrl(String v) { this.subscriptionUrl = v; }
+
+		public boolean isIncludeEnergySubscription() { return includeEnergySubscription; }
+		public void setIncludeEnergySubscription(boolean v) { this.includeEnergySubscription = v; }
+		public String getEnergySubscriptionUrl() { return energySubscriptionUrl; }
+		public void setEnergySubscriptionUrl(String v) { this.energySubscriptionUrl = v; }
+
+		public boolean isIncludePiiSubscription() { return includePiiSubscription; }
+		public void setIncludePiiSubscription(boolean v) { this.includePiiSubscription = v; }
+		public String getPiiSubscriptionUrl() { return piiSubscriptionUrl; }
+		public void setPiiSubscriptionUrl(String v) { this.piiSubscriptionUrl = v; }
 	}
 }
