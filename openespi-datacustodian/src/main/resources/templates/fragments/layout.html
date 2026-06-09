@@ -27,6 +27,30 @@
 </head>
 
 <body>
+    <!-- Shared user/account menu (#184): one definition reused by every navbar so account actions
+         are presented identically. Shows the username, then Change Password (to the role-appropriate
+         page) and Logout. Rendered only for authenticated users. -->
+    <li th:fragment="userMenu" class="nav-item dropdown" sec:authorize="isAuthenticated()">
+        <a class="nav-link dropdown-toggle" href="#" id="userMenuDropdown" role="button"
+           data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-person-circle"></i> <span sec:authentication="name">User</span>
+        </a>
+        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenuDropdown">
+            <li sec:authorize="hasRole('ROLE_CUSTODIAN')">
+                <a class="dropdown-item" th:href="@{/custodian/password}">Change Password</a>
+            </li>
+            <li sec:authorize="!hasRole('ROLE_CUSTODIAN')">
+                <a class="dropdown-item" th:href="@{/customer/password}">Change Password</a>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+                <form th:action="@{/logout}" method="post" class="m-0">
+                    <button type="submit" class="dropdown-item">Logout</button>
+                </form>
+            </li>
+        </ul>
+    </li>
+
     <!-- Navigation Header Fragment -->
     <nav th:fragment="header" class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
@@ -55,18 +79,7 @@
                     <li class="nav-item" sec:authorize="!isAuthenticated()">
                         <a class="nav-link" th:href="@{/login}">Login</a>
                     </li>
-                    <li class="nav-item dropdown" sec:authorize="isAuthenticated()">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
-                            <span sec:authentication="name">User</span>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li>
-                                <form th:action="@{/logout}" method="post" class="m-0">
-                                    <button type="submit" class="dropdown-item">Logout</button>
-                                </form>
-                            </li>
-                        </ul>
-                    </li>
+                    <li th:replace="~{fragments/layout :: userMenu}"></li>
                 </ul>
             </div>
         </div>
@@ -92,27 +105,10 @@
                     <li class="nav-item">
                         <a class="nav-link" th:href="@{/customer/authorizations}">My Authorizations</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/customer/password}">Change Password</a>
-                    </li>
                 </ul>
 
                 <ul class="navbar-nav">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="customerUserDropdown" role="button"
-                           data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-person-circle"></i> <span sec:authentication="name">Customer</span>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="customerUserDropdown">
-                            <li><span class="dropdown-item-text text-muted small">Signed in</span></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li>
-                                <form th:action="@{/logout}" method="post" class="m-0">
-                                    <button type="submit" class="dropdown-item">Logout</button>
-                                </form>
-                            </li>
-                        </ul>
-                    </li>
+                    <li th:replace="~{fragments/layout :: userMenu}"></li>
                 </ul>
             </div>
         </div>
@@ -155,22 +151,7 @@
                 </ul>
 
                 <ul class="navbar-nav">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="custodianUserDropdown" role="button"
-                           data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-person-circle"></i> <span sec:authentication="name">Admin</span>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="custodianUserDropdown">
-                            <li><span class="dropdown-item-text text-muted small">Signed in as custodian</span></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" th:href="@{/custodian/password}">Change Password</a></li>
-                            <li>
-                                <form th:action="@{/logout}" method="post" class="m-0">
-                                    <button type="submit" class="dropdown-item">Logout</button>
-                                </form>
-                            </li>
-                        </ul>
-                    </li>
+                    <li th:replace="~{fragments/layout :: userMenu}"></li>
                 </ul>
             </div>
         </div>
