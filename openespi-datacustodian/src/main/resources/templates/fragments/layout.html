@@ -92,6 +92,9 @@
                     <li class="nav-item">
                         <a class="nav-link" th:href="@{/customer/authorizations}">My Authorizations</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/customer/password}">Change Password</a>
+                    </li>
                 </ul>
 
                 <ul class="navbar-nav">
@@ -160,6 +163,7 @@
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="custodianUserDropdown">
                             <li><span class="dropdown-item-text text-muted small">Signed in as custodian</span></li>
                             <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" th:href="@{/custodian/password}">Change Password</a></li>
                             <li>
                                 <form th:action="@{/logout}" method="post" class="m-0">
                                     <button type="submit" class="dropdown-item">Logout</button>
