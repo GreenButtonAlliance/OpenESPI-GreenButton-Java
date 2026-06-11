@@ -19,8 +19,8 @@
 
 package org.greenbuttonalliance.espi.datacustodian.config;
 
-import org.greenbuttonalliance.espi.common.scope.FunctionBlock;
-import org.greenbuttonalliance.espi.common.scope.FunctionBlockCategory;
+import org.greenbuttonalliance.espi.common.scope.EspiResource;
+import org.greenbuttonalliance.espi.common.scope.ResourceFbPolicy;
 import org.springframework.boot.security.autoconfigure.web.servlet.PathRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -29,8 +29,11 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authorization.AuthorityAuthorizationManager;
+import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.authorization.AuthorizationManagers;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -46,8 +49,10 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
-import java.util.stream.Stream;
+import java.util.Set;
+import java.util.function.Predicate;
 
 /**
  * Security configuration for the OpenESPI Data Custodian Resource Server.
@@ -98,45 +103,50 @@ public class SecurityConfiguration {
     @Bean
     @Order(1)
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
-                                                   OpaqueTokenIntrospector introspector) throws Exception {
+                                                   OpaqueTokenIntrospector introspector,
+                                                   ResourceFbPolicy resourceFbPolicy) throws Exception {
         // ESPI 4.0 Function-Block authorization managers. Authorities are minted by
         // EspiScopeOpaqueTokenIntrospector: FB_<n> per granted function block, plus SCOPE_<scope>
-        // for admin/OIDC scopes. (Replaces the contractor's non-ESPI SCOPE_FB_n_READ/WRITE_3rd_party.)
+        // for admin/OIDC scopes. The FB→resource predicates live in the shared ResourceFbPolicy so
+        // this endpoint gate and the entry-assembler's rel="related" link gate cannot drift (#119).
         AuthorizationManager<RequestAuthorizationContext> admin =
                 AuthorityAuthorizationManager.hasAuthority("SCOPE_DataCustodian_Admin_Access");
         AuthorizationManager<RequestAuthorizationContext> adminOrTpAdmin =
                 AuthorityAuthorizationManager.hasAnyAuthority(
                         "SCOPE_DataCustodian_Admin_Access", "SCOPE_ThirdParty_Admin_Access");
 
-        // Usage data (UsagePoint + its interval data: MeterReading, ReadingType, IntervalBlock,
-        // LocalTimeParameters, Batch). ESPI: base FB_4 (Interval Metering) AND at least one
-        // commodity FB (electricity/gas/water/temperature) — or DataCustodian admin.
-        AuthorizationManager<RequestAuthorizationContext> fb4 =
-                AuthorityAuthorizationManager.hasAuthority("FB_4");
-        AuthorizationManager<RequestAuthorizationContext> commodity =
-                AuthorityAuthorizationManager.hasAnyAuthority(commodityAuthorities());
-        AuthorizationManager<RequestAuthorizationContext> usageData =
-                AuthorizationManagers.anyOf(admin, AuthorizationManagers.allOf(fb4, commodity));
+        // Energy interval data (UsagePoint + MeterReading/ReadingType/IntervalBlock/LocalTimeParameters)
+        // and the Subscription/Batch ESPI REST transport mappings: energy interval-metering base
+        // (FB_4 AND a commodity FB), or DataCustodian admin.
+        AuthorizationManager<RequestAuthorizationContext> energyData =
+                fbGate(admin, resourceFbPolicy::requiresEnergyIntervalBase);
 
         // Usage summaries (data-shape FBs) and power-quality summary (FB_17).
         AuthorizationManager<RequestAuthorizationContext> usageSummary =
-                AuthorizationManagers.anyOf(admin,
-                        AuthorityAuthorizationManager.hasAnyAuthority("FB_15", "FB_16", "FB_27", "FB_28"));
+                fbGate(admin, fbs -> resourceFbPolicy.isAuthorized(EspiResource.USAGE_SUMMARY, fbs));
         AuthorizationManager<RequestAuthorizationContext> powerQuality =
-                AuthorizationManagers.anyOf(admin, AuthorityAuthorizationManager.hasAuthority("FB_17"));
+                fbGate(admin, fbs -> resourceFbPolicy.isAuthorized(EspiResource.ELECTRIC_POWER_QUALITY_SUMMARY, fbs));
 
         // Customer / PII resources — least-privilege per the ESPI Customer-PII catalog: the base
         // Connect-My-Data customer FB (FB_53) AND the resource-specific FB, or admin. FB→resource
         // mapping is authoritative from the DMD-validator conformance XSLTs (FB_NN.xsl). Note: FB_55
         // (Address) gates a field embedded in Customer, not an endpoint — deferred to response-shaping.
-        AuthorizationManager<RequestAuthorizationContext> customerBase = piiGate(admin, "FB_54");   // Customer
-        AuthorizationManager<RequestAuthorizationContext> customerAccount = piiGate(admin, "FB_56"); // billing
-        AuthorizationManager<RequestAuthorizationContext> customerAgreement = piiGate(admin, "FB_57");
-        AuthorizationManager<RequestAuthorizationContext> serviceLocation = piiGate(admin, "FB_58");
-        AuthorizationManager<RequestAuthorizationContext> serviceSupplier = piiGate(admin, "FB_59");
-        AuthorizationManager<RequestAuthorizationContext> meter = piiGate(admin, "FB_60");
-        AuthorizationManager<RequestAuthorizationContext> endDevice = piiGate(admin, "FB_61");
-        AuthorizationManager<RequestAuthorizationContext> programMapping = piiGate(admin, "FB_62");
+        AuthorizationManager<RequestAuthorizationContext> customerBase =
+                fbGate(admin, fbs -> resourceFbPolicy.isAuthorized(EspiResource.CUSTOMER, fbs));
+        AuthorizationManager<RequestAuthorizationContext> customerAccount =
+                fbGate(admin, fbs -> resourceFbPolicy.isAuthorized(EspiResource.CUSTOMER_ACCOUNT, fbs));
+        AuthorizationManager<RequestAuthorizationContext> customerAgreement =
+                fbGate(admin, fbs -> resourceFbPolicy.isAuthorized(EspiResource.CUSTOMER_AGREEMENT, fbs));
+        AuthorizationManager<RequestAuthorizationContext> serviceLocation =
+                fbGate(admin, fbs -> resourceFbPolicy.isAuthorized(EspiResource.SERVICE_LOCATION, fbs));
+        AuthorizationManager<RequestAuthorizationContext> serviceSupplier =
+                fbGate(admin, fbs -> resourceFbPolicy.isAuthorized(EspiResource.SERVICE_SUPPLIER, fbs));
+        AuthorizationManager<RequestAuthorizationContext> meter =
+                fbGate(admin, fbs -> resourceFbPolicy.isAuthorized(EspiResource.METER, fbs));
+        AuthorizationManager<RequestAuthorizationContext> endDevice =
+                fbGate(admin, fbs -> resourceFbPolicy.isAuthorized(EspiResource.END_DEVICE, fbs));
+        AuthorizationManager<RequestAuthorizationContext> programMapping =
+                fbGate(admin, fbs -> resourceFbPolicy.isAuthorized(EspiResource.PROGRAM_DATE_ID_MAPPINGS, fbs));
 
         return http
             // Disable CSRF for API endpoints
@@ -190,19 +200,21 @@ public class SecurityConfiguration {
                     "/espi/1_1/resource/RetailCustomer/*/UsagePoint/*/ElectricPowerQualitySummary/**")
                     .access(powerQuality)
 
-                // --- Usage data (GET, read-only) : FB_4 + commodity, or admin ---
+                // --- Usage data (GET, read-only) : FB_4 + commodity, or admin. IntervalReading is a
+                //     component of IntervalBlock (no UUID index) and is not an addressable resource, so
+                //     it has no ROOT or XPath form and is intentionally not matched here. Subscription
+                //     and Batch are ESPI REST API transport mappings (not resources) sharing this gate. ---
                 .requestMatchers(HttpMethod.GET,
                     "/espi/1_1/resource/UsagePoint/**",
                     "/espi/1_1/resource/MeterReading/**",
                     "/espi/1_1/resource/ReadingType/**",
                     "/espi/1_1/resource/IntervalBlock/**",
-                    "/espi/1_1/resource/IntervalReading/**",
                     "/espi/1_1/resource/LocalTimeParameter/**",
                     "/espi/1_1/resource/LocalTimeParameters/**",
                     "/espi/1_1/resource/Batch/**",
                     "/espi/1_1/resource/Subscription/**",
                     "/espi/1_1/resource/RetailCustomer/*/UsagePoint/**")
-                    .access(usageData)
+                    .access(energyData)
 
                 // --- Customer / PII resources (GET) : FB_53 base + resource-specific FB, or admin ---
                 // ROOT forms are gated 1:1 per the conformance-XSLT FB mapping.
@@ -282,28 +294,50 @@ public class SecurityConfiguration {
     }
 
     /**
-     * The {@code FB_<n>} authorities for every commodity Function Block (electricity/gas/water/
-     * temperature), derived from the single ESPI FB catalog in {@link FunctionBlock} so this never
-     * drifts from the spec.
+     * The shared FB→resource policy that both this endpoint gate and the resource entry-assembler's
+     * {@code rel="related"} link gate consume, so the two cannot drift (#119 / #187).
      */
-    private static String[] commodityAuthorities() {
-        return Stream.of(FunctionBlock.values())
-                .filter(fb -> fb.getCategory() == FunctionBlockCategory.COMMODITY)
-                .map(fb -> "FB_" + fb.getId())
-                .toArray(String[]::new);
+    @Bean
+    public ResourceFbPolicy resourceFbPolicy() {
+        return new ResourceFbPolicy();
     }
 
     /**
-     * Customer-PII endpoint gate: {@code admin OR (FB_53 base AND the resource-specific FB)}.
-     * FB_53 (Connect My Data, Retail Customer) is the prerequisite base for any customer/PII access;
-     * the resource FB (54/56/57/58/59/60/61/62) enforces least privilege per the ESPI Customer-PII
-     * catalog (mapping derived from the DMD-validator conformance XSLTs).
+     * Adapt a {@link ResourceFbPolicy} FB predicate into an endpoint {@link AuthorizationManager}:
+     * grant if the caller is DataCustodian admin, or if the predicate holds for the FB ids carried
+     * by the token's {@code FB_<n>} authorities. This is the single bridge from the shared policy to
+     * the filter chain, so endpoint authorization and link emission evaluate the exact same rule.
      */
-    private static AuthorizationManager<RequestAuthorizationContext> piiGate(
-            AuthorizationManager<RequestAuthorizationContext> admin, String resourceFb) {
-        AuthorizationManager<RequestAuthorizationContext> base = AuthorityAuthorizationManager.hasAuthority("FB_53");
-        AuthorizationManager<RequestAuthorizationContext> specific = AuthorityAuthorizationManager.hasAuthority(resourceFb);
-        return AuthorizationManagers.anyOf(admin, AuthorizationManagers.allOf(base, specific));
+    private static AuthorizationManager<RequestAuthorizationContext> fbGate(
+            AuthorizationManager<RequestAuthorizationContext> admin,
+            Predicate<Set<Integer>> fbPredicate) {
+        AuthorizationManager<RequestAuthorizationContext> fb = (authentication, context) -> {
+            Authentication auth = authentication.get();
+            boolean granted = auth != null && auth.isAuthenticated()
+                    && fbPredicate.test(grantedFunctionBlocks(auth));
+            return new AuthorizationDecision(granted);
+        };
+        return AuthorizationManagers.anyOf(admin, fb);
+    }
+
+    /**
+     * The numeric FB ids carried by a token's {@code FB_<n>} authorities (minted by
+     * {@link EspiScopeOpaqueTokenIntrospector}). Non-FB authorities (admin/OIDC {@code SCOPE_…}) are
+     * ignored here; admin is handled separately in {@link #fbGate}.
+     */
+    private static Set<Integer> grantedFunctionBlocks(Authentication authentication) {
+        Set<Integer> fbs = new HashSet<>();
+        for (GrantedAuthority authority : authentication.getAuthorities()) {
+            String name = authority.getAuthority();
+            if (name != null && name.startsWith("FB_")) {
+                try {
+                    fbs.add(Integer.valueOf(name.substring(3)));
+                } catch (NumberFormatException ignored) {
+                    // Non-numeric FB authority — not an ESPI function block id; ignore.
+                }
+            }
+        }
+        return fbs;
     }
 
 
