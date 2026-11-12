@@ -19,62 +19,81 @@
 
 package org.greenbuttonalliance.espi.thirdparty.web;
 
+import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.core.Authentication;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import java.security.Principal;
 
-@Disabled //todo - JT commenting out missing classes
-public class BaseControllerTests {
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-	//private RetailCustomer retailCustomer;
+class BaseControllerTests {
+
+	private RetailCustomerEntity retailCustomer;
 	private Authentication principal;
 	private BaseController controller;
 
 	@BeforeEach
-	public void setUp() throws Exception {
-//		retailCustomer = new RetailCustomer();
-//		principal = mock(Authentication.class);
-//		when(principal.getPrincipal()).thenReturn(retailCustomer);
+	void setUp() {
+		retailCustomer = new RetailCustomerEntity();
+		principal = mock(Authentication.class);
+		when(principal.getPrincipal()).thenReturn(retailCustomer);
 
 		controller = new BaseController();
 	}
 
 	@Test
-	public void currentCustomer() throws Exception {
-		//assertEquals(retailCustomer, controller.currentCustomer(principal));
+	void currentCustomer_returnsAuthenticationPrincipal() {
+		assertThat(controller.currentCustomer(principal)).isSameAs(retailCustomer);
 	}
 
 	@Test
-	public void currentCustomer_withoutAPrincipal() throws Exception {
-		//assertThat(controller.currentCustomer(null), is(nullValue()));
+	void currentCustomer_withoutAPrincipal_returnsNull() {
+		assertThat(controller.currentCustomer(null)).isNull();
 	}
 
 	@Test
-	public void isUserCustodian() {
-		//retailCustomer.setRole(RetailCustomer.ROLE_CUSTODIAN);
+	void currentCustomer_whenPrincipalIsNotARetailCustomer_returnsNull() {
+		when(principal.getPrincipal()).thenReturn("alice");
 
-	//	assertThat(controller.isUserCustodian(principal), is(true));
+		assertThat(controller.currentCustomer(principal)).isNull();
 	}
 
 	@Test
-	public void isUserCustodian_withDefaultRole() {
-	//	assertThat(controller.isUserCustodian(principal), is(false));
-	//	assertThat(controller.isUserUserRole(principal), is(true));
+	void currentCustomer_whenPrincipalIsNotAnAuthentication_returnsNull() {
+		Principal plainPrincipal = () -> "alice";
+
+		assertThat(controller.currentCustomer(plainPrincipal)).isNull();
 	}
 
 	@Test
-	public void isUserUserRole() {
-		//retailCustomer.setRole(RetailCustomer.ROLE_USER);
+	void custodianRole_isCustodianAndNotUser() {
+		retailCustomer.setRole(RetailCustomerEntity.ROLE_CUSTODIAN);
 
-		//assertThat(controller.isUserUserRole(principal), is(true));
+		assertThat(new boolean[] { controller.isUserCustodian(principal), controller.isUserUserRole(principal) })
+				.containsExactly(true, false);
 	}
 
 	@Test
-	public void isUserUserRole_givenNullPrincipal() {
-		assertThat(controller.isUserUserRole(null), is(false));
+	void defaultRole_isUserAndNotCustodian() {
+		assertThat(new boolean[] { controller.isUserCustodian(principal), controller.isUserUserRole(principal) })
+				.containsExactly(false, true);
+	}
+
+	@Test
+	void adminRole_isNeitherCustodianNorUser() {
+		retailCustomer.setRole(RetailCustomerEntity.ROLE_ADMIN);
+
+		assertThat(new boolean[] { controller.isUserCustodian(principal), controller.isUserUserRole(principal) })
+				.containsExactly(false, false);
+	}
+
+	@Test
+	void nullPrincipal_hasNoRoles() {
+		assertThat(new boolean[] { controller.isUserCustodian(null), controller.isUserUserRole(null) })
+				.containsExactly(false, false);
 	}
 }

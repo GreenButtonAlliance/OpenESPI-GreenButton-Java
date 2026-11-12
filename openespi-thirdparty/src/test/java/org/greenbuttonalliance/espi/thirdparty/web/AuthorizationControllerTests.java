@@ -63,7 +63,6 @@ public class AuthorizationControllerTests {
 //	}
 //
 //	@Test
-//	@Disabled
 //	public void authorization_fetchesToken() throws Exception {
 //		String url = String.format(
 //				"%s?redirect_uri=%s&code=%s&grant_type=authorization_code",
@@ -77,7 +76,6 @@ public class AuthorizationControllerTests {
 //	}
 //
 //	@Test
-//	@Disabled
 //	public void authorization_updatesAuthorization() throws Exception {
 //		controller.authorization(CODE, authorization.getState(),
 //				new ModelMap(), principal, CODE, CODE, CODE);
@@ -86,7 +84,6 @@ public class AuthorizationControllerTests {
 //	}
 //
 //	@Test
-//	@Disabled
 //	public void authorization_returnsAuthorizationList() throws Exception {
 //		List<Authorization> authorizations = new ArrayList<>();
 //		authorizations.add(new Authorization());

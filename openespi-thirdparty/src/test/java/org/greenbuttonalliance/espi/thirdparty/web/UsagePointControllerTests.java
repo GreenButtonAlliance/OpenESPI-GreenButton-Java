@@ -19,73 +19,28 @@
 
 package org.greenbuttonalliance.espi.thirdparty.web;
 
-import jakarta.xml.bind.JAXBException;
-import org.greenbuttonalliance.espi.common.service.UsagePointService;
-import org.greenbuttonalliance.espi.common.service.impl.UsagePointServiceImpl;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.core.Authentication;
 import org.springframework.ui.ModelMap;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-public class UsagePointControllerTests {
-
-	private UsagePointController controller;
-	private UsagePointService service;
-//	private ResourceServiceImpl resourceService;
-	private Authentication authentication;
-//	private RetailCustomer retailCustomer;
-
-	@BeforeEach
-	public void setup() {
-		controller = new UsagePointController();
-		service = mock(UsagePointServiceImpl.class);
-//		resourceService = mock(ResourceServiceImpl.class);
-//		controller.setResourceService(resourceService);
-//		authentication = mock(Authentication.class);
-//		retailCustomer = EspiFactory.newRetailCustomer();
-//		when(authentication.getPrincipal()).thenReturn(retailCustomer);
-	}
+/**
+ * Tests for {@link UsagePointController}.
+ * <p>
+ * Only {@code index} is covered. {@code show} still takes Long ids and builds its
+ * display bag from a placeholder entity until the Long-to-UUID conversion is done.
+ * Its tests will be written when the Third Party UI is recreated.
+ */
+class UsagePointControllerTests {
 
 	@Test
-	@Disabled
-	public void index_displaysIndexView() throws Exception {
-//		when(resourceService.findAllIds(UsagePoint.class)).thenReturn(
-//				new ArrayList<Long>());
-//		assertEquals("/usagepoints/index",
-//				controller.index(mock(ModelMap.class), authentication));
-	}
+	void index_displaysIndexView() {
+		UsagePointController controller = new UsagePointController();
+		ModelMap model = new ModelMap();
 
-	@Test
-	@Disabled
-	public void index_findsUsagePointsForLoggedInCustomer()
-			throws JAXBException {
-		controller.index(mock(ModelMap.class), authentication);
-//		verify(resourceService).findAllIdsByXPath(1L, UsagePoint.class).equals(
-//				null);
-
-	}
-
-	@Test
-	@Disabled
-	public void show_displaysShowView() throws Exception {
-//		when(resourceService.findById(anyLong(), UsagePoint.class)).thenReturn(
-//				EspiFactory.newUsagePoint());
-//		assertEquals("/usagepoints/show",
-//				controller.show(1L, 1L, mock(ModelMap.class)));
-	}
-
-	@Test
-	@Disabled
-	public void show_findsTheUsagePointByUUID() throws Exception {
-//		UsagePoint usagePoint = Factory.newUsagePoint();
-//		String hashedId = "hashedId";
-//		when(service.findByHashedId(hashedId)).thenReturn(usagePoint);
-//
-//		controller.show(1L, 1L, mock(ModelMap.class));
-//		verify(resourceService).findById(retailCustomer.getId(),
-//				UsagePoint.class);
+		assertThat(controller.index(model, mock(Authentication.class))).isEqualTo("/customer/usagepoints/index");
+		assertThat(model).isEmpty();
 	}
 }
