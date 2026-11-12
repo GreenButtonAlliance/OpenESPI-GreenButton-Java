@@ -122,6 +122,18 @@ espi:
     client-id: ${ESPI_BACKCHANNEL_CLIENT_ID:as-backchannel}
     client-secret: ${ESPI_BACKCHANNEL_CLIENT_SECRET:change-me-in-production}
 
+  # Scheduled purge of fully-expired oauth2_authorization rows, with one AUTHORIZATION_PURGED
+  # audit row per purge in oauth2_audit_log (#192). Values shown are the defaults; see
+  # DEPLOYMENT_GUIDE.md "Authorization Purge and Audit Retention".
+  authserver:
+    authorization-purge:
+      enabled: true
+      interval: 1h          # delay between runs
+      initial-delay: 5m     # delay before the first run after startup
+      grace-period: 7d      # keep rows this long after their latest token expiry
+      batch-size: 500       # rows per transaction
+      audit-retention: 395d # keep purge audit rows ~13 months; extend to regulatory requirement
+
 # Application Information
 info:
   app:

@@ -621,6 +621,52 @@ spring:
     url: jdbc:mysql://localhost:3306/espi_authserver?useSSL=true&requireSSL=true&verifyServerCertificate=true
 ```
 
+### Authorization Purge and Audit Retention
+
+Spring Authorization Server stores every grant (authorization code, access token, refresh token)
+in `oauth2_authorization` and never deletes it. The Authorization Server therefore runs a scheduled
+job that removes rows whose tokens have **all** expired, and keeps an audit record of each removal.
+
+**What is purged.** A row is deleted only when every token expiry on it (authorization code, access
+token, refresh token, and any OIDC ID token, device code or user code) is earlier than
+`now - grace-period`. A row whose refresh token is still valid is never purged, however old its
+access token is, so long-lived ESPI authorizations that refresh keep working. Rows with no token
+expiry at all (abandoned authorization requests that hold only `state`) and rows holding a token
+without an expiry are left alone.
+
+**What is never purged.** `oauth2_authorization_consent` (the record of customer consent) and
+`oauth2_registered_client` are never touched, and neither are the Data Custodian's ESPI
+`authorizations` rows.
+
+**Audit.** Before a row is deleted, one `AUTHORIZATION_PURGED` row is written to `oauth2_audit_log`
+with the client, principal, grant type, granted scopes, and in `additional_data` the authorization
+id, first issued time, last token issued time and latest expiry. Each batch runs in one transaction
+and the audit row is written only if that instance's delete removed the row, so several AS instances
+can run the job at the same time without duplicate audit records.
+
+**Retention rationale.**
+- Operational rows are kept for **7 days past their final expiry**, so recent grants are still
+  available when troubleshooting a client's failed refresh or a customer's support call.
+- Purge audit rows are kept for **13 months** (`395d`), long enough for annual reporting with a
+  month of margin. A utility whose regulator requires a longer retention should raise
+  `audit-retention` to match. The job deletes only `AUTHORIZATION_PURGED` audit rows; other audit
+  event types are not affected.
+
+**Configuration** (`espi.authserver.authorization-purge.*`; durations use Spring's `30s` / `15m` /
+`1h` / `7d` format):
+
+| Property | Default | Meaning |
+|---|---|---|
+| `enabled` | `true` | Set to `false` to disable the job entirely |
+| `interval` | `1h` | Delay between the end of one run and the start of the next (must be positive) |
+| `initial-delay` | `5m` | Delay after startup before the first run |
+| `grace-period` | `7d` | How long a row is kept after its latest token expiry |
+| `batch-size` | `500` | Rows deleted and audited per transaction (must be greater than 0) |
+| `audit-retention` | `395d` | How long `AUTHORIZATION_PURGED` audit rows are kept |
+
+Invalid values (a negative duration, a zero interval or batch size) stop the application at
+startup. Each run that deletes something logs one INFO summary from `AuthorizationPurgeService`.
+
 ## Monitoring and Observability
 
 ### Metrics Configuration
