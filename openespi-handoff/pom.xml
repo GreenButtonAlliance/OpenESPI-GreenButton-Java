@@ -23,11 +23,12 @@
     <parent>
         <groupId>org.greenbuttonalliance.espi</groupId>
         <artifactId>openespi-parent</artifactId>
-        <version>3.5.0</version>
+        <version>4.0.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>OpenESPI-Handoff</artifactId>
-    <version>3.5.0-RC2</version>
+    <!-- Released independently as handoff-vX.Y.Z; keep openespi-handoff.version in the parent in step. -->
+    <version>4.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>OpenESPI-Handoff</name>

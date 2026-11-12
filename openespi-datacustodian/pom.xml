@@ -26,11 +26,12 @@
     <parent>
         <groupId>org.greenbuttonalliance.espi</groupId>
         <artifactId>openespi-parent</artifactId>
-        <version>3.5.0</version>
+        <version>4.0.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>OpenESPI-DataCustodian</artifactId>
-    <version>1.4.0-SNAPSHOT</version>
+    <!-- Released independently as datacustodian-vX.Y.Z (see RELEASING.md). -->
+    <version>4.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>OpenESPI DataCustodian</name>
@@ -38,11 +39,6 @@
         North American Energy Standards Board (NAESB) Energy Service Provider Interface (ESPI) 1.0 
         Data Custodian (Utility) Resource Server implementation with Spring Boot 4
     </description>
-
-     <properties>
-        <!-- OpenESPI Dependencies -->
-        <openespi-common.version>3.5.0-RC2</openespi-common.version>
-    </properties>
 
     <profiles>
         <!-- Development MySQL Profile -->
@@ -129,7 +125,7 @@
         <dependency>
             <groupId>org.greenbuttonalliance.espi</groupId>
             <artifactId>OpenESPI-Common</artifactId>
-            <version>3.5.0-RC2</version>
+            <!-- version managed in the parent: openespi-common.version -->
         </dependency>
 
         <!-- Spring Boot Starters -->

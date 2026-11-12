@@ -15,7 +15,11 @@
 
     <groupId>org.greenbuttonalliance.espi</groupId>
     <artifactId>openespi-parent</artifactId>
-    <version>3.5.0</version>
+    <!-- Per-module versioning (#193): the parent and every module carry their own <version>
+         so each can be released independently with a <module>-vX.Y.Z tag (see RELEASING.md).
+         Inter-module dependency versions are managed ONLY via the openespi-*.version
+         properties + <dependencyManagement> below. -->
+    <version>4.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     
     <name>OpenESPI GreenButton Java</name>
@@ -65,6 +69,11 @@
         <maven.compiler.target>25</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
+        <!-- Inter-module library versions: the single place consumers' versions are set.
+             Keep in step with the <version> in openespi-handoff/pom.xml and openespi-common/pom.xml. -->
+        <openespi-handoff.version>4.0.0-SNAPSHOT</openespi-handoff.version>
+        <openespi-common.version>4.0.0-SNAPSHOT</openespi-common.version>
+
         <!-- SonarCloud Configuration -->
         <sonar.projectKey>GreenButtonAlliance_OpenESPI-GreenButton-Java</sonar.projectKey>
         <sonar.organization>greenbuttonalliance</sonar.organization>
@@ -106,17 +115,21 @@
                 <module>openespi-thirdparty</module>
             </modules>
         </profile>
-        <!-- Integration Tests Profile -->
-        <profile>
-            <id>integration-tests</id>
-            <properties>
-                <skip.integration.tests>false</skip.integration.tests>
-            </properties>
-        </profile>
     </profiles>
-    
+
     <dependencyManagement>
         <dependencies>
+            <!-- OpenESPI inter-module libraries -->
+            <dependency>
+                <groupId>org.greenbuttonalliance.espi</groupId>
+                <artifactId>OpenESPI-Handoff</artifactId>
+                <version>${openespi-handoff.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.greenbuttonalliance.espi</groupId>
+                <artifactId>OpenESPI-Common</artifactId>
+                <version>${openespi-common.version}</version>
+            </dependency>
             <dependency>
                 <groupId>commons-io</groupId>
                 <artifactId>commons-io</artifactId>
@@ -320,18 +333,6 @@
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-failsafe-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>integration-test</goal>
-                            <goal>verify</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-site-plugin</artifactId>
                 <dependencies>
                     <dependency>
@@ -379,20 +380,6 @@
             </plugin>
         </plugins>
     </build>
-    <repositories>
-        <!-- GitHub Packages Repository for OpenESPI -->
-        <repository>
-            <id>github</id>
-            <name>GitHub Green Button Alliance Apache Maven Packages</name>
-            <url>https://maven.pkg.github.com/GreenButtonAlliance/OpenESPI-GreenButton-Java</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
 
     <scm>
         <connection>scm:git:https://github.com/GreenButtonAlliance/OpenESPI-GreenButton-Java</connection>
@@ -406,22 +393,6 @@
         <url>https://github.com/greenbuttonalliance/OpenESPI-GreenButton-Java/issues</url>
     </issueManagement>
 
-    <ciManagement>
-        <system>GitHub Actions</system>
-        <url>https://github.com/greenbuttonalliance/OpenESPI-GreenButton-Java-Workspace/actions</url>
-    </ciManagement>
-
-    <distributionManagement>
-        <!-- GitHub Packages Maven Repository configuration -->
-        <repository>
-            <id>github</id>
-            <name>GitHub Green Button Alliance Apache Maven Packages</name>
-            <url>https://maven.pkg.github.com/GreenButtonAlliance/OpenESPI-GreenButton-Java</url>
-        </repository>
-        <snapshotRepository>
-            <id>github</id>
-            <name>GitHub Green Button Alliance Apache Maven Packages</name>
-            <url>https://maven.pkg.github.com/GreenButtonAlliance/OpenESPI-GreenButton-Java</url>
-        </snapshotRepository>
-    </distributionManagement>
+    <!-- No <distributionManagement> / GitHub Packages <repositories>: libraries are not
+         published (#193). Releases are GitHub Releases with the jar attached; see RELEASING.md. -->
 </project>
