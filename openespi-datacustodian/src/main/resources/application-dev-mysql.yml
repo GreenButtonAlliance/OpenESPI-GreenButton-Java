@@ -21,7 +21,8 @@ spring:
         generate_statistics: true
         
   flyway:
-    # Common ships shared migrations at classpath:db/migration (V1, V3, plus handoff's V4)
+    # Common ships shared migrations at classpath:db/migration (V1, V3); openespi-handoff (a direct
+    # DC dependency) adds its V4 at the same location
     # and vendor-specific migrations at classpath:db/vendor/<vendor> (V2 — retail_customers etc).
     # DC needs both locations. The previous "classpath:db/migration/mysql" pointed at a path that
     # didn't exist on any module's classpath, so Flyway silently found 0 migrations and JPA blew up
