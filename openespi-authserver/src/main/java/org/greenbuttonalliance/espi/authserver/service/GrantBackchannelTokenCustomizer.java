@@ -23,6 +23,8 @@ import org.greenbuttonalliance.espi.authserver.backchannel.BackchannelResponse;
 import org.greenbuttonalliance.espi.authserver.backchannel.DataCustodianBackchannelClient;
 import org.greenbuttonalliance.espi.authserver.backchannel.DataCustodianBackchannelException;
 import org.greenbuttonalliance.espi.authserver.grant.GrantContextEnrichingAuthorizationService;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
+import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
@@ -33,6 +35,7 @@ import org.springframework.security.oauth2.server.authorization.token.OAuth2Toke
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -40,8 +43,11 @@ import java.util.UUID;
  * returned canonical URIs onto the token's claims set.
  *
  * <h2>When this fires</h2>
- * Spring Authorization Server invokes the customizer once per access token, at the point where
- * the authorization-code grant is being exchanged at {@code /oauth2/token}. The {@link
+ * Spring Authorization Server invokes the customizer once per access token minted at
+ * {@code /oauth2/token}. Only the {@code authorization_code} grant provisions at the Data Custodian;
+ * a {@code refresh_token} grant continues the same ESPI Authorization, so its new access token
+ * inherits the URI claims of the token it replaces (no second back-channel call, #202); any other
+ * grant ({@code client_credentials}) is left untouched. The {@link
  * OAuth2TokenClaimsContext} provides read access to the {@link OAuth2Authorization} that was
  * persisted at code-issue time &mdash; including the grant-context attributes
  * {@link GrantContextEnrichingAuthorizationService} wrote there (C4.1).
@@ -80,6 +86,10 @@ public class GrantBackchannelTokenCustomizer implements OAuth2TokenCustomizer<OA
 	public static final String CLAIM_AUTHORIZATION_URI = "authorizationURI";
 	public static final String CLAIM_CUSTOMER_RESOURCE_URI = "customerResourceURI";
 
+	/** The ESPI 4.0 (REQ.21 6.1.2) token-response URI claims, in wire order. */
+	public static final List<String> ESPI_URI_CLAIMS = List.of(
+			CLAIM_RESOURCE_URI, CLAIM_AUTHORIZATION_URI, CLAIM_CUSTOMER_RESOURCE_URI);
+
 	private final DataCustodianBackchannelClient backchannelClient;
 
 	@Override
@@ -89,6 +99,19 @@ public class GrantBackchannelTokenCustomizer implements OAuth2TokenCustomizer<OA
 		}
 		OAuth2Authorization authorization = context.getAuthorization();
 		if (authorization == null) {
+			return;
+		}
+
+		AuthorizationGrantType grantType = context.getAuthorizationGrantType();
+		if (AuthorizationGrantType.REFRESH_TOKEN.equals(grantType)) {
+			// #202: a refresh continues the SAME ESPI Authorization. Never re-provision (that would
+			// create another Authorization/Subscription at the DC); carry the URIs over from the access
+			// token being replaced so the refresh response and introspection stay consistent.
+			copyClaimsFromPreviousAccessToken(context, authorization);
+			return;
+		}
+		if (!AuthorizationGrantType.AUTHORIZATION_CODE.equals(grantType)) {
+			// client_credentials etc.: no customer consent, nothing to provision here (see #202 gap 3).
 			return;
 		}
 
@@ -130,6 +153,24 @@ public class GrantBackchannelTokenCustomizer implements OAuth2TokenCustomizer<OA
 		}
 
 		writeClaims(context, response);
+	}
+
+	private static void copyClaimsFromPreviousAccessToken(OAuth2TokenClaimsContext context,
+														  OAuth2Authorization authorization) {
+		OAuth2Authorization.Token<OAuth2AccessToken> previous = authorization.getAccessToken();
+		Map<String, Object> previousClaims = previous != null ? previous.getClaims() : null;
+		if (previousClaims == null) {
+			log.debug("Refresh on authorization id={} has no prior access-token claims to carry over",
+					authorization.getId());
+			return;
+		}
+		var claims = context.getClaims();
+		for (String name : ESPI_URI_CLAIMS) {
+			Object value = previousClaims.get(name);
+			if (value != null) {
+				claims.claim(name, value);
+			}
+		}
 	}
 
 	private static void writeClaims(OAuth2TokenClaimsContext context, BackchannelResponse response) {

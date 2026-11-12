@@ -45,6 +45,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
@@ -221,6 +222,73 @@ class AuthCodeFlowOrchestrationIntegrationTest extends AbstractAuthserverIntegra
 	}
 
 	@Test
+	@DisplayName("refresh_token grant (#202): no re-provisioning, refreshed response carries the SAME URIs")
+	void refreshDoesNotReprovisionAndKeepsUris() throws Exception {
+		String suffix = UUID.randomUUID().toString().substring(0, 8);
+		String clientId = "pr-202-tp-" + suffix;
+		String clientSecret = "pr-202-secret-" + suffix;
+		String correlationId = "corr-202-" + suffix;
+		registerClient(clientId, clientSecret);
+		delegationStateService.save(correlationId, clientId, REDIRECT_URI, "tp-state-" + suffix);
+
+		UUID authorizationId = UUID.randomUUID();
+		UUID resourceSubscriptionId = UUID.randomUUID();
+		String resourceUri = "https://dc.example/Batch/Subscription/" + resourceSubscriptionId;
+		String authorizationUri = "https://dc.example/Authorization/" + authorizationId;
+		String customerResourceUri = "https://dc.example/Batch/RetailCustomer/42";
+		// A second provision (if the bug re-triggers it) would hand back DIFFERENT resources — exactly
+		// what a non-idempotent DC does — so the refreshed URIs would visibly change.
+		when(backchannelClient.provision(any()))
+				.thenReturn(new BackchannelResponse(authorizationId, resourceSubscriptionId, null,
+						resourceUri, authorizationUri, customerResourceUri))
+				.thenReturn(new BackchannelResponse(UUID.randomUUID(), UUID.randomUUID(), null,
+						"https://dc.example/Batch/Subscription/second",
+						"https://dc.example/Authorization/second",
+						"https://dc.example/Batch/RetailCustomer/42"));
+
+		String code = obtainAuthorizationCode(correlationId, UUID.randomUUID());
+
+		MvcResult tokenResult = mockMvc.perform(post("/oauth2/token")
+						.with(httpBasic(clientId, clientSecret))
+						.param("grant_type", "authorization_code")
+						.param("code", code)
+						.param("redirect_uri", REDIRECT_URI))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.refresh_token").isNotEmpty())
+				.andExpect(jsonPath("$.resourceURI").value(resourceUri))
+				.andReturn();
+		String refreshToken = com.jayway.jsonpath.JsonPath.read(
+				tokenResult.getResponse().getContentAsString(), "$.refresh_token");
+
+		MvcResult refreshResult = mockMvc.perform(post("/oauth2/token")
+						.with(httpBasic(clientId, clientSecret))
+						.param("grant_type", "refresh_token")
+						.param("refresh_token", refreshToken))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.access_token").isNotEmpty())
+				.andExpect(jsonPath("$.resourceURI").value(resourceUri))
+				.andExpect(jsonPath("$.authorizationURI").value(authorizationUri))
+				.andExpect(jsonPath("$.customerResourceURI").value(customerResourceUri))
+				.andReturn();
+		String refreshedAccessToken = com.jayway.jsonpath.JsonPath.read(
+				refreshResult.getResponse().getContentAsString(), "$.access_token");
+
+		// Exactly one back-channel provision for the whole grant: the refresh must not create another
+		// ESPI Authorization/Subscription at the Data Custodian.
+		verify(backchannelClient, times(1)).provision(any());
+
+		// Introspection of the refreshed token stays consistent with the refresh response.
+		mockMvc.perform(post("/oauth2/introspect")
+						.with(httpBasic(clientId, clientSecret))
+						.param("token", refreshedAccessToken))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.active").value(true))
+				.andExpect(jsonPath("$.resourceURI").value(resourceUri))
+				.andExpect(jsonPath("$.authorizationURI").value(authorizationUri))
+				.andExpect(jsonPath("$.customerResourceURI").value(customerResourceUri));
+	}
+
+	@Test
 	@DisplayName("seeded third_party client has PKCE disabled (ESPI does not support PKCE)")
 	void seededThirdPartyClientDoesNotRequireProofKey() {
 		RegisteredClient thirdParty = registeredClientRepository.findByClientId("third_party");
@@ -230,6 +298,50 @@ class AuthCodeFlowOrchestrationIntegrationTest extends AbstractAuthserverIntegra
 		assertThat(thirdParty.getClientSettings().isRequireProofKey())
 				.as("ESPI does not support PKCE; the customer-flow client must not require code_challenge")
 				.isFalse();
+	}
+
+	/** Registers a confidential ESPI test client (auth-code + refresh, opaque tokens, no PKCE). */
+	private void registerClient(String clientId, String clientSecret) {
+		registeredClientRepository.save(RegisteredClient.withId(UUID.randomUUID().toString())
+				.clientId(clientId)
+				.clientName("#202 Test ThirdParty")
+				.clientSecret("{noop}" + clientSecret)
+				.clientIdIssuedAt(Instant.now())
+				.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+				.authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+				.authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
+				.redirectUri(REDIRECT_URI)
+				.scope(SCOPE)
+				.clientSettings(ClientSettings.builder()
+						.requireAuthorizationConsent(true)
+						.requireProofKey(false)
+						.build())
+				.tokenSettings(TokenSettings.builder()
+						.accessTokenFormat(OAuth2TokenFormat.REFERENCE)
+						.accessTokenTimeToLive(Duration.ofMinutes(360))
+						.build())
+				.build());
+	}
+
+	/** Simulates the DC return handoff and resumes /oauth2/authorize; returns the issued code. */
+	private String obtainAuthorizationCode(String correlationId, UUID selectedUsagePoint) throws Exception {
+		Instant now = Instant.now();
+		String handoff = codec.encode(SignedHandoff.Return.of(
+				correlationId, now, now.plusSeconds(300),
+				UUID.randomUUID().toString().replace("-", ""),
+				CUSTOMER_ID,
+				List.of(selectedUsagePoint),
+				SignedHandoff.Return.CONSENT_ALLOW,
+				SCOPE));
+		MvcResult continueResult = mockMvc.perform(get("/oauth2/authorize/continue").param("handoff", handoff))
+				.andExpect(status().is3xxRedirection())
+				.andReturn();
+		MockHttpSession session = (MockHttpSession) continueResult.getRequest().getSession(false);
+		MvcResult authorizeResult = mockMvc.perform(
+						get(continueResult.getResponse().getHeader("Location")).session(session))
+				.andExpect(status().is3xxRedirection())
+				.andReturn();
+		return extractQueryParam(authorizeResult.getResponse().getHeader("Location"), "code");
 	}
 
 	private static String extractQueryParam(String url, String name) {
