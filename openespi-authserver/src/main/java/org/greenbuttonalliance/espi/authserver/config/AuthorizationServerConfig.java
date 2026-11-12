@@ -120,9 +120,10 @@ public class AuthorizationServerConfig {
      * Path prefixes of the administrative REST APIs, taken from the controllers' class-level
      * {@code @RequestMapping}s: {@code OAuthAdminController}, {@code OAuth2ClientManagementController},
      * {@code CertificateManagementController}, {@code DataCustodianIntegrationController}, plus
-     * {@code ClientRegistrationController} ({@code /connect}): OIDC is not enabled, so
-     * {@code /connect/register} is not claimed by the protocol chain and would otherwise accept any
-     * authenticated session (including a customer's) to register arbitrary OAuth2 clients.
+     * {@code /connect/**}. The hand-written {@code /connect/register} controller was replaced by the
+     * RFC 7591 {@code /oauth2/register} endpoint (#196); the rule stays as defense in depth so no
+     * future {@code /connect} handler (or an OIDC registration endpoint enabled by mistake) is ever
+     * reachable by a customer session.
      */
     static final String[] ADMIN_API_PATHS = {
             "/admin/**",
@@ -135,8 +136,9 @@ public class AuthorizationServerConfig {
 
     /**
      * Subset of {@link #ADMIN_API_PATHS} that also accepts an {@code authserver.admin} bearer token
-     * (issue #204). {@code /connect/**} is deliberately excluded: Dynamic Client Registration gets its
-     * own bearer model in a separate change, so it remains session-only (admin role) here.
+     * (issue #204). {@code /connect/**} is deliberately excluded: Dynamic Client Registration has its
+     * own bearer model on {@code /oauth2/register} (single-use {@code client.create} initial access
+     * token, #196), so {@code /connect/**} remains session-only (admin role) here.
      */
     static final String[] ADMIN_BEARER_API_PATHS = {
             "/admin/**",
@@ -188,6 +190,17 @@ public class AuthorizationServerConfig {
     @Value("${espi.authorization-server.client-secret:datacustodian-secret}")
     private String clientSecret;
 
+    /**
+     * Raw secret of the {@code espi_registrar} client (env {@code ESPI_REGISTRAR_CLIENT_SECRET}). Encoded with
+     * the {@link PasswordEncoder} before it is stored. When blank, the registrar is not seeded and no initial
+     * access token can be obtained, so dynamic registration is effectively disabled.
+     */
+    @Value("${espi.authserver.registrar.client-secret:}")
+    private String registrarClientSecret;
+
+    /** When true (prod / espi40 profiles), dynamically registered redirect URIs must use https. */
+    @Value("${espi.security.require-https-redirect-uris:false}")
+    private boolean requireHttpsRedirectUris;
 
     /** Scope the initial access token must carry (exactly, and only) to call the registration endpoint. */
     static final String CLIENT_CREATE_SCOPE = "client.create";
@@ -195,8 +208,21 @@ public class AuthorizationServerConfig {
     /** Seeded client that obtains {@code client.create} initial access tokens via client_credentials. */
     static final String REGISTRAR_CLIENT_ID = "espi_registrar";
 
+    /** RFC 7591 client registration endpoint path. */
+    static final String CLIENT_REGISTRATION_ENDPOINT = "/oauth2/register";
+
     /**
-     * RFC 7591 OAuth 2.0 Dynamic Client Registration — {@code POST /oauth2/register} (spike, #196).
+     * ESPI Third Party (Function Block) scopes a dynamically registered client may request. Same strings
+     * as the seeded {@code third_party} authorization_code client.
+     */
+    static final List<String> ESPI_THIRD_PARTY_SCOPES = List.of(
+            "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13",
+            "FB=4_5_15;IntervalDuration=900;BlockDuration=monthly;HistoryLength=13");
+
+    private static final String RFC7591_ERROR_URI = "https://datatracker.ietf.org/doc/html/rfc7591#section-3.2.2";
+
+    /**
+     * RFC 7591 OAuth 2.0 Dynamic Client Registration — {@code POST /oauth2/register} (#196).
      *
      * <p>Uses Spring Security 7's built-in RFC 7591 classes ({@link OAuth2ClientRegistrationEndpointFilter},
      * {@link OAuth2ClientRegistrationAuthenticationProvider}) but wires them by hand on a dedicated chain
@@ -226,13 +252,13 @@ public class AuthorizationServerConfig {
         OAuth2ClientRegistrationAuthenticationProvider registrationProvider =
                 new OAuth2ClientRegistrationAuthenticationProvider(registeredClientRepository, authorizationService);
         registrationProvider.setPasswordEncoder(passwordEncoder); // stored as {bcrypt}..., returned once in clear
-        registrationProvider.setRegisteredClientConverter(espiRegisteredClientConverter());
+        registrationProvider.setRegisteredClientConverter(espiRegisteredClientConverter(requireHttpsRedirectUris));
 
         OAuth2ClientRegistrationEndpointFilter registrationFilter =
                 new OAuth2ClientRegistrationEndpointFilter(new ProviderManager(registrationProvider));
 
         http
-                .securityMatcher("/oauth2/register")
+                .securityMatcher(CLIENT_REGISTRATION_ENDPOINT)
                 .authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated())
                 .csrf(csrf -> csrf.disable()) // bearer-token API, no browser session
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -243,20 +269,23 @@ public class AuthorizationServerConfig {
     }
 
     /**
-     * Wraps Spring's default RFC 7591 metadata→RegisteredClient converter to apply ESPI policy:
-     * opaque (REFERENCE) access tokens, no PKCE, and no self-assigned privileged scopes.
+     * Wraps Spring's default RFC 7591 metadata→RegisteredClient converter to apply ESPI policy. A registrant
+     * may only create a confidential ESPI Third Party authorization_code client:
+     * <ul>
+     *   <li>{@code scope}: one or more of {@link #ESPI_THIRD_PARTY_SCOPES}, nothing else;</li>
+     *   <li>{@code grant_types}: {@code authorization_code} (required) and optionally {@code refresh_token};</li>
+     *   <li>{@code response_types}: {@code code} only;</li>
+     *   <li>{@code token_endpoint_auth_method}: {@code client_secret_basic} (the RFC 7591 default when omitted);</li>
+     *   <li>{@code redirect_uris}: at least one; https only when {@code requireHttpsRedirectUris}.</li>
+     * </ul>
+     * Violations are rejected with {@code invalid_client_metadata}. The resulting client gets opaque
+     * (REFERENCE) access tokens and no PKCE requirement.
      */
-    static Converter<OAuth2ClientRegistration, RegisteredClient> espiRegisteredClientConverter() {
+    static Converter<OAuth2ClientRegistration, RegisteredClient> espiRegisteredClientConverter(
+            boolean requireHttpsRedirectUris) {
         OAuth2ClientRegistrationRegisteredClientConverter delegate = new OAuth2ClientRegistrationRegisteredClientConverter();
         return clientRegistration -> {
-            List<String> requested = clientRegistration.getScopes() == null ? List.of() : clientRegistration.getScopes();
-            for (String scope : requested) {
-                if (CLIENT_CREATE_SCOPE.equals(scope) || scope.endsWith("_Admin_Access")) {
-                    throw new OAuth2AuthenticationException(new OAuth2Error("invalid_client_metadata",
-                            "Scope not allowed for dynamic registration: " + scope,
-                            "https://datatracker.ietf.org/doc/html/rfc7591#section-3.2.2"));
-                }
-            }
+            validateEspiRegistration(clientRegistration, requireHttpsRedirectUris);
             RegisteredClient client = delegate.convert(clientRegistration);
             return RegisteredClient.from(client)
                     .tokenSettings(TokenSettings.builder()
@@ -268,6 +297,56 @@ public class AuthorizationServerConfig {
                             .build())
                     .build();
         };
+    }
+
+    private static void validateEspiRegistration(OAuth2ClientRegistration registration,
+                                                 boolean requireHttpsRedirectUris) {
+        List<String> scopes = registration.getScopes();
+        if (scopes == null || scopes.isEmpty()) {
+            throw invalidClientMetadata("scope is required (ESPI Third Party scopes only)");
+        }
+        for (String scope : scopes) {
+            if (!ESPI_THIRD_PARTY_SCOPES.contains(scope)) {
+                throw invalidClientMetadata("scope not allowed for dynamic registration: " + scope);
+            }
+        }
+
+        List<String> grantTypes = registration.getGrantTypes();
+        if (grantTypes != null && !grantTypes.isEmpty()) {
+            boolean allowed = grantTypes.stream().allMatch(grant ->
+                    AuthorizationGrantType.AUTHORIZATION_CODE.getValue().equals(grant)
+                            || AuthorizationGrantType.REFRESH_TOKEN.getValue().equals(grant));
+            if (!allowed || !grantTypes.contains(AuthorizationGrantType.AUTHORIZATION_CODE.getValue())) {
+                throw invalidClientMetadata("grant_types must be authorization_code, optionally with refresh_token");
+            }
+        }
+
+        List<String> responseTypes = registration.getResponseTypes();
+        if (responseTypes != null && !responseTypes.isEmpty() && !responseTypes.equals(List.of("code"))) {
+            throw invalidClientMetadata("response_types must be [\"code\"]");
+        }
+
+        String authMethod = registration.getTokenEndpointAuthenticationMethod();
+        if (authMethod != null && !ClientAuthenticationMethod.CLIENT_SECRET_BASIC.getValue().equals(authMethod)) {
+            throw invalidClientMetadata("token_endpoint_auth_method must be client_secret_basic");
+        }
+
+        if (registration.getRedirectUris() == null || registration.getRedirectUris().isEmpty()) {
+            throw invalidClientMetadata("redirect_uris is required for an authorization_code client");
+        }
+        if (requireHttpsRedirectUris) {
+            for (String redirectUri : registration.getRedirectUris()) {
+                if (!redirectUri.regionMatches(true, 0, "https://", 0, "https://".length())) {
+                    throw new OAuth2AuthenticationException(new OAuth2Error("invalid_redirect_uri",
+                            "redirect_uris must use https: " + redirectUri, RFC7591_ERROR_URI));
+                }
+            }
+        }
+    }
+
+    private static OAuth2AuthenticationException invalidClientMetadata(String description) {
+        return new OAuth2AuthenticationException(
+                new OAuth2Error("invalid_client_metadata", description, RFC7591_ERROR_URI));
     }
 
     /**
@@ -289,10 +368,10 @@ public class AuthorizationServerConfig {
         // installs the configurer via http.with(...) and scopes the chain via
         // http.securityMatcher(configurer.getEndpointsMatcher()), so THIS chain
         // only claims the auth-server endpoints (/oauth2/authorize, /oauth2/token,
-        // /oauth2/jwks, /oauth2/introspect, /oauth2/revoke, /connect/register,
-        // /userinfo, etc.). Everything else falls through to
-        // adminApiBearerSecurityFilterChain @Order(2) (bearer admin calls) or
-        // defaultSecurityFilterChain @Order(3).
+        // /oauth2/introspect, /oauth2/revoke, /.well-known/oauth-authorization-server,
+        // etc.). /oauth2/register is claimed by clientRegistrationSecurityFilterChain
+        // @Order(0); everything else falls through to adminApiBearerSecurityFilterChain
+        // @Order(2) (bearer admin calls) or defaultSecurityFilterChain @Order(3).
         //
         // (No resource-server filter is configured on this chain — see below.)
         OAuth2AuthorizationServerConfigurer authorizationServerConfigurer =
@@ -318,6 +397,17 @@ public class AuthorizationServerConfig {
         // login step is handled transparently inside DC.
         authorizationServerConfigurer.authorizationEndpoint(authorize -> authorize
                 .consentPage("/authorize/delegate"));
+
+        // Advertise the RFC 7591 endpoint (wired on its own chain, see clientRegistrationSecurityFilterChain)
+        // in /.well-known/oauth-authorization-server. The stock clientRegistrationEndpoint(...) configurer
+        // would do this too, but it also forces a JWT resource server, so it is not used.
+        authorizationServerConfigurer.authorizationServerMetadataEndpoint(metadata -> metadata
+                .authorizationServerMetadataCustomizer(builder -> builder.clientRegistrationEndpoint(
+                        org.springframework.web.util.UriComponentsBuilder
+                                .fromUriString(org.springframework.security.oauth2.server.authorization.context
+                                        .AuthorizationServerContextHolder.getContext().getIssuer())
+                                .path(CLIENT_REGISTRATION_ENDPOINT)
+                                .build().toUriString())));
 
         // Augment the /oauth2/token JSON response so ESPI 1.1/4.0 third parties see DC's canonical
         // resource URIs (resourceURI, authorizationURI, customerResourceURI) alongside the standard
@@ -548,8 +638,7 @@ public class AuthorizationServerConfig {
                 .postLogoutRedirectUri(defaultRedirectUriBase + ":8080/")
                 .scope(OidcScopes.OPENID)
                 .scope(OidcScopes.PROFILE)
-                .scope("FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13")
-                .scope("FB=4_5_15;IntervalDuration=900;BlockDuration=monthly;HistoryLength=13")
+                .scopes(scopes -> scopes.addAll(ESPI_THIRD_PARTY_SCOPES))
                 .tokenSettings(TokenSettings.builder()
                     .accessTokenTimeToLive(Duration.ofMinutes(360))
                     .refreshTokenTimeToLive(Duration.ofMinutes(3600))
@@ -602,29 +691,11 @@ public class AuthorizationServerConfig {
                     .build())
                 .build();
 
-        // RFC 7591 registrar (#196 spike). Obtains the initial access token for POST /oauth2/register via
-        // client_credentials with scope=client.create. The token is opaque, single-use (the registration
-        // provider invalidates it), and must carry ONLY client.create.
-        RegisteredClient registrar = RegisteredClient.withId(UUID.randomUUID().toString())
-                .clientId(REGISTRAR_CLIENT_ID)
-                .clientName("ESPI Client Registrar")
-                .clientSecret("{noop}registrar-secret")
-                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                .scope(CLIENT_CREATE_SCOPE)
-                .clientIdIssuedAt(Instant.now())
-                .tokenSettings(TokenSettings.builder()
-                    .accessTokenTimeToLive(Duration.ofMinutes(10))
-                    .accessTokenFormat(OAuth2TokenFormat.REFERENCE) // ESPI standard: opaque tokens
-                    .build())
-                .clientSettings(ClientSettings.builder()
-                    .requireAuthorizationConsent(false)
-                    .build())
-                .build();
-
         // Seed default clients, and reconcile existing ones to the code definition (see below).
         initializeDefaultClients(repository, datacustodianAdmin, thirdPartyClient, thirdPartyAdmin,
-                dataCustodianIntrospection, registrar);
+                dataCustodianIntrospection);
+
+        seedRegistrarClient(repository, passwordEncoder);
 
         seedAdminClient(repository, passwordEncoder);
 
@@ -694,6 +765,54 @@ public class AuthorizationServerConfig {
 
     private boolean adminClientDrifted(RegisteredClient existing, PasswordEncoder passwordEncoder) {
         return adminClientDrifted(existing, passwordEncoder, adminClientSecret);
+    }
+
+    /**
+     * Seed (or rotate) the RFC 7591 registrar client, {@code espi_registrar} (#196).
+     *
+     * <p>The registrar obtains the initial access token for {@code POST /oauth2/register} via
+     * client_credentials with {@code scope=client.create}. That token is opaque, single-use (the
+     * registration provider invalidates it) and must carry ONLY {@code client.create}.</p>
+     *
+     * <p>Unlike the {@code {noop}} development defaults above, the secret comes from configuration
+     * ({@code espi.authserver.registrar.client-secret}, env {@code ESPI_REGISTRAR_CLIENT_SECRET}) and is
+     * stored {@link PasswordEncoder}-encoded ({@code {bcrypt}...}). It is handled outside
+     * {@link #initializeDefaultClients} because a salted hash differs on every startup, so the
+     * field-equality drift check used there cannot apply: instead the stored hash is compared with
+     * {@link PasswordEncoder#matches}, and re-encoded only when the configured secret changed (rotation).
+     * When no secret is configured the registrar is not seeded, which leaves dynamic registration disabled.</p>
+     */
+    private void seedRegistrarClient(RegisteredClientRepository repository, PasswordEncoder passwordEncoder) {
+        if (registrarClientSecret == null || registrarClientSecret.isBlank()) {
+            System.out.println("ESPI registrar client not seeded: espi.authserver.registrar.client-secret "
+                    + "(ESPI_REGISTRAR_CLIENT_SECRET) is not set; dynamic client registration is disabled");
+            return;
+        }
+        RegisteredClient existing = repository.findByClientId(REGISTRAR_CLIENT_ID);
+        if (existing == null) {
+            repository.save(RegisteredClient.withId(UUID.randomUUID().toString())
+                    .clientId(REGISTRAR_CLIENT_ID)
+                    .clientName("ESPI Client Registrar")
+                    .clientSecret(passwordEncoder.encode(registrarClientSecret))
+                    .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+                    .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                    .scope(CLIENT_CREATE_SCOPE)
+                    .clientIdIssuedAt(Instant.now())
+                    .tokenSettings(TokenSettings.builder()
+                        .accessTokenTimeToLive(Duration.ofMinutes(10))
+                        .accessTokenFormat(OAuth2TokenFormat.REFERENCE) // ESPI standard: opaque tokens
+                        .build())
+                    .clientSettings(ClientSettings.builder()
+                        .requireAuthorizationConsent(false)
+                        .build())
+                    .build());
+            System.out.println("ESPI registrar client seeded");
+        } else if (!passwordEncoder.matches(registrarClientSecret, existing.getClientSecret())) {
+            repository.save(RegisteredClient.from(existing)
+                    .clientSecret(passwordEncoder.encode(registrarClientSecret))
+                    .build());
+            System.out.println("ESPI registrar client secret rotated");
+        }
     }
 
     /**

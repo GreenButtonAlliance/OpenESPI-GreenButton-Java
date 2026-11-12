@@ -20,7 +20,6 @@
 
 package org.greenbuttonalliance.espi.authserver.testdata;
 
-import org.greenbuttonalliance.espi.authserver.controller.ClientRegistrationController;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
@@ -54,95 +53,6 @@ public final class TestFixtures {
 
     private TestFixtures() {
         // Utility class - prevent instantiation
-    }
-
-    /**
-     * Creates a valid OIDC client registration request for ESPI customer client
-     */
-    public static Map<String, Object> createValidEspiClientRegistrationRequest() {
-        Map<String, Object> request = new HashMap<>();
-        request.put("client_name", TEST_CLIENT_NAME);
-        request.put("redirect_uris", List.of(TEST_CALLBACK_URI));
-        request.put("grant_types", List.of(AUTHORIZATION_CODE_GRANT, REFRESH_TOKEN_GRANT));
-        request.put("scope", getCustomerEspiScopes());
-        request.put("token_endpoint_auth_method", CLIENT_SECRET_BASIC);
-        request.put("application_type", "web");
-        request.put("contacts", List.of(TEST_USER_EMAIL));
-        request.put("client_uri", "https://example.com");
-        request.put("policy_uri", "https://example.com/privacy");
-        request.put("tos_uri", "https://example.com/terms");
-        return request;
-    }
-
-    /**
-     * Creates a client registration request for admin client
-     */
-    public static Map<String, Object> createAdminClientRegistrationRequest() {
-        Map<String, Object> request = new HashMap<>();
-        request.put("client_name", "Test Admin Client");
-        request.put("grant_types", List.of(CLIENT_CREDENTIALS_GRANT));
-        request.put("scope", DATACUSTODIAN_ADMIN_SCOPE);
-        request.put("token_endpoint_auth_method", CLIENT_SECRET_BASIC);
-        request.put("application_type", "service");
-        return request;
-    }
-
-    /**
-     * Creates an invalid client registration request for negative testing
-     */
-    public static Map<String, Object> createInvalidClientRegistrationRequest() {
-        Map<String, Object> request = new HashMap<>();
-        request.put("client_name", ""); // Empty name
-        request.put("redirect_uris", List.of(INVALID_HTTP_URI));
-        request.put("grant_types", List.of(IMPLICIT_GRANT)); // Not supported
-        request.put("scope", "invalid_scope");
-        request.put("token_endpoint_auth_method", CLIENT_SECRET_JWT); // Not supported
-        return request;
-    }
-
-    /**
-     * Creates a Green Button Connect My Data client registration request
-     */
-    public static Map<String, Object> createGreenButtonConnectRegistrationRequest() {
-        Map<String, Object> request = new HashMap<>();
-        request.put("client_name", "Green Button Connect My Data");
-        request.put("redirect_uris", List.of("https://gbconnect.example.com/callback"));
-        request.put("grant_types", List.of(AUTHORIZATION_CODE_GRANT, REFRESH_TOKEN_GRANT));
-        request.put("scope", joinScopes(OPENID_SCOPE, PROFILE_SCOPE, ESPI_SCOPE_15_MIN_MONTHLY_13, ESPI_SCOPE_15_MIN_DAILY_7));
-        request.put("token_endpoint_auth_method", CLIENT_SECRET_BASIC);
-        request.put("application_type", "web");
-        request.put("software_id", TEST_SOFTWARE_ID);
-        request.put("software_version", TEST_SOFTWARE_VERSION);
-        return request;
-    }
-
-    /**
-     * Creates a mobile client registration request with PKCE
-     */
-    public static Map<String, Object> createMobileClientRegistrationRequest() {
-        Map<String, Object> request = new HashMap<>();
-        request.put("client_name", "Mobile ESPI Client");
-        request.put("redirect_uris", List.of("com.example.espi://callback"));
-        request.put("grant_types", List.of(AUTHORIZATION_CODE_GRANT, REFRESH_TOKEN_GRANT));
-        request.put("scope", getCustomerEspiScopes());
-        request.put("token_endpoint_auth_method", NONE); // Public client
-        request.put("application_type", "native");
-        request.put("require_proof_key", true);
-        return request;
-    }
-
-    /**
-     * Creates a registered client from ClientRegistrationController request
-     */
-    public static ClientRegistrationController.ClientRegistrationRequest createClientRegistrationRequest() {
-        ClientRegistrationController.ClientRegistrationRequest request = 
-            new ClientRegistrationController.ClientRegistrationRequest();
-        request.setClientName(TEST_CLIENT_NAME);
-        request.setRedirectUris(List.of(TEST_CALLBACK_URI));
-        request.setGrantTypes(List.of(AUTHORIZATION_CODE_GRANT, REFRESH_TOKEN_GRANT));
-        request.setScope(getCustomerEspiScopes());
-        request.setTokenEndpointAuthMethod(CLIENT_SECRET_BASIC);
-        return request;
     }
 
     /**

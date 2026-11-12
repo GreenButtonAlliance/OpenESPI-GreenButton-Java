@@ -44,6 +44,10 @@ espi:
     format: opaque  # Test with ESPI-compliant opaque tokens
   datacustodian:
     endpoint: http://localhost:8080
+  # Seeds the RFC 7591 espi_registrar client (#196) for the dynamic-registration integration test.
+  authserver:
+    registrar:
+      client-secret: registrar-test-secret
 
 # Logging Configuration for Tests
 logging:

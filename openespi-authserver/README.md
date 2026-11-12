@@ -80,8 +80,7 @@ This module provides OAuth2 Authorization Server capabilities as part of the Ope
 │  • /oauth2/consent    (User consent page)                   │
 │                                                             │
 │  Client Registration:                                       │
-│  • /connect/register           (Dynamic client registration)│
-│  • /connect/register/{id}      (Get client information)     │
+│  • /oauth2/register            (RFC 7591 client registration)│
 │                                                             │
 │  Admin Endpoints:                                           │
 │  • /admin/oauth2/tokens        (Token management)          │
@@ -91,7 +90,6 @@ This module provides OAuth2 Authorization Server capabilities as part of the Ope
 │  ESPI Components:                                           │
 │  • EspiTokenCustomizer         (JWT token enhancement)     │
 │  • ConsentController           (ESPI-aware consent flow)   │
-│  • ClientRegistrationController (Dynamic client registration) │
 │  • OAuthAdminController        (Administrative APIs)       │
 │  • JdbcRegisteredClientRepository (Database-backed clients) │
 └─────────────────────────────────────────────────────────────┘
@@ -284,10 +282,9 @@ scope=DataCustodian_Admin_Access
 - `POST /oauth2/introspect` - Token introspection
 - `GET /.well-known/oauth-authorization-server` - Discovery endpoint
 
-### OIDC Client Registration
+### Client Registration
 
-- `POST /connect/register` - Dynamic client registration (RFC 7591)
-- `GET /connect/register/{client_id}` - Get client information
+- `POST /oauth2/register` - OAuth 2.0 Dynamic Client Registration (RFC 7591), bearer `client.create` initial access token
 
 ### ESPI Custom Endpoints
 
@@ -306,60 +303,15 @@ scope=DataCustodian_Admin_Access
 
 ## Dynamic Client Registration
 
-The Authorization Server supports RFC 7591 (OAuth 2.0 Dynamic Client Registration Protocol) with ESPI-specific validations.
+The Authorization Server supports RFC 7591 (OAuth 2.0 Dynamic Client Registration) at
+`POST /oauth2/register`, with opaque tokens only (no OIDC/JWK/JWT). A registrant needs a single-use
+`client.create` initial access token from the `espi_registrar` client (enabled by setting
+`ESPI_REGISTRAR_CLIENT_SECRET`) and may register only a confidential ESPI Third Party
+`authorization_code` client with `client_secret_basic` and ESPI Function Block scopes.
+RFC 7592 read/update and `registration_access_token` are not supported (see #203).
 
-### Register a New Client
-
-```http
-POST /connect/register
-Content-Type: application/json
-
-{
-  "client_name": "My ThirdParty App",
-  "redirect_uris": [
-    "https://myapp.example.com/callback"
-  ],
-  "grant_types": ["authorization_code", "refresh_token"],
-  "scope": "openid profile FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13",
-  "token_endpoint_auth_method": "client_secret_basic"
-}
-```
-
-### Response
-
-```json
-{
-  "client_id": "espi_client_1735689600_abc123",
-  "client_secret": "generated_secret_here",
-  "client_name": "My ThirdParty App",
-  "client_id_issued_at": 1735689600,
-  "client_secret_expires_at": 0,
-  "redirect_uris": [
-    "https://myapp.example.com/callback"
-  ],
-  "grant_types": ["authorization_code", "refresh_token"],
-  "token_endpoint_auth_method": "client_secret_basic",
-  "scope": "openid profile FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"
-}
-```
-
-### ESPI-Specific Validation
-
-The client registration process validates:
-
-- **Scopes**: Must be ESPI-compliant scopes or standard OIDC scopes
-- **Grant Types**: Only `authorization_code`, `client_credentials`, and `refresh_token` are supported
-- **Redirect URIs**: Must be absolute HTTPS URIs (HTTP allowed for localhost development)
-- **Client Authentication**: Supports `client_secret_basic`, `client_secret_post`, and `none`
-
-### Supported ESPI Scopes
-
-- `openid` - OpenID Connect identity
-- `profile` - User profile information
-- `FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13` - Monthly usage data (1-hour intervals)
-- `FB=4_5_15;IntervalDuration=900;BlockDuration=monthly;HistoryLength=13` - Monthly usage data (15-minute intervals)
-- `DataCustodian_Admin_Access` - Administrative access to DataCustodian
-- `ThirdParty_Admin_Access` - Administrative access for ThirdParty applications
+See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md#dynamic-client-registration-rfc-7591) for the full
+procedure and registration policy.
 
 ## Testing
 

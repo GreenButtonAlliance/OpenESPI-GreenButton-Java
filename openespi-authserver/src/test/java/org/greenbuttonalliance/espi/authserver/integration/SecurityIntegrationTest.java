@@ -552,32 +552,6 @@ class SecurityIntegrationTest {
         }
 
         @Test
-        @DisplayName("Should enforce Green Button Alliance client registration requirements")
-        void shouldEnforceGreenButtonAllianceClientRegistrationRequirements() throws Exception {
-            // Register ESPI-compliant client
-            Map<String, Object> registrationRequest = new HashMap<>();
-            registrationRequest.put("client_name", "Green Button Test Client");
-            registrationRequest.put("redirect_uris", List.of("https://app.greenbuttonalliance.org/callback"));
-            registrationRequest.put("grant_types", List.of("authorization_code", "refresh_token"));
-            registrationRequest.put("scope", "openid profile FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13");
-            registrationRequest.put("token_endpoint_auth_method", "client_secret_basic");
-
-            MvcResult result = mockMvc.perform(post("/connect/register")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(registrationRequest)))
-                    .andExpect(status().isCreated())
-                    .andReturn();
-
-            String responseBody = result.getResponse().getContentAsString();
-            JsonNode response = objectMapper.readTree(responseBody);
-            
-            // Verify ESPI compliance features
-            assertThat(response.get("client_id").asText()).startsWith("espi_client_");
-            assertThat(response.get("scope").asText()).contains("FB=4_5_15");
-            assertThat(response.get("token_endpoint_auth_method").asText()).isEqualTo("client_secret_basic");
-        }
-
-        @Test
         @DisplayName("Should enforce proper token lifetimes for ESPI")
         void shouldEnforceProperTokenLifetimesForEspi() throws Exception {
             // Get customer access token
