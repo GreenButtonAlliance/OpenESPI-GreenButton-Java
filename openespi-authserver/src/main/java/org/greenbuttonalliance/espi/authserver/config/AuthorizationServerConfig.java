@@ -73,6 +73,16 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.security.web.util.matcher.AndRequestMatcher;
 import org.springframework.security.web.util.matcher.OrRequestMatcher;
+import org.springframework.core.convert.converter.Converter;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.security.oauth2.server.authorization.OAuth2ClientRegistration;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2ClientRegistrationAuthenticationProvider;
+import org.springframework.security.oauth2.server.authorization.converter.OAuth2ClientRegistrationRegisteredClientConverter;
+import org.springframework.security.oauth2.server.authorization.web.OAuth2ClientRegistrationEndpointFilter;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -178,6 +188,87 @@ public class AuthorizationServerConfig {
     @Value("${espi.authorization-server.client-secret:datacustodian-secret}")
     private String clientSecret;
 
+
+    /** Scope the initial access token must carry (exactly, and only) to call the registration endpoint. */
+    static final String CLIENT_CREATE_SCOPE = "client.create";
+
+    /** Seeded client that obtains {@code client.create} initial access tokens via client_credentials. */
+    static final String REGISTRAR_CLIENT_ID = "espi_registrar";
+
+    /**
+     * RFC 7591 OAuth 2.0 Dynamic Client Registration — {@code POST /oauth2/register} (spike, #196).
+     *
+     * <p>Uses Spring Security 7's built-in RFC 7591 classes ({@link OAuth2ClientRegistrationEndpointFilter},
+     * {@link OAuth2ClientRegistrationAuthenticationProvider}) but wires them by hand on a dedicated chain
+     * rather than via {@code OAuth2AuthorizationServerConfigurer.clientRegistrationEndpoint(...)}. The
+     * configurer is NOT usable here: its {@code init(HttpSecurity)} unconditionally calls
+     * {@code http.oauth2ResourceServer(rs -> rs.jwt(withDefaults()))} whenever the client-registration
+     * configurer is present, which needs a {@code JwtDecoder} and violates the opaque-only constraint (#134).</p>
+     *
+     * <p>The initial access token is an ordinary opaque client_credentials token with scope
+     * {@code client.create}, minted for the seeded {@code espi_registrar} client. It is authenticated by
+     * {@code oauth2ResourceServer().opaqueToken()} backed by {@link AuthorizationServiceOpaqueTokenIntrospector}
+     * (in-process lookup in {@link OAuth2AuthorizationService}, no HTTP, no JWT). The provider then re-resolves
+     * it with {@code OAuth2AuthorizationService.findByToken(value, ACCESS_TOKEN)}, requires its scope set to be
+     * exactly {@code {client.create}}, and invalidates it after one successful registration.</p>
+     *
+     * <p>Limitation: Spring's RFC 7591 implementation issues NO {@code registration_access_token} and has no
+     * RFC 7592 client-configuration (GET/PUT/DELETE) endpoint; both exist only in the OIDC variant.</p>
+     */
+    @Bean
+    @Order(0)
+    public SecurityFilterChain clientRegistrationSecurityFilterChain(
+            HttpSecurity http,
+            RegisteredClientRepository registeredClientRepository,
+            OAuth2AuthorizationService authorizationService,
+            PasswordEncoder passwordEncoder) throws Exception {
+
+        OAuth2ClientRegistrationAuthenticationProvider registrationProvider =
+                new OAuth2ClientRegistrationAuthenticationProvider(registeredClientRepository, authorizationService);
+        registrationProvider.setPasswordEncoder(passwordEncoder); // stored as {bcrypt}..., returned once in clear
+        registrationProvider.setRegisteredClientConverter(espiRegisteredClientConverter());
+
+        OAuth2ClientRegistrationEndpointFilter registrationFilter =
+                new OAuth2ClientRegistrationEndpointFilter(new ProviderManager(registrationProvider));
+
+        http
+                .securityMatcher("/oauth2/register")
+                .authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated())
+                .csrf(csrf -> csrf.disable()) // bearer-token API, no browser session
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .oauth2ResourceServer(rs -> rs.opaqueToken(opaque -> opaque
+                        .introspector(new AuthorizationServiceOpaqueTokenIntrospector(authorizationService))))
+                .addFilterAfter(registrationFilter, AuthorizationFilter.class);
+        return http.build();
+    }
+
+    /**
+     * Wraps Spring's default RFC 7591 metadata→RegisteredClient converter to apply ESPI policy:
+     * opaque (REFERENCE) access tokens, no PKCE, and no self-assigned privileged scopes.
+     */
+    static Converter<OAuth2ClientRegistration, RegisteredClient> espiRegisteredClientConverter() {
+        OAuth2ClientRegistrationRegisteredClientConverter delegate = new OAuth2ClientRegistrationRegisteredClientConverter();
+        return clientRegistration -> {
+            List<String> requested = clientRegistration.getScopes() == null ? List.of() : clientRegistration.getScopes();
+            for (String scope : requested) {
+                if (CLIENT_CREATE_SCOPE.equals(scope) || scope.endsWith("_Admin_Access")) {
+                    throw new OAuth2AuthenticationException(new OAuth2Error("invalid_client_metadata",
+                            "Scope not allowed for dynamic registration: " + scope,
+                            "https://datatracker.ietf.org/doc/html/rfc7591#section-3.2.2"));
+                }
+            }
+            RegisteredClient client = delegate.convert(clientRegistration);
+            return RegisteredClient.from(client)
+                    .tokenSettings(TokenSettings.builder()
+                            .accessTokenFormat(OAuth2TokenFormat.REFERENCE) // ESPI standard: opaque tokens
+                            .accessTokenTimeToLive(Duration.ofMinutes(360))
+                            .build())
+                    .clientSettings(ClientSettings.withSettings(client.getClientSettings().getSettings())
+                            .requireProofKey(false) // ESPI does not use PKCE (see #148)
+                            .build())
+                    .build();
+        };
+    }
 
     /**
      * OAuth2 Authorization Server Security Filter Chain
@@ -511,9 +602,29 @@ public class AuthorizationServerConfig {
                     .build())
                 .build();
 
+        // RFC 7591 registrar (#196 spike). Obtains the initial access token for POST /oauth2/register via
+        // client_credentials with scope=client.create. The token is opaque, single-use (the registration
+        // provider invalidates it), and must carry ONLY client.create.
+        RegisteredClient registrar = RegisteredClient.withId(UUID.randomUUID().toString())
+                .clientId(REGISTRAR_CLIENT_ID)
+                .clientName("ESPI Client Registrar")
+                .clientSecret("{noop}registrar-secret")
+                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                .scope(CLIENT_CREATE_SCOPE)
+                .clientIdIssuedAt(Instant.now())
+                .tokenSettings(TokenSettings.builder()
+                    .accessTokenTimeToLive(Duration.ofMinutes(10))
+                    .accessTokenFormat(OAuth2TokenFormat.REFERENCE) // ESPI standard: opaque tokens
+                    .build())
+                .clientSettings(ClientSettings.builder()
+                    .requireAuthorizationConsent(false)
+                    .build())
+                .build();
+
         // Seed default clients, and reconcile existing ones to the code definition (see below).
         initializeDefaultClients(repository, datacustodianAdmin, thirdPartyClient, thirdPartyAdmin,
-                dataCustodianIntrospection);
+                dataCustodianIntrospection, registrar);
 
         seedAdminClient(repository, passwordEncoder);
 

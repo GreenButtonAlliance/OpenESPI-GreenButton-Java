@@ -263,7 +263,7 @@ class MySqlTestcontainersIntegrationTest {
             List<String> allClientIds = registeredClientAdminDao.findAllClientIds();
 
             // Then
-            assertThat(allClientIds).hasSize(6); // 2 test clients + 4 default clients (incl. datacustodian introspection)
+            assertThat(allClientIds).hasSize(7); // 2 test clients + 5 default clients (incl. datacustodian introspection, espi_registrar)
             assertThat(allClientIds).contains("test-client-1", "test-client-2");
         }
 
