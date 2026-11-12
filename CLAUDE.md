@@ -29,8 +29,12 @@ mvn test -pl openespi-datacustodian -am
 # Test specific module only
 cd openespi-common && mvn test
 
-# Integration tests with TestContainers (requires Docker)
-mvn verify -pl openespi-common -Pintegration-tests
+# TestContainers tests run as part of the normal surefire `mvn test` (requires Docker).
+# There are no failsafe *IT classes; the -Pintegration-tests profile currently adds nothing (#193).
+mvn test -pl openespi-common
+
+# Authorization Server: only the TestContainers group runs cleanly today (#129)
+mvn test -pl openespi-authserver -am -Dgroups=testcontainers-it -DfailIfNoTests=false
 ```
 
 ### Run Applications
@@ -261,7 +265,7 @@ ESPI uses Atom XML feeds for data exchange. Key patterns:
 ### Testing Requirements
 - All tests must pass before committing: `mvn test`
 - Run tests for affected module and its dependents: `mvn test -pl <module> -am`
-- Integration tests should pass before PR merge: `mvn verify -Pintegration-tests -pl openespi-common,openespi-datacustodian,openespi-thirdparty -am` (as in CI)
+- TestContainers-based tests (Docker required) run inside the normal `mvn test`; there are no failsafe `*IT` classes, and the `-Pintegration-tests` profile currently adds nothing (being reworked in #193)
 - Note: openespi-authserver unit tests are currently excluded from CI (#129); CI runs only its `@Tag("testcontainers-it")` tests
 - **IMPORTANT**: Use AssertJ chained assertions - combine all assertions for a single object into one assertion chain
   - Good: `assertThat(retrieved).isPresent().hasValueSatisfying(device -> assertThat(device).extracting(...).containsExactly(...))`
