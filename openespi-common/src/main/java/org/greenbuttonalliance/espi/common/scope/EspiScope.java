@@ -174,6 +174,22 @@ public record EspiScope(
 		return !functionBlocksIn(FunctionBlockCategory.CUSTOMER_PII).isEmpty();
 	}
 
+	/**
+	 * Whether this scope indicates the Data Custodian's RetailCustomer resource, i.e. contains
+	 * {@link FunctionBlock#FB_51} (Common, Retail Customer).
+	 *
+	 * <p>Per REQ.21.6.1.2 the token response's {@code customerResourceURI} is required only when the
+	 * DC supports the RetailCustomer resource "as indicated by inclusion of FB_51" in the scope's
+	 * FB terms. This is therefore the trigger for the customer subscription and its
+	 * {@code customerResourceURI} &mdash; distinct from {@link #includesCustomerPii()}, which reports
+	 * the individual PII resource FBs (54&ndash;62) that gate access to specific customer resources.</p>
+	 *
+	 * @return {@code true} iff FB 51 is present
+	 */
+	public boolean includesRetailCustomerResource() {
+		return containsFunctionBlock(FunctionBlock.FB_51.getId());
+	}
+
 	/** @return whether this scope grants any energy data-shape FB (12, 15, 16, 17, 27, 28). */
 	public boolean includesEnergyData() {
 		return !functionBlocksIn(FunctionBlockCategory.ENERGY_DATA_SHAPE).isEmpty();

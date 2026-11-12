@@ -285,6 +285,23 @@ class AuthorizationRepositoryTest extends BaseRepositoryTest {
         }
 
         @Test
+        @DisplayName("Should find authorization by back-channel correlation id (#202 idempotency key)")
+        void shouldFindAuthorizationByCorrelationId() {
+            AuthorizationEntity auth = createValidAuthorization();
+            String correlationId = "corr-" + faker.internet().uuid();
+            auth.setCorrelationId(correlationId);
+            AuthorizationEntity saved = authorizationRepository.save(auth);
+            flushAndClear();
+
+            assertThat(authorizationRepository.findByCorrelationId(correlationId))
+                    .isPresent()
+                    .hasValueSatisfying(found -> assertThat(found)
+                            .extracting(AuthorizationEntity::getId, AuthorizationEntity::getCorrelationId)
+                            .containsExactly(saved.getId(), correlationId));
+            assertThat(authorizationRepository.findByCorrelationId("corr-unknown")).isEmpty();
+        }
+
+        @Test
         @DisplayName("Should find authorization by access token")
         void shouldFindAuthorizationByAccessToken() {
             // Arrange

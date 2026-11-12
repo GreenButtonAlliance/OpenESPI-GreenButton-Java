@@ -31,10 +31,15 @@ import java.util.UUID;
  *
  * <p>Invariants (from PR B1):</p>
  * <ul>
- *   <li>Always creates exactly one <em>energy</em> Subscription (the {@code resource_uri} target).</li>
- *   <li>Creates a <em>customer/PII</em> Subscription only when the granted scope includes a
- *       Customer/PII Function Block (FB 54&ndash;62). DC builds the canonical
- *       {@code customerResourceURI} itself and stores it on the Authorization aggregate.</li>
+ *   <li>Creates one <em>energy</em> Subscription (the {@code resource_uri} target) when usage
+ *       points were selected.</li>
+ *   <li>Creates a <em>customer/PII</em> Subscription exactly when the granted scope includes
+ *       FB_51 (Common, Retail Customer) &mdash; per REQ.21.6.1.2, the indicator that the DC
+ *       supports the RetailCustomer resource and so owes a {@code customerResourceURI} (#202).
+ *       DC builds that URI itself and stores it on the Authorization aggregate. The PII resource
+ *       FBs (54&ndash;62) gate the individual customer resources at the resource server.</li>
+ *   <li>Idempotent per grant: a repeated call with the same {@code correlationId} returns the
+ *       Authorization aggregate already provisioned for it instead of creating another (#202).</li>
  *   <li>Persistence happens through the Authorization aggregate; Subscriptions are never saved
  *       independently.</li>
  * </ul>
@@ -60,7 +65,8 @@ public interface SubscriptionProvisioningService {
 	/**
 	 * Command-side payload for {@link #provisionFromGrant(SubscriptionProvisionCommand)}.
 	 *
-	 * @param correlationId            opaque AS-supplied trace id; logged but not persisted
+	 * @param correlationId            opaque AS-supplied id of the grant; persisted on the
+	 *                                 Authorization as the idempotency key (unique when present)
 	 * @param clientId                 OAuth2 {@code client_id} of the granted TP (must match a
 	 *                                 registered {@code ApplicationInformation})
 	 * @param grantedScope             the ESPI scope string the customer approved (must parse via
@@ -86,14 +92,14 @@ public interface SubscriptionProvisioningService {
 	 * @param resourceSubscriptionId   UUID of the energy Subscription, or {@code null} for a
 	 *                                 PII-only grant (no usage points selected)
 	 * @param customerSubscriptionId   UUID of the customer/PII Subscription, or {@code null} if the
-	 *                                 grant did not include Customer/PII scope
+	 *                                 grant did not include FB_51
 	 * @param resourceUri              absolute URI the TP polls for energy data
 	 *                                 ({@code .../resource/Subscription/{id}}), or {@code null} for
 	 *                                 a PII-only grant
 	 * @param authorizationUri         absolute URI of the Authorization resource
 	 *                                 ({@code .../resource/Authorization/{id}})
 	 * @param customerResourceUri      absolute URI the TP polls for customer/PII data, or
-	 *                                 {@code null} if no Customer/PII scope was granted
+	 *                                 {@code null} if the grant did not include FB_51
 	 */
 	record SubscriptionProvisionResult(
 			UUID authorizationId,

@@ -175,6 +175,14 @@ class EspiScopeTest {
 	}
 
 	@Test
+	@DisplayName("includesRetailCustomerResource is FB_51 only (REQ.21.6.1.2), independent of PII FBs 54-62")
+	void retailCustomerResourcePredicate() {
+		assertThat(EspiScope.parse("FB=1_4_5_51").includesRetailCustomerResource()).isTrue();
+		assertThat(EspiScope.parse("FB=51_53_54").includesRetailCustomerResource()).isTrue();
+		assertThat(EspiScope.parse("FB=53_54_55_56_57_58_59_60_61_62").includesRetailCustomerResource()).isFalse();
+	}
+
+	@Test
 	@DisplayName("unrecognized and deprecated FB ids parse without error and are carried")
 	void carriesUnknownAndDeprecatedFbs() {
 		assertThatNoException().isThrownBy(() -> EspiScope.parse("FB=99_36"));

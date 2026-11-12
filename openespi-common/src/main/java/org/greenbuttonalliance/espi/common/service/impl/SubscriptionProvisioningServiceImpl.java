@@ -38,6 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -74,6 +75,16 @@ public class SubscriptionProvisioningServiceImpl implements SubscriptionProvisio
 
 		EspiScope scope = EspiScope.parse(command.grantedScope());
 
+		// #202 idempotency (defense in depth): one AS grant (correlation id) provisions exactly one
+		// Authorization aggregate. A retried/repeated call returns what was already created.
+		if (hasCorrelationId(command)) {
+			Optional<AuthorizationEntity> existing =
+					authorizationRepository.findByCorrelationId(command.correlationId());
+			if (existing.isPresent()) {
+				return existingResult(existing.get(), command);
+			}
+		}
+
 		ApplicationInformationEntity application = applicationInformationRepository
 				.findByClientId(command.clientId())
 				.orElseThrow(() -> new IllegalArgumentException(
@@ -86,11 +97,14 @@ public class SubscriptionProvisioningServiceImpl implements SubscriptionProvisio
 
 		List<UsagePointEntity> usagePoints = resolveUsagePoints(command.selectedUsagePointIds(), customer);
 		boolean includesEnergy = !usagePoints.isEmpty();
-		boolean includesPii = scope.includesCustomerPii();
+		// REQ.21.6.1.2: customerResourceURI (and so the customer subscription) is produced exactly
+		// when the scope includes FB_51. The PII resource FBs (54-62) keep gating the individual
+		// customer resources at the resource server; they no longer trigger the subscription (#202).
+		boolean includesPii = scope.includesRetailCustomerResource();
 
 		if (!includesEnergy && !includesPii) {
 			throw new IllegalArgumentException(
-					"Grant must include at least one selected usage point OR a Customer/PII FB scope");
+					"Grant must include at least one selected usage point OR the RetailCustomer FB_51 scope");
 		}
 
 		AuthorizationEntity authorization = newAuthorization(command, application, customer, includesPii);
@@ -123,6 +137,42 @@ public class SubscriptionProvisioningServiceImpl implements SubscriptionProvisio
 				authorizationUri,
 				persisted.getCustomerResourceURI()
 		);
+	}
+
+	private static boolean hasCorrelationId(SubscriptionProvisionCommand command) {
+		return command.correlationId() != null && !command.correlationId().isBlank();
+	}
+
+	/**
+	 * Rebuilds the result for an Authorization already provisioned for this correlation id. The
+	 * replay must come from the same client and customer; anything else is a correlation-id
+	 * collision and is rejected rather than handing one grant's resources to another.
+	 */
+	private SubscriptionProvisionResult existingResult(AuthorizationEntity existing,
+														SubscriptionProvisionCommand command) {
+		boolean sameClient = command.clientId().equals(existing.getThirdParty());
+		boolean sameCustomer = existing.getRetailCustomer() != null
+				&& command.retailCustomerId().equals(existing.getRetailCustomer().getId());
+		if (!sameClient || !sameCustomer) {
+			throw new IllegalArgumentException(
+					"correlation_id " + command.correlationId() + " is already bound to another grant");
+		}
+		UUID resourceSubscriptionId = EspiBatchUri.subscriptionId(existing.getResourceURI())
+				.map(UUID::fromString).orElse(null);
+		UUID customerSubscriptionId = existing.getSubscriptions().stream()
+				.map(SubscriptionEntity::getId)
+				.filter(id -> !id.equals(resourceSubscriptionId))
+				.findFirst()
+				.orElse(null);
+		log.info("Back-channel provision replay for correlation_id={}: returning existing authorization {}",
+				command.correlationId(), existing.getId());
+		return new SubscriptionProvisionResult(
+				existing.getId(),
+				resourceSubscriptionId,
+				existing.getCustomerResourceURI() != null ? customerSubscriptionId : null,
+				existing.getResourceURI(),
+				existing.getAuthorizationURI(),
+				existing.getCustomerResourceURI());
 	}
 
 	private void validate(SubscriptionProvisionCommand command) {
@@ -163,6 +213,9 @@ public class SubscriptionProvisioningServiceImpl implements SubscriptionProvisio
 		authorization.setId(UUID.randomUUID());
 		authorization.setThirdParty(command.clientId());
 		authorization.setStatus(AuthorizationEntity.STATUS_ACTIVE);
+		if (hasCorrelationId(command)) {
+			authorization.setCorrelationId(command.correlationId());
+		}
 		if (includesPii) {
 			// Build the canonical ESPI Batch/RetailCustomer URI from the retail-customer id DC already
 			// holds (#160). DC owns this value end-to-end; it is never round-tripped through the AS.
