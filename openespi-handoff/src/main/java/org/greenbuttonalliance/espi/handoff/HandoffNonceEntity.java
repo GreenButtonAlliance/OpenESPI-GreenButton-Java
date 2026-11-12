@@ -34,8 +34,8 @@ import java.time.Instant;
  * this table means "this nonce has been consumed; further attempts must be rejected as replay."
  *
  * <p>{@link #nonce} is the primary key; an attempt to insert a duplicate fails the transaction and
- * surfaces as a replay rejection. The receiver is expected to delete rows past {@link #expiresAt}
- * via a periodic sweep (out of scope for PR C1).</p>
+ * surfaces as a replay rejection. {@link HandoffNonceSweeper} periodically deletes rows whose
+ * {@link #expiresAt} is more than a grace period in the past.</p>
  */
 @Entity
 @Table(name = "handoff_nonces")
@@ -52,9 +52,9 @@ public class HandoffNonceEntity implements Persistable<String>, Serializable {
 	private String nonce;
 
 	/**
-	 * The {@code expiresAt} from the verified handoff payload. Used by a sweep job (not in scope
-	 * here) to reap expired rows. NOT consulted on consume &mdash; the codec already verified
-	 * expiry before this row was written.
+	 * The {@code expiresAt} from the verified handoff payload. Used by {@link HandoffNonceSweeper}
+	 * to reap expired rows. NOT consulted on consume &mdash; the codec already verified expiry
+	 * before this row was written.
 	 */
 	@Column(name = "expires_at", nullable = false)
 	private Instant expiresAt;
