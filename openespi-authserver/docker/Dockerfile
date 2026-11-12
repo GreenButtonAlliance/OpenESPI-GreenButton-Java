@@ -4,7 +4,7 @@
 # ===================================================================
 # Build Stage - Create the application JAR
 # ===================================================================
-FROM eclipse-temurin:21-jdk-alpine AS builder
+FROM eclipse-temurin:25-jdk-alpine AS builder
 
 # Set working directory
 WORKDIR /app
@@ -31,7 +31,7 @@ RUN java -Djarmode=layertools -jar target/*.jar extract
 # ===================================================================
 # Runtime Stage - Create the final image
 # ===================================================================
-FROM eclipse-temurin:21-jre-alpine AS runtime
+FROM eclipse-temurin:25-jre-alpine AS runtime
 
 # Create app user for security
 RUN addgroup -g 1001 -S espi && \

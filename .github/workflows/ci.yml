@@ -1,168 +1,151 @@
-name: CI/CD Pipeline
+name: CI
 
+# Runs on EVERY pull request to main (no paths filter) so required checks always report.
+# Required status checks: `ci-ok` (this workflow) and `pr-title` (pr-title.yml); see
+# .github/CI_CD_SETUP.md.
 on:
-  push:
-    branches: [ main, develop ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main]
+  push:
+    branches: [main]
+  merge_group:
 
-env:
-  JAVA_VERSION: '25'
-  MAVEN_OPTS: -Xmx3072m
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  # Cancel superseded PR runs; let every push to main finish (each one feeds SonarCloud).
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  build-and-test:
-    name: Build and Test All Modules
+  test:
+    name: test (${{ matrix.module }})
     runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - module: openespi-handoff
+          - module: openespi-common
+          - module: openespi-datacustodian
+          - module: openespi-thirdparty
+          - module: openespi-authserver
+            # TODO(#129): AS unit tests are broken on the H2 test profiles; only the Docker-backed
+            # @Tag("testcontainers-it") suite runs until #129 is fixed. Remove this line then.
+            test-args: -Dgroups=testcontainers-it -DfailIfNoTests=false
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Shallow clones should be disabled for better SonarCloud analysis
+      - uses: actions/checkout@v7
 
-      - name: Set up JDK 25
-        uses: actions/setup-java@v4
-        with:
-          java-version: ${{ env.JAVA_VERSION }}
-          distribution: 'temurin'
-          cache: 'maven'
+      - uses: ./.github/actions/setup-java-maven
 
-      - name: Cache Maven packages
-        uses: actions/cache@v4
+      # Matrix strategy: each module runs in parallel. Upstream modules (handoff, common) are only
+      # COMPILED and installed here (-DskipTests, ~30 s) - their tests run in their own matrix
+      # entry - and then `verify` runs for this module alone, so no test suite runs twice.
+      - name: Install upstream modules (no tests)
+        if: matrix.module != 'openespi-handoff'
+        run: mvn install -DskipTests -pl ${{ matrix.module }} -am
+
+      - name: Verify ${{ matrix.module }}
+        run: mvn verify -pl ${{ matrix.module }} ${{ matrix.test-args }}
+
+      - name: Stage JaCoCo report for SonarCloud
+        if: always()
+        run: |
+          report="${{ matrix.module }}/target/site/jacoco/jacoco.xml"
+          if [[ -f "$report" ]]; then
+            mkdir -p "coverage/${{ matrix.module }}"
+            cp "$report" "coverage/${{ matrix.module }}/jacoco.xml"
+          fi
+
+      - name: Upload JaCoCo report
+        if: always()
+        uses: actions/upload-artifact@v7
         with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
+          name: jacoco-${{ matrix.module }}
+          path: coverage/
+          if-no-files-found: ignore
+          retention-days: 3
+
+      - name: Upload surefire reports
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: surefire-reports-${{ matrix.module }}
+          path: ${{ matrix.module }}/target/surefire-reports/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  quality:
+    name: quality (SonarCloud)
+    needs: test
+    # Same-repo PRs and pushes to main only: fork PRs have no SONAR_TOKEN and are analysed by
+    # sonarcloud-fork-pr.yml (workflow_run) instead.
+    if: >-
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # full history for SonarCloud blame / new-code detection
+
+      - uses: ./.github/actions/setup-java-maven
 
       - name: Cache SonarCloud packages
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.sonar/cache
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
 
-      - name: Build all modules
-        run: mvn clean install -DskipTests
+      # Compile only: the tests already ran in the `test` matrix; their JaCoCo reports are reused.
+      - name: Compile all modules
+        run: mvn install -DskipTests
 
-      - name: Run tests - openespi-common
-        run: mvn test -pl openespi-common -am
-
-      - name: Run tests - openespi-datacustodian
-        run: mvn test -pl openespi-datacustodian -am
-
-      # TODO: Enable when authserver implementation is complete
-      # - name: Run tests - openespi-authserver
-      #   run: mvn test -pl openespi-authserver -am
-      #   env:
-      #     SPRING_PROFILES_ACTIVE: test
-
-      - name: Run tests - openespi-thirdparty
-        run: mvn test -pl openespi-thirdparty -am
-
-      - name: Run integration tests with TestContainers
-        # -am ("also make") builds upstream dependencies first — required so the new
-        # openespi-handoff module is rebuilt and reinstalled before the integration tests
-        # compile, matching the pattern used by the unit-test steps above.
-        run: mvn verify -Pintegration-tests -pl openespi-common,openespi-datacustodian,openespi-thirdparty -am
-
-      - name: Run integration tests - openespi-authserver (TestContainers, tagged)
-        # The authserver module's UNIT tests are pre-existing-broken on the H2 local/test profiles
-        # and stay excluded from CI (see the commented full-module step above). This runs ONLY the
-        # Docker-backed integration tests tagged @Tag("testcontainers-it"): the MySQL schema/client
-        # suite and the Phase 2.0 auth-code-flow orchestration test (#148), against a real MySQL via
-        # Testcontainers. -Dgroups selects by tag, so the broken unit tests are not executed.
-        run: mvn test -pl openespi-authserver -am -Dgroups=testcontainers-it -DfailIfNoTests=false
-
-      # JaCoCo reports are automatically generated during test phase (configured in root pom.xml)
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
+      - name: Download JaCoCo reports
+        uses: actions/download-artifact@v8
         with:
-          name: test-results
-          path: |
-            **/target/surefire-reports/
-            **/target/failsafe-reports/
+          pattern: jacoco-*
+          path: coverage
+          merge-multiple: true
 
-      - name: Upload coverage reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-reports
-          path: |
-            **/target/site/jacoco/
+      - name: Restore JaCoCo reports into module target directories
+        run: |
+          # Root pom sets sonar.coverage.jacoco.xmlReportPaths=${project.basedir}/target/site/jacoco/jacoco.xml
+          for report in coverage/*/jacoco.xml; do
+            [[ -f "$report" ]] || continue
+            module="$(basename "$(dirname "$report")")"
+            mkdir -p "$module/target/site/jacoco"
+            cp "$report" "$module/target/site/jacoco/jacoco.xml"
+          done
 
-  sonarcloud:
-    name: SonarCloud Analysis
-    runs-on: ubuntu-latest
-    needs: build-and-test
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Shallow clones should be disabled for better SonarCloud analysis
-
-      - name: Set up JDK 25
-        uses: actions/setup-java@v4
-        with:
-          java-version: ${{ env.JAVA_VERSION }}
-          distribution: 'temurin'
-          cache: 'maven'
-
-      - name: Cache Maven packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
-
-      - name: Cache SonarCloud packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.sonar/cache
-          key: ${{ runner.os }}-sonar
-          restore-keys: ${{ runner.os }}-sonar
-
-      - name: Build modules for SonarCloud
-        run: mvn clean verify -pl openespi-common,openespi-datacustodian,openespi-thirdparty -am
-
-      - name: Analyze with SonarCloud
+      - name: SonarCloud analysis
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          mvn org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
-            -Dsonar.projectKey=GreenButtonAlliance_OpenESPI-GreenButton-Java \
-            -Dsonar.organization=greenbuttonalliance \
-            -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.coverage.jacoco.xmlReportPaths=**/target/site/jacoco/jacoco.xml
+        # sonar.projectKey / organization / host.url / coverage paths come from the root pom.
+        run: mvn org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
 
-  security-scan:
-    name: Security Vulnerability Scan
+  ci-ok:
+    name: ci-ok
+    # The ONE required status check. Always runs and fails if any needed job failed or was
+    # cancelled; `skipped` is fine (quality on fork PRs and merge-queue runs).
+    if: always()
+    needs: [test, quality]
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 25
-        uses: actions/setup-java@v4
-        with:
-          java-version: ${{ env.JAVA_VERSION }}
-          distribution: 'temurin'
-          cache: 'maven'
-
-      - name: Run OWASP Dependency Check
-        run: mvn org.owasp:dependency-check-maven:check
-        continue-on-error: true
-
-      - name: Upload OWASP report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: owasp-report
-          path: target/dependency-check-report.html
+      - name: Check job results
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Job results: $RESULTS"
+          for r in $RESULTS; do
+            if [[ "$r" == "failure" || "$r" == "cancelled" ]]; then
+              echo "::error::At least one CI job did not succeed ($RESULTS)"
+              exit 1
+            fi
+          done

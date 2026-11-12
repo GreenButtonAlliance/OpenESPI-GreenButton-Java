@@ -143,16 +143,18 @@ mvn test -pl openespi-common
 # Verify Docker is reachable (any setup above)
 docker --version && docker ps
 
-# Run all integration tests (H2, MySQL, PostgreSQL)
-mvn verify -pl openespi-common -Pintegration-tests
+# Run all openespi-common tests, including the Testcontainers ones (H2, MySQL, PostgreSQL)
+mvn verify -pl openespi-common -am
 
 # Run specific database tests
 mvn test -Dtest=ComplexRelationshipMySQLIntegrationTest -pl openespi-common
 mvn test -Dtest=ComplexRelationshipPostgreSQLIntegrationTest -pl openespi-common
 
-# Cross-module integration
-mvn verify -Pfull-integration
+# Authorization Server: only the Testcontainers suite runs until #129 (same as CI)
+mvn verify -pl openespi-authserver -am -Dgroups=testcontainers-it -DfailIfNoTests=false
 ```
+
+CI, release and versioning: see [`.github/CI_CD_SETUP.md`](.github/CI_CD_SETUP.md) and [`RELEASING.md`](RELEASING.md).
 
 **What Gets Tested:**
 - ✅ **H2**: In-memory database with vendor-neutral migrations

@@ -1,260 +1,195 @@
-# CI/CD Setup Guide
+# CI/CD Setup
 
-This document explains the Continuous Integration and Continuous Deployment (CI/CD) setup for the OpenESPI GreenButton Java monorepo.
-
-## Overview
-
-The project uses **GitHub Actions** for CI/CD with **SonarCloud** integration for code quality analysis.
+GitHub Actions configuration for the OpenESPI-GreenButton-Java monorepo (Java 25, Spring Boot 4,
+Maven reactor with five modules: `openespi-handoff`, `openespi-common`, `openespi-datacustodian`,
+`openespi-thirdparty`, `openespi-authserver`). Releasing is described in [`RELEASING.md`](../RELEASING.md).
 
 ## Workflows
 
-### 1. Main CI/CD Pipeline (`.github/workflows/ci.yml`)
+| Workflow | Triggers | What it does |
+|---|---|---|
+| [`ci.yml`](workflows/ci.yml) | every `pull_request` to `main` (no paths filter), `push` to `main`, `merge_group` | `test` matrix, `quality` (SonarCloud), `ci-ok` aggregator |
+| [`pr-title.yml`](workflows/pr-title.yml) | `pull_request` opened / edited / synchronize / reopened, `merge_group` | `pr-title`: Conventional-Commits PR title check |
+| [`sonarcloud-fork-pr.yml`](workflows/sonarcloud-fork-pr.yml) | `workflow_run` after **CI** succeeds for a fork PR | SonarCloud PR analysis for forks (which get no secrets in `ci.yml`) |
+| [`security.yml`](workflows/security.yml) | `pull_request`, `push` to `main`, weekly cron (Mon 05:17 UTC), manual | OWASP dependency-check (advisory) and CodeQL |
+| [`release.yml`](workflows/release.yml) | push of a tag `<module>-v<X.Y.Z>` | test, GitHub Release with jar, ECR image (datacustodian), bump PR |
 
-**Triggers:**
-- Push to `main` or `develop` branches
-- Pull requests to `main` or `develop` branches
+Every job sets up Java through the composite action
+[`.github/actions/setup-java-maven`](actions/setup-java-maven/action.yml): Temurin 25, the
+`setup-java` `cache: maven` cache of `~/.m2/repository` and `MAVEN_ARGS=-B -ntp`. All workflows
+default to `permissions: contents: read`; jobs add only what they need.
 
-**Jobs:**
+### `ci.yml`
 
-#### build-and-test
-- Runs on Ubuntu with Java 25
-- Sets up MySQL 8.0 and PostgreSQL 15 services
-- Builds all modules
-- Runs unit tests for each module separately (authserver temporarily excluded)
-- Runs integration tests with TestContainers
-- Generates JaCoCo coverage reports
-- Uploads test results and coverage reports as artifacts
+- **`test (<module>)`**: matrix over the five modules, `fail-fast: false`. Each entry runs
+  `mvn install -DskipTests -pl <module> -am` (it only compiles the upstream modules, about 30 s)
+  and then `mvn verify -pl <module>`. Each test suite runs exactly once, in its own entry, and the
+  entries run in parallel. Wall-clock time is that of the slowest module, not the sum.
+  An install-once job that shares `~/.m2/repository/org/greenbuttonalliance` as an artifact was
+  rejected. It would add a serial job, plus artifact upload and download, that cost more than the
+  30 s compile it saves.
+  - `openespi-authserver` runs only `-Dgroups=testcontainers-it` until **#129** fixes the
+    unit tests on the H2 profiles.
+  - Testcontainers suites use the Docker daemon on `ubuntu-latest`.
+  - On failure the job uploads `surefire-reports-<module>`. It always uploads that module's
+    `jacoco.xml` for the `quality` job.
+- **`quality`**: one SonarCloud analysis. It runs on pushes to `main` and same-repo PRs. It
+  compiles the code (`-DskipTests`) and downloads the matrix's JaCoCo reports into each
+  module's `target/site/jacoco/`, then runs `sonar:sonar`. The project key, organization, host
+  and coverage paths come from the root `pom.xml` `sonar.*` properties. `openespi-authserver` sets
+  `sonar.skip=true`.
+  - Before #193, the surefire `<argLine>` in the root pom dropped the JaCoCo agent, so no
+    `jacoco.exec` was written and SonarCloud got no coverage. It now starts with `@{argLine}`.
+  - The 50 %-per-package `jacoco:check` rule is now evaluated for the first time, so it is
+    advisory for now (`haltOnFailure=false`). Most `openespi-thirdparty` packages, for example,
+    are below 50 %. Flip it to `true` when the modules meet the rule.
+- **`ci-ok`**: `if: always()`, `needs: [test, quality]`. It fails if any needed job failed or was
+  cancelled. A skipped job is fine: `quality` is skipped on fork PRs and in the merge queue.
+  **This is the single required check from this workflow.**
 
-**Note:** The `openespi-authserver` module is temporarily excluded from CI/CD until implementation is complete.
+`pr-title` is a separate workflow on purpose. It must re-run on `edited` when someone fixes the
+title. Inside `ci.yml`, an `edited` run would either cancel the real build (same concurrency
+group) or publish a second, green `ci-ok` for the same commit.
 
-####sonarcloud
-- Depends on successful `build-and-test` job
-- Runs SonarCloud analysis with code coverage
-- Uploads results to SonarCloud dashboard
-- Checks quality gates
+Concurrency: superseded PR runs are cancelled. Pushes to `main` are never cancelled, because each
+one feeds SonarCloud.
 
-#### security-scan
-- Runs OWASP Dependency Check
-- Scans for known vulnerabilities in dependencies
-- Uploads security reports as artifacts
+### `sonarcloud-fork-pr.yml`
 
-### 2. Pull Request Checks (`.github/workflows/pr-checks.yml`)
+This workflow runs in the base-repository context after a successful CI run of a fork PR. It
+resolves the PR number and branch, checks out the fork's head SHA without persisted credentials,
+and compiles it. It reuses the CI run's JaCoCo artifacts (`actions: read`) and runs
+`sonar:sonar` with the `sonar.pullrequest.*` parameters. Untrusted values reach the shell only
+through `env:`.
 
-**Triggers:**
-- Pull request opened, synchronized, or reopened
+> Security note: this job builds fork code while `SONAR_TOKEN` is available to a later step.
+> Keep `SONAR_TOKEN` an analysis-scoped SonarCloud token. No other secret is exposed. To give
+> up fork-PR decoration, delete the workflow; CI is unaffected.
 
-**Jobs:**
+### `security.yml`
 
-#### pr-validation
-- Validates PR title follows conventional commits format
-- Checks code formatting with Spotless
-- Runs quick tests on core modules
-- Security vulnerability scan with CVSS threshold
+- **OWASP dependency-check**. It runs `mvn install -DskipTests` and then
+  `mvn org.owasp:dependency-check-maven:aggregate`, which produces one report for the reactor.
+  The plugin version is managed in the root pom (`owasp-dependency-check.version`). The NVD
+  database is cached in `~/.m2/repository/org/owasp/dependency-check-data`. Reports (HTML, JSON,
+  SARIF) are uploaded as `dependency-check-report`.
+  - **Advisory until #131 is cleared:** the step has `continue-on-error: true` and no CVSS
+    threshold.
+  - **To make it a gate:** remove `continue-on-error` and add `-DfailBuildOnCVSS=8`.
+  - The optional `NVD_API_KEY` secret makes NVD updates much faster.
+- **CodeQL** (`java-kotlin`, `build-mode: none`). It extracts the source without compiling, so
+  it does not depend on JDK 25 support in the CodeQL autobuilder. Results go to *Security → Code
+  scanning*. It does not run on fork PRs, because they cannot upload results.
 
-#### sonarcloud-pr
-- Runs SonarCloud analysis specific to the PR
-- Provides inline PR comments with code quality issues
-- Only runs for PRs from the same repository (not forks)
+### `release.yml`
 
-## SonarCloud Configuration
+See [`RELEASING.md`](../RELEASING.md).
 
-### Required Secrets
+### Dependabot ([`dependabot.yml`](dependabot.yml))
 
-Add these secrets in GitHub repository settings (`Settings > Secrets and variables > Actions`):
+- **Maven**: one weekly entry at the root covers the whole reactor. Updates are grouped:
+  - `spring-boot`: Spring Boot, Spring Framework, Security, Data and springdoc;
+  - `test-libraries`: JUnit, Mockito, AssertJ, Testcontainers, Datafaker and XMLUnit;
+  - `maven-plugins`.
+  - `org.greenbuttonalliance.espi:*` is ignored, because the release flow versions the modules.
+- **GitHub Actions**: weekly, as one group.
 
-1. **SONAR_TOKEN**
-   - Generate from [SonarCloud Account](https://sonarcloud.io/account/security)
-   - Go to SonarCloud → My Account → Security → Generate Token
-   - Add as repository secret in GitHub
+Actions are pinned to **major version tags** throughout, and Dependabot keeps them current.
 
-2. **GITHUB_TOKEN**
-   - Automatically provided by GitHub Actions
-   - No manual configuration needed
+## Secrets and variables
 
-### SonarCloud Project Setup
+| Name | Kind | Required | Used by |
+|---|---|---|---|
+| `SONAR_TOKEN` | secret | yes (for `quality`, fork-PR Sonar) | SonarCloud analysis token for project `GreenButtonAlliance_OpenESPI-GreenButton-Java` |
+| `NVD_API_KEY` | secret | optional | dependency-check NVD updates ([request a key](https://nvd.nist.gov/developers/request-an-api-key)) |
+| `AWS_ECR_ROLE_ARN` | variable | optional\* | IAM role assumed via GitHub OIDC to push the datacustodian image |
+| `AWS_REGION` | variable | optional\* | Region of the ECR repository, e.g. `us-east-1` |
+| `ECR_REPOSITORY` | variable | optional\* | ECR repository name, e.g. `openespi-datacustodian` |
 
-1. **Import Project to SonarCloud:**
-   ```bash
-   # Visit https://sonarcloud.io
-   # Click "+" → Analyze new project
-   # Select "GreenButtonAlliance/OpenESPI-GreenButton-Java"
-   # Choose "With GitHub Actions"
-   ```
+\* If any of the three `AWS_*`/`ECR_*` variables is unset, the release workflow skips the ECR
+push with a notice instead of failing. `GITHUB_TOKEN` is provided automatically.
 
-2. **Configure Organization:**
-   - Organization key: `greenbuttonalliance`
-   - Project key: `GreenButtonAlliance_OpenESPI-GreenButton-Java`
+### AWS: IAM role for GitHub OIDC → ECR push
 
-3. **Quality Gate:**
-   - Uses SonarCloud default quality gate
-   - Can be customized in SonarCloud project settings
+1. Create the ECR repository, for example `openespi-datacustodian`, with tag immutability
+   **off**, because `latest` is re-pushed on each release. Scan on push is recommended.
+2. Add the GitHub OIDC identity provider to the AWS account, once per account:
+   - provider URL `https://token.actions.githubusercontent.com`;
+   - audience `sts.amazonaws.com`.
+3. Create a role with the trust policy below. It allows only release-tag runs of this repository:
 
-### Configuration Files
-
-- **`sonar-project.properties`** - Main SonarCloud configuration
-  - Defines project structure
-  - Configures coverage paths
-  - Sets exclusions
-  - Defines module structure
-
-- **`pom.xml`** - Maven configuration
-  - SonarCloud Maven plugin version
-  - JaCoCo coverage plugin
-  - SonarCloud properties
-
-## Code Coverage
-
-### JaCoCo Configuration
-
-- Minimum coverage: 50% line coverage
-- Reports generated in: `**/target/site/jacoco/`
-- XML reports uploaded to SonarCloud
-
-### Viewing Coverage
-
-1. **Locally:**
-   ```bash
-   mvn clean test jacoco:report
-   open openespi-common/target/site/jacoco/index.html
-   ```
-
-2. **SonarCloud:**
-   - Visit https://sonarcloud.io/project/overview?id=GreenButtonAlliance_OpenESPI-GreenButton-Java
-   - View coverage metrics and trends
-
-## Running CI/CD Locally
-
-### Run Tests Locally
-```bash
-# All tests
-mvn clean test
-
-# Specific module
-mvn test -pl openespi-common
-
-# With coverage
-mvn clean test jacoco:report
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": { "Federated": "arn:aws:iam::<ACCOUNT_ID>:oidc-provider/token.actions.githubusercontent.com" },
+      "Action": "sts:AssumeRoleWithWebIdentity",
+      "Condition": {
+        "StringEquals": { "token.actions.githubusercontent.com:aud": "sts.amazonaws.com" },
+        "StringLike": { "token.actions.githubusercontent.com:sub": "repo:GreenButtonAlliance/OpenESPI-GreenButton-Java:ref:refs/tags/datacustodian-v*" }
+      }
+    }
+  ]
+}
 ```
 
-### Run SonarCloud Analysis Locally
-```bash
-# Set SONAR_TOKEN environment variable
-export SONAR_TOKEN=your-token-here
+4. Attach a permissions policy that allows only pushing to that repository:
 
-# Run analysis
-mvn clean verify sonar:sonar \
-  -Dsonar.projectKey=GreenButtonAlliance_OpenESPI-GreenButton-Java \
-  -Dsonar.organization=greenbuttonalliance \
-  -Dsonar.host.url=https://sonarcloud.io
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    { "Effect": "Allow", "Action": "ecr:GetAuthorizationToken", "Resource": "*" },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:BatchGetImage",
+        "ecr:CompleteLayerUpload",
+        "ecr:DescribeImages",
+        "ecr:DescribeRepositories",
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:InitiateLayerUpload",
+        "ecr:PutImage",
+        "ecr:UploadLayerPart"
+      ],
+      "Resource": "arn:aws:ecr:<REGION>:<ACCOUNT_ID>:repository/openespi-datacustodian"
+    }
+  ]
+}
 ```
 
-### Run Integration Tests
+5. Set the repository variables (*Settings → Secrets and variables → Actions → Variables*):
+   - `AWS_ECR_ROLE_ARN` = the role ARN;
+   - `AWS_REGION`;
+   - `ECR_REPOSITORY`.
+
+## Recommended branch ruleset for `main`
+
+*Settings → Rules → Rulesets → New branch ruleset*, target `main`:
+
+- Require a pull request before merging, with at least one approval. Dismiss stale approvals.
+- Require status checks to pass:
+  - **`ci-ok`**
+  - **`pr-title`**
+
+  Do not list the individual `test (...)` matrix jobs. `ci-ok` covers them, and the matrix can
+  change without touching the ruleset.
+- Require branches to be up to date before merging, or enable the merge queue. `ci.yml` and
+  `pr-title.yml` already listen to `merge_group`.
+- Block force pushes and deletions.
+- Optional: require code scanning results (CodeQL).
+
+Also set *Settings → Actions → General → Workflow permissions* to **Allow GitHub Actions to
+create and approve pull requests**. The release workflow needs this to open its version-bump PR.
+
+## Running the same checks locally
+
 ```bash
-# Requires Docker running
-mvn verify -Pintegration-tests
+mvn install -DskipTests -pl openespi-datacustodian -am && mvn verify -pl openespi-datacustodian
+mvn verify -pl openespi-authserver -Dgroups=testcontainers-it -DfailIfNoTests=false   # until #129
+mvn install -DskipTests && mvn org.owasp:dependency-check-maven:aggregate
+docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:latest -color             # lint workflows
 ```
-
-## Database Services in CI
-
-GitHub Actions workflows include MySQL and PostgreSQL services for testing:
-
-- **MySQL 8.0**: Port 3306
-  - Database: `test_db`
-  - User: `root`
-  - Password: `root`
-
-- **PostgreSQL 15**: Port 5432
-  - Database: `test_db`
-  - User: `postgres`
-  - Password: `postgres`
-
-## Troubleshooting
-
-### Tests Failing in CI but Pass Locally
-
-1. **Check Java version:**
-   - CI uses Java 21 (Temurin distribution)
-   - Verify local Java version: `java -version`
-
-2. **Database issues:**
-   - CI uses MySQL 8.0 and PostgreSQL 15
-   - Check local database versions match
-
-3. **Environment variables:**
-   - Review `SPRING_PROFILES_ACTIVE` settings
-   - Check application-test.yml configuration
-
-### SonarCloud Analysis Fails
-
-1. **Token issues:**
-   - Verify `SONAR_TOKEN` secret is set correctly
-   - Check token hasn't expired
-
-2. **Quality gate failures:**
-   - Review SonarCloud dashboard for issues
-   - Check coverage requirements met (minimum 50%)
-
-3. **Build failures:**
-   - Ensure `mvn clean verify` succeeds locally
-   - Check all tests pass before SonarCloud analysis
-
-### Security Scan Issues
-
-1. **OWASP Dependency Check:**
-   - Review `target/dependency-check-report.html`
-   - Update vulnerable dependencies
-   - Use `mvn versions:display-dependency-updates`
-
-## Migration from CircleCI
-
-The old CircleCI configuration (`openespi-thirdparty/.circleci/config.yml`) is deprecated:
-
-**Issues with old config:**
-- Used Java 8 (outdated)
-- Tests were skipped
-- Only covered ThirdParty module
-- Hardcoded SonarCloud token (security risk)
-
-**Migration benefits:**
-- Modern Java 21
-- All modules tested
-- Secure token management
-- Full monorepo support
-- Better integration with GitHub
-
-### Deprecation Notice
-
-The CircleCI configuration should be removed after verifying GitHub Actions workflows are working correctly.
-
-## Best Practices
-
-1. **Never commit tokens:**
-   - Always use GitHub Secrets
-   - Never hardcode in workflow files
-
-2. **Run tests before push:**
-   ```bash
-   mvn clean test
-   ```
-
-3. **Check coverage locally:**
-   ```bash
-   mvn clean test jacoco:report
-   ```
-
-4. **Review SonarCloud before merging:**
-   - Check quality gate status
-   - Review new issues in PR
-
-5. **Keep dependencies updated:**
-   - Run `mvn versions:display-dependency-updates` regularly
-   - Address security vulnerabilities promptly
-
-## Support
-
-For help with CI/CD setup and configuration:
-
-- **GitHub Actions**: https://docs.github.com/en/actions
-- **SonarCloud**: https://docs.sonarcloud.io
-- **JaCoCo**: https://www.jacoco.org/jacoco/trunk/doc/
-- **Issues**: https://github.com/GreenButtonAlliance/OpenESPI-GreenButton-Java/issues

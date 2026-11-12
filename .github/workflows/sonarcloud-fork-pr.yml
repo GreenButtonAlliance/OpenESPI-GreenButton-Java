@@ -1,0 +1,110 @@
+name: SonarCloud (fork PRs)
+
+# Fork PRs get no secrets in ci.yml, so their SonarCloud analysis runs here, after CI succeeds,
+# in the base-repository context (which has SONAR_TOKEN). Same-repo PRs and main are analysed
+# by the `quality` job in ci.yml. Coverage is taken from the CI run's JaCoCo artifacts, so the
+# tests are not executed a second time.
+#
+# SECURITY: this checks out and builds (compile only) code from the fork while SONAR_TOKEN is
+# available to a later step. SONAR_TOKEN should be an analysis-scoped SonarCloud token, and no
+# other secret is exposed here. If that is not acceptable, delete this workflow; fork PRs then
+# get no SonarCloud decoration (CI is unaffected).
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read # download the CI run's JaCoCo artifacts
+
+jobs:
+  sonar:
+    name: SonarCloud analysis (fork PR)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.head_repository.full_name != github.repository
+    steps:
+      - name: Resolve PR metadata
+        id: pr
+        uses: actions/github-script@v9
+        env:
+          HEAD_OWNER: ${{ github.event.workflow_run.head_repository.owner.login }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        with:
+          script: |
+            const { HEAD_OWNER, HEAD_BRANCH, HEAD_SHA } = process.env;
+            const prs = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              head: `${HEAD_OWNER}:${HEAD_BRANCH}`,
+            });
+            const pr = prs.data.find(p => p.head.sha === HEAD_SHA) ?? prs.data[0];
+            if (!pr) {
+              core.setFailed(`No open PR found for ${HEAD_OWNER}:${HEAD_BRANCH}`);
+              return;
+            }
+            core.setOutput('number', String(pr.number));
+            core.setOutput('base', pr.base.ref);
+            core.setOutput('branch', pr.head.ref);
+
+      - name: Check out PR head
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ github.event.workflow_run.head_repository.full_name }}
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Fetch base branch for new-code detection
+        env:
+          BASE_REF: ${{ steps.pr.outputs.base }}
+        run: git fetch --no-tags "https://github.com/${GITHUB_REPOSITORY}.git" "+refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}"
+
+      - uses: ./.github/actions/setup-java-maven
+
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v6
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Compile all modules
+        run: mvn install -DskipTests
+
+      - name: Download JaCoCo reports from the CI run
+        uses: actions/download-artifact@v8
+        with:
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+          pattern: jacoco-*
+          path: coverage
+          merge-multiple: true
+
+      - name: Restore JaCoCo reports into module target directories
+        run: |
+          for report in coverage/*/jacoco.xml; do
+            [[ -f "$report" ]] || continue
+            module="$(basename "$(dirname "$report")")"
+            mkdir -p "$module/target/site/jacoco"
+            cp "$report" "$module/target/site/jacoco/jacoco.xml"
+          done
+
+      - name: SonarCloud analysis
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          PR_BRANCH: ${{ steps.pr.outputs.branch }}
+          PR_BASE: ${{ steps.pr.outputs.base }}
+        run: >-
+          mvn org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+          "-Dsonar.pullrequest.key=${PR_NUMBER}"
+          "-Dsonar.pullrequest.branch=${PR_BRANCH}"
+          "-Dsonar.pullrequest.base=${PR_BASE}"

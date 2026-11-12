@@ -89,6 +89,8 @@
         <maven-site-plugin.version>3.3</maven-site-plugin.version>
         <versions-maven-plugin.version>2.18.0</versions-maven-plugin.version>
         <spotbugs-plugin.version>4.8.6.4</spotbugs-plugin.version>
+        <!-- Used by .github/workflows/security.yml (mvn org.owasp:dependency-check-maven:aggregate) -->
+        <owasp-dependency-check.version>12.2.2</owasp-dependency-check.version>
 
         <!-- Dependency Versions -->
         <lombok.version>1.18.42</lombok.version>
@@ -236,6 +238,11 @@
                     <artifactId>spotbugs-maven-plugin</artifactId>
                     <version>${spotbugs-plugin.version}</version>
                 </plugin>
+                <plugin>
+                    <groupId>org.owasp</groupId>
+                    <artifactId>dependency-check-maven</artifactId>
+                    <version>${owasp-dependency-check.version}</version>
+                </plugin>
             </plugins>
         </pluginManagement>
 
@@ -285,7 +292,10 @@
                         <include>**/*Test.java</include>
                     </includes>
                     <useSystemClassLoader>false</useSystemClassLoader>
+                    <!-- @{argLine} carries the JaCoCo agent set by jacoco:prepare-agent. Without it no
+                         jacoco.exec is written and SonarCloud receives no coverage (#193). -->
                     <argLine>
+                        @{argLine}
                         -javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar
                         -Xshare:off
                     </argLine>
@@ -315,6 +325,9 @@
                             <goal>check</goal>
                         </goals>
                         <configuration>
+                            <!-- Advisory: this check never ran before the @{argLine} fix (no
+                                 jacoco.exec). Report violations; flip to true once modules meet it. -->
+                            <haltOnFailure>false</haltOnFailure>
                             <rules>
                                 <rule>
                                     <element>PACKAGE</element>

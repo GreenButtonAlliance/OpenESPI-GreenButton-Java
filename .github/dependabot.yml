@@ -1,0 +1,53 @@
+version: 2
+updates:
+  # One entry at the root covers the whole Maven reactor (parent + all modules).
+  - package-ecosystem: maven
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: build
+      include: scope
+    ignore:
+      # Inter-module artifacts are versioned by the release workflow, not Dependabot.
+      - dependency-name: org.greenbuttonalliance.espi:*
+    groups:
+      spring-boot:
+        patterns:
+          - org.springframework.boot:*
+          - org.springframework:*
+          - org.springframework.security:*
+          - org.springframework.data:*
+          - org.springdoc:*
+      test-libraries:
+        patterns:
+          - org.junit*
+          - org.mockito:*
+          - org.assertj:*
+          - org.testcontainers:*
+          - net.datafaker:*
+          - org.xmlunit:*
+          - xmlunit:*
+      maven-plugins:
+        patterns:
+          - org.apache.maven.plugins:*
+          - org.codehaus.mojo:*
+          - org.jacoco:*
+          - org.sonarsource.scanner.maven:*
+          - org.owasp:*
+          - com.github.spotbugs:*
+          - io.github.git-commit-id:*
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: ci
+    groups:
+      github-actions:
+        patterns:
+          - '*'

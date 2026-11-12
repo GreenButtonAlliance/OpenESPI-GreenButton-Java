@@ -1,0 +1,251 @@
+name: Release
+
+# Per-module release, triggered by pushing a tag <module>-v<X.Y.Z>, e.g. datacustodian-v4.0.0.
+# Module ids: handoff, common, datacustodian, thirdparty, authserver. See RELEASING.md.
+on:
+  push:
+    tags:
+      - '*-v[0-9]*.[0-9]*.[0-9]*'
+
+# Every job declares the minimum it needs.
+permissions: {}
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Resolve module and version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      module: ${{ steps.meta.outputs.module }}
+      dir: ${{ steps.meta.outputs.dir }}
+      artifact: ${{ steps.meta.outputs.artifact }}
+      kind: ${{ steps.meta.outputs.kind }}
+      version: ${{ steps.meta.outputs.version }}
+      next_version: ${{ steps.meta.outputs.next_version }}
+      version_property: ${{ steps.meta.outputs.version_property }}
+      upstream: ${{ steps.meta.outputs.upstream }}
+      previous_tag: ${{ steps.meta.outputs.previous_tag }}
+      test_args: ${{ steps.meta.outputs.test_args }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # tags + history (previous tag, ancestry check)
+
+      - uses: ./.github/actions/setup-java-maven
+
+      - name: Tagged commit must be on main
+        run: |
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::Tag ${GITHUB_REF_NAME} points at ${GITHUB_SHA}, which is not on main"
+            exit 1
+          fi
+
+      - name: Parse tag and validate pom version
+        id: meta
+        run: |
+          bash .github/scripts/release-meta.sh "$GITHUB_REF_NAME" | tee -a "$GITHUB_OUTPUT"
+
+  build:
+    name: Build and test ${{ needs.prepare.outputs.module }} ${{ needs.prepare.outputs.version }}
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    env:
+      DIR: ${{ needs.prepare.outputs.dir }}
+      VERSION: ${{ needs.prepare.outputs.version }}
+      ARTIFACT: ${{ needs.prepare.outputs.artifact }}
+      VERSION_PROPERTY: ${{ needs.prepare.outputs.version_property }}
+      UPSTREAM: ${{ needs.prepare.outputs.upstream }}
+      TEST_ARGS: ${{ needs.prepare.outputs.test_args }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/setup-java-maven
+
+      # Release version is set in CI only; it is never committed (main stays on -SNAPSHOT).
+      - name: Set release version ${{ env.VERSION }}
+        run: bash .github/scripts/set-module-version.sh "$DIR" "$VERSION" "$VERSION_PROPERTY"
+
+      # Equivalent to `mvn verify -pl <module> -am`, split so that module-specific test arguments
+      # (authserver's -Dgroups, #129) do not leak into the upstream modules' test runs.
+      - name: Verify upstream modules (tests on)
+        if: env.UPSTREAM != ''
+        run: mvn install -pl "$UPSTREAM" -am # -am only adds the parent pom
+
+      - name: Verify ${{ env.DIR }} (tests on)
+        run: |
+          read -ra extra_args <<< "$TEST_ARGS"   # zero or more Maven arguments
+          mvn verify -pl "$DIR" "${extra_args[@]}"
+
+      - name: Collect release jar
+        id: jar
+        run: |
+          final_name="$(mvn -q -N -f "$DIR/pom.xml" help:evaluate -Dexpression=project.build.finalName -DforceStdout)"
+          src="$DIR/target/${final_name}.jar"   # for apps this is the Spring Boot fat jar
+          [[ -f "$src" ]] || { echo "::error::Expected jar not found: $src"; exit 1; }
+          mkdir -p dist
+          cp "$src" "dist/${ARTIFACT}-${VERSION}.jar"
+          (cd dist && sha256sum ./*.jar > SHA256SUMS)
+          handoff="$(mvn -q -N help:evaluate -Dexpression=openespi-handoff.version -DforceStdout)"
+          common="$(mvn -q -N help:evaluate -Dexpression=openespi-common.version -DforceStdout)"
+          {
+            echo "**Module:** \`${DIR}\` (\`${ARTIFACT}\`) **${VERSION}**, built from ${GITHUB_SHA}."
+            echo
+            echo "In-tree library versions at this commit: openespi-handoff \`${handoff}\`, openespi-common \`${common}\`."
+            echo "Libraries are not published to a Maven repository; applications embed the in-tree versions."
+            echo
+          } > dist/release-header.md
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-dist
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload surefire reports
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: surefire-reports
+          path: '**/target/surefire-reports/'
+          if-no-files-found: ignore
+
+  github-release:
+    name: GitHub Release
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-dist
+          path: dist
+
+      - name: Create release ${{ github.ref_name }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PREVIOUS_TAG: ${{ needs.prepare.outputs.previous_tag }}
+        run: |
+          # Notes are generated from the previous tag of the SAME module; on a module's first
+          # release GitHub falls back to the latest release of any module.
+          args=(--repo "$GITHUB_REPOSITORY" --verify-tag --title "$GITHUB_REF_NAME"
+                --generate-notes --notes-file dist/release-header.md)
+          if [[ -n "$PREVIOUS_TAG" ]]; then
+            args+=(--notes-start-tag "$PREVIOUS_TAG")
+          fi
+          gh release create "$GITHUB_REF_NAME" dist/*.jar dist/SHA256SUMS "${args[@]}"
+
+  ecr-image:
+    name: Container image to Amazon ECR
+    needs: [prepare, build]
+    if: needs.prepare.outputs.module == 'datacustodian'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      id-token: write # GitHub OIDC -> AWS IAM role
+    env:
+      DIR: ${{ needs.prepare.outputs.dir }}
+      VERSION: ${{ needs.prepare.outputs.version }}
+      AWS_ECR_ROLE_ARN: ${{ vars.AWS_ECR_ROLE_ARN }}
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+    steps:
+      - name: Check ECR configuration
+        id: gate
+        run: |
+          if [[ -z "$AWS_ECR_ROLE_ARN" || -z "$AWS_REGION" || -z "$ECR_REPOSITORY" ]]; then
+            echo "::notice title=ECR push skipped::Set repository variables AWS_ECR_ROLE_ARN, AWS_REGION and ECR_REPOSITORY to push the datacustodian image (see .github/CI_CD_SETUP.md)."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v7
+        if: steps.gate.outputs.enabled == 'true'
+
+      - uses: ./.github/actions/setup-java-maven
+        if: steps.gate.outputs.enabled == 'true'
+
+      - name: Configure AWS credentials (OIDC)
+        if: steps.gate.outputs.enabled == 'true'
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_ECR_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        id: ecr
+        if: steps.gate.outputs.enabled == 'true'
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # Tests already passed in `build`; this only packages the same commit at the same version.
+      - name: Build OCI image (spring-boot:build-image)
+        if: steps.gate.outputs.enabled == 'true'
+        env:
+          IMAGE: ${{ steps.ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}
+        run: |
+          bash .github/scripts/set-module-version.sh "$DIR" "$VERSION"
+          mvn install -DskipTests -pl "$DIR" -am
+          mvn spring-boot:build-image -DskipTests -pl "$DIR" "-Dspring-boot.build-image.imageName=${IMAGE}:${VERSION}"
+          docker tag "${IMAGE}:${VERSION}" "${IMAGE}:latest"
+
+      - name: Push image
+        if: steps.gate.outputs.enabled == 'true'
+        env:
+          IMAGE: ${{ steps.ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}
+        run: |
+          docker push "${IMAGE}:${VERSION}"
+          docker push "${IMAGE}:latest"
+          echo "Pushed \`${IMAGE}:${VERSION}\` and \`${IMAGE}:latest\`" >> "$GITHUB_STEP_SUMMARY"
+
+  bump:
+    name: PR to bump ${{ needs.prepare.outputs.module }} to ${{ needs.prepare.outputs.next_version }}
+    needs: [prepare, github-release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write      # push the bump branch
+      pull-requests: write # open the PR
+    env:
+      DIR: ${{ needs.prepare.outputs.dir }}
+      MODULE: ${{ needs.prepare.outputs.module }}
+      VERSION: ${{ needs.prepare.outputs.version }}
+      NEXT_VERSION: ${{ needs.prepare.outputs.next_version }}
+      VERSION_PROPERTY: ${{ needs.prepare.outputs.version_property }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+
+      - uses: ./.github/actions/setup-java-maven
+
+      - name: Bump version on a branch and open a PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          current="$(mvn -q -N -f "$DIR/pom.xml" help:evaluate -Dexpression=project.version -DforceStdout)"
+          if [[ "$current" != "${VERSION}-SNAPSHOT" ]]; then
+            echo "::notice title=Bump skipped::main already has ${DIR} at ${current} (expected ${VERSION}-SNAPSHOT)."
+            exit 0
+          fi
+          branch="release/${MODULE}-${NEXT_VERSION}"
+          git switch -c "$branch"
+          bash .github/scripts/set-module-version.sh "$DIR" "$NEXT_VERSION" "$VERSION_PROPERTY"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "build(${MODULE}): bump to ${NEXT_VERSION} after ${GITHUB_REF_NAME}"
+          git push origin "$branch"
+          gh pr create --base main --head "$branch" \
+            --title "build(${MODULE}): bump to ${NEXT_VERSION} after ${GITHUB_REF_NAME}" \
+            --body "Automated post-release bump of \`${DIR}\` to \`${NEXT_VERSION}\` after [${GITHUB_REF_NAME}](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/tag/${GITHUB_REF_NAME}).
+
+          > This PR was opened with \`GITHUB_TOKEN\`, so CI did not run on it. Close and reopen the PR (or push an empty commit) to trigger the required checks - see RELEASING.md."

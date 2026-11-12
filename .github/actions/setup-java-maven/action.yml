@@ -1,0 +1,32 @@
+name: Set up Java 25 + Maven
+description: >
+  Single place for the JDK/Maven setup used by every workflow job: Temurin JDK 25,
+  setup-java's built-in ~/.m2 cache, and batch-mode / no-transfer-progress Maven defaults.
+  The repository must already be checked out (composite actions are loaded from the workspace).
+
+inputs:
+  java-version:
+    description: JDK version
+    required: false
+    default: '25'
+  cache:
+    description: setup-java dependency cache ('maven' or '' to disable)
+    required: false
+    default: maven
+
+runs:
+  using: composite
+  steps:
+    - name: Set up JDK ${{ inputs.java-version }} (Temurin)
+      uses: actions/setup-java@v6
+      with:
+        distribution: temurin
+        java-version: ${{ inputs.java-version }}
+        cache: ${{ inputs.cache }}
+
+    - name: Configure Maven defaults
+      shell: bash
+      run: |
+        # MAVEN_ARGS is read by Maven 3.9+ and prepended to every mvn invocation.
+        echo "MAVEN_ARGS=-B -ntp" >> "$GITHUB_ENV"
+        echo "MAVEN_OPTS=-Xmx3072m" >> "$GITHUB_ENV"

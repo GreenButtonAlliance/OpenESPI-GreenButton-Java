@@ -1,0 +1,45 @@
+name: PR title
+
+# Kept separate from ci.yml on purpose: it must re-run when the title is EDITED, and an `edited`
+# event in ci.yml would either cancel the real build (shared concurrency group) or report a
+# skipped/green `ci-ok` for the same commit. This workflow does no build, so it is instant.
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, edited, synchronize, reopened]
+  merge_group:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-title-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pr-title:
+    name: pr-title
+    # Required check: in the merge queue it is reported as skipped (= passing).
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    steps:
+      - name: Validate semantic PR title
+        uses: amannn/action-semantic-pull-request@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            docs
+            style
+            refactor
+            perf
+            test
+            build
+            ci
+            chore
+            revert
+          requireScope: false

@@ -336,6 +336,13 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
+                    <!-- OCI image built by `spring-boot:build-image` in .github/workflows/release.yml
+                         (pushed to Amazon ECR). Pin the buildpack JVM to the project's Java version. -->
+                    <image>
+                        <env>
+                            <BP_JVM_VERSION>${java.version}</BP_JVM_VERSION>
+                        </env>
+                    </image>
                     <excludes>
                         <exclude>
                             <groupId>org.springframework.boot</groupId>

@@ -178,9 +178,12 @@ Consumers SHOULD also have their own round-trip integration tests that encode on
 <dependency>
     <groupId>org.greenbuttonalliance.espi</groupId>
     <artifactId>OpenESPI-Handoff</artifactId>
-    <version>3.5.0-RC2</version>
+    <!-- no <version>: managed by the parent pom (openespi-handoff.version) -->
 </dependency>
 ```
+
+Inside this repository the version is managed by the parent pom. The module is not published to a
+Maven repository; see [`RELEASING.md`](../RELEASING.md).
 
 ## License
 

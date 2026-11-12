@@ -2,13 +2,13 @@
 # Multi-stage build for optimized production image
 
 # Build stage
-FROM eclipse-temurin:21-jdk AS builder
+FROM eclipse-temurin:25-jdk AS builder
 
 LABEL maintainer="Green Button Alliance <info@greenbuttonalliance.org>"
 LABEL org.opencontainers.image.title="OpenESPI Authorization Server Builder"
 LABEL org.opencontainers.image.description="Build stage for OpenESPI OAuth2 Authorization Server"
-LABEL org.opencontainers.image.version="1.0.0-SNAPSHOT"
-LABEL org.opencontainers.image.source="https://github.com/GreenButtonAlliance/OpenESPI-AuthorizationServer-java"
+LABEL org.opencontainers.image.version="4.0.0-SNAPSHOT"
+LABEL org.opencontainers.image.source="https://github.com/GreenButtonAlliance/OpenESPI-GreenButton-Java"
 
 WORKDIR /app
 
@@ -29,13 +29,13 @@ RUN ./mvnw clean package -DskipTests -P prod && \
     java -Djarmode=layertools -jar target/OpenESPI-AuthorizationServer-*.jar extract
 
 # Runtime stage
-FROM eclipse-temurin:21-jre-jammy AS runtime
+FROM eclipse-temurin:25-jre-noble AS runtime
 
 LABEL maintainer="Green Button Alliance <info@greenbuttonalliance.org>"
 LABEL org.opencontainers.image.title="OpenESPI Authorization Server"
-LABEL org.opencontainers.image.description="Green Button Alliance OpenESPI OAuth2 Authorization Server with Spring Boot 3.5"
-LABEL org.opencontainers.image.version="1.0.0-SNAPSHOT"
-LABEL org.opencontainers.image.source="https://github.com/GreenButtonAlliance/OpenESPI-AuthorizationServer-java"
+LABEL org.opencontainers.image.description="Green Button Alliance OpenESPI OAuth2 Authorization Server with Spring Boot 4"
+LABEL org.opencontainers.image.version="4.0.0-SNAPSHOT"
+LABEL org.opencontainers.image.source="https://github.com/GreenButtonAlliance/OpenESPI-GreenButton-Java"
 LABEL org.opencontainers.image.licenses="Apache-2.0"
 
 # Create non-root user for security
