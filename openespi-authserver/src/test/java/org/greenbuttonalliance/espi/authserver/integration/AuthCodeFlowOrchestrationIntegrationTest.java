@@ -338,8 +338,9 @@ class AuthCodeFlowOrchestrationIntegrationTest extends AbstractAuthserverIntegra
 				.andExpect(status().is3xxRedirection())
 				.andReturn();
 		MockHttpSession session = (MockHttpSession) continueResult.getRequest().getSession(false);
+		// The Location is already percent-encoded; pass it as a URI so MockMvc doesn't encode it again.
 		MvcResult authorizeResult = mockMvc.perform(
-						get(continueResult.getResponse().getHeader("Location")).session(session))
+						get(java.net.URI.create(continueResult.getResponse().getHeader("Location"))).session(session))
 				.andExpect(status().is3xxRedirection())
 				.andReturn();
 		return extractQueryParam(authorizeResult.getResponse().getHeader("Location"), "code");
