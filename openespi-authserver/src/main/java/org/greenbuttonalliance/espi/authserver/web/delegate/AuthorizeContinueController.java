@@ -40,6 +40,7 @@ import org.springframework.security.oauth2.server.authorization.client.Registere
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Controller;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -212,13 +213,16 @@ public class AuthorizeContinueController {
 	}
 
 	/**
-	 * Split an ESPI scope string into Spring AS scope tokens. ESPI's grammar uses
-	 * {@code ;}-delimited terms; Spring AS's consent store stores them as a {@code Set<String>}.
-	 * Storing each term separately means Spring AS's consent check (which compares scope sets
-	 * for subset membership) does the right thing.
+	 * Split the approved scope into Spring AS scope tokens using the same rule Spring AS applies to
+	 * the replayed {@code scope} parameter: space-delimited per RFC 6749 &sect;3.3. An ESPI scope
+	 * string such as {@code FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13}
+	 * is a <em>single</em> scope token &mdash; its {@code ;} separates that scope's parameters, not
+	 * scopes &mdash; so it must be stored whole. Splitting on {@code ;} made the consent set
+	 * disjoint from the requested set, and Spring AS looped back to {@code /authorize/delegate}
+	 * (#210).
 	 */
-	private static List<String> parseScopes(String espiScope) {
-		return List.of(espiScope.split(";"));
+	private static String[] parseScopes(String approvedScope) {
+		return StringUtils.tokenizeToStringArray(approvedScope, " ");
 	}
 
 	/**

@@ -69,15 +69,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *       token response with the canonical ESPI URIs (the C4 augmentation).</li>
  * </ol>
  *
- * <p>The flow is exercised with a single-term ESPI scope ({@code FB_1}) registered on a test client
- * created per-run, so the orchestration is verified deterministically without depending on the
- * seeded {@code third_party} client's multi-term scope.</p>
+ * <p>The flow is exercised with a real ESPI scope string ({@code FB=...;IntervalDuration=...;...})
+ * registered on a test client created per-run. Its {@code ;}-separated parameters belong to one
+ * scope token; this test guards the consent-loop regression where they were split apart (#210).</p>
  */
 @DisplayName("Phase 2.0 auth-code-flow orchestration (AS-side, DC back-channel mocked)")
 class AuthCodeFlowOrchestrationIntegrationTest extends AbstractAuthserverIntegrationTest {
 
 	private static final String REDIRECT_URI = "https://tp.example/cb";
-	private static final String SCOPE = "FB_1";
+	private static final String SCOPE = "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13";
 	private static final String CUSTOMER_ID = "42";
 
 	@Autowired
@@ -161,7 +161,8 @@ class AuthCodeFlowOrchestrationIntegrationTest extends AbstractAuthserverIntegra
 		String authorizeUrl = continueResult.getResponse().getHeader("Location");
 
 		// 2) Resume /oauth2/authorize on the authenticated, consent-seeded session -> 302 to TP with code.
-		MvcResult authorizeResult = mockMvc.perform(get(authorizeUrl).session(session))
+		// The Location is already percent-encoded; pass it as a URI so MockMvc doesn't encode it again.
+		MvcResult authorizeResult = mockMvc.perform(get(java.net.URI.create(authorizeUrl)).session(session))
 				.andExpect(status().is3xxRedirection())
 				.andReturn();
 		String location = authorizeResult.getResponse().getHeader("Location");

@@ -69,6 +69,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class AuthorizeContinueControllerTest {
 
 	private static final String SIGNING_KEY = "test-signing-key-must-be-at-least-32-chars-long";
+	private static final String ESPI_SCOPE =
+			"FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13";
 
 	@Mock
 	private HandoffNonceService nonceService;
@@ -107,35 +109,44 @@ class AuthorizeContinueControllerTest {
 		void allowRedirectsToAuthorizeWithConsentSeeded() throws Exception {
 			String cid = "corr-allow-1";
 			delegationStateService.save(cid, "tp-1", "https://tp.example/cb", "tp-state-1");
+			when(registeredClientRepository.findByClientId("tp-1")).thenReturn(client(ESPI_SCOPE));
 
-			RegisteredClient client = RegisteredClient.withId("client-internal-id-1")
-					.clientId("tp-1")
-					.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-					.authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-					.redirectUri("https://tp.example/cb")
-					.scope("FB_1").scope("FB_4_5")
-					.build();
-			when(registeredClientRepository.findByClientId("tp-1")).thenReturn(client);
-
-			String token = codec.encode(allowReturn(cid, "FB_1;FB_4_5"));
+			String token = codec.encode(allowReturn(cid, ESPI_SCOPE));
 
 			mockMvc.perform(get("/oauth2/authorize/continue").param("handoff", token))
 					.andExpect(status().is3xxRedirection())
 					.andExpect(redirectedUrl(
-							"/oauth2/authorize?response_type=code&client_id=tp-1&redirect_uri=https://tp.example/cb&scope=FB_1;FB_4_5&state=tp-state-1"));
+							"/oauth2/authorize?response_type=code&client_id=tp-1&redirect_uri=https://tp.example/cb"
+									+ "&scope=FB%3D4_5_15;IntervalDuration%3D3600;BlockDuration%3Dmonthly;HistoryLength%3D13"
+									+ "&state=tp-state-1"));
 
 			verify(nonceService).consume(any(), any());
 
-			ArgumentCaptor<OAuth2AuthorizationConsent> cap =
-					ArgumentCaptor.forClass(OAuth2AuthorizationConsent.class);
-			verify(consentService).save(cap.capture());
-			OAuth2AuthorizationConsent saved = cap.getValue();
-			assertThat(saved.getRegisteredClientId()).isEqualTo("client-internal-id-1");
-			assertThat(saved.getPrincipalName()).isEqualTo("42");
-			assertThat(saved.getScopes()).containsExactlyInAnyOrder("FB_1", "FB_4_5");
+			// The ESPI scope's ';'-separated parameters belong to ONE scope token (#210).
+			assertThat(savedConsent())
+					.extracting(OAuth2AuthorizationConsent::getRegisteredClientId,
+							OAuth2AuthorizationConsent::getPrincipalName,
+							OAuth2AuthorizationConsent::getScopes)
+					.containsExactly("client-internal-id-1", "42", java.util.Set.of(ESPI_SCOPE));
 
 			// Delegation state is single-use
 			assertThat(delegationStateService.consume(cid)).isNull();
+		}
+
+		@Test
+		@DisplayName("space-separated scopes: each ESPI scope string is stored whole as its own consent scope")
+		void spaceSeparatedScopesAreSeparateConsentScopes() throws Exception {
+			String cid = "corr-allow-3";
+			String second = "FB=1_3_4_5_13_14_39;IntervalDuration=900;BlockDuration=daily;HistoryLength=7";
+			delegationStateService.save(cid, "tp-1", "https://tp.example/cb", "tp-state-1");
+			when(registeredClientRepository.findByClientId("tp-1")).thenReturn(client(ESPI_SCOPE, second));
+
+			String token = codec.encode(allowReturn(cid, ESPI_SCOPE + "  " + second));
+
+			mockMvc.perform(get("/oauth2/authorize/continue").param("handoff", token))
+					.andExpect(status().is3xxRedirection());
+
+			assertThat(savedConsent().getScopes()).containsExactlyInAnyOrder(ESPI_SCOPE, second);
 		}
 
 		@Test
@@ -285,6 +296,25 @@ class AuthorizeContinueControllerTest {
 	}
 
 	// --- Helpers ---
+
+	private static RegisteredClient client(String... scopes) {
+		RegisteredClient.Builder builder = RegisteredClient.withId("client-internal-id-1")
+				.clientId("tp-1")
+				.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+				.authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+				.redirectUri("https://tp.example/cb");
+		for (String scope : scopes) {
+			builder.scope(scope);
+		}
+		return builder.build();
+	}
+
+	private OAuth2AuthorizationConsent savedConsent() {
+		ArgumentCaptor<OAuth2AuthorizationConsent> cap =
+				ArgumentCaptor.forClass(OAuth2AuthorizationConsent.class);
+		verify(consentService).save(cap.capture());
+		return cap.getValue();
+	}
 
 	private static SignedHandoff.Return allowReturn(String cid, String approvedScope) {
 		Instant now = Instant.now();
