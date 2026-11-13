@@ -25,11 +25,12 @@
     <parent>
         <groupId>org.greenbuttonalliance.espi</groupId>
         <artifactId>openespi-parent</artifactId>
-        <version>3.5.0</version>
+        <version>4.0.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>OpenESPI-ThirdParty</artifactId>
-    <version>1.3.0.1-SNAPSHOT</version>
+    <!-- Released independently as thirdparty-vX.Y.Z (see RELEASING.md). -->
+    <version>4.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>open-espi-third-party</name>
@@ -40,7 +41,6 @@
     </description>
 
     <properties>
-        <openespi-common.version>3.5.0-RC2</openespi-common.version>
         <maven.build.timestamp.format>yyyy/MM/dd hh:mm:ss a,z</maven.build.timestamp.format>
     </properties>
 
@@ -136,7 +136,7 @@
         <dependency>
             <groupId>org.greenbuttonalliance.espi</groupId>
             <artifactId>OpenESPI-Common</artifactId>
-            <version>3.5.0-RC2</version>
+            <!-- version managed in the parent: openespi-common.version -->
         </dependency>
 
         <!-- Spring Boot starters -->

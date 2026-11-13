@@ -27,11 +27,12 @@
     <parent>
         <groupId>org.greenbuttonalliance.espi</groupId>
         <artifactId>openespi-parent</artifactId>
-        <version>3.5.0</version>
+        <version>4.0.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>OpenESPI-AuthorizationServer</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <!-- Released independently as authserver-vX.Y.Z (see RELEASING.md). -->
+    <version>4.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>OpenESPI Authorization Server</name>
@@ -55,7 +56,7 @@
         <dependency>
             <groupId>org.greenbuttonalliance.espi</groupId>
             <artifactId>OpenESPI-Handoff</artifactId>
-            <version>3.5.0-RC2</version>
+            <!-- version managed in the parent: openespi-handoff.version -->
         </dependency>
 
         <!-- Lombok for AS-side controllers / services (already used by openespi-handoff
