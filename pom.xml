@@ -82,15 +82,15 @@
         <sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
 
         <!-- Plugin Versions -->
-        <jacoco.version>0.8.14</jacoco.version>
-        <sonar-maven-plugin.version>5.5.0.6356</sonar-maven-plugin.version>
-        <maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
+        <jacoco.version>0.8.16</jacoco.version>
+        <sonar-maven-plugin.version>5.8.0.7211</sonar-maven-plugin.version>
+        <maven-compiler-plugin.version>3.16.0</maven-compiler-plugin.version>
         <maven-release-plugin.version>3.3.1</maven-release-plugin.version>
-        <maven-site-plugin.version>3.3</maven-site-plugin.version>
-        <versions-maven-plugin.version>2.18.0</versions-maven-plugin.version>
-        <spotbugs-plugin.version>4.8.6.4</spotbugs-plugin.version>
+        <maven-site-plugin.version>3.22.0</maven-site-plugin.version>
+        <versions-maven-plugin.version>2.25.1</versions-maven-plugin.version>
+        <spotbugs-plugin.version>4.10.5.0</spotbugs-plugin.version>
         <!-- Used by .github/workflows/security.yml (mvn org.owasp:dependency-check-maven:aggregate) -->
-        <owasp-dependency-check.version>12.2.2</owasp-dependency-check.version>
+        <owasp-dependency-check.version>13.0.0</owasp-dependency-check.version>
 
         <!-- Dependency Versions -->
         <lombok.version>1.18.42</lombok.version>
