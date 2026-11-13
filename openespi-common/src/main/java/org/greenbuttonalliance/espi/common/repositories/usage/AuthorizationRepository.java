@@ -43,6 +43,9 @@ public interface AuthorizationRepository extends JpaRepository<AuthorizationEnti
 
 	Optional<AuthorizationEntity> findByState(String state);
 
+	/** Back-channel idempotency lookup (#202): the Authorization provisioned for an AS grant. */
+	Optional<AuthorizationEntity> findByCorrelationId(String correlationId);
+
 	@Query("SELECT a FROM AuthorizationEntity a WHERE a.scope = :scope AND a.retailCustomer.id = :retailCustomerId")
 	Optional<AuthorizationEntity> findByScope(@Param("scope") String scope, @Param("retailCustomerId") Long retailCustomerId);
 

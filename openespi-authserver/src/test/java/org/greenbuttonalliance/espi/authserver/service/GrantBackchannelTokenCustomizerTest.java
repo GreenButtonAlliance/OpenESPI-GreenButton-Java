@@ -24,6 +24,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
+import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
 import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
@@ -175,6 +176,48 @@ class GrantBackchannelTokenCustomizerTest {
 		verify(client, never()).provision(any());
 	}
 
+	@Test
+	@DisplayName("refresh_token grant (#202): no back-channel call, URI claims copied from the prior access token")
+	void refreshGrantCopiesPriorClaimsWithoutProvisioning() {
+		Map<String, Object> priorClaims = Map.of(
+				GrantBackchannelTokenCustomizer.CLAIM_RESOURCE_URI, "https://dc.example/Batch/Subscription/" + RES_SUB_ID,
+				GrantBackchannelTokenCustomizer.CLAIM_AUTHORIZATION_URI, "https://dc.example/Authorization/" + AUTH_ID,
+				GrantBackchannelTokenCustomizer.CLAIM_CUSTOMER_RESOURCE_URI, "https://dc.example/Batch/RetailCustomer/42",
+				"unrelated", "not-copied");
+		OAuth2AccessToken prior = new OAuth2AccessToken(OAuth2AccessToken.TokenType.BEARER, "old-token",
+				Instant.now().minusSeconds(60), Instant.now().plusSeconds(60));
+		OAuth2Authorization auth = OAuth2Authorization.from(
+						authorizationWithGrantContext("corr-refresh", 42L, "FB_1", UP_1.toString()))
+				.token(prior, metadata -> metadata.put(OAuth2Authorization.Token.CLAIMS_METADATA_NAME, priorClaims))
+				.build();
+
+		OAuth2TokenClaimsContext ctx = buildContext(auth, AuthorizationGrantType.REFRESH_TOKEN);
+		customizer.customize(ctx);
+
+		verify(client, never()).provision(any());
+		assertThat(ctx.getClaims().build().getClaims())
+				.containsEntry(GrantBackchannelTokenCustomizer.CLAIM_RESOURCE_URI,
+						"https://dc.example/Batch/Subscription/" + RES_SUB_ID)
+				.containsEntry(GrantBackchannelTokenCustomizer.CLAIM_AUTHORIZATION_URI,
+						"https://dc.example/Authorization/" + AUTH_ID)
+				.containsEntry(GrantBackchannelTokenCustomizer.CLAIM_CUSTOMER_RESOURCE_URI,
+						"https://dc.example/Batch/RetailCustomer/42")
+				.doesNotContainKey("unrelated");
+	}
+
+	@Test
+	@DisplayName("client_credentials grant: no back-channel call even if grant-context attributes exist")
+	void clientCredentialsGrantSkipsBackchannel() {
+		OAuth2Authorization auth = authorizationWithGrantContext("corr-cc", 42L, "FB_1", "");
+
+		OAuth2TokenClaimsContext ctx = buildContext(auth, AuthorizationGrantType.CLIENT_CREDENTIALS);
+		customizer.customize(ctx);
+
+		verify(client, never()).provision(any());
+		assertThat(ctx.getClaims().build().getClaims())
+				.doesNotContainKeys(GrantBackchannelTokenCustomizer.ESPI_URI_CLAIMS.toArray(String[]::new));
+	}
+
 	// --- helpers ---
 
 	private static RegisteredClient registeredClient() {
@@ -212,12 +255,17 @@ class GrantBackchannelTokenCustomizerTest {
 
 	private static OAuth2TokenClaimsContext buildContext(OAuth2Authorization auth) {
 		// OAuth2TokenClaimsContext requires a fresh claims-set builder; subject + iat are placeholder.
+		return buildContext(auth, AuthorizationGrantType.AUTHORIZATION_CODE);
+	}
+
+	private static OAuth2TokenClaimsContext buildContext(OAuth2Authorization auth, AuthorizationGrantType grantType) {
 		OAuth2TokenClaimsSet.Builder claimsBuilder = OAuth2TokenClaimsSet.builder()
 				.subject(auth.getPrincipalName())
 				.issuedAt(Instant.now());
 		return OAuth2TokenClaimsContext.with(claimsBuilder)
 				.registeredClient(registeredClient())
 				.authorization(auth)
+				.authorizationGrantType(grantType)
 				.tokenType(OAuth2TokenType.ACCESS_TOKEN)
 				.build();
 	}

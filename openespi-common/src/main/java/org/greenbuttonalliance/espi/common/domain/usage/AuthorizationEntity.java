@@ -222,6 +222,15 @@ public class AuthorizationEntity extends IdentifiedObject {
     private String thirdParty;
 
     /**
+     * Authorization Server back-channel correlation id of the OAuth2 grant that provisioned this
+     * Authorization (#202). Unique when present, so a repeated provision for the same grant returns
+     * this Authorization instead of creating another. Implementation bookkeeping, not part of the
+     * ESPI Authorization resource (never mapped to the DTO / XML).
+     */
+    @Column(name = "correlation_id", length = 256, unique = true)
+    private String correlationId;
+
+    /**
      * Retail customer who granted this authorization.
      * Many authorizations can belong to one customer.
      */
@@ -499,6 +508,7 @@ public class AuthorizationEntity extends IdentifiedObject {
                 "authorizationURI = " + getAuthorizationURI() + ", " +
                 "customerResourceURI = " + getCustomerResourceURI() + ", " +
                 "thirdParty = " + getThirdParty() + ", " +
+                "correlationId = " + getCorrelationId() + ", " +
                 "description = " + getDescription() + ", " +
                 "created = " + getCreated() + ", " +
                 "updated = " + getUpdated() + ", " +

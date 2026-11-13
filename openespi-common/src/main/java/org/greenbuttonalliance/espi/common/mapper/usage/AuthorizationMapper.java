@@ -105,6 +105,7 @@ public interface AuthorizationMapper {
     @Mapping(target = "applicationInformation", ignore = true) // Complex mapping, handle separately
     @Mapping(target = "retailCustomer", ignore = true) // Complex mapping, handle separately
     @Mapping(target = "subscriptions", ignore = true) // Aggregate children, managed via the subscription lifecycle
+    @Mapping(target = "correlationId", ignore = true) // AS back-channel bookkeeping (#202), not in the XSD
     AuthorizationEntity toEntity(AuthorizationDto dto);
 
 }

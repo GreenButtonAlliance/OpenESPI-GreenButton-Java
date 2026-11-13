@@ -38,8 +38,8 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 
 import java.io.IOException;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Custom {@link AuthenticationSuccessHandler} for the {@code /oauth2/token} endpoint that surfaces
@@ -77,11 +77,7 @@ public class EspiTokenResponseSuccessHandler implements AuthenticationSuccessHan
 
 	// ESPI 4.0 (REQ.21) surfaces only the three canonical URIs in the token response; the bare *_id
 	// claims were non-standard and were removed in #160 (consumers parse ids from the URIs).
-	private static final Set<String> ESPI_URI_CLAIMS = Set.of(
-			GrantBackchannelTokenCustomizer.CLAIM_RESOURCE_URI,
-			GrantBackchannelTokenCustomizer.CLAIM_AUTHORIZATION_URI,
-			GrantBackchannelTokenCustomizer.CLAIM_CUSTOMER_RESOURCE_URI
-	);
+	private static final List<String> ESPI_URI_CLAIMS = GrantBackchannelTokenCustomizer.ESPI_URI_CLAIMS;
 
 	@Override
 	public void onAuthenticationSuccess(HttpServletRequest request,

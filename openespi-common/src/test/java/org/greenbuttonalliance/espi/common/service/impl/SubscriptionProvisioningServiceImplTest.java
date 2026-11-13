@@ -123,13 +123,13 @@ class SubscriptionProvisioningServiceImplTest {
 	}
 
 	@Test
-	void grantWithPiiScope_createsBothSubscriptions() {
+	void grantWithFb51AndPiiScope_createsBothSubscriptions() {
 		UUID upId = stubUsagePoint(customer);
 		when(retailCustomerRepository.findById(CUSTOMER_ID)).thenReturn(Optional.of(customer));
 		when(applicationInformationRepository.findByClientId(CLIENT_ID)).thenReturn(Optional.of(application));
 
 		SubscriptionProvisionResult result = service.provisionFromGrant(new SubscriptionProvisionCommand(
-				CORRELATION_ID, CLIENT_ID, "FB=4_5_15_54", CUSTOMER_ID, List.of(upId)));
+				CORRELATION_ID, CLIENT_ID, "FB=4_5_15_51_54", CUSTOMER_ID, List.of(upId)));
 
 		assertThat(result.resourceSubscriptionId()).isNotNull();
 		assertThat(result.customerSubscriptionId()).isNotNull();
@@ -141,12 +141,108 @@ class SubscriptionProvisioningServiceImplTest {
 	}
 
 	@Test
-	void piiOnlyGrant_createsOnlyCustomerSubscription_noResourceUri() {
+	void fb51OnlyGrant_producesCustomerResourceUri() {
+		UUID upId = stubUsagePoint(customer);
+		when(retailCustomerRepository.findById(CUSTOMER_ID)).thenReturn(Optional.of(customer));
+		when(applicationInformationRepository.findByClientId(CLIENT_ID)).thenReturn(Optional.of(application));
+
+		// REQ.21.6.1.2: customerResourceURI is owed when FB_51 is included — no PII FB (54-62) needed.
+		SubscriptionProvisionResult result = service.provisionFromGrant(new SubscriptionProvisionCommand(
+				CORRELATION_ID, CLIENT_ID, "FB=1_4_5_51", CUSTOMER_ID, List.of(upId)));
+
+		assertThat(result)
+				.extracting(SubscriptionProvisionResult::customerResourceUri)
+				.isEqualTo(BASE_URI + "/Batch/RetailCustomer/" + CUSTOMER_ID);
+		assertThat(result.customerSubscriptionId()).isNotNull();
+		assertThat(captureSavedAuthorization().getSubscriptions()).hasSize(2);
+	}
+
+	@Test
+	void piiFbsWithoutFb51_produceNoCustomerResourceUri() {
+		UUID upId = stubUsagePoint(customer);
 		when(retailCustomerRepository.findById(CUSTOMER_ID)).thenReturn(Optional.of(customer));
 		when(applicationInformationRepository.findByClientId(CLIENT_ID)).thenReturn(Optional.of(application));
 
 		SubscriptionProvisionResult result = service.provisionFromGrant(new SubscriptionProvisionCommand(
-				CORRELATION_ID, CLIENT_ID, "FB=4_54", CUSTOMER_ID, List.of()));
+				CORRELATION_ID, CLIENT_ID, "FB=1_4_5_54_55_56_57_58_59_60_61_62", CUSTOMER_ID, List.of(upId)));
+
+		assertThat(result)
+				.extracting(SubscriptionProvisionResult::customerSubscriptionId,
+						SubscriptionProvisionResult::customerResourceUri)
+				.containsExactly(null, null);
+		AuthorizationEntity saved = captureSavedAuthorization();
+		assertThat(saved)
+				.extracting(AuthorizationEntity::getCustomerResourceURI)
+				.isNull();
+		assertThat(saved.getSubscriptions()).hasSize(1);
+	}
+
+	@Test
+	void piiFbsWithoutFb51AndNoUsagePoints_isRejected() {
+		when(retailCustomerRepository.findById(CUSTOMER_ID)).thenReturn(Optional.of(customer));
+		when(applicationInformationRepository.findByClientId(CLIENT_ID)).thenReturn(Optional.of(application));
+
+		assertThatThrownBy(() -> service.provisionFromGrant(new SubscriptionProvisionCommand(
+				CORRELATION_ID, CLIENT_ID, "FB=53_54", CUSTOMER_ID, List.of())))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("FB_51");
+	}
+
+	@Test
+	void newAuthorization_persistsCorrelationIdAsIdempotencyKey() {
+		UUID upId = stubUsagePoint(customer);
+		when(retailCustomerRepository.findById(CUSTOMER_ID)).thenReturn(Optional.of(customer));
+		when(applicationInformationRepository.findByClientId(CLIENT_ID)).thenReturn(Optional.of(application));
+		when(authorizationRepository.findByCorrelationId(CORRELATION_ID)).thenReturn(Optional.empty());
+
+		service.provisionFromGrant(new SubscriptionProvisionCommand(
+				CORRELATION_ID, CLIENT_ID, "FB=4_5_15", CUSTOMER_ID, List.of(upId)));
+
+		assertThat(captureSavedAuthorization())
+				.extracting(AuthorizationEntity::getCorrelationId)
+				.isEqualTo(CORRELATION_ID);
+	}
+
+	@Test
+	void repeatedProvisionForSameCorrelationId_returnsExistingAggregate_withoutCreatingAnother() {
+		UUID upId = stubUsagePoint(customer);
+		when(retailCustomerRepository.findById(CUSTOMER_ID)).thenReturn(Optional.of(customer));
+		when(applicationInformationRepository.findByClientId(CLIENT_ID)).thenReturn(Optional.of(application));
+		SubscriptionProvisionCommand command = new SubscriptionProvisionCommand(
+				CORRELATION_ID, CLIENT_ID, "FB=4_5_15_51", CUSTOMER_ID, List.of(upId));
+
+		SubscriptionProvisionResult first = service.provisionFromGrant(command);
+		AuthorizationEntity persisted = captureSavedAuthorization();
+		when(authorizationRepository.findByCorrelationId(CORRELATION_ID)).thenReturn(Optional.of(persisted));
+
+		SubscriptionProvisionResult replay = service.provisionFromGrant(command);
+
+		assertThat(replay).isEqualTo(first);
+		// Still exactly the one save from the first call: no second Authorization/Subscription.
+		org.mockito.Mockito.verify(authorizationRepository, org.mockito.Mockito.times(1))
+				.save(any(AuthorizationEntity.class));
+	}
+
+	@Test
+	void correlationIdBoundToAnotherClient_isRejected() {
+		AuthorizationEntity other = new AuthorizationEntity(customer, application, "FB=4_5_15");
+		other.setId(UUID.randomUUID());
+		other.setThirdParty("someone-else");
+		when(authorizationRepository.findByCorrelationId(CORRELATION_ID)).thenReturn(Optional.of(other));
+
+		assertThatThrownBy(() -> service.provisionFromGrant(new SubscriptionProvisionCommand(
+				CORRELATION_ID, CLIENT_ID, "FB=4_5_15", CUSTOMER_ID, List.of(UUID.randomUUID()))))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("already bound to another grant");
+	}
+
+	@Test
+	void fb51WithoutUsagePoints_createsOnlyCustomerSubscription_noResourceUri() {
+		when(retailCustomerRepository.findById(CUSTOMER_ID)).thenReturn(Optional.of(customer));
+		when(applicationInformationRepository.findByClientId(CLIENT_ID)).thenReturn(Optional.of(application));
+
+		SubscriptionProvisionResult result = service.provisionFromGrant(new SubscriptionProvisionCommand(
+				CORRELATION_ID, CLIENT_ID, "FB=4_51_54", CUSTOMER_ID, List.of()));
 
 		assertThat(result.resourceSubscriptionId()).isNull();
 		assertThat(result.resourceUri()).isNull();
@@ -166,7 +262,7 @@ class SubscriptionProvisioningServiceImplTest {
 		assertThatThrownBy(() -> service.provisionFromGrant(new SubscriptionProvisionCommand(
 				CORRELATION_ID, CLIENT_ID, "FB=4", CUSTOMER_ID, List.of())))
 				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessageContaining("at least one selected usage point OR a Customer/PII");
+				.hasMessageContaining("at least one selected usage point OR the RetailCustomer FB_51");
 	}
 
 	@Test
