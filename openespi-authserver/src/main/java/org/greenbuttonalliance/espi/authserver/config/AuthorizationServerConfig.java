@@ -79,7 +79,10 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.server.authorization.OAuth2ClientRegistration;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2ClientRegistrationAuthenticationContext;
 import org.springframework.security.oauth2.server.authorization.authentication.OAuth2ClientRegistrationAuthenticationProvider;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2ClientRegistrationAuthenticationToken;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2ClientRegistrationAuthenticationValidator;
 import org.springframework.security.oauth2.server.authorization.converter.OAuth2ClientRegistrationRegisteredClientConverter;
 import org.springframework.security.oauth2.server.authorization.web.OAuth2ClientRegistrationEndpointFilter;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
@@ -89,6 +92,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 /**
  * OAuth2 Authorization Server Configuration for OpenESPI
@@ -252,7 +256,8 @@ public class AuthorizationServerConfig {
         OAuth2ClientRegistrationAuthenticationProvider registrationProvider =
                 new OAuth2ClientRegistrationAuthenticationProvider(registeredClientRepository, authorizationService);
         registrationProvider.setPasswordEncoder(passwordEncoder); // stored as {bcrypt}..., returned once in clear
-        registrationProvider.setRegisteredClientConverter(espiRegisteredClientConverter(requireHttpsRedirectUris));
+        registrationProvider.setAuthenticationValidator(espiRegistrationValidator(requireHttpsRedirectUris));
+        registrationProvider.setRegisteredClientConverter(espiRegisteredClientConverter());
 
         OAuth2ClientRegistrationEndpointFilter registrationFilter =
                 new OAuth2ClientRegistrationEndpointFilter(new ProviderManager(registrationProvider));
@@ -269,8 +274,8 @@ public class AuthorizationServerConfig {
     }
 
     /**
-     * Wraps Spring's default RFC 7591 metadata→RegisteredClient converter to apply ESPI policy. A registrant
-     * may only create a confidential ESPI Third Party authorization_code client:
+     * Registration-request validator applying ESPI policy (Spring Security &ge; 7.0.5 hook). A registrant may
+     * only create a confidential ESPI Third Party authorization_code client:
      * <ul>
      *   <li>{@code scope}: one or more of {@link #ESPI_THIRD_PARTY_SCOPES}, nothing else;</li>
      *   <li>{@code grant_types}: {@code authorization_code} (required) and optionally {@code refresh_token};</li>
@@ -278,14 +283,31 @@ public class AuthorizationServerConfig {
      *   <li>{@code token_endpoint_auth_method}: {@code client_secret_basic} (the RFC 7591 default when omitted);</li>
      *   <li>{@code redirect_uris}: at least one; https only when {@code requireHttpsRedirectUris}.</li>
      * </ul>
-     * Violations are rejected with {@code invalid_client_metadata}. The resulting client gets opaque
-     * (REFERENCE) access tokens and no PKCE requirement.
+     * Violations are rejected with {@code invalid_client_metadata}.
+     *
+     * <p>Spring's own redirect-URI (fragment, unsafe scheme) and JWK-set-URI validators are kept. Spring's
+     * {@code DEFAULT_SCOPE_VALIDATOR} is deliberately replaced: it rejects <em>every</em> scoped request
+     * (anti scope-injection), but ESPI registrations must carry their FB scope, so the ESPI allow-list
+     * above takes its place as an equally strict, explicit scope policy.</p>
      */
-    static Converter<OAuth2ClientRegistration, RegisteredClient> espiRegisteredClientConverter(
+    static Consumer<OAuth2ClientRegistrationAuthenticationContext> espiRegistrationValidator(
             boolean requireHttpsRedirectUris) {
+        return OAuth2ClientRegistrationAuthenticationValidator.DEFAULT_REDIRECT_URI_VALIDATOR
+                .andThen(OAuth2ClientRegistrationAuthenticationValidator.DEFAULT_JWK_SET_URI_VALIDATOR)
+                .andThen(context -> {
+                    OAuth2ClientRegistrationAuthenticationToken registrationRequest = context.getAuthentication();
+                    validateEspiRegistration(registrationRequest.getClientRegistration(), requireHttpsRedirectUris);
+                });
+    }
+
+    /**
+     * Wraps Spring's default RFC 7591 metadata&rarr;RegisteredClient converter so that a registered client
+     * (already validated by {@link #espiRegistrationValidator}) gets opaque (REFERENCE) access tokens and no
+     * PKCE requirement.
+     */
+    static Converter<OAuth2ClientRegistration, RegisteredClient> espiRegisteredClientConverter() {
         OAuth2ClientRegistrationRegisteredClientConverter delegate = new OAuth2ClientRegistrationRegisteredClientConverter();
         return clientRegistration -> {
-            validateEspiRegistration(clientRegistration, requireHttpsRedirectUris);
             RegisteredClient client = delegate.convert(clientRegistration);
             return RegisteredClient.from(client)
                     .tokenSettings(TokenSettings.builder()
