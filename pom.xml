@@ -93,7 +93,7 @@
         <owasp-dependency-check.version>13.0.0</owasp-dependency-check.version>
 
         <!-- Dependency Versions -->
-        <lombok.version>1.18.42</lombok.version>
+        <lombok.version>1.18.48</lombok.version>
         <mapstruct.version>1.6.3</mapstruct.version>
         <commons-lang.version>3.20.0</commons-lang.version>
         <commons-codec.version>1.18.0</commons-codec.version>
