@@ -104,7 +104,7 @@
         <commons-io.version>2.22.0</commons-io.version>
         <swagger-annotations.version>2.2.55</swagger-annotations.version>
         <datafaker.version>2.7.0</datafaker.version>
-        <jetbrains-annotations.version>26.0.2-1</jetbrains-annotations.version>
+        <jetbrains-annotations.version>26.1.0</jetbrains-annotations.version>
     </properties>
     
     <profiles>
