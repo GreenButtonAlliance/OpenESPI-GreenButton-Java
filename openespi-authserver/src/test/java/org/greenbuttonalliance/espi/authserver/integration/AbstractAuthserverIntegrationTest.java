@@ -46,8 +46,8 @@ import org.testcontainers.containers.MySQLContainer;
  * and Flyway wiring are inherited. The {@code testcontainers} Spring profile supplies the rest of the
  * AS test configuration (see {@code application-testcontainers.yml}).</p>
  */
-// Tagged so CI can run ONLY the Docker-backed integration tests (-Dgroups=testcontainers-it),
-// excluding the AS module's pre-existing broken H2-profile unit tests. Inherited by subclasses.
+// Tagged (and inherited by subclasses) so the Docker-backed integration tests can be selected on their
+// own with -Dgroups=testcontainers-it. CI runs the full module suite (#129), so the tag is optional there.
 @Tag("testcontainers-it")
 @SpringBootTest(classes = AuthorizationServerApplication.class)
 @AutoConfigureMockMvc

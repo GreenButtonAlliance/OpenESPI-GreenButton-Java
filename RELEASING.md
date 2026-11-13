@@ -49,7 +49,7 @@ The parent pom, `openespi-parent`, is not released on its own.
       - sets the release version with `versions:set -pl <module>`, **in CI only**; nothing is
         committed;
       - runs the upstream modules' tests and then `mvn verify -pl <module>`. This is equivalent
-        to `-am verify`. `authserver` uses `-Dgroups=testcontainers-it` until #129;
+        to `-am verify`. Every module, `authserver` included, runs its full test suite;
       - collects the jar. For applications this is the Spring Boot fat jar.
    3. **github-release**: creates the GitHub Release `<tag>` with:
       - generated notes, starting from the previous tag of the same module;

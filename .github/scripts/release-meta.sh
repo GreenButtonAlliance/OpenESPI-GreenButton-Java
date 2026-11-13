@@ -48,12 +48,9 @@ fi
 
 next_version="${major}.${minor}.$((patch + 1))-SNAPSHOT"
 
-# Extra Maven test arguments per module.
+# Extra Maven test arguments per module. None today: every module runs its full suite
+# (authserver's -Dgroups=testcontainers-it restriction was removed by #129).
 test_args=""
-if [[ "$module" == authserver ]]; then
-  # TODO(#129): AS unit tests are broken on the H2 test profiles; only the testcontainers-it suite runs.
-  test_args="-Dgroups=testcontainers-it -DfailIfNoTests=false"
-fi
 
 # Previous release tag of the SAME module (highest version below this one), for release notes.
 previous_tag=""

@@ -161,8 +161,8 @@ mvn verify -pl openespi-common -am
 mvn test -Dtest=ComplexRelationshipMySQLIntegrationTest -pl openespi-common
 mvn test -Dtest=ComplexRelationshipPostgreSQLIntegrationTest -pl openespi-common
 
-# Authorization Server: only the Testcontainers suite runs until #129 (same as CI)
-mvn verify -pl openespi-authserver -am -Dgroups=testcontainers-it -DfailIfNoTests=false
+# Authorization Server: full suite, unit + Testcontainers (MySQL) integration tests (same as CI)
+mvn verify -pl openespi-authserver -am
 ```
 
 CI, release and versioning: see [`.github/CI_CD_SETUP.md`](.github/CI_CD_SETUP.md) and [`RELEASING.md`](RELEASING.md).

@@ -33,11 +33,10 @@ cd openespi-common && mvn test
 # There are no failsafe *IT classes and no separate integration-test profile.
 mvn test -pl openespi-common
 
-# What CI runs per module (matrix in .github/workflows/ci.yml): install upstream, then verify
+# What CI runs per module (matrix in .github/workflows/ci.yml): install upstream, then verify.
+# For openespi-authserver this is the full suite (unit + MySQL Testcontainers tests) since #129;
+# add -Dgroups=testcontainers-it to run only the Docker-backed integration tests.
 mvn install -DskipTests -pl <module> -am && mvn verify -pl <module>
-
-# Authorization Server: only the TestContainers group runs cleanly today (#129)
-mvn verify -pl openespi-authserver -Dgroups=testcontainers-it -DfailIfNoTests=false
 ```
 
 ### Run Applications
@@ -269,7 +268,7 @@ ESPI uses Atom XML feeds for data exchange. Key patterns:
 - All tests must pass before committing: `mvn test`
 - Run tests for affected module and its dependents: `mvn test -pl <module> -am`
 - TestContainers-based tests (Docker required) run inside the normal `mvn test`; there are no failsafe `*IT` classes and no separate integration-test profile (removed in #193)
-- Note: openespi-authserver unit tests are currently excluded from CI (#129); CI runs only its `@Tag("testcontainers-it")` tests
+- openespi-authserver runs its full suite in CI (#129); its Docker-backed tests are tagged `@Tag("testcontainers-it")` (via `AbstractAuthserverIntegrationTest`) so they can be run alone with `-Dgroups=testcontainers-it`
 - **IMPORTANT**: Use AssertJ chained assertions - combine all assertions for a single object into one assertion chain
   - Good: `assertThat(retrieved).isPresent().hasValueSatisfying(device -> assertThat(device).extracting(...).containsExactly(...))`
   - Bad: Multiple separate `assertThat()` statements for the same object
