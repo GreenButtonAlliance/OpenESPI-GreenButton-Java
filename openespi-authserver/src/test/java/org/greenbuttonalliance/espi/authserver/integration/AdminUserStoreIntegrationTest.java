@@ -16,7 +16,7 @@
 
 package org.greenbuttonalliance.espi.authserver.integration;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import org.greenbuttonalliance.espi.authserver.admin.AdminUser;
 import org.greenbuttonalliance.espi.authserver.admin.AdminUserBootstrap;
 import org.greenbuttonalliance.espi.authserver.admin.AdminUserRepository;
@@ -448,7 +448,7 @@ class AdminUserStoreIntegrationTest extends AbstractAuthserverIntegrationTest {
 						.param("grant_type", "client_credentials").param("scope", "DataCustodian_Admin_Access"))
 				.andExpect(status().isOk())
 				.andReturn();
-		String value = objectMapper.readTree(token.getResponse().getContentAsString()).get("access_token").asText();
+		String value = objectMapper.readTree(token.getResponse().getContentAsString()).get("access_token").asString();
 
 		mockMvc.perform(post("/oauth2/introspect").with(httpBasic("data_custodian_admin", "dc-secret")).param("token", value))
 				.andExpect(status().isOk())
@@ -481,7 +481,7 @@ class AdminUserStoreIntegrationTest extends AbstractAuthserverIntegrationTest {
 						.param("grant_type", "client_credentials").param("scope", "authserver.admin"))
 				.andExpect(status().isOk())
 				.andReturn();
-		return objectMapper.readTree(result.getResponse().getContentAsString()).get("access_token").asText();
+		return objectMapper.readTree(result.getResponse().getContentAsString()).get("access_token").asString();
 	}
 
 	private void registerFakePasskey(String username) {

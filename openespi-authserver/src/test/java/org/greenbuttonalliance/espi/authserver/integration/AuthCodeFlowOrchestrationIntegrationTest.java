@@ -192,8 +192,8 @@ class AuthCodeFlowOrchestrationIntegrationTest extends AbstractAuthserverIntegra
 				.andExpect(jsonPath("$.resource_subscription_id").doesNotExist())
 				.andExpect(jsonPath("$.customer_subscription_id").doesNotExist())
 				.andReturn();
-		String accessToken = new com.fasterxml.jackson.databind.ObjectMapper()
-				.readTree(tokenResult.getResponse().getContentAsString()).get("access_token").asText();
+		String accessToken = new tools.jackson.databind.ObjectMapper()
+				.readTree(tokenResult.getResponse().getContentAsString()).get("access_token").asString();
 
 		// The back-channel was called with the customer-selection context carried through the flow.
 		ArgumentCaptor<BackchannelRequest> captor = ArgumentCaptor.forClass(BackchannelRequest.class);
