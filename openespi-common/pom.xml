@@ -137,15 +137,6 @@
     </profiles>
 
     <dependencies>
-        <!-- Shared signed-handoff codec for the AS↔DC customer-flow redirect contract.
-             Extracted to its own module so openespi-authserver (which can't depend on common's
-             ESPI domain types) can use the same canonical wire-format implementation. -->
-        <dependency>
-            <groupId>org.greenbuttonalliance.espi</groupId>
-            <artifactId>OpenESPI-Handoff</artifactId>
-            <!-- version managed in the parent: openespi-handoff.version -->
-        </dependency>
-
         <!-- Spring Boot Starters for Common Library -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

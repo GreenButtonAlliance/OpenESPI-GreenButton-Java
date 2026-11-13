@@ -36,12 +36,10 @@ import org.springframework.web.client.RestTemplate;
 @EntityScan(basePackages = {
     "org.greenbuttonalliance.espi.common.domain.usage",
     "org.greenbuttonalliance.espi.common.domain.customer",
-    "org.greenbuttonalliance.espi.common.domain.common",
-    "org.greenbuttonalliance.espi.handoff"
+    "org.greenbuttonalliance.espi.common.domain.common"
 })
 @EnableJpaRepositories(basePackages = {
-    "org.greenbuttonalliance.espi.common.repositories",
-    "org.greenbuttonalliance.espi.handoff"
+    "org.greenbuttonalliance.espi.common.repositories"
 })
 public class TestApplication {
 

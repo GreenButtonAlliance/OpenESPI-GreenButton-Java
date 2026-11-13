@@ -28,7 +28,8 @@ spring:
           use_query_cache: false
   
   # Flyway Database Migration
-  # Common ships shared migrations at classpath:db/migration (V1, V3, plus openespi-handoff's V4)
+  # Common ships shared migrations at classpath:db/migration (V1, V3); openespi-handoff (a direct
+  # DC dependency) adds its V4 at the same location
   # and vendor-specific tables (incl. retail_customers) at classpath:db/vendor/<vendor>.
   # Default to the MySQL pair here; per-profile YAML overrides for postgres / h2.
   flyway:

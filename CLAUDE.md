@@ -4,16 +4,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-OpenESPI-GreenButton-Java is a monorepo implementation of the NAESB Energy Services Provider Interface (ESPI) 4.0 specification for Green Button energy data standards. The project has been migrated to Java 25, Jakarta EE 10+, and Spring Boot 4.0.
+OpenESPI-GreenButton-Java is a monorepo implementation of the NAESB REQ.21 Energy Services Provider Interface (ESPI) specification for Green Button energy data standards, targeting REQ.21 version 4.1 (whose official schemas are content-identical to 4.0 — see "ESPI Compliance" below). The project has been migrated to Java 25, Jakarta EE 10+, and Spring Boot 4.0.
 
 ## Build and Test Commands
 
 ### Build All Modules
 ```bash
-# From repository root - builds all modules (common, datacustodian, thirdparty, authserver)
+# From repository root - builds all modules (handoff, common, datacustodian, thirdparty, authserver)
 mvn clean install
 
 # Build only core modules (common, datacustodian, thirdparty) - omits authserver
+# NOTE: this profile's module list does not include openespi-handoff, which openespi-datacustodian requires
 mvn clean install -Pspring-boot-only
 ```
 
@@ -28,8 +29,15 @@ mvn test -pl openespi-datacustodian -am
 # Test specific module only
 cd openespi-common && mvn test
 
-# Integration tests with TestContainers (requires Docker)
-mvn verify -pl openespi-common -Pintegration-tests
+# TestContainers tests run as part of the normal surefire `mvn test` (requires Docker).
+# There are no failsafe *IT classes and no separate integration-test profile.
+mvn test -pl openespi-common
+
+# What CI runs per module (matrix in .github/workflows/ci.yml): install upstream, then verify
+mvn install -DskipTests -pl <module> -am && mvn verify -pl <module>
+
+# Authorization Server: only the TestContainers group runs cleanly today (#129)
+mvn verify -pl openespi-authserver -Dgroups=testcontainers-it -DfailIfNoTests=false
 ```
 
 ### Run Applications
@@ -62,13 +70,14 @@ mvn test -pl openespi-common -Dtest=UsagePointRepositoryTest
 ## Architecture
 
 ### Module Dependencies
-The monorepo follows a layered architecture with these dependencies:
-- **openespi-common** → Foundation library (no dependencies on other modules)
-- **openespi-datacustodian** → Depends on openespi-common
-- **openespi-authserver** → Independent module (NO dependency on openespi-common)
+The monorepo has five modules with these dependencies:
+- **openespi-handoff** → Pure-infrastructure signed-handoff codec (HMAC + Jackson + JPA `handoff_nonces`) for the AS↔DC customer-flow redirect contract. Carries NO ESPI domain types.
+- **openespi-common** → Foundation ESPI library (no dependencies on other modules)
+- **openespi-datacustodian** → Depends on openespi-common and openespi-handoff (handoff is used by `web/authorize/` and contributes Flyway `V4__Create_Handoff_Nonces.sql`)
+- **openespi-authserver** → Depends on openespi-handoff only (NO dependency on openespi-common)
 - **openespi-thirdparty** → Depends on openespi-common
 
-IMPORTANT: The Authorization Server (openespi-authserver) is completely independent and does NOT depend on openespi-common. It has its own entity definitions, repositories, and services for OAuth2 authorization.
+IMPORTANT: The Authorization Server (openespi-authserver) does NOT depend on openespi-common. It has its own entity definitions, repositories, and services for OAuth2 authorization. Its only shared module is openespi-handoff, which must stay free of ESPI domain types to preserve this invariant.
 
 ### Domain Model Structure
 The domain model is organized in `openespi-common/src/main/java/org/greenbuttonalliance/espi/common/domain/`:
@@ -101,12 +110,15 @@ Services are organized by domain:
 
 **Customer Domain Services** (from customer.xsd, in `service/customer/`):
 - `CustomerAccountService` - Customer account management
+- `CustomerAgreementService` - Customer agreements
 - `CustomerService` - Customer information
+- `EndDeviceService` - End device information
 - `MeterService` - Meter device information
+- `ProgramDateIdMappingsService` - Program date/ID mappings
 - `ServiceLocationService` - Service location data
 - `StatementService` - Billing statements
 
-Note: Entities exist for CustomerAgreement and ServiceSupplier but services have not been implemented yet.
+Note: ServiceSupplier has an entity, DTO, and mapper but no repository or service yet.
 
 **Cross-Cutting Services**:
 - `AuthorizationService` - OAuth2 authorization management
@@ -118,11 +130,17 @@ Note: Entities exist for CustomerAgreement and ServiceSupplier but services have
 
 ### REST API Structure
 REST controllers are in `openespi-datacustodian/src/main/java/org/greenbuttonalliance/espi/datacustodian/web/`:
-- **web/api/** - ESPI RESTful API endpoints (many currently `.disabled` during migration)
-- **web/custodian/** - Data custodian-specific endpoints
-- **web/customer/** - Retail customer portal endpoints
+- **web/api/** - ESPI RESTful API endpoints. GET-only (feed + entry) for ApplicationInformation, Authorization, Customer, CustomerAccount, UsagePoint, MeterReading, ReadingType, IntervalBlock, UsageSummary, ElectricPowerQualitySummary. `web/api/scope/` holds `ScopeResolver`, `ResourceScope`, `EspiQueryOptions` (not yet wired into controllers).
+- **web/custodian/** - Data custodian admin portal (home, BatchList notification send, settings)
+- **web/customer/** - Retail customer portal; most classes here are original legacy code with `@Controller` commented out
+- **web/authorize/** - Customer authorization (per-FB consent) screen delegated from the AS
+- **internal/backchannel/** - AS→DC subscription-provisioning back-channel
 
-Note: Many REST controllers have `.disabled` extension during the Spring Boot 4.0 migration. They need to be re-enabled and tested after core functionality is validated.
+Current state (see GitHub epic #119 "CANONICAL BUILD PLAN" for the roadmap):
+- All write endpoints (POST/PUT/DELETE) were deliberately removed in #166 and are deferred.
+- Not yet implemented: `Batch/Subscription`, `Batch/Bulk`, `Batch/RetailCustomer`, `Subscription/{id}`, RetailCustomer-scoped URIs, LocalTimeParameters, ReadServiceStatus, and the CustomerAgreement/ServiceSupplier/ServiceLocation/Meter/EndDevice/Statement/ProgramIdMappings endpoints.
+- Known defect: Subscription-scoped GETs currently ignore `subscriptionId` and return all records.
+- The ten per-resource controllers duplicate find/map/marshal logic; the E1 resource engine (#187, branch `feature/187-e1-resource-engine-usagepoint-triad`, not yet merged) replaces them with one generic controller driven by `EspiResource` + `ResourceFbPolicy` (added in `openespi-common/.../common/scope/` on that branch, alongside the existing `FunctionBlock`).
 
 ### DTO and Mapping Layer
 The project uses MapStruct for entity-to-DTO mappings:
@@ -171,8 +189,9 @@ Application behavior is controlled via Spring profiles:
 
 ### Database Migrations
 Flyway manages database schema migrations:
-- **Location**: `openespi-common/src/main/resources/db/migration/`
-- **MySQL scripts**: `V1__Create_Base_Tables.sql`, `V3__Create_additiional_Base_Tables.sql`
+- **Shared scripts**: `openespi-common/src/main/resources/db/migration/` - `V1__Create_Base_Tables.sql`, `V3__Create_additiional_Base_Tables.sql`
+- **Vendor-specific scripts**: `openespi-common/src/main/resources/db/vendor/{mysql,postgres,h2}/V2__*_Specific_Tables.sql`
+- **Authorization Server**: has its own Flyway scripts under `openespi-authserver/src/main/resources/db/vendor/`; these currently diverge by vendor (MySQL V3–V6 are `.disabled`; see #145, #152)
 - **Run migrations**: Automatically on application startup with `spring.flyway.enabled=true`
 
 IMPORTANT: When adding/modifying entities, ensure Flyway migration scripts are updated to match JPA entity definitions.
@@ -183,7 +202,7 @@ IMPORTANT: When adding/modifying entities, ensure Flyway migration scripts are u
 - **Spring Boot**: 4.0.1
 - **Spring Security**: 7.x (OAuth2 Resource Server and Client)
 - **Spring Data JPA**: 4.x with Hibernate 7.x
-- **Spring Authorization Server**: Latest (for openespi-authserver only)
+- **Spring Authorization Server**: ships inside Spring Security 7 (for openespi-authserver only)
 
 ### Persistence
 - **JPA/Hibernate**: 7.x with Jakarta Persistence API 3.2
@@ -202,13 +221,13 @@ IMPORTANT: When adding/modifying entities, ensure Flyway migration scripts are u
 - **MapStruct**: 1.6.3 for DTO mapping
 - **Lombok**: 1.18.42 for reducing boilerplate
 
-## ESPI 4.0 Compliance
+## ESPI Compliance (REQ.21 v4.1)
 
-This codebase implements the NAESB ESPI 4.0 specification for Green Button data exchange.
+This codebase implements NAESB REQ.21 ESPI for Green Button data exchange, targeting version 4.1. REQ.21 v4.1 changes no wire behavior or schema relative to 4.0; its only substantive change is the deprecation of SFTP bulk (FB_34, FB_66), already reflected in `FunctionBlock.DEPRECATED_IDS`.
 
 ### XML Schema Files
-- **Location**: `openespi-common/src/main/resources/schema/ESPI_4.0/`
-- **Files**: `espi.xsd` (usage data), `customer.xsd` (customer data)
+- **`schema/ESPI_4.0/`** (`openespi-common/src/main/resources/`): `espi.xsd` (usage data), `customer.xsd` (customer data). These are content-identical to the official REQ.21 v4.1 schemas (`version="4.0.20231213"`) and are the validation target for certification.
+- **`schema/ESPI_4.1/customer_4.1.xsd`**: a deliberate GBA refactoring of the customer schema that simplifies the structure and removes unnecessary intermediate classes. It is NOT the official NAESB file. `ESPI_4.1/atom.xsd` is the Atom schema.
 
 ### Atom Feed Format
 ESPI uses Atom XML feeds for data exchange. Key patterns:
@@ -245,12 +264,12 @@ ESPI uses Atom XML feeds for data exchange. Key patterns:
 - **Feature branches**: `feature/description` for new features
 - **Bug fixes**: `fix/description` for bug fixes
 - **Always create feature branch before making changes** - never commit directly to main
-- See BRANCH_STRATEGY.md for detailed workflow
 
 ### Testing Requirements
 - All tests must pass before committing: `mvn test`
 - Run tests for affected module and its dependents: `mvn test -pl <module> -am`
-- Integration tests should pass before PR merge: `mvn verify -Pfull-integration`
+- TestContainers-based tests (Docker required) run inside the normal `mvn test`; there are no failsafe `*IT` classes and no separate integration-test profile (removed in #193)
+- Note: openespi-authserver unit tests are currently excluded from CI (#129); CI runs only its `@Tag("testcontainers-it")` tests
 - **IMPORTANT**: Use AssertJ chained assertions - combine all assertions for a single object into one assertion chain
   - Good: `assertThat(retrieved).isPresent().hasValueSatisfying(device -> assertThat(device).extracting(...).containsExactly(...))`
   - Bad: Multiple separate `assertThat()` statements for the same object
@@ -314,25 +333,34 @@ This practice prevents issues like missing imports, broken references, and compi
 #### REST Controller Development
 - Controllers in `openespi-datacustodian` implement ESPI REST API
 - Use `@RestController` and `@RequestMapping` annotations
-- Follow existing patterns in enabled controllers (e.g., `UsagePointController`, `MeterReadingController`)
-- Many controllers currently disabled (`.disabled` extension) - re-enable after testing core functionality
+- New ESPI resource endpoints should be built on the E1 resource engine (#187) rather than as new per-resource controllers
+- FB-to-resource gating must have a single source of truth - `ResourceFbPolicy` / `EspiResource` once #187 merges (until then, `SecurityConfiguration` holds the FB gates) - do not duplicate FB rules in controllers or security config
+- Legacy controllers (`Long` ids, field `@Autowired`, commented-out bodies) remain in DC `web/customer/`, `web/custodian/RetailCustomerController`, `UploadController`, and most of openespi-thirdparty `web/`; port or delete them, do not copy their patterns
 
 ## Migration Status
 
 The codebase has been migrated to Spring Boot 4.0.1 and Java 25. Key migration achievements:
 - Java 25 upgrade complete across all modules
 - Jakarta EE 10+ migration complete (javax → jakarta namespace)
-- Spring Boot 4.0.1 migration complete for common, datacustodian, authserver
-- UUID Version 5 primary keys migrated from Long IDs
-- OAuth2 modernized with Spring Security 7.x patterns
-- RestTemplate replaced with WebClient
+- Spring Boot 4.0.1 migration complete for all modules
+- UUID Version 5 primary keys migrated from Long IDs (RetailCustomer intentionally keeps its `Long` id - it is not an Atom resource)
+- OAuth2 modernized with Spring Security 7.x patterns: opaque reference tokens + introspection (#122, #160); customer login/consent delegated from the AS to the DC via openespi-handoff; OIDC removed (#134)
 - Spring Data JPA 4.x with Hibernate 7.x
+- Schema-compliance Phases 1-26 (entities, DTOs, mappers, Flyway for usage and customer domains) merged Dec 2025-Feb 2026
+
+Still in progress (logic migration from the original OpenESPI code):
+- ESPI REST API completion (see "REST API Structure" above)
+- openespi-thirdparty: notification receiver works, but fetched data is not imported (#89) and most portal controllers are original legacy code whose views have no templates
+- `RestTemplate` still used in 6 main-code files (e.g. `NotificationServiceImpl`, AS `DataCustodianIntegrationService`); migrate to `RestClient`/`WebClient`
+- Entity field type/length verification against the XSDs (#101 Phases 2-3)
 
 ### Known Issues
-Check migration status documents for current issues:
-- `2025-07-15_Claude_Code_Spring_Boot_3.5_Migration_Plan.md` - Historical migration plan
-- `openespi-common/SPRING_BOOT_3.5_MIGRATION_STATUS.md` - Historical common module status
-- `openespi-authserver/MIGRATION_ROADMAP.md` - Auth server status
+The source of truth for status and roadmap is GitHub epic #119 ("CANONICAL BUILD PLAN") and its sub-issues. The root `PHASE_*.md`, `MULTI_PHASE_SCHEMA_COMPLIANCE_PLAN.md`, `ISSUE_101_*.md`, `openespi-common/Phase_A-Flyway_Migration_Inventory.md`, `openespi-common/PROFILE_MIGRATION_SUMMARY.md`, `openespi-datacustodian/controll-update-status.md`, and `openespi-authserver/MIGRATION_ROADMAP.md` are historical and stale.
+
+Known rule violations / defects to be aware of:
+- `domain/common/DateTimeInterval` carries `@XmlType` despite being an `@Embeddable` (violates the JAXB rule above; collides with `DateTimeIntervalDto`)
+- `MeterMapper` ignores meter multipliers (silently dropped on export/import)
+- Five orphaned `*_related_links` tables are still created in the vendor V2 scripts
 
 ## Current Technology Stack
 
@@ -348,15 +376,15 @@ Current versions:
 
 ### Authorization Flow
 The system implements OAuth2 authorization code flow:
-1. Third-party application requests authorization
-2. Retail customer authenticates with openespi-authserver
-3. Authorization server issues authorization code
-4. Third-party exchanges code for access token
-5. Third-party accesses data custodian resources with token
+1. Third-party application requests authorization from openespi-authserver
+2. The AS delegates customer login and per-Function-Block consent to the Data Custodian (signed handoff via openespi-handoff, `/authorize/delegate` → DC → `/oauth2/authorize/continue`)
+3. Authorization server issues authorization code; on token exchange it calls the DC back-channel to provision the Subscription
+4. Third-party exchanges code for an opaque access token (response includes `resourceURI`, `authorizationURI`, and `customerResourceURI` when FB_51 is granted)
+5. Third-party accesses data custodian resources with the token; the DC validates it by introspection and enforces FB scopes
 
 ### Security Configuration
-- **Authorization Server**: `openespi-authserver` - Spring Authorization Server (independent module)
-- **Resource Server**: `openespi-datacustodian` - Validates OAuth2 tokens
+- **Authorization Server**: `openespi-authserver` - Spring Authorization Server (depends only on openespi-handoff)
+- **Resource Server**: `openespi-datacustodian` - Validates opaque tokens via introspection; enforces FB scopes in `SecurityConfiguration` (moving to `ResourceFbPolicy` with #187)
 - **OAuth2 Client**: `openespi-thirdparty` - Third-party application using WebClient with OAuth2
 
 ## Troubleshooting
@@ -386,8 +414,7 @@ The system implements OAuth2 authorization code flow:
 ## Additional Documentation
 
 - **README.md** - Project overview and quick start
-- **BRANCH_STRATEGY.md** - Git workflow and branching strategy
-- **2025-07-15_Claude_Code_Spring_Boot_3.5_Migration_Plan.md** - Historical migration status (Spring Boot 3.5 to 4.0)
+- **openespi-handoff/README.md** - AS↔DC signed-handoff contract
 - **openespi-common/CONTRIBUTING.md** - Contribution guidelines
 - **openespi-authserver/DEPLOYMENT_GUIDE.md** - Production deployment
 - **openespi-authserver/CERTIFICATE_AUTHENTICATION.md** - Client certificate auth

@@ -128,6 +128,16 @@
             <!-- version managed in the parent: openespi-common.version -->
         </dependency>
 
+        <!-- Shared signed-handoff codec for the AS↔DC customer-flow redirect contract.
+             Declared here (not in openespi-common) because the Data Custodian is the consumer;
+             openespi-authserver declares the same module so both sides share one wire format.
+             Also contributes db/migration/V4__Create_Handoff_Nonces.sql to the DC's Flyway path. -->
+        <dependency>
+            <groupId>org.greenbuttonalliance.espi</groupId>
+            <artifactId>OpenESPI-Handoff</artifactId>
+            <!-- version managed in the parent: openespi-handoff.version -->
+        </dependency>
+
         <!-- Spring Boot Starters -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
