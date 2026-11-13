@@ -52,11 +52,16 @@ import static org.hamcrest.Matchers.*;
 import static org.hamcrest.CoreMatchers.containsString;
 
 /**
- * Comprehensive unit tests for OAuthAdminController
- * 
- * Tests administrative OAuth2 operations including token management,
- * client management, and authorization tracking with proper security.
- * 
+ * Unit tests for OAuthAdminController request handling (token management,
+ * client management, and authorization tracking).
+ *
+ * <p>These tests use {@code MockMvcBuilders.standaloneSetup}, which installs NO Spring Security
+ * filter chain and no method-security proxy, so {@code @WithMockUser} has no effect here and access
+ * control cannot be asserted. Authorization of the admin APIs (anonymous, customer session, ADMIN /
+ * DC_ADMIN with both MFA factors, {@code @PreAuthorize} enforcement) is covered against the real
+ * security configuration by {@code integration.AdminEndpointAuthorizationIntegrationTest} and
+ * {@code integration.AdminBearerTokenIntegrationTest} (#129).</p>
+ *
  * @author Green Button Alliance
  * @version 1.0.0
  * @since Spring Boot 3.5
@@ -115,15 +120,6 @@ class OAuthAdminControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                     .andExpect(jsonPath("$").isArray());
-        }
-
-        @Test
-        @WithMockUser(roles = "USER")
-        @DisplayName("Should deny access to tokens with user role")
-        void shouldDenyAccessToTokensWithUserRole() throws Exception {
-            // When & Then
-            mockMvc.perform(get("/admin/oauth2/tokens"))
-                    .andExpect(status().isForbidden());
         }
 
         @Test
@@ -415,70 +411,6 @@ class OAuthAdminControllerTest {
             mockMvc.perform(get("/admin/oauth2/authorizations"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$").isArray());
-        }
-    }
-
-    @Nested
-    @DisplayName("Security Tests")
-    class SecurityTests {
-
-        @Test
-        @DisplayName("Should deny unauthenticated access to admin endpoints")
-        void shouldDenyUnauthenticatedAccessToAdminEndpoints() throws Exception {
-            // When & Then
-            mockMvc.perform(get("/admin/oauth2/tokens"))
-                    .andExpect(status().isUnauthorized());
-
-            mockMvc.perform(get("/admin/oauth2/clients"))
-                    .andExpect(status().isUnauthorized());
-
-            mockMvc.perform(get("/admin/oauth2/authorizations"))
-                    .andExpect(status().isUnauthorized());
-        }
-
-        @Test
-        @WithMockUser(roles = "USER")
-        @DisplayName("Should deny user role access to admin endpoints")
-        void shouldDenyUserRoleAccessToAdminEndpoints() throws Exception {
-            // When & Then
-            mockMvc.perform(get("/admin/oauth2/tokens"))
-                    .andExpect(status().isForbidden());
-
-            mockMvc.perform(get("/admin/oauth2/clients"))
-                    .andExpect(status().isForbidden());
-
-            mockMvc.perform(get("/admin/oauth2/authorizations"))
-                    .andExpect(status().isForbidden());
-        }
-
-        @Test
-        @WithMockUser(roles = "CUSTOMER")
-        @DisplayName("Should deny customer role access to admin endpoints")
-        void shouldDenyCustomerRoleAccessToAdminEndpoints() throws Exception {
-            // When & Then
-            mockMvc.perform(delete("/admin/oauth2/tokens/test-token"))
-                    .andExpect(status().isForbidden());
-
-            mockMvc.perform(delete("/admin/oauth2/clients/test-client"))
-                    .andExpect(status().isForbidden());
-        }
-
-        @Test
-        @WithMockUser(authorities = "ROLE_ADMIN")
-        @DisplayName("Should allow ROLE_ADMIN authority access")
-        void shouldAllowRoleAdminAuthorityAccess() throws Exception {
-            // When & Then
-            mockMvc.perform(get("/admin/oauth2/tokens"))
-                    .andExpect(status().isOk());
-        }
-
-        @Test
-        @WithMockUser(authorities = "ROLE_DC_ADMIN")
-        @DisplayName("Should allow ROLE_DC_ADMIN authority access")
-        void shouldAllowRoleDcAdminAuthorityAccess() throws Exception {
-            // When & Then
-            mockMvc.perform(get("/admin/oauth2/clients"))
-                    .andExpect(status().isOk());
         }
     }
 
