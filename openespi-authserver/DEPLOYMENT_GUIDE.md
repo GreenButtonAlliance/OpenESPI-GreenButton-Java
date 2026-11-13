@@ -597,6 +597,132 @@ espi:
       enable-ocsp-check: true
 ```
 
+### Admin API Bearer Access (`espi_admin` client)
+
+These admin REST APIs accept a client_credentials bearer token:
+
+- `/admin/**`
+- `/api/v1/oauth2/clients/**`
+- `/api/v1/certificates/**`
+- `/api/v1/datacustodian/**`
+
+The token is opaque, resolved in-process, and stateless. No session or CSRF token is needed. Only the dedicated `authserver.admin` scope grants admin rights. ESPI scopes such as `DataCustodian_Admin_Access` do **not** grant admin rights.
+
+| Property | Environment variable | Default |
+|----------|----------------------|---------|
+| `espi.authserver.admin-client.secret` | `ESPI_ADMIN_CLIENT_SECRET` | *(unset: bearer access disabled)* |
+
+- **When the secret is set**, the server seeds an `espi_admin` client at startup:
+  - grant type: `client_credentials` only
+  - scope: `authserver.admin`
+  - tokens: opaque (reference), with a 15-minute access-token TTL
+  - the secret is stored as a `{bcrypt}` hash, never in plaintext.
+- **On later restarts**, the row is rewritten only when the configured secret no longer matches the stored hash (rotation) or a managed field has drifted.
+- **When the secret is unset**, the client is not seeded and the server logs `Admin API bearer access is disabled`.
+
+Supply the secret from a secret store (a Kubernetes Secret, Vault, etc.). Never commit it to a profile YAML file.
+
+Obtain and use a token:
+
+```bash
+TOKEN=$(curl -s -u "espi_admin:${ESPI_ADMIN_CLIENT_SECRET}" \
+  -d grant_type=client_credentials -d scope=authserver.admin \
+  https://auth.example.com/oauth2/token | jq -r .access_token)
+
+curl -H "Authorization: Bearer ${TOKEN}" https://auth.example.com/admin/oauth2/clients
+```
+
+Responses:
+
+| Token | Response |
+|-------|----------|
+| Missing, unknown, revoked or expired | `401` with `WWW-Authenticate: Bearer error="invalid_token"` |
+| Valid, but without `authserver.admin` | `403` with `error="insufficient_scope"` |
+
+Requests without an `Authorization: Bearer` header fall through to the session-login chain, which requires `ROLE_ADMIN` or `ROLE_DC_ADMIN`.
+
+`/connect/**` (client registration) is not served by the bearer chain. It remains session-only and admin-only.
+
+### Human Administrators: Password + Passkey (WebAuthn) MFA
+
+Human administrators of the Authorization Server are stored in `admin_users`, with roles in `admin_user_roles` (Flyway `V9_0_0`). Their passkeys are stored in Spring Security's `user_entities` / `user_credentials` tables.
+
+Retail customers never sign in here. They authenticate at the Data Custodian.
+
+A browser session reaches the admin paths only if it has **all** of the following:
+
+- `ROLE_ADMIN` or `ROLE_DC_ADMIN`
+- the password factor (form login at `/login`)
+- the passkey factor (WebAuthn)
+
+The admin paths are `/admin/**`, `/api/v1/admin/**`, `/api/v1/oauth2/clients/**`, `/api/v1/certificates/**`, `/api/v1/datacustodian/**` and `/connect/**`.
+
+The MFA requirement applies to these paths only. The OAuth2 protocol endpoints, the delegated customer flow, introspection and the `espi_admin` bearer chain are unaffected.
+
+#### Bootstrap the first administrator
+
+| Property | Environment variable |
+|----------|----------------------|
+| `espi.authserver.admin.bootstrap.username` | `ESPI_BOOTSTRAP_ADMIN_USERNAME` |
+| `espi.authserver.admin.bootstrap.password-hash` | `ESPI_BOOTSTRAP_ADMIN_PASSWORD_HASH` |
+
+At startup, if `admin_users` is **empty** and both values are set, the server creates that user with `ROLE_ADMIN`. If any administrator already exists, the values are ignored. Remove them after the first start.
+
+- **Username:** must start with a letter (3-100 of `[A-Za-z0-9._@-]`).
+- **Password hash:** must be a bcrypt hash, either bare (`$2a$…`, `$2b$…`, `$2y$…`) or prefixed with `{bcrypt}`. Plaintext or any other scheme is rejected and startup fails.
+
+Generate a hash:
+
+```bash
+# htpasswd (apache2-utils); strip the leading ":" it prints
+htpasswd -bnBC 12 "" 'your-long-passphrase' | tr -d ':\n'
+
+# or with Python (pip install bcrypt)
+python3 -c 'import bcrypt,getpass; print(bcrypt.hashpw(getpass.getpass().encode(), bcrypt.gensalt(12)).decode())'
+```
+
+In a shell or `.env` file, quote the value: bcrypt hashes contain `$`.
+
+#### WebAuthn relying party per environment
+
+| Property | Default (dev) | Production example |
+|----------|---------------|--------------------|
+| `espi.authserver.admin.webauthn.rp-id` | `localhost` | `auth.example.com` |
+| `espi.authserver.admin.webauthn.rp-name` | `OpenESPI Authorization Server` | your display name |
+| `espi.authserver.admin.webauthn.allowed-origins` | `http://localhost:9999` | `https://auth.example.com` |
+
+- **`rp-id`** is the host name (no scheme or port). It must equal the origin's host or be a registrable parent domain of it.
+- **`allowed-origins`** is a comma-separated list of exact origins (`scheme://host[:port]`) that admins use in the browser.
+- **Browsers allow WebAuthn only over HTTPS.** The one exception is `http://localhost`.
+- **Changing `rp-id` invalidates every enrolled passkey.** Admins must then re-enrol, which an administrator can trigger with "reset passkeys".
+
+#### Enrolment and sign-in flow
+
+1. **First sign-in.** The admin signs in at `/login` with username and password. With no passkey registered, they are redirected to `/webauthn/register`, Spring Security's registration page.
+   - Until a passkey is registered, every admin path refuses the session (it lacks the WebAuthn factor).
+2. **Register a passkey** on that page. A security key, platform authenticator or synced passkey all work.
+3. **Later sign-ins.** After the password step, opening an admin path redirects to `/login?factor.type=webauthn&factor.reason=missing` to complete the passkey step.
+   - The page and API both require the two factors together.
+
+#### Admin-user API (`/api/v1/admin/users`, requires `ROLE_ADMIN`)
+
+| Method & path | Purpose |
+|---------------|---------|
+| `GET /api/v1/admin/users` | List users. Password hashes are never returned. |
+| `POST /api/v1/admin/users` `{username, password, roles?}` | Create a user. Hashed server-side; minimum password length 12 (bcrypt maximum 72 bytes); roles `ADMIN` / `DC_ADMIN`, default `ADMIN`. |
+| `PUT /api/v1/admin/users/{id}/enabled` `{enabled}` | Enable or disable a user. |
+| `PUT /api/v1/admin/users/{id}/password` `{password}` | Reset the password. |
+| `PUT /api/v1/admin/users/{id}/roles` `{roles}` | Replace the user's roles. |
+| `DELETE /api/v1/admin/users/{id}/passkeys` | Delete all of the user's passkeys, forcing re-enrolment. |
+| `DELETE /api/v1/admin/users/{id}` | Delete the user. |
+
+- **Self-protection:** an administrator cannot disable, delete or remove `ROLE_ADMIN` from their own account.
+- **Last-admin protection:** nobody can disable, delete or demote the last enabled `ROLE_ADMIN` (409).
+- **Access paths:** the API is reachable with a two-factor browser session (CSRF token required) or an `espi_admin` bearer token (no CSRF).
+- **`ROLE_DC_ADMIN`** passes the URL rule but not the API's `hasRole('ADMIN')` check.
+
+Not yet implemented (follow-ups): failed-login lockout and rate limiting, and audit events for admin-user changes.
+
 ### Database Security
 
 1. **Create dedicated database user:**

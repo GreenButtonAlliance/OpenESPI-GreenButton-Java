@@ -113,7 +113,7 @@ class AuthorizationServerConfigTest {
             when(mockHttpSecurity.build()).thenReturn((DefaultSecurityFilterChain) mockFilterChain);
 
             // When
-            SecurityFilterChain filterChain = config.defaultSecurityFilterChain(mockHttpSecurity);
+            SecurityFilterChain filterChain = config.defaultSecurityFilterChain(mockHttpSecurity, null, null);
 
             // Then
             assertThat(filterChain).isNotNull();
@@ -132,7 +132,8 @@ class AuthorizationServerConfigTest {
             when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(null);
 
             // When
-            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate);
+            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate,
+                    org.springframework.security.crypto.factory.PasswordEncoderFactories.createDelegatingPasswordEncoder());
 
             // Then
             assertThat(repository).isNotNull();
@@ -150,7 +151,8 @@ class AuthorizationServerConfigTest {
             when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(existingClient);
 
             // When
-            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate);
+            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate,
+                    org.springframework.security.crypto.factory.PasswordEncoderFactories.createDelegatingPasswordEncoder());
 
             // Then
             assertThat(repository).isNotNull();
@@ -168,7 +170,8 @@ class AuthorizationServerConfigTest {
             when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(null);
 
             // When
-            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate);
+            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate,
+                    org.springframework.security.crypto.factory.PasswordEncoderFactories.createDelegatingPasswordEncoder());
 
             // Then - Verify DataCustodian admin client configuration through method calls
             verify(jdbcTemplate, atLeastOnce()).queryForObject(anyString(), any(Class.class), eq("data_custodian_admin"));
@@ -181,7 +184,8 @@ class AuthorizationServerConfigTest {
             when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(null);
 
             // When
-            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate);
+            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate,
+                    org.springframework.security.crypto.factory.PasswordEncoderFactories.createDelegatingPasswordEncoder());
 
             // Then - Verify ThirdParty client configuration through method calls
             verify(jdbcTemplate, atLeastOnce()).queryForObject(anyString(), any(Class.class), eq("third_party"));
@@ -194,7 +198,8 @@ class AuthorizationServerConfigTest {
             when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(null);
 
             // When
-            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate);
+            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate,
+                    org.springframework.security.crypto.factory.PasswordEncoderFactories.createDelegatingPasswordEncoder());
 
             // Then - Verify ThirdParty admin client configuration through method calls
             verify(jdbcTemplate, atLeastOnce()).queryForObject(anyString(), any(Class.class), eq("third_party_admin"));
@@ -277,7 +282,8 @@ class AuthorizationServerConfigTest {
             when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(null);
 
             // When
-            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate);
+            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate,
+                    org.springframework.security.crypto.factory.PasswordEncoderFactories.createDelegatingPasswordEncoder());
 
             // Then
             // The verification is indirect through repository calls since we can't directly 
@@ -292,7 +298,8 @@ class AuthorizationServerConfigTest {
             when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(null);
 
             // When
-            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate);
+            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate,
+                    org.springframework.security.crypto.factory.PasswordEncoderFactories.createDelegatingPasswordEncoder());
 
             // Then
             // Verify that ThirdParty client is queried (which means it was configured)
@@ -306,7 +313,8 @@ class AuthorizationServerConfigTest {
             when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(null);
 
             // When
-            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate);
+            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate,
+                    org.springframework.security.crypto.factory.PasswordEncoderFactories.createDelegatingPasswordEncoder());
 
             // Then
             // Verify all default ESPI clients are configured
@@ -322,7 +330,8 @@ class AuthorizationServerConfigTest {
             when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(null);
 
             // When
-            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate);
+            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate,
+                    org.springframework.security.crypto.factory.PasswordEncoderFactories.createDelegatingPasswordEncoder());
 
             // Then
             // The token lifetimes are configured internally in the registered clients
@@ -337,7 +346,8 @@ class AuthorizationServerConfigTest {
             when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(null);
 
             // When
-            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate);
+            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate,
+                    org.springframework.security.crypto.factory.PasswordEncoderFactories.createDelegatingPasswordEncoder());
 
             // Then
             // Admin clients should not require consent, customer clients should
@@ -358,7 +368,8 @@ class AuthorizationServerConfigTest {
                     .thenThrow(new RuntimeException("Database error"));
 
             // When & Then - Should not throw exception
-            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate);
+            RegisteredClientRepository repository = config.registeredClientRepository(jdbcTemplate,
+                    org.springframework.security.crypto.factory.PasswordEncoderFactories.createDelegatingPasswordEncoder());
             
             assertThat(repository).isNotNull();
         }
@@ -368,7 +379,7 @@ class AuthorizationServerConfigTest {
         void shouldHandleNullJdbcTemplateGracefully() {
             // When & Then - Should throw appropriate exception
             try {
-                config.registeredClientRepository(null);
+                config.registeredClientRepository(null, null);
             } catch (Exception e) {
                 assertThat(e).isInstanceOf(NullPointerException.class);
             }
@@ -386,7 +397,8 @@ class AuthorizationServerConfigTest {
             when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(null);
 
             // When
-            RegisteredClientRepository clientRepository = config.registeredClientRepository(jdbcTemplate);
+            RegisteredClientRepository clientRepository = config.registeredClientRepository(jdbcTemplate,
+                    org.springframework.security.crypto.factory.PasswordEncoderFactories.createDelegatingPasswordEncoder());
             AuthorizationServerSettings serverSettings = config.authorizationServerSettings();
             OAuth2TokenCustomizer<JwtEncodingContext> tokenCustomizer = config.espiTokenCustomizer();
 
@@ -403,7 +415,8 @@ class AuthorizationServerConfigTest {
             when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(null);
 
             // When & Then
-            assertThat(config.registeredClientRepository(jdbcTemplate))
+            assertThat(config.registeredClientRepository(jdbcTemplate,
+                    org.springframework.security.crypto.factory.PasswordEncoderFactories.createDelegatingPasswordEncoder()))
                     .isInstanceOf(JdbcRegisteredClientRepository.class);
 
             assertThat(config.authorizationServerSettings())
@@ -425,7 +438,8 @@ class AuthorizationServerConfigTest {
             when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(null);
 
             // When
-            RegisteredClientRepository clientRepository = config.registeredClientRepository(jdbcTemplate);
+            RegisteredClientRepository clientRepository = config.registeredClientRepository(jdbcTemplate,
+                    org.springframework.security.crypto.factory.PasswordEncoderFactories.createDelegatingPasswordEncoder());
             AuthorizationServerSettings serverSettings = config.authorizationServerSettings();
             OAuth2TokenCustomizer<JwtEncodingContext> tokenCustomizer = config.espiTokenCustomizer();
 
@@ -446,7 +460,8 @@ class AuthorizationServerConfigTest {
             when(jdbcTemplate.queryForObject(anyString(), any(Class.class), anyString())).thenReturn(null);
 
             // When
-            RegisteredClientRepository clientRepository = config.registeredClientRepository(jdbcTemplate);
+            RegisteredClientRepository clientRepository = config.registeredClientRepository(jdbcTemplate,
+                    org.springframework.security.crypto.factory.PasswordEncoderFactories.createDelegatingPasswordEncoder());
             AuthorizationServerSettings serverSettings = config.authorizationServerSettings();
             OAuth2TokenCustomizer<JwtEncodingContext> tokenCustomizer = config.espiTokenCustomizer();
 

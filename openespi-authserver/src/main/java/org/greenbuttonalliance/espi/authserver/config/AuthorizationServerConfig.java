@@ -26,6 +26,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
@@ -58,8 +59,25 @@ import org.greenbuttonalliance.espi.authserver.service.EspiTokenCustomizer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 
+import org.greenbuttonalliance.espi.authserver.admin.AdminLoginSuccessHandler;
+import org.springframework.http.HttpHeaders;
+import org.springframework.security.authorization.AllRequiredFactorsAuthorizationManager;
+import org.springframework.security.authorization.AuthorityAuthorizationManager;
+import org.springframework.security.authorization.AuthorizationManager;
+import org.springframework.security.authorization.AuthorizationManagers;
+import org.springframework.security.config.annotation.authorization.EnableMultiFactorAuthentication;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
+import java.util.Set;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
+import org.springframework.security.web.util.matcher.AndRequestMatcher;
+import org.springframework.security.web.util.matcher.OrRequestMatcher;
+
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -77,7 +95,70 @@ import java.util.UUID;
  */
 @Configuration
 @EnableWebSecurity
+// GHSA-mh65-6r98-p6q8: without this, every @PreAuthorize on the admin controllers was inert.
+@EnableMethodSecurity
+// #205: empty authorities = enable factor merging in the authentication filters only (password then
+// passkey accumulate FACTOR_* authorities on the same principal) WITHOUT a global MFA requirement.
+// The requirement is applied to the admin paths of the session chain only (adminSessionAuthorization).
+@EnableMultiFactorAuthentication(authorities = {})
 public class AuthorizationServerConfig {
+
+    private static final org.slf4j.Logger log =
+            org.slf4j.LoggerFactory.getLogger(AuthorizationServerConfig.class);
+
+    /**
+     * Path prefixes of the administrative REST APIs, taken from the controllers' class-level
+     * {@code @RequestMapping}s: {@code OAuthAdminController}, {@code OAuth2ClientManagementController},
+     * {@code CertificateManagementController}, {@code DataCustodianIntegrationController}, plus
+     * {@code ClientRegistrationController} ({@code /connect}): OIDC is not enabled, so
+     * {@code /connect/register} is not claimed by the protocol chain and would otherwise accept any
+     * authenticated session (including a customer's) to register arbitrary OAuth2 clients.
+     */
+    static final String[] ADMIN_API_PATHS = {
+            "/admin/**",
+            "/api/v1/admin/**",
+            "/api/v1/oauth2/clients/**",
+            "/api/v1/certificates/**",
+            "/api/v1/datacustodian/**",
+            "/connect/**"
+    };
+
+    /**
+     * Subset of {@link #ADMIN_API_PATHS} that also accepts an {@code authserver.admin} bearer token
+     * (issue #204). {@code /connect/**} is deliberately excluded: Dynamic Client Registration gets its
+     * own bearer model in a separate change, so it remains session-only (admin role) here.
+     */
+    static final String[] ADMIN_BEARER_API_PATHS = {
+            "/admin/**",
+            "/api/v1/admin/**",
+            "/api/v1/oauth2/clients/**",
+            "/api/v1/certificates/**",
+            "/api/v1/datacustodian/**"
+    };
+
+    /** Roles (without the {@code ROLE_} prefix) allowed to call {@link #ADMIN_API_PATHS}. */
+    static final String[] ADMIN_ROLES = {"ADMIN", "DC_ADMIN"};
+
+    /** Client id of the seeded admin-API client (issue #204). */
+    static final String ADMIN_CLIENT_ID = "espi_admin";
+
+    /**
+     * Secret of the {@value #ADMIN_CLIENT_ID} client. Empty (the default) means the client is not
+     * seeded and admin-API bearer access is disabled.
+     */
+    @Value("${espi.authserver.admin-client.secret:${ESPI_ADMIN_CLIENT_SECRET:}}")
+    private String adminClientSecret;
+
+    /** #205 WebAuthn relying party ID: the registrable domain of the AS (no scheme or port). */
+    @Value("${espi.authserver.admin.webauthn.rp-id:localhost}")
+    private String webAuthnRpId;
+
+    @Value("${espi.authserver.admin.webauthn.rp-name:OpenESPI Authorization Server}")
+    private String webAuthnRpName;
+
+    /** Exact origins (scheme://host[:port]) browsers may run the passkey ceremony from. */
+    @Value("${espi.authserver.admin.webauthn.allowed-origins:http://localhost:9999}")
+    private List<String> webAuthnAllowedOrigins;
 
     @Value("${espi.security.require-https:false}")
     private boolean requireHttps;
@@ -119,7 +200,8 @@ public class AuthorizationServerConfig {
         // only claims the auth-server endpoints (/oauth2/authorize, /oauth2/token,
         // /oauth2/jwks, /oauth2/introspect, /oauth2/revoke, /connect/register,
         // /userinfo, etc.). Everything else falls through to
-        // defaultSecurityFilterChain @Order(2).
+        // adminApiBearerSecurityFilterChain @Order(2) (bearer admin calls) or
+        // defaultSecurityFilterChain @Order(3).
         //
         // (No resource-server filter is configured on this chain — see below.)
         OAuth2AuthorizationServerConfigurer authorizationServerConfigurer =
@@ -178,9 +260,75 @@ public class AuthorizationServerConfig {
         // No .oauth2ResourceServer(): the auth-server issues opaque tokens and does not
         // validate bearer tokens on its own endpoints. The OAuth2 protocol endpoints
         // (token/introspect/revoke) authenticate clients via client_secret_basic; the
-        // admin/UI endpoints are protected by the @Order(2) session-login chain.
+        // admin APIs accept a bearer token on the @Order(2) chain, and admin/UI endpoints are
+        // otherwise protected by the @Order(3) session-login chain.
 
         return http.build();
+    }
+
+    /**
+     * Stateless admin-API chain for machine clients (issue #204).
+     *
+     * <p>Claims a request only when it targets {@link #ADMIN_BEARER_API_PATHS} AND carries an
+     * {@code Authorization: Bearer} header; anything else falls through to the session chain, which
+     * keeps its own ADMIN/DC_ADMIN rule. The opaque token is resolved in-process against
+     * {@link OAuth2AuthorizationService} (no HTTP self-call, no JWT/JWK). Unknown, revoked or expired
+     * tokens yield 401 with {@code WWW-Authenticate: Bearer}; a valid token without the
+     * {@code authserver.admin} scope yields 403 {@code insufficient_scope}.</p>
+     */
+    @Bean
+    @Order(2)
+    public SecurityFilterChain adminApiBearerSecurityFilterChain(
+            HttpSecurity http, OAuth2AuthorizationService authorizationService) throws Exception {
+        OpaqueTokenIntrospector introspector = new AdminScopeOpaqueTokenIntrospector(
+                new AuthorizationServiceOpaqueTokenIntrospector(authorizationService));
+
+        List<RequestMatcher> adminPaths = new ArrayList<>();
+        for (String path : ADMIN_BEARER_API_PATHS) {
+            adminPaths.add(PathPatternRequestMatcher.withDefaults().matcher(path));
+        }
+        RequestMatcher bearerHeader = request -> {
+            String header = request.getHeader(HttpHeaders.AUTHORIZATION);
+            return header != null && header.regionMatches(true, 0, "Bearer ", 0, 7);
+        };
+
+        http
+                .securityMatcher(new AndRequestMatcher(new OrRequestMatcher(adminPaths), bearerHeader))
+                .authorizeHttpRequests(authorize -> authorize.anyRequest().hasRole("ADMIN"))
+                .oauth2ResourceServer(resourceServer -> resourceServer
+                        .opaqueToken(opaque -> opaque.introspector(introspector)))
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(org.springframework.security.config.http.SessionCreationPolicy.STATELESS));
+
+        return http.build();
+    }
+
+    /**
+     * Session-chain authorization for {@link #ADMIN_API_PATHS} (#205): a human admin session must hold
+     * {@code ROLE_ADMIN} or {@code ROLE_DC_ADMIN} AND both the {@code FACTOR_PASSWORD} and
+     * {@code FACTOR_WEBAUTHN} authorities (Spring Security 7 {@link AllRequiredFactorsAuthorizationManager}).
+     *
+     * <p>The role is evaluated first ({@link AuthorizationManagers#allOf} stops at the first denial).
+     * A session without an admin role, such as a delegated ROLE_CUSTOMER session, therefore gets a
+     * plain 403 and is never sent through the passkey step. An admin missing a factor gets a
+     * {@code FactorAuthorizationDecision}. Spring's {@code DelegatingMissingAuthorityAccessDeniedHandler}
+     * turns that into a redirect to the login page for the missing factor.</p>
+     *
+     * <p>MFA is deliberately scoped to this rule only. {@code @EnableMultiFactorAuthentication} is
+     * declared with an empty {@code authorities} list, so it only turns on factor merging in the
+     * authentication filters and installs no global requirement. The protocol chain, the
+     * delegated-customer endpoints, the bearer admin chain and introspection are unaffected.</p>
+     */
+    static AuthorizationManager<RequestAuthorizationContext> adminSessionAuthorization() {
+        AuthorizationManager<RequestAuthorizationContext> adminRole =
+                AuthorityAuthorizationManager.hasAnyRole(ADMIN_ROLES);
+        AuthorizationManager<RequestAuthorizationContext> passwordAndPasskey =
+                AllRequiredFactorsAuthorizationManager.<RequestAuthorizationContext>builder()
+                        .requireFactor(factor -> factor.passwordAuthority())
+                        .requireFactor(factor -> factor.webauthnAuthority())
+                        .build();
+        return AuthorizationManagers.allOf(adminRole, passwordAndPasskey);
     }
 
     /**
@@ -189,9 +337,16 @@ public class AuthorizationServerConfig {
      * H2 console (in dev), and any custom controllers.
      */
     @Bean
-    @Order(2)
-    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
+    @Order(3)
+    public SecurityFilterChain defaultSecurityFilterChain(
+            HttpSecurity http,
+            UserDetailsService adminUserDetailsService,
+            AdminLoginSuccessHandler adminLoginSuccessHandler) throws Exception {
         http
+                // #205: form login (password factor) and WebAuthn (passkey factor) authenticate
+                // administrators from admin_users ONLY. Retail customers never log in here; their
+                // ROLE_CUSTOMER session is written by AuthorizeContinueController from the DC handoff.
+                .userDetailsService(adminUserDetailsService)
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(
                                 "/assets/**", "/webjars/**",
@@ -206,9 +361,21 @@ public class AuthorizationServerConfig {
                                 "/authorize/delegate",
                                 "/oauth2/authorize/continue"
                         ).permitAll()
+                        // GHSA-mh65-6r98-p6q8: the admin APIs must never be reachable by an
+                        // arbitrary authenticated session (e.g. the ROLE_CUSTOMER session written
+                        // by AuthorizeContinueController). URL-level rule mirrors the controllers'
+                        // class-level @PreAuthorize("hasRole('ADMIN') or hasRole('DC_ADMIN')"),
+                        // which is now also enforced via @EnableMethodSecurity (defense in depth).
+                        // #205: on THIS (session) chain the admin paths additionally require both
+                        // the password and the passkey factor; see adminSessionAuthorization().
+                        .requestMatchers(ADMIN_API_PATHS).access(adminSessionAuthorization())
                         .anyRequest().authenticated()
                 )
-                .formLogin(Customizer.withDefaults())
+                .formLogin(form -> form.successHandler(adminLoginSuccessHandler))
+                .webAuthn(webAuthn -> webAuthn
+                        .rpId(webAuthnRpId)
+                        .rpName(webAuthnRpName)
+                        .allowedOrigins(Set.copyOf(webAuthnAllowedOrigins)))
                 .csrf(Customizer.withDefaults())
                 .headers(headers -> headers
                         .frameOptions(HeadersConfigurer.FrameOptionsConfig::deny)
@@ -242,7 +409,8 @@ public class AuthorizationServerConfig {
      */
     @Bean
     @Primary
-    public RegisteredClientRepository registeredClientRepository(JdbcTemplate jdbcTemplate) {
+    public RegisteredClientRepository registeredClientRepository(JdbcTemplate jdbcTemplate,
+                                                                 PasswordEncoder passwordEncoder) {
         // Spring Authorization Server's stock JdbcRegisteredClientRepository:
         //   - constructor takes JdbcOperations only (no PasswordEncoder); the
         //     {prefix}value pattern in client_secret is resolved by Spring's
@@ -347,7 +515,74 @@ public class AuthorizationServerConfig {
         initializeDefaultClients(repository, datacustodianAdmin, thirdPartyClient, thirdPartyAdmin,
                 dataCustodianIntrospection);
 
+        seedAdminClient(repository, passwordEncoder);
+
         return repository;
+    }
+
+    /**
+     * Seed (or reconcile) the {@value #ADMIN_CLIENT_ID} client used for bearer access to the admin
+     * APIs (issue #204): {@code client_credentials} only, scope {@code authserver.admin}, opaque
+     * tokens with a 15-minute TTL, and a secret taken from configuration and stored hashed.
+     *
+     * <p>Without a configured secret the client is not seeded (secure default). An existing row is
+     * only rewritten when its stored hash no longer matches the configured secret (rotation) or one
+     * of the managed fields drifted, so a steady-state restart does not re-hash the secret.</p>
+     */
+    public void seedAdminClient(RegisteredClientRepository repository, PasswordEncoder passwordEncoder) {
+        if (adminClientSecret == null || adminClientSecret.isBlank()) {
+            log.info("Admin API bearer access is disabled: espi.authserver.admin-client.secret "
+                    + "(ESPI_ADMIN_CLIENT_SECRET) is not set, so the '{}' client is not seeded.",
+                    ADMIN_CLIENT_ID);
+            return;
+        }
+        RegisteredClient existing = repository.findByClientId(ADMIN_CLIENT_ID);
+        if (existing != null && !adminClientDrifted(existing, passwordEncoder)) {
+            return;
+        }
+        RegisteredClient.Builder desired = RegisteredClient
+                .withId(existing != null ? existing.getId() : UUID.randomUUID().toString())
+                .clientId(ADMIN_CLIENT_ID)
+                .clientName("Authorization Server Admin API")
+                .clientSecret(passwordEncoder.encode(adminClientSecret))
+                .clientIdIssuedAt(existing != null && existing.getClientIdIssuedAt() != null
+                        ? existing.getClientIdIssuedAt() : Instant.now())
+                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                .scope(AdminScopeOpaqueTokenIntrospector.ADMIN_SCOPE)
+                .tokenSettings(TokenSettings.builder()
+                        .accessTokenTimeToLive(ADMIN_TOKEN_TTL)
+                        .accessTokenFormat(OAuth2TokenFormat.REFERENCE)
+                        .build())
+                .clientSettings(ClientSettings.builder()
+                        .requireAuthorizationConsent(false)
+                        .build());
+        repository.save(desired.build());
+        log.info("Admin API client '{}' {}.", ADMIN_CLIENT_ID, existing == null ? "seeded" : "reconciled");
+    }
+
+    /** Access-token lifetime of the {@value #ADMIN_CLIENT_ID} client. */
+    static final Duration ADMIN_TOKEN_TTL = Duration.ofMinutes(15);
+
+    /**
+     * Whether the stored {@value #ADMIN_CLIENT_ID} row differs from its code definition. The secret is
+     * compared with {@link PasswordEncoder#matches}, never by hash equality (each encode salts anew).
+     */
+    static boolean adminClientDrifted(RegisteredClient existing, PasswordEncoder passwordEncoder,
+                                      String configuredSecret) {
+        boolean secretDrift = existing.getClientSecret() == null
+                || !passwordEncoder.matches(configuredSecret, existing.getClientSecret());
+        boolean grantDrift = !existing.getAuthorizationGrantTypes()
+                .equals(java.util.Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
+        boolean scopeDrift = !existing.getScopes()
+                .equals(java.util.Set.of(AdminScopeOpaqueTokenIntrospector.ADMIN_SCOPE));
+        boolean tokenDrift = !OAuth2TokenFormat.REFERENCE.equals(existing.getTokenSettings().getAccessTokenFormat())
+                || !ADMIN_TOKEN_TTL.equals(existing.getTokenSettings().getAccessTokenTimeToLive());
+        return secretDrift || grantDrift || scopeDrift || tokenDrift;
+    }
+
+    private boolean adminClientDrifted(RegisteredClient existing, PasswordEncoder passwordEncoder) {
+        return adminClientDrifted(existing, passwordEncoder, adminClientSecret);
     }
 
     /**

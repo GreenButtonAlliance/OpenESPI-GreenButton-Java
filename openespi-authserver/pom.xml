@@ -83,6 +83,13 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
+        <!-- #205: passkey (WebAuthn) second factor for human admins. Spring Security 7 ships
+             WebAuthn as its own module (version managed by the Spring Security BOM); it pulls in
+             webauthn4j-core for the ceremony verification. -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-webauthn</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-thymeleaf</artifactId>
