@@ -1,0 +1,86 @@
+name: Security
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    - cron: '17 5 * * 1' # weekly, Monday 05:17 UTC (new CVEs appear without code changes)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  dependency-check:
+    name: OWASP dependency-check
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/setup-java-maven
+
+      # The NVD database is ~GBs to build from scratch; keep it between runs (refreshed weekly).
+      - name: Cache NVD data
+        uses: actions/cache@v6
+        with:
+          path: ~/.m2/repository/org/owasp/dependency-check-data
+          key: nvd-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: nvd-${{ runner.os }}-
+
+      # The aggregate goal resolves every module's dependencies, so the inter-module SNAPSHOT
+      # artifacts must be in ~/.m2 first.
+      - name: Install modules (no tests)
+        run: mvn install -DskipTests
+
+      # ADVISORY until #131 (pre-existing high-severity transitive CVEs) is cleared: findings are
+      # reported (artifact) but never block a PR. To make it a gate: remove `continue-on-error`
+      # and add `-DfailBuildOnCVSS=8` to the command below.
+      - name: Run dependency-check (aggregate)
+        continue-on-error: true
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }} # optional; without it NVD updates are slow
+        run: >-
+          mvn org.owasp:dependency-check-maven:aggregate
+          -Dformats=HTML,JSON,SARIF
+          ${NVD_API_KEY:+-DnvdApiKey=$NVD_API_KEY}
+
+      - name: Upload dependency-check report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: dependency-check-report
+          path: target/dependency-check-report.*
+          if-no-files-found: ignore
+          retention-days: 14
+
+  codeql:
+    name: CodeQL (java-kotlin)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Fork PRs cannot upload results (no security-events: write on their token).
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v7
+
+      # build-mode: none extracts Java without compiling, so it is independent of the JDK 25
+      # toolchain and needs no Maven build.
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: java-kotlin
+          build-mode: none
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:java-kotlin
