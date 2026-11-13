@@ -19,22 +19,16 @@
 
 package org.greenbuttonalliance.espi.thirdparty.web;
 
-
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
-
-@Disabled
-//@RunWith(SpringJUnit4ClassRunner.class)
-//@WebAppConfiguration
-//@ContextConfiguration("/spring/test-context.xml")
-public class CustomerHomeControllerTests {
+class CustomerHomeControllerTests {
 
 	@Test
-	public void home_displaysHomeView() throws Exception {
+	void home_displaysHomeView() {
 		CustomerHomeController controller = new CustomerHomeController();
-		assertEquals("/RetailCustomer/home", controller.home());
+
+		assertThat(controller.home()).isEqualTo("/RetailCustomer/home");
 	}
 }

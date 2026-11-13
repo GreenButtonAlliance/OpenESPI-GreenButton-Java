@@ -19,39 +19,40 @@
 
 package org.greenbuttonalliance.espi.thirdparty.web.tools;
 
-//import org.greenbuttonalliance.espi.common.domain.BatchList;
-
+import org.greenbuttonalliance.espi.common.domain.usage.BatchListEntity;
 import org.greenbuttonalliance.espi.common.service.BatchListService;
-import org.greenbuttonalliance.espi.thirdparty.BaseTest;
-
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.springframework.oxm.jaxb.Jaxb2Marshaller;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.ui.ModelMap;
 
 import java.io.IOException;
+import java.util.List;
 
-@Disabled //todo - JT, commenting out missing classes
-public class BatchListControllerTest extends BaseTest {
-	BatchListController controller;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+class BatchListControllerTest {
 
 	@Mock
 	private BatchListService batchListService;
 
-	@Mock
-	Jaxb2Marshaller marshaller;
+	@InjectMocks
+	private BatchListController controller;
 
 	@Test
-	public void index() throws IOException {
-		controller = new BatchListController();
-//		List<BatchList> batchListList = new ArrayList<>();
-//		batchListList.add(newBatchList());
-//
-//		when(batchListService.findAll()).thenReturn(batchListList);
-//		controller.setBatchListService(batchListService);
-//
-//		controller.index(mock(ModelMap.class));
-//
-//		verify(batchListService).findAll();
+	void index_putsAllBatchListsInModelAndDisplaysView() throws IOException {
+		List<BatchListEntity> batchLists = List.of(new BatchListEntity(), new BatchListEntity());
+		when(batchListService.findAll()).thenReturn(batchLists);
+		ModelMap model = new ModelMap();
+
+		assertThat(controller.index(model)).isEqualTo("tools/batchLists");
+		assertThat(model).containsExactly(entry("batchLists", batchLists));
+		verify(batchListService).findAll();
 	}
 }

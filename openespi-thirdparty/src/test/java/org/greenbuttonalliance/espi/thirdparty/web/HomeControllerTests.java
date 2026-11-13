@@ -19,81 +19,100 @@
 
 package org.greenbuttonalliance.espi.thirdparty.web;
 
-//import org.greenbuttonalliance.espi.common.domain.RetailCustomer;
-
-
-import org.aspectj.lang.annotation.Before;
+import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
+import org.greenbuttonalliance.espi.common.service.RetailCustomerService;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.event.annotation.BeforeTestClass;
 
-@Disabled //todo - JT, commenting out missing classes
-//@RunWith(SpringJUnit4ClassRunner.class)
-//@WebAppConfiguration
-@ContextConfiguration("/spring/test-context.xml")
-public class HomeControllerTests {
+import java.security.Principal;
 
-	@Autowired
-	protected HomeController controller;
-//	private RetailCustomer customer;
-	private Authentication principal;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+class HomeControllerTests {
+
+	@Mock
+	private RetailCustomerService retailCustomerService;
+
+	@InjectMocks
+	private HomeController controller;
+
+	private MockHttpServletRequest request;
+	private Authentication authentication;
 
 	@BeforeEach
-	public void setup() {
-//		customer = new RetailCustomer();
-//		customer.setId(99L);
-//
-//		principal = mock(Authentication.class);
-//		when(principal.getPrincipal()).thenReturn(customer);
+	void setup() {
+		request = new MockHttpServletRequest();
+		authentication = new UsernamePasswordAuthenticationToken("alice", "n/a");
 	}
 
 	@Test
-	public void index_whenNotLoggedIn_displaysHomeView() throws Exception {
-		//assertEquals("home", controller.index(null));
+	void index_whenCustodian_redirectsToCustodianHome() {
+		request.addUserRole("ROLE_CUSTODIAN");
+
+		assertThat(controller.index(request, authentication)).isEqualTo("redirect:/custodian/home");
+		verifyNoInteractions(retailCustomerService);
 	}
 
 	@Test
-	public void index_whenLoggedIn_redirectsToRetailCustomHome()
-			throws Exception {
-//		customer.setRole(RetailCustomer.ROLE_USER);
-//
-//		assertEquals("redirect:/RetailCustomer/" + customer.getId() + "/home",
-//				controller.index(principal));
+	void index_whenUserWithKnownCustomer_redirectsToRetailCustomerHome() {
+		request.addUserRole("ROLE_USER");
+		RetailCustomerEntity customer = new RetailCustomerEntity();
+		customer.setId(42L);
+		when(retailCustomerService.findByUsername("alice")).thenReturn(customer);
+
+		assertThat(controller.index(request, authentication)).isEqualTo("redirect:/RetailCustomer/42/home");
 	}
 
 	@Test
-	public void home_whenNotLoggedIn_displaysHomeView() throws Exception {
-		//assertEquals("home", controller.home(null));
+	void index_whenUserWithUnknownCustomer_displaysHomeView() {
+		request.addUserRole("ROLE_USER");
+		when(retailCustomerService.findByUsername("alice")).thenReturn(null);
+
+		assertThat(controller.index(request, authentication)).isEqualTo("home");
 	}
 
 	@Test
-	public void home_whenLoggedInAsCustomer_redirectsToRetailCustomerHome()
-			throws Exception {
-//		customer.setRole(RetailCustomer.ROLE_USER);
-//
-//		assertEquals("redirect:/RetailCustomer/" + customer.getId() + "/home",
-//				controller.home(principal));
+	void index_whenUserPrincipalIsNotAnAuthentication_displaysHomeView() {
+		request.addUserRole("ROLE_USER");
+		Principal plainPrincipal = () -> "alice";
+
+		assertThat(controller.index(request, plainPrincipal)).isEqualTo("home");
+		verify(retailCustomerService, never()).findByUsername(anyString());
 	}
 
 	@Test
-	public void home_whenLoggedInAsCustodian_redirectsToCustodianHome()
-			throws Exception {
-//		customer.setRole(RetailCustomer.ROLE_CUSTODIAN);
-//
-//		assertThat(controller.home(principal), is("redirect:/custodian/home"));
+	void index_whenAnonymous_displaysHomeView() {
+		assertThat(controller.index(request, null)).isEqualTo("home");
+		verifyNoInteractions(retailCustomerService);
 	}
 
 	@Test
-	public void termsOfService_displaysTermsOfServiceView() {
-//		assertEquals("/TermsOfService", controller.termsOfService());
+	void home_delegatesToIndex() {
+		request.addUserRole("ROLE_CUSTODIAN");
+
+		assertThat(controller.home(request, authentication)).isEqualTo("redirect:/custodian/home");
 	}
 
 	@Test
-	public void usagePolicy_displaysUsagePolicyView() {
-		//assertEquals("/UsagePolicy", controller.usagePolicy());
+	void termsOfService_displaysTermsOfServiceView() {
+		assertThat(controller.termsOfService()).isEqualTo("/TermsOfService");
+	}
+
+	@Test
+	void usagePolicy_displaysUsagePolicyView() {
+		assertThat(controller.usagePolicy()).isEqualTo("/UsagePolicy");
 	}
 }
