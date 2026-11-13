@@ -9,7 +9,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>4.0.1</version>
+        <version>4.1.2</version>
         <relativePath/>
     </parent>
 
@@ -63,7 +63,7 @@
     
     <properties>
         <java.version>25</java.version>
-        <spring.boot.version>4.0.3</spring.boot.version>
+        <spring.boot.version>4.1.2</spring.boot.version>
         <project.scm.id>github</project.scm.id>
         <maven.compiler.source>25</maven.compiler.source>
         <maven.compiler.target>25</maven.compiler.target>

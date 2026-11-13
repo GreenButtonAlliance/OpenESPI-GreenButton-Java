@@ -16,8 +16,8 @@
 
 package org.greenbuttonalliance.espi.authserver.integration;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import org.greenbuttonalliance.espi.authserver.config.AuthorizationServerConfig;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -222,7 +222,7 @@ class AdminBearerTokenIntegrationTest extends AbstractAuthserverIntegrationTest 
 				.andReturn();
 		JsonNode body = new ObjectMapper().readTree(result.getResponse().getContentAsString());
 		assertThat(body.get("expires_in").asLong()).isPositive();
-		return body.get("access_token").asText();
+		return body.get("access_token").asString();
 	}
 
 	/**
