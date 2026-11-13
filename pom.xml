@@ -103,7 +103,7 @@
         <postgres.version>42.7.8</postgres.version>
         <commons-io.version>2.17.0</commons-io.version>
         <swagger-annotations.version>2.2.55</swagger-annotations.version>
-        <datafaker.version>2.5.3</datafaker.version>
+        <datafaker.version>2.7.0</datafaker.version>
         <jetbrains-annotations.version>26.0.2-1</jetbrains-annotations.version>
     </properties>
     
