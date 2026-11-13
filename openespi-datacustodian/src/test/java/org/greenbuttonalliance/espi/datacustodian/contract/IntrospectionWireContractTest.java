@@ -18,8 +18,8 @@
 
 package org.greenbuttonalliance.espi.datacustodian.contract;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import org.greenbuttonalliance.espi.common.scope.EspiScope;
 import org.greenbuttonalliance.espi.common.uri.EspiBatchUri;
 import org.junit.jupiter.api.DisplayName;
@@ -53,12 +53,12 @@ class IntrospectionWireContractTest {
 		JsonNode c = readFixture("token-response-subscription.json");
 
 		assertNoLegacyIdFields(c);
-		assertFbGrammarOnlyScope(c.get("scope").asText(), 4, 5, 15);
+		assertFbGrammarOnlyScope(c.get("scope").asString(), 4, 5, 15);
 
 		// Consumer parses ids out of the canonical Batch URIs (the contract).
-		assertThat(EspiBatchUri.subscriptionId(c.get("resourceURI").asText())).contains("503888");
-		assertThat(EspiBatchUri.authorizationId(c.get("authorizationURI").asText())).contains("503888");
-		assertThat(EspiBatchUri.retailCustomerId(c.get("customerResourceURI").asText())).contains("503888");
+		assertThat(EspiBatchUri.subscriptionId(c.get("resourceURI").asString())).contains("503888");
+		assertThat(EspiBatchUri.authorizationId(c.get("authorizationURI").asString())).contains("503888");
+		assertThat(EspiBatchUri.retailCustomerId(c.get("customerResourceURI").asString())).contains("503888");
 	}
 
 	@Test
@@ -67,11 +67,11 @@ class IntrospectionWireContractTest {
 		JsonNode c = readFixture("token-response-bulk.json");
 
 		assertNoLegacyIdFields(c);
-		assertFbGrammarOnlyScope(c.get("scope").asText(), 1, 3, 4, 5, 10, 11, 35);
+		assertFbGrammarOnlyScope(c.get("scope").asString(), 1, 3, 4, 5, 10, 11, 35);
 
-		assertThat(EspiBatchUri.bulkId(c.get("resourceURI").asText())).contains("BULK_1");
-		assertThat(EspiBatchUri.authorizationId(c.get("authorizationURI").asText())).contains("CLIENTCREDS");
-		assertThat(EspiBatchUri.bulkId(c.get("customerResourceURI").asText())).contains("BULK_RC_1");
+		assertThat(EspiBatchUri.bulkId(c.get("resourceURI").asString())).contains("BULK_1");
+		assertThat(EspiBatchUri.authorizationId(c.get("authorizationURI").asString())).contains("CLIENTCREDS");
+		assertThat(EspiBatchUri.bulkId(c.get("customerResourceURI").asString())).contains("BULK_RC_1");
 	}
 
 	private static void assertNoLegacyIdFields(JsonNode c) {

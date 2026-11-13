@@ -72,7 +72,8 @@ The `approved_scope` field carries the customer's **effective** scope after thei
 | `SignedHandoffCodec` | `@Component` exposing `encode(...)` and `decodeOutbound(token)` / `decodeReturn(token)`. Decode verifies signature (constant-time), version, direction, and expiry. Reads `espi.handoff.signing-key` from configuration. |
 | `InvalidHandoffException` | Uniform rejection signal for malformed, tampered, expired, wrong-direction, replayed, or otherwise-rejected tokens. Callers should NOT reveal which sub-check failed to the user-agent. |
 | `HandoffNonceEntity` | JPA entity for the single-use nonce table. Implements `Persistable<String>` with `isNew() == true` so `JpaRepository.save()` routes to `persist()` (INSERT-only), making duplicate-consume surface as a PK violation rather than silently UPDATE-ing. |
-| `HandoffNonceRepository` | Spring Data JPA repository. Includes `deleteByExpiresAtBefore(cutoff)` for the periodic sweep. |
+| `HandoffNonceRepository` | Spring Data JPA repository. `deleteByExpiresAtBefore(cutoff)` is a single bulk JPQL `DELETE` (not a derived load-then-delete) used by the sweeper. |
+| `HandoffNonceSweeper` | `@Component` with a `@Scheduled` job that deletes nonces expired more than a grace period ago. Requires `@EnableScheduling` in the host application; disable with `espi.handoff.nonce-sweep.enabled=false`. |
 | `HandoffNonceService` | `@Service` exposing `generate()` for issuers and `consume(nonce, expiresAt)` for receivers. `consume` runs in `Propagation.REQUIRES_NEW` so the row commits independently of any surrounding business transaction — a partially-completed grant must not allow nonce reuse. |
 
 ## Security properties
@@ -90,7 +91,16 @@ The `approved_scope` field carries the customer's **effective** scope after thei
 |---|---|---|
 | `espi.handoff.signing-key` | `dev-only-handoff-signing-key-change-me` (≥32 chars) | HMAC-SHA256 signing key. **Must be identical on the AS and DC sides** — they are independent processes that must produce verifiable signatures over the same payload. Override via `ESPI_HANDOFF_SIGNING_KEY` env var in production. |
 
+| `espi.handoff.nonce-sweep.enabled` | `true` | Register `HandoffNonceSweeper`. |
+| `espi.handoff.nonce-sweep.interval` | `15m` | Delay between sweeps (fixed delay). |
+| `espi.handoff.nonce-sweep.initial-delay` | `1m` | Delay before the first sweep after startup. |
+| `espi.handoff.nonce-sweep.grace-period` | `5m` | How long a nonce is kept past its `expiresAt`. Must not be negative. |
+
 The signing key is constructor-injected into `SignedHandoffCodec` via `@Value`. The `@Component` annotation means the codec is auto-registered as a Spring bean wherever its package is component-scanned.
+
+### Nonce cleanup
+
+A nonce row is useless once its payload has expired, because the codec rejects expired tokens before the nonce is checked. `HandoffNonceSweeper` deletes rows whose `expiresAt` is older than `now - grace-period`. The grace period closes a replay race: a replayed token could pass the expiry check just before `expiresAt`, and if the original row were deleted before the replay's `consume()` inserted, the replay would be accepted. The delete is idempotent, so several instances sharing one database need no distributed lock. Both host applications must enable scheduling (`@EnableScheduling`): the AS does so in `OAuth2ClientManagementConfig`, the DC on `DataCustodianApplication`.
 
 ## How consumers wire it in
 
@@ -157,10 +167,11 @@ Both consuming apps (AS and DC) end up with this table in their own database; re
 
 ## Testing
 
-This module ships with two test classes:
+This module ships with three test classes:
 
 - **`SignedHandoffCodecTest`** — 12 unit tests covering round-trip for both directions, tampered-payload / tampered-signature / wrong-key rejection (via constant-time compare), expiry, wrong-direction, wrong-version, malformed / empty token, and the short-signing-key construction rejection.
-- **`HandoffNonceServiceTest`** — 6 `@DataJpaTest` cases (in-memory H2 + Flyway): first-consume success, replay rejection (PK violation), distinct-nonces independence, uniqueness over 10 000 generates, blank-nonce rejection, and the periodic-sweep reaper.
+- **`HandoffNonceServiceTest`** — 6 `@DataJpaTest` cases (in-memory H2 + Flyway): first-consume success, replay rejection (PK violation), distinct-nonces independence, uniqueness over 10 000 generates, blank-nonce rejection, and the bulk-delete reaper query.
+- **`HandoffNonceSweeperTest`** — 4 `@DataJpaTest` cases with a fixed clock: only rows expired before the grace period are deleted (rows inside the grace window and unexpired rows survive), zero grace deletes at expiry, an empty sweep returns 0, and a negative grace period is rejected.
 
 Consumers SHOULD also have their own round-trip integration tests that encode on one side and decode on the other to detect drift between the AS and DC implementations.
 

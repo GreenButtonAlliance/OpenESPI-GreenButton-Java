@@ -192,8 +192,8 @@ class AuthCodeFlowOrchestrationIntegrationTest extends AbstractAuthserverIntegra
 				.andExpect(jsonPath("$.resource_subscription_id").doesNotExist())
 				.andExpect(jsonPath("$.customer_subscription_id").doesNotExist())
 				.andReturn();
-		String accessToken = new com.fasterxml.jackson.databind.ObjectMapper()
-				.readTree(tokenResult.getResponse().getContentAsString()).get("access_token").asText();
+		String accessToken = new tools.jackson.databind.ObjectMapper()
+				.readTree(tokenResult.getResponse().getContentAsString()).get("access_token").asString();
 
 		// The back-channel was called with the customer-selection context carried through the flow.
 		ArgumentCaptor<BackchannelRequest> captor = ArgumentCaptor.forClass(BackchannelRequest.class);
@@ -338,8 +338,9 @@ class AuthCodeFlowOrchestrationIntegrationTest extends AbstractAuthserverIntegra
 				.andExpect(status().is3xxRedirection())
 				.andReturn();
 		MockHttpSession session = (MockHttpSession) continueResult.getRequest().getSession(false);
+		// The Location is already percent-encoded; pass it as a URI so MockMvc doesn't encode it again.
 		MvcResult authorizeResult = mockMvc.perform(
-						get(continueResult.getResponse().getHeader("Location")).session(session))
+						get(java.net.URI.create(continueResult.getResponse().getHeader("Location"))).session(session))
 				.andExpect(status().is3xxRedirection())
 				.andReturn();
 		return extractQueryParam(authorizeResult.getResponse().getHeader("Location"), "code");

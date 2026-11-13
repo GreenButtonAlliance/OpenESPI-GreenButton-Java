@@ -360,8 +360,8 @@ class AdminEndpointAuthorizationIntegrationTest extends AbstractAuthserverIntegr
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.access_token").isNotEmpty())
 				.andReturn();
-		String accessToken = new com.fasterxml.jackson.databind.ObjectMapper()
-				.readTree(token.getResponse().getContentAsString()).get("access_token").asText();
+		String accessToken = new tools.jackson.databind.ObjectMapper()
+				.readTree(token.getResponse().getContentAsString()).get("access_token").asString();
 
 		mockMvc.perform(post("/oauth2/introspect")
 						.with(httpBasic(victimClientId, victimClientSecret))
