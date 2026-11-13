@@ -81,11 +81,15 @@ jobs:
     name: quality (SonarCloud)
     needs: test
     # Same-repo PRs and pushes to main only: fork PRs have no SONAR_TOKEN and are analysed by
-    # sonarcloud-fork-pr.yml (workflow_run) instead.
+    # sonarcloud-fork-pr.yml (workflow_run) instead. Dependabot PRs are skipped too: Dependabot-
+    # triggered runs get no Actions secrets, and a version bump has no source for Sonar to analyse;
+    # the push to main after merge is still analysed (#222). PR author, not github.actor, so a
+    # maintainer re-run of a Dependabot PR is still skipped.
     if: >-
       github.event_name == 'push' ||
       (github.event_name == 'pull_request' &&
-       github.event.pull_request.head.repo.full_name == github.repository)
+       github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.user.login != 'dependabot[bot]')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
