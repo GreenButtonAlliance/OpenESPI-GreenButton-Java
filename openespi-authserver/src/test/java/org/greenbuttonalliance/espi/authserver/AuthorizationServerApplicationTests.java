@@ -20,36 +20,163 @@
 
 package org.greenbuttonalliance.espi.authserver;
 
+import org.greenbuttonalliance.espi.authserver.grant.GrantContextEnrichingAuthorizationService;
+import org.greenbuttonalliance.espi.authserver.integration.AbstractAuthserverIntegrationTest;
+import org.greenbuttonalliance.espi.authserver.service.EspiTokenCustomizer;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
+import org.springframework.security.oauth2.server.authorization.client.JdbcRegisteredClientRepository;
+import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
+import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
+import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
+import org.springframework.security.oauth2.server.authorization.settings.OAuth2TokenFormat;
+import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
+import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
+import org.springframework.security.web.SecurityFilterChain;
+
+import java.time.Duration;
+import java.util.Set;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Integration tests for OpenESPI Authorization Server Application
- * 
- * Tests basic Spring Boot application startup and configuration
- * with Spring Authorization Server 1.3+.
- * 
- * @author Green Button Alliance
- * @version 1.0.0
- * @since Spring Boot 3.5
+ * Application context test for the OpenESPI Authorization Server, booted with the real configuration
+ * against the shared MySQL Testcontainer (see {@link AbstractAuthserverIntegrationTest}).
+ *
+ * <p>Replaces the former H2 {@code local}-profile {@code contextLoads} and the mock-{@code HttpSecurity}
+ * {@code AuthorizationServerConfigTest} (#129): instead of calling {@code @Bean} methods against mocks,
+ * it asserts what the started context actually contains.</p>
  */
-@SpringBootTest
-@ActiveProfiles("local")
-class AuthorizationServerApplicationTests {
+@DisplayName("Authorization Server application context")
+class AuthorizationServerApplicationTests extends AbstractAuthserverIntegrationTest {
 
-    /**
-     * Test that the Spring Boot application context loads successfully
-     * with all OAuth2 Authorization Server configurations.
-     */
+    @Autowired
+    private ApplicationContext context;
+
+    @Autowired
+    private AuthorizationServerSettings authorizationServerSettings;
+
+    @Autowired
+    private RegisteredClientRepository registeredClientRepository;
+
+    @Autowired
+    private OAuth2AuthorizationService authorizationService;
+
+    @Autowired
+    private OAuth2TokenCustomizer<JwtEncodingContext> espiTokenCustomizer;
+
     @Test
-    void contextLoads() {
-        // This test verifies that:
-        // - Spring Boot application starts successfully
-        // - All OAuth2 Authorization Server beans are configured
-        // - Database schema is created (H2 in-memory for tests)
-        // - JWT key pair is generated
-        // - Registered clients are loaded
-        // - Security configurations are applied
+    @DisplayName("registers exactly the four application security filter chains")
+    void registersTheApplicationSecurityFilterChains() {
+        assertThat(context.getBeansOfType(SecurityFilterChain.class))
+                .containsOnlyKeys(
+                        "clientRegistrationSecurityFilterChain",
+                        "authorizationServerSecurityFilterChain",
+                        "adminApiBearerSecurityFilterChain",
+                        "defaultSecurityFilterChain");
+    }
+
+    @Test
+    @DisplayName("is opaque-token only: no JwtDecoder or JwtEncoder bean (#134)")
+    void hasNoJwtInfrastructure() {
+        assertThat(context.getBeanNamesForType(JwtDecoder.class)).isEmpty();
+        assertThat(context.getBeanNamesForType(JwtEncoder.class)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("exposes the configured issuer and OAuth2 protocol endpoints")
+    void authorizationServerSettings() {
+        assertThat(authorizationServerSettings)
+                .extracting(
+                        AuthorizationServerSettings::getIssuer,
+                        AuthorizationServerSettings::getAuthorizationEndpoint,
+                        AuthorizationServerSettings::getTokenEndpoint,
+                        AuthorizationServerSettings::getTokenRevocationEndpoint,
+                        AuthorizationServerSettings::getTokenIntrospectionEndpoint)
+                .containsExactly(
+                        "http://localhost:9999",
+                        "/oauth2/authorize",
+                        "/oauth2/token",
+                        "/oauth2/revoke",
+                        "/oauth2/introspect");
+    }
+
+    @Test
+    @DisplayName("wires the JDBC client repository, the grant-context authorization service and the ESPI customizer")
+    void persistenceAndCustomizerBeans() {
+        assertThat(registeredClientRepository).isInstanceOf(JdbcRegisteredClientRepository.class);
+        assertThat(authorizationService).isInstanceOf(GrantContextEnrichingAuthorizationService.class);
+        assertThat(espiTokenCustomizer).isInstanceOf(EspiTokenCustomizer.class);
+    }
+
+    @Test
+    @DisplayName("seeds data_custodian_admin: client_credentials, opaque, 60 min, no consent")
+    void seedsDataCustodianAdminClient() {
+        assertThat(registeredClientRepository.findByClientId("data_custodian_admin"))
+                .isNotNull()
+                .satisfies(client -> assertThat(client)
+                        .extracting(
+                                RegisteredClient::getAuthorizationGrantTypes,
+                                RegisteredClient::getScopes,
+                                c -> c.getTokenSettings().getAccessTokenFormat(),
+                                c -> c.getTokenSettings().getAccessTokenTimeToLive(),
+                                c -> c.getClientSettings().isRequireAuthorizationConsent())
+                        .containsExactly(
+                                Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS),
+                                Set.of("DataCustodian_Admin_Access"),
+                                OAuth2TokenFormat.REFERENCE,
+                                Duration.ofMinutes(60),
+                                false));
+    }
+
+    @Test
+    @DisplayName("seeds third_party: authorization_code + refresh_token, ESPI scopes, opaque, 6 h, consent, no PKCE")
+    void seedsThirdPartyClient() {
+        assertThat(registeredClientRepository.findByClientId("third_party"))
+                .isNotNull()
+                .satisfies(client -> assertThat(client)
+                        .extracting(
+                                RegisteredClient::getAuthorizationGrantTypes,
+                                c -> c.getTokenSettings().getAccessTokenFormat(),
+                                c -> c.getTokenSettings().getAccessTokenTimeToLive(),
+                                c -> c.getClientSettings().isRequireAuthorizationConsent(),
+                                c -> c.getClientSettings().isRequireProofKey())
+                        .containsExactly(
+                                Set.of(AuthorizationGrantType.AUTHORIZATION_CODE,
+                                        AuthorizationGrantType.REFRESH_TOKEN),
+                                OAuth2TokenFormat.REFERENCE,
+                                Duration.ofHours(6),
+                                true,
+                                false))
+                .extracting(RegisteredClient::getScopes)
+                .satisfies(scopes -> assertThat(scopes).contains(
+                        "openid", "profile",
+                        "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13",
+                        "FB=4_5_15;IntervalDuration=900;BlockDuration=monthly;HistoryLength=13"));
+    }
+
+    @Test
+    @DisplayName("seeds third_party_admin and the datacustodian introspection client with opaque tokens")
+    void seedsRemainingDefaultClients() {
+        assertThat(registeredClientRepository.findByClientId("third_party_admin"))
+                .isNotNull()
+                .extracting(
+                        RegisteredClient::getAuthorizationGrantTypes,
+                        RegisteredClient::getScopes,
+                        c -> c.getTokenSettings().getAccessTokenFormat())
+                .containsExactly(
+                        Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS),
+                        Set.of("ThirdParty_Admin_Access"),
+                        OAuth2TokenFormat.REFERENCE);
+        assertThat(registeredClientRepository.findByClientId("datacustodian"))
+                .isNotNull()
+                .extracting(RegisteredClient::getAuthorizationGrantTypes)
+                .isEqualTo(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS));
     }
 }
