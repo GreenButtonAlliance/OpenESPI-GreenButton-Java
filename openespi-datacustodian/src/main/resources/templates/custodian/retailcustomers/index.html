@@ -53,7 +53,8 @@
                                     <form th:action="@{/custodian/retailcustomers/{id}/delete(id=${customer.id})}"
                                           method="post" class="d-inline"
                                           onsubmit="return confirm('Delete this customer?');">
-                                        <button type="submit" class="btn btn-outline-danger">Delete</button>
+                                        <!-- btn-sm: btn-group-sm only sizes direct children, and this button sits in a form -->
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
                                     </form>
                                 </div>
                             </td>
@@ -66,8 +67,8 @@
             </div>
         </div>
 
-        <hr class="my-5">
-        <footer th:replace="~{fragments/layout :: footer}"></footer>
     </div>
+
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
 </body>
 </html>

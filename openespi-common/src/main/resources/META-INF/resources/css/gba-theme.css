@@ -58,12 +58,6 @@
     --bs-border-radius-sm: 0;
     --bs-border-radius-lg: 0;
     --bs-focus-ring-color: rgba(249, 151, 66, 0.45);
-
-    /* Data Custodian application.css tokens, so its existing rules adopt the GBA palette */
-    --gb-primary: var(--gba-green-900);
-    --gb-secondary: var(--gba-green-700);
-    --gb-accent: var(--gba-green-700);
-    --gb-warning: var(--gba-orange);
 }
 
 body[data-gba-app="thirdparty"] {
@@ -79,7 +73,9 @@ body {
     min-height: 100vh;
 }
 
-main {
+/* The page content grows so the footer sits at the bottom of short pages. */
+main,
+body > .container {
     flex: 1 0 auto;
 }
 
@@ -172,11 +168,6 @@ h1, h2, h3, h4, h5, h6,
     --bs-btn-border-width: 2px;
     --bs-btn-font-weight: 500;
     --bs-btn-font-family: var(--gba-font);
-    border-radius: 0;  /* the Data Custodian application.css sets a literal 0.5rem */
-}
-
-.btn:hover {
-    transform: none;
 }
 
 .btn-primary {
@@ -236,12 +227,13 @@ h1, h2, h3, h4, h5, h6,
 
 .gba-hero,
 .hero-unit {
+    /* !important beats Bootstrap's !important utilities (bg-*, text-*, rounded) that hero markup
+       still carries; hero backgrounds are always dark, so the text must stay white. */
     background: var(--gba-hero-bg) !important;
-    /* !important: hero backgrounds are always dark, so override text-dark and similar utilities */
     color: #fff !important;
     border-left: 6px solid var(--gba-orange);
     border-radius: 0 !important;
-    box-shadow: none !important;
+    margin-bottom: 2rem;
     padding: 3rem;
 }
 
@@ -266,18 +258,11 @@ h1, h2, h3, h4, h5, h6,
 
 .card {
     --bs-card-bg: #FFFFFF;  /* white cards on the grey page, as on greenbuttonalliance.org */
-    border: 1px solid #DDDDDD;
-    border-radius: 0 !important;
-    box-shadow: none;
+    --bs-card-border-color: #DDDDDD;
 }
 
 .card:hover {
-    transform: none;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.card-header {
-    border-radius: 0 !important;
 }
 
 .gba-card-header {
@@ -300,7 +285,41 @@ h1, h2, h3, h4, h5, h6,
     color: var(--gba-green-700);
 }
 
+/* Large status icon on error pages (keeps its semantic text-warning / text-danger colour) */
+.gba-status-icon {
+    font-size: 5rem;
+    line-height: 1;
+}
+
+/* Dashboard statistic tile: white card with a green left rule and a large figure */
+.gba-stat {
+    border-left: 6px solid var(--gba-green-900);
+}
+
+.gba-stat .gba-stat-value {
+    color: var(--gba-green-900);
+    font-size: 2.25rem;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.gba-stat .gba-stat-label {
+    color: var(--gba-text);
+    font-weight: 500;
+}
+
 /* ---- Forms ----------------------------------------------------------------------------- */
+
+/* Bootstrap fills inputs and tables with --bs-body-bg, which the theme sets to the grey page
+   colour; keep them white, as on greenbuttonalliance.org. */
+.form-control,
+.form-select {
+    background-color: #FFFFFF;
+}
+
+.table {
+    --bs-table-bg: #FFFFFF;
+}
 
 .form-control:focus,
 .form-select:focus {
@@ -318,8 +337,10 @@ h1, h2, h3, h4, h5, h6,
     padding: 2rem 0 1.5rem;
 }
 
-/* Data Custodian templates place the footer inside the page .container; let it span the full
-   viewport anyway (body clips the scrollbar-width overshoot of 100vw). */
+/* Pages should place the footer after the page container, as a child of <body>. The two legacy
+   Data Custodian customer pages (customer/home, customer/usagepoints/index; #245) still place it
+   inside the .container, so let it span the full viewport there too (body clips the
+   scrollbar-width overshoot of 100vw). Remove once #245 rebuilds those pages. */
 .container > .gba-footer {
     margin-left: calc(50% - 50vw);
     margin-right: calc(50% - 50vw);

@@ -11,7 +11,7 @@
         <div class="row justify-content-center mt-5">
             <div class="col-lg-8 text-center">
                 <div class="mb-4">
-                    <i class="bi bi-exclamation-triangle text-warning" style="font-size: 5rem;"></i>
+                    <i class="bi bi-exclamation-triangle text-warning gba-status-icon"></i>
                 </div>
                 <h1 class="display-1 fw-bold text-muted" th:text="${status}">Error</h1>
                 <h2 class="mb-4" th:text="${error}">Something went wrong</h2>
@@ -35,13 +35,13 @@
                 
                 <div class="d-flex justify-content-center gap-3 mt-4">
                     <a th:href="@{/}" class="btn btn-primary">Go Home</a>
-                    <button onclick="history.back()" class="btn btn-outline-secondary">Go Back</button>
-                    <button onclick="location.reload()" class="btn btn-outline-info">Try Again</button>
+                    <button type="button" onclick="history.back()" class="btn btn-outline-secondary">Go Back</button>
+                    <button type="button" onclick="location.reload()" class="btn btn-outline-primary">Try Again</button>
                 </div>
             </div>
         </div>
-
-        <footer th:replace="~{fragments/layout :: footer}"></footer>
     </div>
+
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
 </body>
 </html>
