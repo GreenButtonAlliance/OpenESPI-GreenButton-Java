@@ -36,6 +36,8 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * The demo OAuth clients carry secrets written in this public repository, so a production AS must not
@@ -63,6 +65,7 @@ class DemoClientSeedingTest {
 				.build();
 		config = new AuthorizationServerConfig();
 		ReflectionTestUtils.setField(config, "defaultRedirectUriBase", "http://localhost");
+		ReflectionTestUtils.setField(config, "issuerUri", "http://localhost:9999");
 	}
 
 	@AfterEach
@@ -94,6 +97,21 @@ class DemoClientSeedingTest {
 		assertThat(DEMO_CLIENT_IDS).allSatisfy(clientId -> assertThat(repository.findByClientId(clientId))
 				.as("demo client %s", clientId)
 				.isNotNull());
+	}
+
+	@Test
+	@DisplayName("demo seeding refuses to start on a non-loopback issuer (e.g. a forgotten production profile)")
+	void demoSeedingRefusedOnRealIssuer() {
+		ReflectionTestUtils.setField(config, "seedDemoClients", true);
+		ReflectionTestUtils.setField(config, "issuerUri", "https://auth.utility.example");
+
+		assertThatThrownBy(this::repository)
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessageContaining("loopback");
+		assertThatCode(() -> AuthorizationServerConfig.requireLoopbackIssuerForDemoClients("http://127.0.0.1:9999"))
+				.doesNotThrowAnyException();
+		assertThatThrownBy(() -> AuthorizationServerConfig.requireLoopbackIssuerForDemoClients("http://localhost.evil.example"))
+				.isInstanceOf(IllegalStateException.class);
 	}
 
 	@Test

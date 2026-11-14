@@ -772,6 +772,7 @@ public class AuthorizationServerConfig {
         // Demo clients carry well-known {noop} secrets (this file is public), so they are seeded only when
         // espi.authserver.seed.demo-clients=true (local/dev/test profiles). Production gets none of them.
         if (seedDemoClients) {
+            requireLoopbackIssuerForDemoClients(issuerUri);
             log.warn("Seeding DEMO OAuth clients with well-known secrets (espi.authserver.seed.demo-clients=true)"
                     + " - NEVER enable this in production");
             // Seed default clients, and reconcile existing ones to the code definition (see below).
@@ -905,6 +906,28 @@ public class AuthorizationServerConfig {
                     .clientSecret(passwordEncoder.encode(registrarClientSecret))
                     .build());
             System.out.println("ESPI registrar client secret rotated");
+        }
+    }
+
+    /**
+     * Demo seeding is a developer convenience, and {@code dev-mysql} is the default profile, so a deployment
+     * that forgets {@code SPRING_PROFILES_ACTIVE} would otherwise get the published secrets. Refuse to start
+     * unless the issuer is a loopback host ({@code localhost}, {@code 127.0.0.1}, {@code [::1]}).
+     */
+    static void requireLoopbackIssuerForDemoClients(String issuer) {
+        String host = null;
+        try {
+            host = issuer == null ? null : java.net.URI.create(issuer.trim()).getHost();
+        } catch (IllegalArgumentException ignored) {
+            // treated as non-loopback below
+        }
+        boolean loopback = host != null && (host.equalsIgnoreCase("localhost") || host.equals("127.0.0.1")
+                || host.equals("[::1]") || host.equals("::1"));
+        if (!loopback) {
+            throw new IllegalStateException("espi.authserver.seed.demo-clients=true is only allowed when the "
+                    + "issuer is a loopback host, but the issuer is '" + issuer + "'. The demo clients' secrets "
+                    + "are published in the source: set an explicit non-dev profile (SPRING_PROFILES_ACTIVE) "
+                    + "or espi.authserver.seed.demo-clients=false.");
         }
     }
 
