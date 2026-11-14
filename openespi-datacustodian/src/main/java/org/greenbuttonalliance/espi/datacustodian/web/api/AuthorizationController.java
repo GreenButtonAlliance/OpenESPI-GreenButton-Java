@@ -38,6 +38,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -57,6 +58,8 @@ import java.util.UUID;
  * Both previously returned {@code null}, i.e. HTTP 200 with an empty body (#247). Token values,
  * authorization codes and state never appear in the XML: those {@link AuthorizationDto} fields are
  * {@code @XmlTransient}.
+ * <p>Row-level scope ({@link AdminCaller}): a {@code DataCustodian_Admin_Access} caller sees every
+ * Authorization; a {@code ThirdParty_Admin_Access} caller only those granted to its own application.</p>
  */
 @RestController
 @RequestMapping("/espi/1_1/resource")
@@ -88,10 +91,17 @@ public class AuthorizationController {
             @Parameter(description = "Maximum number of results to return", example = "50")
             @RequestParam(defaultValue = "50") int limit,
             @Parameter(description = "Offset for pagination", example = "0")
-            @RequestParam(defaultValue = "0") int offset) {
+            @RequestParam(defaultValue = "0") int offset,
+            Authentication authentication) {
 
-        List<AuthorizationEntity> authorizations =
-                authorizationRepository.findAll(PageRequest.of(offset / limit, limit)).getContent();
+        // Row-level scope: a DataCustodian admin sees all Authorizations; a Third Party admin only those
+        // of its own application (token client_id); anyone else nothing. See AdminCaller.
+        PageRequest page = PageRequest.of(offset / limit, limit);
+        List<AuthorizationEntity> authorizations = AdminCaller.isDataCustodianAdmin(authentication)
+                ? authorizationRepository.findAll(page).getContent()
+                : AdminCaller.clientId(authentication)
+                        .map(clientId -> authorizationRepository.findAllByApplicationClientId(clientId, page).getContent())
+                        .orElse(List.of());
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         usageExportService.exportFeed(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString(),
@@ -119,9 +129,13 @@ public class AuthorizationController {
     @PreAuthorize("hasAnyAuthority('SCOPE_DataCustodian_Admin_Access', 'SCOPE_ThirdParty_Admin_Access')")
     public ResponseEntity<byte[]> getAuthorization(
             @Parameter(description = "Unique identifier of the Authorization", required = true)
-            @PathVariable UUID authorizationId) {
+            @PathVariable UUID authorizationId,
+            Authentication authentication) {
 
+        // Another application's Authorization is reported as not found, so its existence is not disclosed.
         AuthorizationEntity authorization = authorizationRepository.findById(authorizationId)
+                .filter(a -> AdminCaller.canSee(authentication,
+                        a.getApplicationInformation() != null ? a.getApplicationInformation().getClientId() : null))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Authorization not found for id: " + authorizationId));
 

@@ -35,6 +35,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -76,8 +77,12 @@ public class ApplicationInformationRESTController {
         @ApiResponse(responseCode = "403", description = "Forbidden")
     })
     @PreAuthorize("hasAuthority('SCOPE_DataCustodian_Admin_Access') or hasAuthority('SCOPE_ThirdParty_Admin_Access')")
-    public ResponseEntity<byte[]> getAllApplicationInformation() {
-        List<ApplicationInformationEntity> entities = applicationInformationService.findAll();
+    public ResponseEntity<byte[]> getAllApplicationInformation(Authentication authentication) {
+        // Row-level scope (AdminCaller): ApplicationInformation carries client_secret and
+        // registration_access_token, so a Third Party admin must only ever see its own application.
+        List<ApplicationInformationEntity> entities = applicationInformationService.findAll().stream()
+                .filter(entity -> AdminCaller.canSee(authentication, entity.getClientId()))
+                .toList();
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         applicationInformationService.export(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString(),
@@ -107,10 +112,12 @@ public class ApplicationInformationRESTController {
     @PreAuthorize("hasAuthority('SCOPE_DataCustodian_Admin_Access') or hasAuthority('SCOPE_ThirdParty_Admin_Access')")
     public ResponseEntity<byte[]> getApplicationInformation(
             @Parameter(description = "Unique identifier of the ApplicationInformation", required = true)
-            @PathVariable UUID applicationInformationId) {
+            @PathVariable UUID applicationInformationId,
+            Authentication authentication) {
 
         ApplicationInformationEntity entity = applicationInformationService.findById(applicationInformationId);
-        if (entity == null) {
+        // Another application's record is reported as not found, so its existence is not disclosed.
+        if (entity == null || !AdminCaller.canSee(authentication, entity.getClientId())) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "ApplicationInformation not found");
         }
 
