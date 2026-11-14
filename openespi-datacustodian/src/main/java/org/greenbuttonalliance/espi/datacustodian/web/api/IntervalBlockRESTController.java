@@ -38,6 +38,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.io.ByteArrayOutputStream;
 import java.util.List;
@@ -81,12 +82,10 @@ public class IntervalBlockRESTController {
             @RequestParam(defaultValue = "0") int offset,
             Authentication authentication) {
 
-        List<IntervalBlockDto> dtos = intervalBlockRepository.findAll(PageRequest.of(offset, limit)).getContent().stream()
-            .map(intervalBlockMapper::toDto)
-            .toList();
-
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        intervalBlockExportService.exportDto(dtos, out);
+        intervalBlockExportService.exportFeed(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString(),
+                "IntervalBlock Feed", intervalBlockRepository.findAll(PageRequest.of(offset, limit)).getContent(),
+                intervalBlockMapper::toDto, out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
                 .body(out.toByteArray());
@@ -148,12 +147,10 @@ public class IntervalBlockRESTController {
             Authentication authentication) {
 
         // Use the specialized repository method for hierarchical access
-        List<IntervalBlockDto> dtos = intervalBlockRepository.findAllByMeterReadingId(meterReadingId).stream()
-            .map(intervalBlockMapper::toDto)
-            .toList();
-
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        intervalBlockExportService.exportDto(dtos, out);
+        intervalBlockExportService.exportFeed(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString(),
+                "IntervalBlock Feed", intervalBlockRepository.findAllByMeterReadingId(meterReadingId),
+                intervalBlockMapper::toDto, out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
                 .body(out.toByteArray());

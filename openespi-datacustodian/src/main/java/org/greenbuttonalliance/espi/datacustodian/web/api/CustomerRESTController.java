@@ -37,6 +37,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.io.ByteArrayOutputStream;
 import java.util.List;
@@ -81,12 +82,10 @@ public class CustomerRESTController {
             @Parameter(description = "Offset for pagination", example = "0")
             @RequestParam(defaultValue = "0") int offset) {
 
-        List<CustomerDto> dtos = customerRepository.findAll(PageRequest.of(offset, limit)).getContent().stream()
-                .map(customerMapper::toDto)
-                .toList();
-
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        customerExportService.exportDto(dtos, out);
+        customerExportService.exportFeed(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString(),
+                "Customer Feed", customerRepository.findAll(PageRequest.of(offset, limit)).getContent(),
+                customerMapper::toDto, out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
                 .body(out.toByteArray());

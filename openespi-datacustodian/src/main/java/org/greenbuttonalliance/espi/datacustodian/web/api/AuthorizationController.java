@@ -26,52 +26,56 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
+import org.greenbuttonalliance.espi.common.dto.atom.UsageAtomEntryDto;
 import org.greenbuttonalliance.espi.common.dto.usage.AuthorizationDto;
+import org.greenbuttonalliance.espi.common.mapper.usage.AuthorizationMapper;
+import org.greenbuttonalliance.espi.common.repositories.usage.AuthorizationRepository;
+import org.greenbuttonalliance.espi.common.service.impl.UsageExportService;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.UUID;
 
 /**
- * Modern REST Controller for ESPI Authorization resources.
- * <p>
- * This controller implements the NAESB ESPI 1.0 REST API for OAuth2 Authorizations,
- * using modern Spring Boot 4.x patterns with DTOs and MapStruct mappers.
- * <p>
- * Supported endpoints:
- * - GET /espi/1_1/resource/Authorization - List all authorizations  
- * - GET /espi/1_1/resource/Authorization/{authorizationId} - Get specific authorization
+ * ESPI Authorization resources (admin access only).
+ * <ul>
+ *   <li>{@code GET /espi/1_1/resource/Authorization}: Atom feed of Authorizations; an empty feed when
+ *       there are none.</li>
+ *   <li>{@code GET /espi/1_1/resource/Authorization/{authorizationId}}: one Authorization as an Atom
+ *       entry, or 404.</li>
+ * </ul>
+ * Both previously returned {@code null}, i.e. HTTP 200 with an empty body (#247). Token values,
+ * authorization codes and state never appear in the XML: those {@link AuthorizationDto} fields are
+ * {@code @XmlTransient}.
  */
-
-//todo - complete implementation
 @RestController
 @RequestMapping("/espi/1_1/resource")
 @Tag(name = "Authorizations", description = "OAuth2 Authorization Management API")
 @SecurityRequirement(name = "oauth2")
+@RequiredArgsConstructor
 public class AuthorizationController {
 
-//    private final AuthorizationRepository authorizationRepository;
-//    private final AuthorizationMapper authorizationMapper;
-//
-//    public AuthorizationController(AuthorizationRepository authorizationRepository, AuthorizationMapper authorizationMapper) {
-//        this.authorizationRepository = authorizationRepository;
-//        this.authorizationMapper = authorizationMapper;
-//    }
+    private final AuthorizationRepository authorizationRepository;
+    private final AuthorizationMapper authorizationMapper;
+    private final UsageExportService usageExportService;
 
     /**
      * Get all Authorizations (admin access only).
-     * This endpoint is restricted to DataCustodian administrators.
      */
     @GetMapping(value = "/Authorization", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @Operation(
         summary = "Get all Authorizations",
-        description = "Retrieve all OAuth2 Authorizations (admin access only)",
+        description = "Retrieve all OAuth2 Authorizations as an Atom feed (admin access only)",
         responses = {
             @ApiResponse(responseCode = "200", description = "Authorizations retrieved successfully",
                 content = @Content(schema = @Schema(implementation = AuthorizationDto.class))),
@@ -80,26 +84,25 @@ public class AuthorizationController {
         }
     )
     @PreAuthorize("hasAnyAuthority('SCOPE_DataCustodian_Admin_Access', 'SCOPE_ThirdParty_Admin_Access')")
-    public ResponseEntity<List<AuthorizationDto>> getAllAuthorizations(
+    public ResponseEntity<byte[]> getAllAuthorizations(
             @Parameter(description = "Maximum number of results to return", example = "50")
             @RequestParam(defaultValue = "50") int limit,
             @Parameter(description = "Offset for pagination", example = "0")
-            @RequestParam(defaultValue = "0") int offset,
-            Authentication authentication) {
-        
-        Pageable pageable = PageRequest.of(offset / limit, limit);
-//        List<AuthorizationEntity> authorizationEntities = authorizationRepository.findAll(pageable).getContent();
-//        List<AuthorizationDto> authorizations = authorizationEntities.stream()
-//            .map(authorizationMapper::toDto)
-//            .toList();
+            @RequestParam(defaultValue = "0") int offset) {
 
-        return null;
-       // return ResponseEntity.ok(authorizations);
+        List<AuthorizationEntity> authorizations =
+                authorizationRepository.findAll(PageRequest.of(offset / limit, limit)).getContent();
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        usageExportService.exportFeed(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString(),
+                "Authorization Feed", authorizations, authorizationMapper::toDto, out);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_XML)
+                .body(out.toByteArray());
     }
 
     /**
-     * Get specific Authorization by ID.
-     * Access restricted based on ownership and scope.
+     * Get specific Authorization by ID (admin access only).
      */
     @GetMapping(value = "/Authorization/{authorizationId}", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @Operation(
@@ -114,15 +117,25 @@ public class AuthorizationController {
         }
     )
     @PreAuthorize("hasAnyAuthority('SCOPE_DataCustodian_Admin_Access', 'SCOPE_ThirdParty_Admin_Access')")
-    public ResponseEntity<AuthorizationDto> getAuthorization(
+    public ResponseEntity<byte[]> getAuthorization(
             @Parameter(description = "Unique identifier of the Authorization", required = true)
-            @PathVariable UUID authorizationId,
-            Authentication authentication) {
+            @PathVariable UUID authorizationId) {
 
-        return null;
-//        return authorizationRepository.findById(authorizationId)
-//            .map(authorizationMapper::toDto)
-//            .map(authorization -> ResponseEntity.ok(authorization))
-//            .orElse(ResponseEntity.notFound().build());
+        AuthorizationEntity authorization = authorizationRepository.findById(authorizationId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Authorization not found for id: " + authorizationId));
+
+        String self = ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString();
+        String up = self.substring(0, self.lastIndexOf('/'));
+        // One entry, built like a feed entry so it carries the same id, links and timestamps.
+        UsageAtomEntryDto entry = (UsageAtomEntryDto) usageExportService
+                .buildFeed(up, "Authorization", List.of(authorization), authorizationMapper::toDto)
+                .getEntries().getFirst();
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        usageExportService.exportDto(entry, out);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_XML)
+                .body(out.toByteArray());
     }
 }

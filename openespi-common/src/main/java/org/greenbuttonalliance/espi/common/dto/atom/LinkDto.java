@@ -40,6 +40,11 @@ import lombok.Setter;
 @AllArgsConstructor
 public class LinkDto {
 
+    // DO NOT REORDER these three fields. The GBA CMD certification test requires every atom:link to be
+    // written as rel=, href=, type= in that sequence, and JAXB writes attributes in field declaration
+    // order (@XmlType propOrder does not apply to attributes). Guarded by
+    // AtomFeedExportTest#linkAttributesAreRelHrefType.
+
     @XmlAttribute(name = "rel")
     private String rel;
 

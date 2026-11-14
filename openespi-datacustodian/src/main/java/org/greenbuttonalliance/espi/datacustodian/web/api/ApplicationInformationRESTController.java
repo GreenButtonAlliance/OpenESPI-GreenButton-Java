@@ -37,6 +37,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.io.ByteArrayOutputStream;
 import java.util.List;
@@ -79,7 +80,8 @@ public class ApplicationInformationRESTController {
         List<ApplicationInformationEntity> entities = applicationInformationService.findAll();
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        applicationInformationService.export(entities, out);
+        applicationInformationService.export(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString(),
+                entities, out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
                 .body(out.toByteArray());

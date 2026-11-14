@@ -38,6 +38,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.io.ByteArrayOutputStream;
 import java.util.List;
@@ -87,12 +88,11 @@ public class ElectricPowerQualitySummaryRESTController {
             @Parameter(description = "Offset for pagination", example = "0")
             @RequestParam(defaultValue = "0") int offset) {
 
-        List<ElectricPowerQualitySummaryDto> summaries = electricPowerQualitySummaryRepository.findAll(PageRequest.of(offset, limit)).getContent().stream()
-                .map(electricPowerQualitySummaryMapper::toDto)
-                .toList();
-
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        electricPowerQualitySummaryExportService.exportDto(summaries, out);
+        electricPowerQualitySummaryExportService.exportFeed(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString(),
+                "ElectricPowerQualitySummary Feed",
+                electricPowerQualitySummaryRepository.findAll(PageRequest.of(offset, limit)).getContent(),
+                electricPowerQualitySummaryMapper::toDto, out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
                 .body(out.toByteArray());
@@ -156,12 +156,11 @@ public class ElectricPowerQualitySummaryRESTController {
 
         // TODO: Implement subscription-based filtering when subscription relationship is available
         // For now, return all summaries with pagination as a temporary solution
-        List<ElectricPowerQualitySummaryDto> summaries = electricPowerQualitySummaryRepository.findAll(PageRequest.of(offset, limit)).getContent().stream()
-                .map(electricPowerQualitySummaryMapper::toDto)
-                .toList();
-
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        electricPowerQualitySummaryExportService.exportDto(summaries, out);
+        electricPowerQualitySummaryExportService.exportFeed(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString(),
+                "ElectricPowerQualitySummary Feed",
+                electricPowerQualitySummaryRepository.findAll(PageRequest.of(offset, limit)).getContent(),
+                electricPowerQualitySummaryMapper::toDto, out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
                 .body(out.toByteArray());

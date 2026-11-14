@@ -64,7 +64,12 @@ public interface ApplicationInformationService {
 
 	void deleteById(UUID id);
 
-	void export(List<ApplicationInformationEntity> entities, OutputStream outputStream);
+	/**
+	 * Exports the entities as an Atom feed (#247).
+	 *
+	 * @param feedHref absolute URL of the feed (its self link, and the source of its UUID v5 id)
+	 */
+	void export(String feedHref, List<ApplicationInformationEntity> entities, OutputStream outputStream);
 
 	void export(ApplicationInformationEntity entity, OutputStream outputStream);
 
