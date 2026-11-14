@@ -32,20 +32,25 @@ import org.springframework.security.oauth2.server.authorization.authentication.O
 import org.springframework.security.oauth2.server.authorization.authentication.OAuth2ClientCredentialsAuthenticationValidator;
 import org.springframework.util.StringUtils;
 
+import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Consumer;
 
 /**
  * Which grant may yield which scopes (#251). Spring Authorization Server only checks that a requested
  * scope is registered for the client, whatever the grant, so a client registered for both
  * {@code client_credentials} and a customer Function Block scope could otherwise mint a customer-data
- * token with no customer consent. ESPI separates the token kinds:
+ * token with no customer consent. ESPI keeps the token kinds apart, and both rules are allowlists that
+ * fail closed:
  * <ul>
  *   <li><b>client_credentials</b> (client access token, registration-token renewal, infrastructure
- *       clients) may never carry a customer data scope: any {@code FB=...} scope other than the
- *       {@value #REGISTRATION_RENEWAL_SCOPE} renewal scope is {@code invalid_scope}.</li>
- *   <li><b>authorization_code</b> (customer consent) may never carry an administrative scope
- *       ({@link #ADMINISTRATIVE_SCOPES}).</li>
+ *       clients) may yield only the exact {@link #ADMINISTRATIVE_SCOPES} strings.</li>
+ *   <li><b>authorization_code</b> (customer consent) may yield only {@code openid} / {@code profile}
+ *       and ESPI customer data scopes: scopes that, parsed the way the Data Custodian parses them
+ *       ({@code EspiScope}: {@code ;}-separated, trimmed, case-insensitive {@code FB} key, {@code _}-separated
+ *       integers), name at least one Function Block and none of the {@link #RESERVED_FUNCTION_BLOCKS}.</li>
  * </ul>
  * Refresh tokens can only narrow the scopes of the grant they came from, so they need no rule here.
  */
@@ -54,45 +59,92 @@ public final class EspiGrantScopePolicy {
     /** Scope that renews an expired registration access token (ESPI {@code FB=36_40}). */
     public static final String REGISTRATION_RENEWAL_SCOPE = "FB=36_40";
 
-    /** Scopes only a client may hold for itself, never granted through a customer's consent. */
+    /** The only scopes {@code client_credentials} may yield. Never granted through a customer's consent. */
     public static final Set<String> ADMINISTRATIVE_SCOPES = Set.of(
             "ThirdParty_Admin_Access",
             "DataCustodian_Admin_Access",
+            "Upload_Admin_Access",
             REGISTRATION_RENEWAL_SCOPE,
             "authserver.admin",
             "client.create");
 
+    /** Function Blocks of the registration-renewal scope, which a customer can never grant. */
+    public static final Set<Integer> RESERVED_FUNCTION_BLOCKS = Set.of(36, 40);
+
+    /** Non-ESPI scopes a customer authorization request may carry. */
+    private static final Set<String> CUSTOMER_IDENTITY_SCOPES = Set.of("openid", "profile");
+
     private EspiGrantScopePolicy() {
     }
 
-    /** True for an ESPI customer data scope: a Function Block scope that is not the renewal scope. */
-    public static boolean isCustomerDataScope(String scope) {
-        return scope != null && scope.startsWith("FB=") && !REGISTRATION_RENEWAL_SCOPE.equals(scope);
+    /** True when {@code client_credentials} may yield the scope. */
+    public static boolean isClientCredentialsScope(String scope) {
+        return ADMINISTRATIVE_SCOPES.contains(scope);
+    }
+
+    /** True when customer authorization ({@code authorization_code}) may yield the scope. */
+    public static boolean isAuthorizationCodeScope(String scope) {
+        if (CUSTOMER_IDENTITY_SCOPES.contains(scope)) {
+            return true;
+        }
+        return functionBlocks(scope)
+                .filter(fbs -> !fbs.isEmpty() && fbs.stream().noneMatch(RESERVED_FUNCTION_BLOCKS::contains))
+                .isPresent();
+    }
+
+    /**
+     * The Function Blocks the Data Custodian would read from {@code scope} (mirrors {@code EspiScope.parse}),
+     * or empty when the scope cannot be parsed, which callers treat as not allowed.
+     */
+    static Optional<Set<Integer>> functionBlocks(String scope) {
+        if (scope == null || scope.isBlank()) {
+            return Optional.empty();
+        }
+        Set<Integer> fbs = new TreeSet<>();
+        for (String segment : scope.split(";")) {
+            String term = segment.trim();
+            int eq = term.indexOf('=');
+            if (eq < 0 || !term.substring(0, eq).trim().toLowerCase(Locale.ROOT).equals("fb")) {
+                continue;
+            }
+            for (String token : term.substring(eq + 1).split("_")) {
+                String fb = token.trim();
+                if (fb.isEmpty()) {
+                    continue;
+                }
+                try {
+                    fbs.add(Integer.parseInt(fb));
+                } catch (NumberFormatException e) {
+                    return Optional.empty();
+                }
+            }
+        }
+        return Optional.of(fbs);
     }
 
     /** Spring's default client_credentials scope check, followed by the ESPI rule. */
     public static Consumer<OAuth2ClientCredentialsAuthenticationContext> clientCredentialsValidator() {
         return OAuth2ClientCredentialsAuthenticationValidator.DEFAULT_SCOPE_VALIDATOR
-                .andThen(EspiGrantScopePolicy::rejectCustomerDataScopes);
+                .andThen(EspiGrantScopePolicy::requireClientCredentialsScopes);
     }
 
     /** Spring's default authorization request checks, followed by the ESPI rule. */
     public static Consumer<OAuth2AuthorizationCodeRequestAuthenticationContext> authorizationCodeValidator() {
         return new OAuth2AuthorizationCodeRequestAuthenticationValidator()
-                .andThen(EspiGrantScopePolicy::rejectAdministrativeScopes);
+                .andThen(EspiGrantScopePolicy::requireAuthorizationCodeScopes);
     }
 
-    static void rejectCustomerDataScopes(OAuth2ClientCredentialsAuthenticationContext context) {
+    static void requireClientCredentialsScopes(OAuth2ClientCredentialsAuthenticationContext context) {
         OAuth2ClientCredentialsAuthenticationToken request = context.getAuthentication();
-        if (request.getScopes().stream().anyMatch(EspiGrantScopePolicy::isCustomerDataScope)) {
+        if (!request.getScopes().stream().allMatch(EspiGrantScopePolicy::isClientCredentialsScope)) {
             throw new OAuth2AuthenticationException(new OAuth2Error(OAuth2ErrorCodes.INVALID_SCOPE,
-                    "client_credentials cannot grant an ESPI customer data (Function Block) scope", null));
+                    "client_credentials grants only administrative scopes, never ESPI customer data scopes", null));
         }
     }
 
-    static void rejectAdministrativeScopes(OAuth2AuthorizationCodeRequestAuthenticationContext context) {
+    static void requireAuthorizationCodeScopes(OAuth2AuthorizationCodeRequestAuthenticationContext context) {
         OAuth2AuthorizationCodeRequestAuthenticationToken request = context.getAuthentication();
-        if (request.getScopes().stream().noneMatch(ADMINISTRATIVE_SCOPES::contains)) {
+        if (request.getScopes().stream().allMatch(EspiGrantScopePolicy::isAuthorizationCodeScope)) {
             return;
         }
         // Same shape as Spring's own invalid_scope error: redirected back to the client's redirect URI.
@@ -104,7 +156,7 @@ public final class EspiGrantScopePolicy {
                 redirectUri, request.getState(), request.getScopes(), request.getAdditionalParameters());
         result.setAuthenticated(true);
         throw new OAuth2AuthorizationCodeRequestAuthenticationException(new OAuth2Error(OAuth2ErrorCodes.INVALID_SCOPE,
-                "OAuth 2.0 Parameter: scope (administrative scopes are not granted through customer authorization)",
+                "OAuth 2.0 Parameter: scope (customer authorization grants only ESPI customer data scopes)",
                 null), result);
     }
 }

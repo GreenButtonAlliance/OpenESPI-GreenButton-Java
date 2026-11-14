@@ -128,10 +128,34 @@ class EspiGrantScopePolicyTest {
 				.doesNotThrowAnyException();
 	}
 
+	/** Spellings the Data Custodian's tolerant parser still reads as customer Function Blocks. */
+	@ParameterizedTest
+	@ValueSource(strings = {"IntervalDuration=3600;FB=4_5_15", " FB=4_5_15", "fb=4_5_15", "FB =4", "Foo;FB=1_3_4"})
+	@DisplayName("client_credentials: any spelling of a customer scope is invalid_scope (allowlist, fails closed)")
+	void clientCredentialsRejectsAnySpellingOfCustomerScope(String scope) {
+		assertThat(EspiGrantScopePolicy.isClientCredentialsScope(scope)).isFalse();
+		assertThat(EspiGrantScopePolicy.isAuthorizationCodeScope(scope)).isTrue();
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = {"ThirdParty_Admin_Access", "DataCustodian_Admin_Access", "Upload_Admin_Access",
+			"FB=36_40", "fb=36_40", "FB=36", "FB=40;IntervalDuration=900", "FB=4_36", "authserver.admin",
+			"client.create", "FB=abc", "FB=", "FB_1", "anything_else"})
+	@DisplayName("authorization_code: administrative, reserved-FB, unparseable and unknown scopes are not allowed")
+	void authorizationCodeAllowlist(String scope) {
+		assertThat(EspiGrantScopePolicy.isAuthorizationCodeScope(scope)).isFalse();
+	}
+
 	@Test
-	@DisplayName("only FB scopes other than FB=36_40 count as customer data scopes")
-	void customerDataScopeClassification() {
-		assertThat(Set.of(CUSTOMER_SCOPE, "FB=1_3_4_5_13_14_39")).allMatch(EspiGrantScopePolicy::isCustomerDataScope);
-		assertThat(Set.of("FB=36_40", "ThirdParty_Admin_Access", "openid")).noneMatch(EspiGrantScopePolicy::isCustomerDataScope);
+	@DisplayName("scope classification: each grant's allowlist")
+	void scopeClassification() {
+		assertThat(Set.of(CUSTOMER_SCOPE, "FB=1_3_4_5_13_14_39", "openid", "profile"))
+				.allMatch(EspiGrantScopePolicy::isAuthorizationCodeScope)
+				.noneMatch(EspiGrantScopePolicy::isClientCredentialsScope);
+		assertThat(EspiGrantScopePolicy.ADMINISTRATIVE_SCOPES)
+				.allMatch(EspiGrantScopePolicy::isClientCredentialsScope)
+				.noneMatch(EspiGrantScopePolicy::isAuthorizationCodeScope);
+		assertThat(Set.of(" ThirdParty_Admin_Access", "thirdparty_admin_access", "FB=36_40;", "openid"))
+				.noneMatch(EspiGrantScopePolicy::isClientCredentialsScope);
 	}
 }
