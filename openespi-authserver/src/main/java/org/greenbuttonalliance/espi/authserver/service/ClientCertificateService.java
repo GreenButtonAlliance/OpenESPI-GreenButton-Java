@@ -1,6 +1,6 @@
 /*
  *
- *    Copyright (c) 2018-2025 Green Button Alliance, Inc.
+ *    Copyright (c) 2018-2026 Green Button Alliance, Inc.
  *
  *    Portions (c) 2013-2018 EnergyOS.org
  *
