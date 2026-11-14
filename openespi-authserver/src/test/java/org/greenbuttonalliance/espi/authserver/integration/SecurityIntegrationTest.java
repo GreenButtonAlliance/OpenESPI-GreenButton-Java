@@ -283,6 +283,67 @@ class SecurityIntegrationTest extends AbstractAuthserverIntegrationTest {
     }
 
     @Nested
+    @DisplayName("ESPI per-grant scope policy (#251)")
+    class PerGrantScopePolicyTests {
+
+        private String dualClientId;
+        private String dualClientSecret;
+
+        /** Registered for both grants and both kinds of scope: what Spring AS alone would let through. */
+        @BeforeEach
+        void seedDualGrantClient() {
+            String suffix = UUID.randomUUID().toString().substring(0, 8);
+            dualClientId = "sec-it-dual-" + suffix;
+            dualClientSecret = "sec-it-dual-secret-" + suffix;
+            registeredClientRepository.save(RegisteredClient.withId(UUID.randomUUID().toString())
+                    .clientId(dualClientId)
+                    .clientName("Security IT dual-grant ThirdParty")
+                    .clientSecret("{noop}" + dualClientSecret)
+                    .clientIdIssuedAt(Instant.now())
+                    .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+                    .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                    .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                    .redirectUri(REDIRECT_URI)
+                    .scope(ESPI_SCOPE_HOURLY)
+                    .scope("ThirdParty_Admin_Access")
+                    .clientSettings(ClientSettings.builder()
+                            .requireAuthorizationConsent(true)
+                            .requireProofKey(false)
+                            .build())
+                    .tokenSettings(TokenSettings.builder()
+                            .accessTokenFormat(OAuth2TokenFormat.REFERENCE)
+                            .build())
+                    .build());
+        }
+
+        @Test
+        @DisplayName("client_credentials cannot obtain a customer FB scope, even when registered for it")
+        void clientCredentialsCannotGetCustomerScope() throws Exception {
+            mockMvc.perform(clientCredentials(dualClientId, dualClientSecret, ESPI_SCOPE_HOURLY))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.error").value("invalid_scope"));
+
+            mockMvc.perform(clientCredentials(dualClientId, dualClientSecret, "ThirdParty_Admin_Access"))
+                    .andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("authorization_code cannot obtain an administrative scope, even when registered for it")
+        void authorizationCodeCannotGetAdministrativeScope() throws Exception {
+            mockMvc.perform(authorize(dualClientId, REDIRECT_URI, "ThirdParty_Admin_Access"))
+                    .andExpect(status().isFound())
+                    .andExpect(result -> assertThat(result.getResponse().getRedirectedUrl())
+                            .startsWith(REDIRECT_URI)
+                            .contains("error=invalid_scope"));
+
+            mockMvc.perform(authorize(dualClientId, REDIRECT_URI, ESPI_SCOPE_HOURLY))
+                    .andExpect(status().isFound())
+                    .andExpect(result -> assertThat(result.getResponse().getRedirectedUrl())
+                            .contains("/authorize/delegate"));
+        }
+    }
+
+    @Nested
     @DisplayName("CSRF Protection Tests")
     class CsrfProtectionTests {
 
