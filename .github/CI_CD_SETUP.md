@@ -170,7 +170,8 @@ push with a notice instead of failing. `GITHUB_TOKEN` is provided automatically.
 
 *Settings → Rules → Rulesets → New branch ruleset*, target `main`:
 
-- Require a pull request before merging, with at least one approval. Dismiss stale approvals.
+- Require a pull request before merging, with 0 required approvals (a single maintainer cannot
+  approve their own PR, so any higher count blocks every merge).
 - Require status checks to pass:
   - **`ci-ok`**
   - **`pr-title`**
