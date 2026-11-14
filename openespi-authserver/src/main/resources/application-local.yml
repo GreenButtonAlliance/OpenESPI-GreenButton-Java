@@ -22,23 +22,25 @@ spring:
         web-allow-others: true
   
   # JPA/Hibernate Configuration for H2
+  # Flyway (db/vendor/h2) owns the schema; Hibernate only validates it. The dialect must be set via
+  # properties.hibernate.dialect, because application.yml sets MySQLDialect there and that key
+  # takes precedence over spring.jpa.database-platform.
   jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: validate
     show-sql: true
     properties:
       hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
         format_sql: true
         jdbc:
           time_zone: UTC
   
-  # Flyway Configuration for H2
+  # Flyway Configuration for H2 (default PUBLIC schema, which is what the JDBC repositories query)
   flyway:
     enabled: true
     baseline-on-migrate: true
     locations: classpath:db/vendor/h2
-    schemas: oauth2_authserver
 
 # Local Development Logging
 logging:
