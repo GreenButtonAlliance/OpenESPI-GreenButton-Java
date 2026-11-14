@@ -1,6 +1,12 @@
 # OpenESPI GreenButton Java
 
-Complete monorepo implementation of the NAESB Energy Services Provider Interface (ESPI) 4.0 specification for Green Button energy data standards.
+> [!WARNING]
+> **Pre-release: not for production use.** This repository is under active development and has
+> not had its first release. The customer authorization flow is incomplete, and known security
+> issues are being fixed under private advisories. Do not deploy it with real customer data. To
+> report a vulnerability, see [SECURITY.md](./SECURITY.md); please do not open a public issue.
+
+Monorepo implementation of the NAESB Energy Services Provider Interface (ESPI) specification (REQ.21 v4.1) for Green Button energy data standards.
 
 ## 🚀 Quick Start
 
@@ -12,19 +18,23 @@ cd OpenESPI-GreenButton-Java
 # Build all modules (Java 25 + Jakarta EE throughout)
 mvn clean install
 
-# Run Spring Boot 3.5 modules
+# Run the Spring Boot applications (H2, no external database: add -Dspring-boot.run.profiles=local)
 cd openespi-datacustodian && mvn spring-boot:run
 cd openespi-authserver && mvn spring-boot:run
 ```
 
 ## 📦 Modules
 
-| Module | Description | Java | Jakarta EE | Spring Boot | Status |
-|--------|-------------|------|------------|-------------|--------|
-| **openespi-common** | Shared domain models, services | 25 ✅ | 11 ✅       | 4.0.1 ✅     | **Production** |
-| **openespi-datacustodian** | OAuth2 resource server | 25 ✅ | 11 ✅       | 4.0.1 ✅     | **Production** |
-| **openespi-authserver** | OAuth2 authorization server | 25 ✅ | 11 ✅       | 4.0.1 ✅     | **Production** |
-| **openespi-thirdparty** | Client application | 25 ✅ | ✅          | 4.0.1 ⚠️    | **Partial Migration** |
+All modules build with Java 25, Jakarta EE 11 and Spring Boot 4.1. Status is tracked in the
+[CANONICAL BUILD PLAN epic (#119)](https://github.com/GreenButtonAlliance/OpenESPI-GreenButton-Java/issues/119).
+
+| Module | Description | Status |
+|--------|-------------|--------|
+| **openespi-handoff** | Signed AS↔DC customer-flow handoff codec | Pre-release |
+| **openespi-common** | Shared ESPI domain model, DTOs, mappers, services | Pre-release |
+| **openespi-datacustodian** | ESPI resource server (opaque-token introspection) | Pre-release: GET API only; write endpoints deferred |
+| **openespi-authserver** | OAuth2 authorization server | Pre-release: delegated customer flow incomplete (#232) |
+| **openespi-thirdparty** | ESPI third-party client | Pre-release: data import not implemented (#89) |
 
 ## 🏗️ Architecture
 
@@ -44,9 +54,10 @@ cd openespi-authserver && mvn spring-boot:run
 ```
 
 **Module Dependencies:**
+- **openespi-handoff**: Infrastructure-only handoff codec (no ESPI domain types)
 - **openespi-common**: Foundation library (no dependencies on other modules)
-- **openespi-datacustodian**: Depends on openespi-common
-- **openespi-authserver**: **Independent** (no dependency on openespi-common)
+- **openespi-datacustodian**: Depends on openespi-common and openespi-handoff
+- **openespi-authserver**: Depends on openespi-handoff only (**no** dependency on openespi-common)
 - **openespi-thirdparty**: Depends on openespi-common
 
 ## ✨ Migration Achievements
@@ -236,28 +247,22 @@ mvn flyway:info -pl openespi-common
 
 ## 🚀 Deployment
 
-Each module has independent deployment capabilities:
-- **Common**: Maven Central library (shared dependency)
-- **DataCustodian**: Kubernetes/Docker deployment (Spring Boot 3.5 JAR)
-- **AuthServer**: Kubernetes/Docker deployment (Spring Boot 3.5 JAR)
-- **ThirdParty**: WAR deployment to Tomcat/Jetty ⚠️ **Temporary** - awaiting Spring Boot 3.5 migration for containerization
+There is no release yet; see the warning at the top. The three applications are executable
+Spring Boot JARs (Thymeleaf views, embedded Tomcat). Each exposes `/actuator/health` (with
+`liveness` and `readiness` groups) for orchestrators; other actuator endpoints require an admin
+access token.
 
-**Note on ThirdParty Deployment:**
-ThirdParty currently uses legacy WAR packaging because it runs on Spring Framework (not Spring Boot) with JSP/JSTL views. Once the Spring Boot 3.5 migration completes, it will switch to executable JAR packaging with embedded server and Docker/Kubernetes deployment like the other modules.
-
-### Docker Build
+### Container images
 ```bash
-# Build individual service images
-cd openespi-datacustodian && docker build -t openespi-datacustodian .
+# OCI image via Cloud Native Buildpacks (what the release workflow uses for the Data Custodian)
+mvn spring-boot:build-image -DskipTests -pl openespi-datacustodian
+
+# The Authorization Server also has a Dockerfile
 cd openespi-authserver && docker build -t openespi-authserver .
 ```
 
-### Kubernetes Deployment
-```bash
-# Deploy with Helm
-helm install openespi-datacustodian ./helm/datacustodian
-helm install openespi-authserver ./helm/authserver
-```
+Releasing is described in [RELEASING.md](./RELEASING.md) and CI in
+[.github/CI_CD_SETUP.md](./.github/CI_CD_SETUP.md).
 
 ## 🌿 Branch Structure
 
@@ -273,10 +278,13 @@ All original commit history has been preserved using git subtree.
 
 ## 📚 Documentation
 
-- [Migration Status](./MIGRATION_STATUS.md) - Detailed migration information
-- [Development Guide](./docs/DEVELOPMENT.md) - Development workflow
-- [Deployment Guide](./docs/DEPLOYMENT.md) - Production deployment
-- [API Documentation](./docs/API.md) - REST API reference
+- [CANONICAL BUILD PLAN (#119)](https://github.com/GreenButtonAlliance/OpenESPI-GreenButton-Java/issues/119) - status and roadmap
+- [CI/CD setup](./.github/CI_CD_SETUP.md) and [Releasing](./RELEASING.md)
+- [openespi-handoff](./openespi-handoff/README.md) - AS↔DC signed-handoff contract
+- [Authorization Server deployment guide](./openespi-authserver/DEPLOYMENT_GUIDE.md)
+- [Contributing guidelines](./openespi-common/CONTRIBUTING.md)
+- [Green Button API documentation](https://greenbuttonalliance.github.io/OpenESPI-GreenButton-API-Documentation/)
+- [Security policy](./SECURITY.md)
 
 ## 🤝 Contributing
 
