@@ -265,7 +265,11 @@ public class AuthorizationServerConfig {
         http
                 .securityMatcher(CLIENT_REGISTRATION_ENDPOINT)
                 .authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated())
-                .csrf(csrf -> csrf.disable()) // bearer-token API, no browser session
+                // Bearer-token-only, stateless endpoint: no browser credential exists to forge, so CSRF is
+                // exempted for this path (same pattern as the AS endpoints chain). Exempting rather than
+                // relying on oauth2ResourceServer()'s bearer-only CSRF exemption keeps a token-less POST
+                // answered with RFC 6750 401 instead of a CSRF 403.
+                .csrf(csrf -> csrf.ignoringRequestMatchers(CLIENT_REGISTRATION_ENDPOINT))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .oauth2ResourceServer(rs -> rs.opaqueToken(opaque -> opaque
                         .introspector(new AuthorizationServiceOpaqueTokenIntrospector(authorizationService))))
