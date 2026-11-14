@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Unit tests for {@link EspiXmlCaptureFilter} — the dev-only ESPI XML capture aid (#119).
@@ -112,5 +113,85 @@ class EspiXmlCaptureFilterTest {
 
         assertThat(xmlFiles(dir)).isEmpty();
         assertThat(response.getContentAsString()).isEqualTo(XML);
+    }
+
+    /** All files with the given suffix anywhere under {@code base}. */
+    private static List<Path> files(Path base, String suffix) throws Exception {
+        if (!Files.exists(base)) {
+            return List.of();
+        }
+        try (var paths = Files.walk(base)) {
+            return paths.filter(p -> p.toString().endsWith(suffix)).toList();
+        }
+    }
+
+    @Test
+    @DisplayName("#247: an exception writes an .error.txt with the exception chain, then is rethrown")
+    void capturesExceptionChain(@TempDir Path dir) throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/espi/1_1/resource/UsagePoint");
+        request.setQueryString("limit=5");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        RuntimeException failure = new RuntimeException("Failed to export DTO",
+                new IllegalStateException("class java.util.ImmutableCollections$ListN nor any of its super class is known"));
+
+        assertThatThrownBy(() -> new EspiXmlCaptureFilter(true, dir.toString())
+                .doFilter(request, response, (req, res) -> { throw failure; }))
+                .isSameAs(failure);
+
+        List<Path> errors = files(dir, ".error.txt");
+        assertThat(errors).singleElement()
+                .satisfies(p -> assertThat(p.getFileName().toString()).isEqualTo("GET_UsagePoint.error.txt"))
+                .satisfies(p -> assertThat(Files.readString(p))
+                        .contains("Request: GET /espi/1_1/resource/UsagePoint?limit=5", "unhandled exception",
+                                "java.lang.RuntimeException: Failed to export DTO",
+                                "java.lang.IllegalStateException: class java.util.ImmutableCollections$ListN"));
+        assertThat(xmlFiles(dir)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("#247: a 4xx/5xx response writes an .error.txt with the status and body, not an .xml")
+    void captures4xxResponse(@TempDir Path dir) throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/espi/1_1/resource/Authorization/42");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        new EspiXmlCaptureFilter(true, dir.toString()).doFilter(request, response, (req, res) -> {
+            ((jakarta.servlet.http.HttpServletResponse) res).setStatus(404);
+            res.setContentType("application/xml");
+            res.getOutputStream().write("<error>not found</error>".getBytes());
+        });
+
+        assertThat(xmlFiles(dir)).isEmpty();
+        assertThat(files(dir, ".error.txt")).singleElement()
+                .satisfies(p -> assertThat(Files.readString(p))
+                        .contains("Status:  404", "<error>not found</error>"));
+        assertThat(response.getContentAsString()).isEqualTo("<error>not found</error>");
+    }
+
+    @Test
+    @DisplayName("a path-traversal request path cannot write outside the run directory")
+    void traversalStaysInsideRunDir(@TempDir Path dir) throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET",
+                "/espi/1_1/resource/../../../../outside/evil");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        new EspiXmlCaptureFilter(true, dir.resolve("capture").toString())
+                .doFilter(request, response, chain("application/atom+xml", XML));
+
+        try (var paths = Files.walk(dir)) {
+            assertThat(paths.filter(Files::isRegularFile).toList())
+                    .allSatisfy(p -> assertThat(p.getParent().getParent()).isEqualTo(dir.resolve("capture")));
+        }
+        assertThat(dir.resolve("outside")).doesNotExist();
+    }
+
+    @Test
+    @DisplayName("a relative capture dir is anchored at the repository root")
+    void relativeDirResolvesToRepoRoot() {
+        Path resolved = EspiXmlCaptureFilter.resolveCaptureDir("dev-xml-capture");
+
+        // endsWithRaw: plain endsWith canonicalises the path and fails when the directory does not
+        // exist yet, as on a fresh CI checkout
+        assertThat(resolved).isAbsolute().endsWithRaw(Path.of("dev-xml-capture"));
+        assertThat(resolved.getParent().resolve(".git")).exists();
     }
 }

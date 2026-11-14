@@ -38,6 +38,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.io.ByteArrayOutputStream;
 import java.util.List;
@@ -85,12 +86,10 @@ public class UsageSummaryRESTController {
             @RequestParam(defaultValue = "0") int offset,
             Authentication authentication) {
 
-        List<UsageSummaryDto> usageSummaries = usageSummaryRepository.findAll(PageRequest.of(offset, limit)).getContent().stream()
-            .map(usageSummaryMapper::toDto)
-            .toList();
-
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        usageSummaryExportService.exportDto(usageSummaries, out);
+        usageSummaryExportService.exportFeed(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString(),
+                "UsageSummary Feed", usageSummaryRepository.findAll(PageRequest.of(offset, limit)).getContent(),
+                usageSummaryMapper::toDto, out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
                 .body(out.toByteArray());
@@ -151,12 +150,10 @@ public class UsageSummaryRESTController {
             Authentication authentication) {
 
         // TODO: Implement subscription and usage point based filtering when relationships are available
-        List<UsageSummaryDto> usageSummaries = usageSummaryRepository.findAll(PageRequest.of(offset, limit)).getContent().stream()
-            .map(usageSummaryMapper::toDto)
-            .toList();
-
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        usageSummaryExportService.exportDto(usageSummaries, out);
+        usageSummaryExportService.exportFeed(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString(),
+                "UsageSummary Feed", usageSummaryRepository.findAll(PageRequest.of(offset, limit)).getContent(),
+                usageSummaryMapper::toDto, out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
                 .body(out.toByteArray());

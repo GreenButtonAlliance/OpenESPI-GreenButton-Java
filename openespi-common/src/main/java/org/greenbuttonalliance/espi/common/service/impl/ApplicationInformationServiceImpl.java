@@ -117,11 +117,9 @@ public class ApplicationInformationServiceImpl implements
 	}
 
 	@Override
-	public void export(List<ApplicationInformationEntity> entities, OutputStream outputStream) {
-		List<ApplicationInformationDto> dtos = entities.stream()
-				.map(applicationInformationMapper::toDto)
-				.toList();
-		applicationInformationExportService.exportDto(dtos, outputStream);
+	public void export(String feedHref, List<ApplicationInformationEntity> entities, OutputStream outputStream) {
+		applicationInformationExportService.exportFeed(feedHref, "ApplicationInformation Feed", entities,
+				applicationInformationMapper::toDto, outputStream);
 	}
 
 	@Override

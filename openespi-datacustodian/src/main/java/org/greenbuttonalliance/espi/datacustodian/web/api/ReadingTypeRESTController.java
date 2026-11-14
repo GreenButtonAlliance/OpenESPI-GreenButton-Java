@@ -38,6 +38,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.io.ByteArrayOutputStream;
 import java.util.List;
@@ -84,12 +85,10 @@ public class ReadingTypeRESTController {
             @RequestParam(defaultValue = "0") int offset,
             Authentication authentication) {
 
-        List<ReadingTypeDto> readingTypes = readingTypeRepository.findAll(PageRequest.of(offset, limit)).getContent().stream()
-            .map(readingTypeMapper::toDto)
-            .toList();
-
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        readingTypeExportService.exportDto(readingTypes, out);
+        readingTypeExportService.exportFeed(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString(),
+                "ReadingType Feed", readingTypeRepository.findAll(PageRequest.of(offset, limit)).getContent(),
+                readingTypeMapper::toDto, out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
                 .body(out.toByteArray());

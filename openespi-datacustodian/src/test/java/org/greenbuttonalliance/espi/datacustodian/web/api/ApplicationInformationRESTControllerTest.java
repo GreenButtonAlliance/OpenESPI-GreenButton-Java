@@ -61,7 +61,9 @@ public class ApplicationInformationRESTControllerTest extends AbstractController
                     .andExpect(status().isOk())
                     .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
 
-            verify(applicationInformationService).export(anyList(), any());
+            // #247: the feed is built from the request URL (its self link and UUID v5 id)
+            verify(applicationInformationService).export(
+                    eq("http://localhost/espi/1_1/resource/ApplicationInformation"), anyList(), any());
         }
 
         @Test

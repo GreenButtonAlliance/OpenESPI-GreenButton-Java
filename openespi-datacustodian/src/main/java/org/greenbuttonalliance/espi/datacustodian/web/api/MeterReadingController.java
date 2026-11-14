@@ -38,6 +38,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.io.ByteArrayOutputStream;
 import java.util.List;
@@ -86,12 +87,10 @@ public class MeterReadingController {
             @RequestParam(defaultValue = "0") int offset,
             Authentication authentication) {
 
-        List<MeterReadingDto> meterReadings = meterReadingRepository.findAll(PageRequest.of(offset, limit)).getContent().stream()
-            .map(meterReadingMapper::toDto)
-            .toList();
-
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        meterReadingExportService.exportDto(meterReadings, out);
+        meterReadingExportService.exportFeed(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString(),
+                "MeterReading Feed", meterReadingRepository.findAll(PageRequest.of(offset, limit)).getContent(),
+                meterReadingMapper::toDto, out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
                 .body(out.toByteArray());

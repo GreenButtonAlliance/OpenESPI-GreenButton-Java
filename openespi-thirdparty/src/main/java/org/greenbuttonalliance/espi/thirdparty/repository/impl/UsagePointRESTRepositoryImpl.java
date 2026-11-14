@@ -33,6 +33,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.greenbuttonalliance.espi.common.dto.atom.AtomFeedDto;
+import org.greenbuttonalliance.espi.common.dto.atom.UsageAtomEntryDto;
 import org.greenbuttonalliance.espi.common.dto.usage.UsagePointDto;
 import org.greenbuttonalliance.espi.common.mapper.usage.UsagePointMapper;
 
@@ -61,7 +62,9 @@ public class UsagePointRESTRepositoryImpl implements UsagePointRESTRepository {
 
 	public UsagePointRESTRepositoryImpl() {
 		try {
-			this.jaxbContext = JAXBContext.newInstance(AtomFeedDto.class);
+			// AtomFeedDto.entries is an @XmlElementRef to the abstract AtomEntryDto (#247), so the concrete
+			// entry type must be in the context; the Third Party reads usage-domain feeds.
+			this.jaxbContext = JAXBContext.newInstance(AtomFeedDto.class, UsageAtomEntryDto.class);
 		} catch (JAXBException e) {
 			throw new RuntimeException("Failed to initialize JAXB context", e);
 		}

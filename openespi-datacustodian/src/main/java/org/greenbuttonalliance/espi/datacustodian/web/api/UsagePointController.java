@@ -37,6 +37,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.io.ByteArrayOutputStream;
 import java.util.List;
@@ -88,12 +89,10 @@ public class UsagePointController {
     public ResponseEntity<byte[]> getAllUsagePoints(@RequestParam(defaultValue = "50") int limit,
                                                     @RequestParam(defaultValue = "0") int offset) {
 
-        List<UsagePointDto> usagePoints =  usagePointRepository.findAll(PageRequest.of(offset, limit)).getContent().stream()
-                .map(usagePointMapper::toDto)
-                .toList();
-
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        usageExportService.exportDto(usagePoints, out);
+        usageExportService.exportFeed(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString(),
+                "UsagePoint Feed", usagePointRepository.findAll(PageRequest.of(offset, limit)).getContent(),
+                usagePointMapper::toDto, out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
                 .body(out.toByteArray());
@@ -168,12 +167,10 @@ public class UsagePointController {
 
         // TODO: Implement subscription-based filtering when subscription relationship is available
         // For now, return all usage points with pagination as a temporary solution
-        List<UsagePointDto> usagePoints = usagePointRepository.findAll( PageRequest.of(offset, limit)).getContent().stream()
-            .map(usagePointMapper::toDto)
-            .toList();
-
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        usageExportService.exportDto(usagePoints, out);
+        usageExportService.exportFeed(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString(),
+                "UsagePoint Feed", usagePointRepository.findAll(PageRequest.of(offset, limit)).getContent(),
+                usagePointMapper::toDto, out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
                 .body(out.toByteArray());

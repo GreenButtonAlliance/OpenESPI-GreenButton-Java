@@ -20,6 +20,8 @@
 package org.greenbuttonalliance.espi.common.repositories.usage;
 
 import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -40,6 +42,10 @@ public interface AuthorizationRepository extends JpaRepository<AuthorizationEnti
 
 	@Query("SELECT a.id FROM AuthorizationEntity a WHERE a.applicationInformation.id = :applicationInformationId")
 	List<UUID> findAllIdsByApplicationInformationId(@Param("applicationInformationId") UUID applicationInformationId);
+
+	/** Authorizations granted to one Third Party application, by its OAuth client_id (row-level admin scope). */
+	@Query("SELECT a FROM AuthorizationEntity a WHERE a.applicationInformation.clientId = :clientId")
+	Page<AuthorizationEntity> findAllByApplicationClientId(@Param("clientId") String clientId, Pageable pageable);
 
 	Optional<AuthorizationEntity> findByState(String state);
 

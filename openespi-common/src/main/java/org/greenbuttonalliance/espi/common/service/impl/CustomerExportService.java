@@ -21,9 +21,14 @@ package org.greenbuttonalliance.espi.common.service.impl;
 
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
+import org.greenbuttonalliance.espi.common.dto.atom.AtomEntryDto;
+import org.greenbuttonalliance.espi.common.dto.atom.CustomerAtomEntryDto;
+import org.greenbuttonalliance.espi.common.dto.atom.LinkDto;
 import org.greenbuttonalliance.espi.common.service.BaseExportService;
 import org.springframework.stereotype.Service;
 
+import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -103,5 +108,12 @@ public class CustomerExportService extends BaseExportService {
     @Override
     protected Set<String> getDomainNamespaces() {
         return Set.of(ATOM_NAMESPACE, CUSTOMER_NAMESPACE);
+    }
+
+    /** Customer-domain feeds use {@link CustomerAtomEntryDto}, the entry type registered above. */
+    @Override
+    protected AtomEntryDto newEntry(String id, String title, OffsetDateTime published, OffsetDateTime updated,
+                                    List<LinkDto> links, Object content) {
+        return new CustomerAtomEntryDto(id, title, published, updated, links, content);
     }
 }

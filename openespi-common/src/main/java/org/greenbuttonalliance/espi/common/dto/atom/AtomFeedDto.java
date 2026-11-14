@@ -20,7 +20,9 @@
 package org.greenbuttonalliance.espi.common.dto.atom;
 
 import jakarta.xml.bind.annotation.*;
+import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import lombok.AllArgsConstructor;
+import org.greenbuttonalliance.espi.common.utils.OffsetDateTimeAdapter;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -55,16 +57,24 @@ public class AtomFeedDto {
     @XmlElement(name = "title")
     private String title;
 
+    // Without the adapter JAXB cannot map OffsetDateTime and writes an empty element (#247).
     @XmlElement(name = "published")
+    @XmlJavaTypeAdapter(OffsetDateTimeAdapter.class)
     private OffsetDateTime published;
 
     @XmlElement(name = "updated")
+    @XmlJavaTypeAdapter(OffsetDateTimeAdapter.class)
     private OffsetDateTime updated;
 
     @XmlElement(name = "link")
     private List<LinkDto> links;
 
-    @XmlElement(name = "entry")
+    /**
+     * Entries are written through their own root element ({@code UsageAtomEntryDto} or
+     * {@code CustomerAtomEntryDto}, both {@code atom:entry}). A plain {@code @XmlElement} on the abstract
+     * {@link AtomEntryDto} made JAXB add {@code xsi:type="atom:UsageAtomEntry"} to every entry (#247).
+     */
+    @XmlElementRef
     private List<AtomEntryDto> entries;
 
     /**

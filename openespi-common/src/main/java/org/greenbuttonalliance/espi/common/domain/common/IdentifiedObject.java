@@ -189,7 +189,8 @@ public abstract class IdentifiedObject implements Serializable {
      */
     public void ensureSelfLink() {
         if (selfLink == null) {
-            selfLink = new LinkType("self", generateDefaultSelfHref());
+            // LinkType(href, rel): these arguments were swapped, storing href="self" (#247)
+            selfLink = new LinkType(generateDefaultSelfHref(), "self");
         }
     }
 
@@ -199,7 +200,7 @@ public abstract class IdentifiedObject implements Serializable {
      */
     public void ensureUpLink() {
         if (upLink == null) {
-            upLink = new LinkType("up", generateDefaultUpHref());
+            upLink = new LinkType(generateDefaultUpHref(), "up");
         }
     }
 
