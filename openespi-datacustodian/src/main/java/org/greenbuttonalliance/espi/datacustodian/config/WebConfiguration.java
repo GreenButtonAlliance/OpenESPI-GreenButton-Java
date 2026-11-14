@@ -172,8 +172,10 @@ public class WebConfiguration implements WebMvcConfigurer {
         // CSS/JS/images must be registered explicitly; otherwise the templates' /css and /js links
         // 404 and the portal renders unstyled (#173). These paths are also security-ignored via the
         // WebSecurityCustomizer in SecurityConfiguration.
+        // classpath:/META-INF/resources/css/ serves the shared Green Button Alliance theme
+        // (gba-theme.css) from the OpenESPI-Common jar.
         registry.addResourceHandler("/css/**")
-            .addResourceLocations("classpath:/static/css/")
+            .addResourceLocations("classpath:/static/css/", "classpath:/META-INF/resources/css/")
             .setCachePeriod(3600);
 
         registry.addResourceHandler("/js/**")

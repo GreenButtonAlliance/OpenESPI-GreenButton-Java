@@ -7,12 +7,20 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Roboto, as on greenbuttonalliance.org -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Bootstrap CSS and Icons, pinned with Subresource Integrity hashes -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet"
+          integrity="sha384-QuGBSgV5Im3DzL2z+8Ko9/hqNy/N0O7zwvXAtfd1MvPKWa/UbeLV65cfm4BV5Wgq" crossorigin="anonymous">
     <!-- Application CSS (context-relative so it resolves under the /DataCustodian context path) -->
     <link th:href="@{/css/application.css}" rel="stylesheet" type="text/css">
+    <!-- Shared Green Button Alliance theme (OpenESPI-Common, META-INF/resources). Loaded after
+         application.css so the GBA palette and shapes take precedence. -->
+    <link th:href="@{/css/gba-theme.css}" rel="stylesheet" type="text/css">
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" th:href="@{/images/favicon.png}">
@@ -20,7 +28,8 @@
     <!-- Bootstrap bundle (incl. Popper). Loaded once here, deferred so it executes after the DOM is
          parsed — every page that includes this head fragment gets working navbar dropdowns/collapse
          without each template loading its own copy (double-loading breaks the dropdown toggle). -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" defer
+            integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
 
     <!-- Additional CSS block for page-specific styles -->
     <th:block th:fragment="additionalCss"></th:block>
@@ -52,9 +61,15 @@
     </li>
 
     <!-- Navigation Header Fragment -->
-    <nav th:fragment="header" class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <nav th:fragment="header" class="navbar navbar-expand-lg navbar-dark gba-navbar">
         <div class="container">
-            <a class="navbar-brand" th:href="@{/}">Green Button Data Custodian</a>
+            <a class="navbar-brand" th:href="@{/}">
+                <span class="gba-brand-mark" aria-hidden="true"><i class="bi bi-download"></i></span>
+                <span class="gba-brand-text">
+                    <span class="gba-brand-org">Green Button Alliance</span>
+                    <span class="gba-brand-app">Data Custodian</span>
+                </span>
+            </a>
 
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -86,9 +101,15 @@
     </nav>
 
     <!-- Customer Header Fragment -->
-    <nav th:fragment="customerHeader" class="navbar navbar-expand-lg navbar-dark bg-success">
+    <nav th:fragment="customerHeader" class="navbar navbar-expand-lg navbar-dark gba-navbar">
         <div class="container">
-            <a class="navbar-brand" th:href="@{/customer/authorizations}">Customer Portal</a>
+            <a class="navbar-brand" th:href="@{/customer/authorizations}">
+                <span class="gba-brand-mark" aria-hidden="true"><i class="bi bi-download"></i></span>
+                <span class="gba-brand-text">
+                    <span class="gba-brand-org">Data Custodian</span>
+                    <span class="gba-brand-app">Customer Portal</span>
+                </span>
+            </a>
 
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#customerNav">
                 <span class="navbar-toggler-icon"></span>
@@ -115,11 +136,17 @@
     </nav>
 
     <!-- Custodian Header Fragment -->
-    <!-- data-bs-theme="light" gives dark link/brand text, readable on the light amber (bg-warning)
-         background; the previous navbar-dark put white text on amber and was unreadable. -->
-    <nav th:fragment="custodianHeader" class="navbar navbar-expand-lg bg-warning" data-bs-theme="light">
+    <!-- The admin portal uses the slate variant of the GBA navbar so it is clearly distinct from the
+         customer-facing pages (it was amber bg-warning). -->
+    <nav th:fragment="custodianHeader" class="navbar navbar-expand-lg navbar-dark gba-navbar gba-navbar-admin">
         <div class="container">
-            <a class="navbar-brand" th:href="@{/custodian/home}">Custodian Portal</a>
+            <a class="navbar-brand" th:href="@{/custodian/home}">
+                <span class="gba-brand-mark" aria-hidden="true"><i class="bi bi-gear"></i></span>
+                <span class="gba-brand-text">
+                    <span class="gba-brand-org">Data Custodian</span>
+                    <span class="gba-brand-app">Custodian Portal</span>
+                </span>
+            </a>
 
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#custodianNav">
                 <span class="navbar-toggler-icon"></span>
@@ -158,19 +185,22 @@
     </nav>
 
     <!-- Footer Fragment -->
-    <footer th:fragment="footer" class="bg-light mt-5 py-4">
+    <footer th:fragment="footer" class="gba-footer">
         <div class="container">
-            <div class="row">
+            <div class="row gy-3">
                 <div class="col-md-6">
-                    <p class="text-muted mb-0">
-                        &copy; 2013-<span th:text="${#dates.format(#dates.createNow(), 'yyyy')}">2025</span>
-                        <a href="https://www.greenbuttonalliance.org">Green Button Alliance, Inc.</a>
-                    </p>
+                    <div class="gba-footer-title">Green Button Alliance</div>
+                    <p class="mb-0">Advancing energy data standardization and interoperability.</p>
                 </div>
-                <div class="col-md-6 text-end">
-                    <p class="text-muted mb-0">
-                        <a th:href="@{/about}">About</a>
-                    </p>
+                <div class="col-md-6 text-md-end">
+                    <ul class="gba-footer-links justify-content-md-end mb-2">
+                        <li><a th:href="@{/about}">About</a></li>
+                        <li><a href="https://www.greenbuttonalliance.org" target="_blank" rel="noopener">greenbuttonalliance.org</a></li>
+                        <li><a href="https://greenbuttonalliance.github.io/OpenESPI-GreenButton-API-Documentation/" target="_blank" rel="noopener">API documentation</a></li>
+                        <li><a href="https://github.com/GreenButtonAlliance/OpenESPI-GreenButton-Java" target="_blank" rel="noopener">Source</a></li>
+                    </ul>
+                    <small>&copy; 2013-<span th:text="${#dates.format(#dates.createNow(), 'yyyy')}">2026</span>
+                        Green Button Alliance, Inc. All rights reserved.</small>
                 </div>
             </div>
         </div>

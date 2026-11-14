@@ -58,7 +58,9 @@ public class SecurityConfiguration {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/", "/home", "/login", "/css/**", "/js/**", "/images/**").permitAll()
+                // Public pages (the Terms of Service and Usage Policy are linked from the navbar)
+                .requestMatchers("/", "/home", "/login", "/TermsOfService", "/UsagePolicy", "/error",
+                        "/css/**", "/js/**", "/images/**").permitAll()
                 // ESPI notification receipt: the Data Custodian POSTs a BatchList here without an
                 // OAuth token — this endpoint is secured at the transport layer (TLS), not with an
                 // OAuth access token. (The Third Party, as an OAuth client, presents its access token
