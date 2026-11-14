@@ -1,0 +1,361 @@
+/*
+ * Copyright (c) 2026 Green Button Alliance, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/*
+ * Shared Green Button Alliance theme for the OpenESPI web applications (Data Custodian, Third Party).
+ *
+ * Served by Spring Boot from META-INF/resources in the OpenESPI-Common jar at /css/gba-theme.css,
+ * relative to each application's context path. Load it AFTER Bootstrap 5.3 (and after any
+ * application stylesheet) and load Roboto 400/500/700 from Google Fonts.
+ *
+ * Palette and shapes follow greenbuttonalliance.org: dark green chrome with an orange rule,
+ * Roboto, square corners, outlined buttons, solid green card headers.
+ *
+ * Contrast notes (WCAG AA): white on --gba-green-900 and --gba-slate, --gba-green-700 on white and
+ * --gba-blue on --gba-page all pass for body text. --gba-orange does NOT pass as text on white; use
+ * it only for borders, rules and large text on dark backgrounds.
+ */
+
+:root {
+    --gba-green-900: #2C4C3B;   /* chrome: utility bar, navbar, card headers, footer */
+    --gba-green-700: #3F6C54;   /* links, hover */
+    --gba-green-050: #EAF1EC;   /* tints */
+    --gba-orange: #F99742;      /* accent rules and borders */
+    --gba-orange-700: #D56300;  /* accent hover */
+    --gba-blue: #005B96;        /* section headings */
+    --gba-slate: #264653;       /* secondary dark (Third Party hero, admin chrome) */
+    --gba-text: #333333;
+    --gba-page: #F8F8F8;
+    --gba-font: "Roboto", system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+
+    /* Per-application hero colour; body[data-gba-app] selects it below. */
+    --gba-hero-bg: var(--gba-green-900);
+
+    /* Bootstrap 5.3 globals */
+    --bs-primary: var(--gba-green-900);
+    --bs-primary-rgb: 44, 76, 59;
+    --bs-link-color: var(--gba-green-700);
+    --bs-link-color-rgb: 63, 108, 84;
+    --bs-link-hover-color: var(--gba-green-900);
+    --bs-link-hover-color-rgb: 44, 76, 59;
+    --bs-body-font-family: var(--gba-font);
+    --bs-body-color: var(--gba-text);
+    --bs-body-bg: var(--gba-page);
+    --bs-border-radius: 0;
+    --bs-border-radius-sm: 0;
+    --bs-border-radius-lg: 0;
+    --bs-focus-ring-color: rgba(249, 151, 66, 0.45);
+
+    /* Data Custodian application.css tokens, so its existing rules adopt the GBA palette */
+    --gb-primary: var(--gba-green-900);
+    --gb-secondary: var(--gba-green-700);
+    --gb-accent: var(--gba-green-700);
+    --gb-warning: var(--gba-orange);
+}
+
+body[data-gba-app="thirdparty"] {
+    --gba-hero-bg: var(--gba-slate);
+}
+
+body {
+    font-family: var(--gba-font);
+    color: var(--gba-text);
+    background-color: var(--gba-page);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+main {
+    flex: 1 0 auto;
+}
+
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6 {
+    font-family: var(--gba-font);
+    font-weight: 700;
+}
+
+.gba-section-title {
+    color: var(--gba-blue);
+}
+
+/* ---- Header ---------------------------------------------------------------------------- */
+
+/* As on greenbuttonalliance.org: a dark-green bar on top, a white band carrying the official
+   logo and green navigation links, and an orange rule underneath. The logo (green and grey on
+   white, with its TM mark) needs the white band to stay legible. */
+.gba-navbar {
+    background-color: #FFFFFF;
+    border-top: 10px solid var(--gba-green-900);
+    border-bottom: 3px solid var(--gba-orange);
+    box-shadow: none;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+}
+
+.gba-navbar.gba-navbar-admin {
+    border-top-color: var(--gba-slate);
+}
+
+.gba-navbar .navbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    color: var(--gba-green-900);
+}
+
+.gba-logo {
+    width: 60px;
+    height: 60px;
+    flex: 0 0 auto;
+}
+
+.gba-brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+}
+
+.gba-brand-org {
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--gba-green-700);
+}
+
+.gba-brand-app {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--gba-green-900);
+}
+
+.gba-navbar .nav-link {
+    color: var(--gba-green-700);
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
+}
+
+.gba-navbar .nav-link:hover,
+.gba-navbar .nav-link:focus,
+.gba-navbar .nav-link.active,
+.gba-navbar .nav-link.show {
+    color: var(--gba-green-900);
+    border-bottom-color: var(--gba-orange);
+}
+
+@media (max-width: 575.98px) {
+    .gba-logo {
+        width: 48px;
+        height: 48px;
+    }
+}
+
+/* ---- Buttons (square, outlined, as on greenbuttonalliance.org) --------------------------- */
+
+.btn {
+    --bs-btn-border-radius: 0;
+    --bs-btn-border-width: 2px;
+    --bs-btn-font-weight: 500;
+    --bs-btn-font-family: var(--gba-font);
+    border-radius: 0;  /* the Data Custodian application.css sets a literal 0.5rem */
+}
+
+.btn:hover {
+    transform: none;
+}
+
+.btn-primary {
+    --bs-btn-bg: var(--gba-green-900);
+    --bs-btn-border-color: var(--gba-green-900);
+    --bs-btn-hover-bg: var(--gba-green-700);
+    --bs-btn-hover-border-color: var(--gba-green-700);
+    --bs-btn-active-bg: var(--gba-green-700);
+    --bs-btn-active-border-color: var(--gba-green-700);
+    --bs-btn-disabled-bg: var(--gba-green-900);
+    --bs-btn-disabled-border-color: var(--gba-green-900);
+    --bs-btn-focus-shadow-rgb: 249, 151, 66;
+}
+
+.btn-outline-primary {
+    --bs-btn-color: var(--gba-green-900);
+    --bs-btn-border-color: var(--gba-green-900);
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: var(--gba-green-900);
+    --bs-btn-hover-border-color: var(--gba-green-900);
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: var(--gba-green-900);
+    --bs-btn-active-border-color: var(--gba-green-900);
+    --bs-btn-focus-shadow-rgb: 249, 151, 66;
+}
+
+/* Main call to action on dark backgrounds (hero): orange outline, white text. */
+.btn-gba-accent {
+    --bs-btn-color: #fff;
+    --bs-btn-border-color: var(--gba-orange);
+    --bs-btn-border-width: 3px;
+    --bs-btn-hover-color: var(--gba-green-900);
+    --bs-btn-hover-bg: var(--gba-orange);
+    --bs-btn-hover-border-color: var(--gba-orange);
+    --bs-btn-active-color: var(--gba-green-900);
+    --bs-btn-active-bg: var(--gba-orange);
+    --bs-btn-active-border-color: var(--gba-orange);
+    --bs-btn-focus-shadow-rgb: 249, 151, 66;
+}
+
+.btn-gba-light {
+    --bs-btn-color: #fff;
+    --bs-btn-border-color: rgba(255, 255, 255, 0.85);
+    --bs-btn-hover-color: var(--gba-green-900);
+    --bs-btn-hover-bg: #fff;
+    --bs-btn-hover-border-color: #fff;
+    --bs-btn-active-color: var(--gba-green-900);
+    --bs-btn-active-bg: #fff;
+    --bs-btn-focus-shadow-rgb: 255, 255, 255;
+}
+
+/* ---- Hero ------------------------------------------------------------------------------ */
+
+.gba-hero-admin {
+    --gba-hero-bg: var(--gba-slate);
+}
+
+.gba-hero,
+.hero-unit {
+    background: var(--gba-hero-bg) !important;
+    /* !important: hero backgrounds are always dark, so override text-dark and similar utilities */
+    color: #fff !important;
+    border-left: 6px solid var(--gba-orange);
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 3rem;
+}
+
+@media (max-width: 575.98px) {
+    .gba-hero,
+    .hero-unit {
+        padding: 1.5rem !important;
+    }
+}
+
+.gba-hero a:not(.btn),
+.hero-unit a:not(.btn) {
+    color: #fff;
+}
+
+.gba-hero .lead,
+.hero-unit .lead {
+    font-weight: 400;
+}
+
+/* ---- Cards (solid green header strip, square corners) -------------------------------------- */
+
+.card {
+    --bs-card-bg: #FFFFFF;  /* white cards on the grey page, as on greenbuttonalliance.org */
+    border: 1px solid #DDDDDD;
+    border-radius: 0 !important;
+    box-shadow: none;
+}
+
+.card:hover {
+    transform: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.card-header {
+    border-radius: 0 !important;
+}
+
+.gba-card-header {
+    background-color: var(--gba-green-900);
+    color: #fff;
+    text-align: center;
+    padding: 0.85rem 1rem;
+}
+
+.gba-card-header h2,
+.gba-card-header h3,
+.gba-card-header h4,
+.gba-card-header h5 {
+    margin: 0;
+    font-size: 1.35rem;
+    color: #fff;
+}
+
+.gba-icon {
+    color: var(--gba-green-700);
+}
+
+/* ---- Forms ----------------------------------------------------------------------------- */
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--gba-orange);
+    box-shadow: 0 0 0 0.2rem rgba(249, 151, 66, 0.35);
+}
+
+/* ---- Footer ---------------------------------------------------------------------------- */
+
+.gba-footer {
+    background-color: var(--gba-green-900);
+    color: rgba(255, 255, 255, 0.9);
+    border-top: 3px solid var(--gba-orange);
+    margin-top: 3rem;
+    padding: 2rem 0 1.5rem;
+}
+
+/* Data Custodian templates place the footer inside the page .container; let it span the full
+   viewport anyway (body clips the scrollbar-width overshoot of 100vw). */
+.container > .gba-footer {
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+}
+
+html,
+body {
+    overflow-x: clip;
+}
+
+.gba-footer a {
+    color: #fff;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.gba-footer a:hover,
+.gba-footer a:focus {
+    border-bottom-color: var(--gba-orange);
+}
+
+.gba-footer .gba-footer-title {
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: #fff;
+}
+
+.gba-footer .gba-footer-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.25rem;
+}
+
+.gba-footer small {
+    color: rgba(255, 255, 255, 0.8);
+}
