@@ -126,7 +126,7 @@ public final class TestConstants {
     public static final String JWK_SET_ENDPOINT = "/oauth2/jwks";
     public static final String INTROSPECTION_ENDPOINT = "/oauth2/introspect";
     public static final String REVOCATION_ENDPOINT = "/oauth2/revoke";
-    public static final String REGISTRATION_ENDPOINT = "/connect/register";
+    public static final String REGISTRATION_ENDPOINT = "/oauth2/register";
     public static final String USERINFO_ENDPOINT = "/userinfo";
 
     // Grant Types

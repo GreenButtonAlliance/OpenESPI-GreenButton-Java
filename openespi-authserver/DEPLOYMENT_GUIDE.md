@@ -7,6 +7,7 @@ This comprehensive guide covers deployment scenarios for the OpenESPI Authorizat
 - [Quick Start](#quick-start)
 - [Development Environment](#development-environment)
 - [Production Deployment](#production-deployment)
+- [Dynamic Client Registration (RFC 7591)](#dynamic-client-registration-rfc-7591)
 - [Docker Deployment](#docker-deployment)
 - [Kubernetes Deployment](#kubernetes-deployment)
 - [Security Configuration](#security-configuration)
@@ -160,6 +161,9 @@ export ISSUER_URL="https://auth.yourdomain.com"
 export DATACUSTODIAN_URL="https://datacustodian.yourdomain.com"
 export DATACUSTODIAN_CLIENT_SECRET="secure_datacustodian_secret"
 
+# Dynamic client registration (RFC 7591) — omit to keep registration disabled
+export ESPI_REGISTRAR_CLIENT_SECRET="secure_registrar_secret"
+
 # SSL Configuration
 export KEYSTORE_PATH="/etc/ssl/private/authserver.p12"
 export KEYSTORE_PASSWORD="secure_keystore_password"
@@ -243,6 +247,77 @@ sudo systemctl enable espi-authserver
 sudo systemctl start espi-authserver
 sudo systemctl status espi-authserver
 ```
+
+## Dynamic Client Registration (RFC 7591)
+
+The Authorization Server exposes the RFC 7591 OAuth 2.0 Dynamic Client Registration endpoint at
+`POST /oauth2/register` and advertises it as `registration_endpoint` in
+`/.well-known/oauth-authorization-server`. Only opaque access tokens are involved: no OIDC, JWK or JWT.
+
+### Enable it: the registrar client
+
+Registration requires an **initial access token** with scope `client.create`. It is issued to the
+`espi_registrar` client, which is seeded at startup only when its secret is configured:
+
+```bash
+export ESPI_REGISTRAR_CLIENT_SECRET="secure_registrar_secret"   # property: espi.authserver.registrar.client-secret
+```
+
+The secret is stored `PasswordEncoder`-encoded (`{bcrypt}...`). Changing the variable and restarting
+rotates it. When it is unset, the registrar is not seeded and dynamic registration is unavailable.
+
+### Register a Third Party client
+
+1. Obtain the initial access token (opaque, valid 10 minutes, **single use**: it is invalidated by
+   the first successful registration):
+
+   ```bash
+   curl -s -u espi_registrar:$ESPI_REGISTRAR_CLIENT_SECRET \
+     -d grant_type=client_credentials -d scope=client.create \
+     https://auth.yourdomain.com/oauth2/token
+   ```
+
+   Request exactly `scope=client.create`; a token carrying any other scope is rejected by the endpoint.
+
+2. Register the client with that token:
+
+   ```bash
+   curl -s -X POST https://auth.yourdomain.com/oauth2/register \
+     -H "Authorization: Bearer $INITIAL_ACCESS_TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{
+           "client_name": "My Third Party",
+           "redirect_uris": ["https://tp.example.com/callback"],
+           "grant_types": ["authorization_code", "refresh_token"],
+           "response_types": ["code"],
+           "token_endpoint_auth_method": "client_secret_basic",
+           "scope": "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"
+         }'
+   ```
+
+   The `201 Created` response contains `client_id` and `client_secret`. The secret is shown only
+   once; it is stored hashed.
+
+### Registration policy
+
+Requests outside this policy are rejected with `400 invalid_client_metadata`:
+
+| Metadata | Allowed |
+|---|---|
+| `scope` | One or more ESPI Third Party scopes (`FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13`, `FB=4_5_15;IntervalDuration=900;BlockDuration=monthly;HistoryLength=13`) |
+| `grant_types` | `authorization_code`, optionally `refresh_token` |
+| `response_types` | `code` |
+| `token_endpoint_auth_method` | `client_secret_basic` |
+| `redirect_uris` | Required, at least one; `https` only when `espi.security.require-https-redirect-uris=true` (set in the `prod` and `espi40` profiles; otherwise rejected with `invalid_redirect_uri`) |
+
+Registered clients receive opaque (REFERENCE) access tokens and do not require PKCE.
+
+### Not supported
+
+RFC 7592 client read/update/delete and the `registration_access_token` are **not** supported: Spring
+Security implements them only for OpenID Connect registration, which this server does not enable.
+Registration responses therefore carry no `registration_access_token` or `registration_client_uri`.
+That work is tracked, conditional on certification requirements, in issue #203.
 
 ## Docker Deployment
 

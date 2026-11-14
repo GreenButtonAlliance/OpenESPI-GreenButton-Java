@@ -182,7 +182,8 @@ class AdminEndpointAuthorizationIntegrationTest extends AbstractAuthserverIntegr
 						victim -> get("/api/v1/datacustodian/mappings/ghsa-mh65-missing")),
 				new AdminCall("DELETE /api/v1/datacustodian/grants/{id} (csrf)",
 						victim -> delete("/api/v1/datacustodian/grants/ghsa-mh65-grant").with(csrf())),
-				// ClientRegistrationController (/connect) — on the session chain since OIDC is off
+				// /connect/** — handler removed in #196 (RFC 7591 /oauth2/register replaces it); the
+				// admin-only rule is kept as defense in depth, so a customer still gets 403, not 404
 				new AdminCall("POST /connect/register (csrf)",
 						victim -> registerClientRequest("ghsa-mh65 registered client")));
 	}
