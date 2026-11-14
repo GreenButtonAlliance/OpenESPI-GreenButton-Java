@@ -72,10 +72,12 @@ class AuthorizationServerApplicationTests extends AbstractAuthserverIntegrationT
     private OAuth2TokenCustomizer<JwtEncodingContext> espiTokenCustomizer;
 
     @Test
-    @DisplayName("registers exactly the four application security filter chains")
+    @DisplayName("registers exactly the five application security filter chains")
     void registersTheApplicationSecurityFilterChains() {
+        // Pinned on purpose: a new chain changes which requests each existing chain sees.
         assertThat(context.getBeansOfType(SecurityFilterChain.class))
                 .containsOnlyKeys(
+                        "actuatorSecurityFilterChain",   // #240: health public, the rest authserver.admin
                         "clientRegistrationSecurityFilterChain",
                         "authorizationServerSecurityFilterChain",
                         "adminApiBearerSecurityFilterChain",
