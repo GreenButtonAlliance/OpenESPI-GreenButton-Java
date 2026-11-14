@@ -1,7 +1,7 @@
 /*
  * OpenESPI Base Schema Migration (Vendor-Neutral)
  * 
- * Copyright (c) 2018-2025 Green Button Alliance, Inc.
+ * Copyright (c) 2018-2026 Green Button Alliance, Inc.
  * Licensed under the Apache License, Version 2.0
  *
  * This migration creates the vendor-neutral base tables for the OpenESPI database schema.

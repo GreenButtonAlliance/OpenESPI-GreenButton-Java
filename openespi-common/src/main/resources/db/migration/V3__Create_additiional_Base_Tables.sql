@@ -1,7 +1,7 @@
 /*
  * OpenESPI Additional Base Tables Migration
  *
- * Copyright (c) 2018-2025 Green Button Alliance, Inc.
+ * Copyright (c) 2018-2026 Green Button Alliance, Inc.
  * Licensed under the Apache License, Version 2.0
  *
  * This migration creates additional vendor-neutral tables that depend on both

@@ -243,7 +243,7 @@ This project is licensed under the Apache License 2.0. See the LICENSE file for 
 ### Copyright Notice
 
 ```
-Copyright (c) 2018-2025 Green Button Alliance, Inc.
+Copyright (c) 2018-2026 Green Button Alliance, Inc.
 Portions (c) 2013-2018 EnergyOS.org
 
 Licensed under the Apache License, Version 2.0 (the "License");

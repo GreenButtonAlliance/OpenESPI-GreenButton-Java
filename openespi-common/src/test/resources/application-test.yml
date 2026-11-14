@@ -1,5 +1,5 @@
 # Spring Boot 3.5 Test Configuration for OpenESPI-Common
-# Copyright (c) 2018-2025 Green Button Alliance, Inc.
+# Copyright (c) 2018-2026 Green Button Alliance, Inc.
 
 spring:
   # JPA/Hibernate Configuration

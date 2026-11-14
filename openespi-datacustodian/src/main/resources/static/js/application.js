@@ -1,6 +1,6 @@
 /*
  * Green Button Data Custodian Application JavaScript
- * Copyright (c) 2018-2025 Green Button Alliance, Inc.
+ * Copyright (c) 2018-2026 Green Button Alliance, Inc.
  */
 
 // Wait for DOM to be ready

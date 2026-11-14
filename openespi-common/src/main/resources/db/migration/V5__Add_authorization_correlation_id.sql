@@ -1,7 +1,7 @@
 /*
  * OpenESPI Authorization correlation id (#202)
  *
- * Copyright (c) 2018-2025 Green Button Alliance, Inc.
+ * Copyright (c) 2018-2026 Green Button Alliance, Inc.
  * Licensed under the Apache License, Version 2.0
  *
  * Adds the AS-supplied back-channel correlation id to the authorizations table so that

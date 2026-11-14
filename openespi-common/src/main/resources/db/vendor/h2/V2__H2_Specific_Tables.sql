@@ -1,7 +1,7 @@
 /*
  * OpenESPI H2-Specific Schema Migration
  * 
- * Copyright (c) 2018-2025 Green Button Alliance, Inc.
+ * Copyright (c) 2018-2026 Green Button Alliance, Inc.
  * Licensed under the Apache License, Version 2.0
  *
  * This migration creates H2-specific tables that contain BLOB/BINARY columns.

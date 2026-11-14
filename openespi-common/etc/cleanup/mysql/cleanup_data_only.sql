@@ -1,7 +1,7 @@
 /*
  * OpenESPI Data Cleanup - MySQL (Structure Preserved)
  * 
- * Copyright (c) 2018-2025 Green Button Alliance, Inc.
+ * Copyright (c) 2018-2026 Green Button Alliance, Inc.
  * Licensed under the Apache License, Version 2.0
  *
  * This script cleans up only the data from OpenESPI tables,

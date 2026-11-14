@@ -1,7 +1,7 @@
 /*
  * OpenESPI Signed-Handoff Nonce Table (#122 PR C1)
  *
- * Copyright (c) 2018-2025 Green Button Alliance, Inc.
+ * Copyright (c) 2018-2026 Green Button Alliance, Inc.
  * Licensed under the Apache License, Version 2.0
  *
  * Single-use nonce tracking for verified SignedHandoff payloads. The receiver

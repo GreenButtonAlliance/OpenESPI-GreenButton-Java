@@ -1,7 +1,7 @@
 /*
  * OpenESPI Seed Data - Usage Points and Reading Data (MySQL)
  * 
- * Copyright (c) 2018-2025 Green Button Alliance, Inc.
+ * Copyright (c) 2018-2026 Green Button Alliance, Inc.
  * Licensed under the Apache License, Version 2.0
  *
  * This script populates sample usage points, meter readings, and interval readings
