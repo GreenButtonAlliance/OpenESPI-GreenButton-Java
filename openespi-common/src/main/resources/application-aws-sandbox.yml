@@ -90,14 +90,6 @@ logging:
   file:
     name: ${LOG_FILE_PATH:/var/log/openespi/aws-sandbox.log}
 
-# Management - Basic configuration (applications should configure endpoints)
-management:
-  endpoints:
-    enabled-by-default: false
-  info:
-    env:
-      enabled: true
-
 # ESPI Configuration for AWS Sandbox
 espi:
   database:

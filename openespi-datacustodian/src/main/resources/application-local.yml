@@ -50,4 +50,6 @@ espi:
     issuer-uri: http://localhost:9999
     introspection-endpoint: http://localhost:9999/oauth2/introspect
     client-id: data_custodian_admin
-    client-secret: secret
+    # Must match the AS's seeded dev client (AuthorizationServerConfig: {noop}dc-secret), or every
+    # token introspection - ESPI API and actuator - fails with 401 from the AS.
+    client-secret: dc-secret

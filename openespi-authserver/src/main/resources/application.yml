@@ -82,17 +82,27 @@ logging:
     file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
 
 # Management Endpoints
+# Endpoint access is opt-in and read-only. Only health (status only, plus the liveness/readiness
+# probe groups) is anonymous; every other endpoint needs an authserver.admin bearer token
+# (AuthorizationServerConfig#actuatorSecurityFilterChain). env is deliberately not exposed.
 management:
   endpoints:
+    access:
+      default: none
     web:
       exposure:
-        include: health,info,metrics,env
+        include: health,info,metrics
   endpoint:
     health:
-      show-details: when_authorized
-  info:
-    env:
-      enabled: true
+      access: read-only
+      show-details: never
+      show-components: never
+      probes:
+        enabled: true
+    info:
+      access: read-only
+    metrics:
+      access: read-only
 
 # ESPI Configuration
 espi:

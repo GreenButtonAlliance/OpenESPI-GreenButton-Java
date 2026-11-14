@@ -63,4 +63,6 @@ espi:
     authorization-endpoint: http://localhost:9999/oauth2/authorize
     token-endpoint: http://localhost:9999/oauth2/token
     client-id: third_party
-    client-secret: secret
+    # Must match the AS's seeded dev client (AuthorizationServerConfig: {noop}tp-secret); used to
+    # introspect actuator admin tokens.
+    client-secret: tp-secret

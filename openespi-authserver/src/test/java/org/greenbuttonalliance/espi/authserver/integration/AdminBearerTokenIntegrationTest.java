@@ -208,6 +208,32 @@ class AdminBearerTokenIntegrationTest extends AbstractAuthserverIntegrationTest 
 				.andExpect(jsonPath("$.scope").value(ADMIN_SCOPE));
 	}
 
+	@Test
+	@DisplayName("actuator: health and its probe groups are anonymous")
+	void actuatorHealthIsAnonymous() throws Exception {
+		for (String path : new String[] {"/actuator/health", "/actuator/health/liveness", "/actuator/health/readiness"}) {
+			mockMvc.perform(get(path))
+					.andExpect(status().isOk())
+					.andExpect(jsonPath("$.status").value("UP"));
+		}
+	}
+
+	@Test
+	@DisplayName("actuator: info and metrics -> 401 without a token, 403 without authserver.admin, 200 with it")
+	void actuatorNonHealthEndpointsRequireAdminToken() throws Exception {
+		String dcToken = obtainToken("data_custodian_admin", "dc-secret", "DataCustodian_Admin_Access");
+		String adminToken = adminToken();
+
+		for (String path : new String[] {"/actuator", "/actuator/info", "/actuator/metrics"}) {
+			mockMvc.perform(get(path))
+					.andExpect(status().isUnauthorized());
+			mockMvc.perform(get(path).header(HttpHeaders.AUTHORIZATION, "Bearer " + dcToken))
+					.andExpect(status().isForbidden());
+			mockMvc.perform(get(path).header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+					.andExpect(status().isOk());
+		}
+	}
+
 	private String adminToken() throws Exception {
 		ensureAdminClientSeeded();
 		return obtainToken(ADMIN_CLIENT, ADMIN_SECRET, ADMIN_SCOPE);

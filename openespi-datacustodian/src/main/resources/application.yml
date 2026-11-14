@@ -107,16 +107,29 @@ server:
     mime-types: application/json,application/xml,text/html,text/xml,text/plain,application/atom+xml
 
 # Actuator Configuration
+# Endpoint access is opt-in and read-only. Only health (status only, plus the liveness/readiness
+# probe groups) is anonymous; every other endpoint needs an access token with the
+# DataCustodian_Admin_Access scope (ActuatorSecurityConfiguration).
 management:
   endpoints:
+    access:
+      default: none
     web:
       exposure:
         include: health,info,metrics,prometheus
       base-path: /actuator
   endpoint:
     health:
-      show-details: when-authorized
+      access: read-only
+      show-details: never
+      show-components: never
+      probes:
+        enabled: true
+    info:
+      access: read-only
     metrics:
+      access: read-only
+    prometheus:
       access: read-only
   metrics:
     tags:

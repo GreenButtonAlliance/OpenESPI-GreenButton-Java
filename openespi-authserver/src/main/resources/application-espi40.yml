@@ -135,13 +135,9 @@ management:
       exposure:
         include: health,info
       base-path: /actuator
-    enabled-by-default: false
-  endpoint:
-    health:
-      enabled: true
-      show-details: never  # Security hardening
-    info:
-      enabled: true
+  # Endpoint access and health detail settings come from application.yml (opt-in, read-only,
+  # show-details: never). Do not use the removed enabled-by-default / endpoint.*.enabled keys:
+  # Spring Boot rejects them alongside the access keys.
   server:
     port: ${MANAGEMENT_PORT:8444}
     ssl:

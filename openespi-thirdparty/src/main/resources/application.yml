@@ -141,21 +141,31 @@ server:
     include-message: always
 
 # Actuator Configuration
+# Endpoint access is opt-in and read-only. Only health (status only, plus the liveness/readiness
+# probe groups) is anonymous; every other endpoint needs an admin access token, validated by
+# introspection at the Authorization Server (ActuatorSecurityConfiguration, espi.actuator).
 management:
   endpoints:
+    access:
+      default: none
     web:
       exposure:
         include: health,info,metrics,prometheus
       base-path: /actuator
   endpoint:
     health:
-      show-details: when-authorized
-    metrics:
-      enabled: true
-  metrics:
-    export:
-      prometheus:
+      access: read-only
+      show-details: never
+      show-components: never
+      probes:
         enabled: true
+    info:
+      access: read-only
+    metrics:
+      access: read-only
+    prometheus:
+      access: read-only
+  metrics:
     tags:
       application: ${spring.application.name}
 
@@ -179,6 +189,12 @@ espi:
     token-endpoint: ${AUTHORIZATION_SERVER_TOKEN_ENDPOINT:http://localhost:9999/oauth2/token}
     client-id: ${AUTHORIZATION_SERVER_CLIENT_ID:third_party}
     client-secret: ${AUTHORIZATION_SERVER_CLIENT_SECRET:secret}
+    introspection-endpoint: ${AUTHORIZATION_SERVER_INTROSPECTION_ENDPOINT:http://localhost:9999/oauth2/introspect}
+
+  # Admin-only actuator endpoints (everything except health): bearer tokens are introspected at
+  # the Authorization Server with the client credentials above and must carry this scope.
+  actuator:
+    admin-scope: ${ESPI_THIRDPARTY_ACTUATOR_ADMIN_SCOPE:ThirdParty_Admin_Access}
   
   # ESPI Resource Configuration
   resources:
