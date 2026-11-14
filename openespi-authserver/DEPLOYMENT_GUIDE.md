@@ -164,6 +164,16 @@ export DATACUSTODIAN_CLIENT_SECRET="secure_datacustodian_secret"
 # Dynamic client registration (RFC 7591) — omit to keep registration disabled
 export ESPI_REGISTRAR_CLIENT_SECRET="secure_registrar_secret"
 
+# OAuth clients the AS provisions from configuration (stored hashed). A production AS seeds no
+# demo clients and no Third Parties: Third Parties onboard through RFC 7591 registration.
+#   datacustodian         - the Data Custodian's token-introspection client
+#   data_custodian_admin  - the DC operator's DataCustodian_Admin_Access client (omit if unused)
+export ESPI_DATACUSTODIAN_CLIENT_SECRET="secure_introspection_secret"
+export ESPI_DATACUSTODIAN_ADMIN_CLIENT_SECRET="secure_dc_admin_secret"
+# Never set espi.authserver.seed.demo-clients=true outside local/dev/test: the demo clients'
+# secrets are published in the source. With it off, any demo row left from an earlier release
+# has its published secret replaced with a random one at startup.
+
 # SSL Configuration
 export KEYSTORE_PATH="/etc/ssl/private/authserver.p12"
 export KEYSTORE_PASSWORD="secure_keystore_password"

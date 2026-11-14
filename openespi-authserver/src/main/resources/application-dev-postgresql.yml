@@ -69,3 +69,6 @@ management:
     web:
       exposure:
         include: health,info,metrics
+
+# Seed the demo OAuth clients (well-known secrets; never in production).
+espi.authserver.seed.demo-clients: true

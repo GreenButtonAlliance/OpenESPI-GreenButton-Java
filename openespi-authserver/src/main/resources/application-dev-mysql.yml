@@ -88,3 +88,6 @@ espi:
     jwt:
       access-token-validity: PT6H    # 6 hours
       refresh-token-validity: PT24H  # 24 hours
+
+# Seed the demo OAuth clients (well-known secrets; never in production).
+espi.authserver.seed.demo-clients: true

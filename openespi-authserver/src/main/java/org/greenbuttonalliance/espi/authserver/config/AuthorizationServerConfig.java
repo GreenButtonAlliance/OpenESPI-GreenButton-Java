@@ -167,6 +167,27 @@ public class AuthorizationServerConfig {
     @Value("${espi.authserver.admin-client.secret:${ESPI_ADMIN_CLIENT_SECRET:}}")
     private String adminClientSecret;
 
+    /**
+     * Seed the demo clients ({@code data_custodian_admin}, {@code third_party}, {@code third_party_admin},
+     * {@code datacustodian}) whose {@code {noop}} secrets are written in this public source file.
+     * <strong>Off by default</strong>; only the local/dev/test profiles turn it on. A production AS starts
+     * with no Third Party clients (Third Parties onboard through RFC 7591) and provisions its
+     * infrastructure clients from configured secrets below.
+     */
+    @Value("${espi.authserver.seed.demo-clients:false}")
+    private boolean seedDemoClients;
+
+    /**
+     * Secret of the Data Custodian's introspection client ({@code datacustodian}), stored hashed. Empty means
+     * the client is not provisioned from configuration (on a production AS the DC then cannot introspect).
+     */
+    @Value("${espi.authserver.datacustodian-client.secret:${ESPI_DATACUSTODIAN_CLIENT_SECRET:}}")
+    private String dataCustodianClientSecret;
+
+    /** Secret of the Data Custodian operator's admin client ({@code data_custodian_admin}), stored hashed. */
+    @Value("${espi.authserver.datacustodian-admin-client.secret:${ESPI_DATACUSTODIAN_ADMIN_CLIENT_SECRET:}}")
+    private String dataCustodianAdminClientSecret;
+
     /** #205 WebAuthn relying party ID: the registrable domain of the AS (no scheme or port). */
     @Value("${espi.authserver.admin.webauthn.rp-id:localhost}")
     private String webAuthnRpId;
@@ -748,9 +769,24 @@ public class AuthorizationServerConfig {
                     .build())
                 .build();
 
-        // Seed default clients, and reconcile existing ones to the code definition (see below).
-        initializeDefaultClients(repository, datacustodianAdmin, thirdPartyClient, thirdPartyAdmin,
-                dataCustodianIntrospection);
+        // Demo clients carry well-known {noop} secrets (this file is public), so they are seeded only when
+        // espi.authserver.seed.demo-clients=true (local/dev/test profiles). Production gets none of them.
+        if (seedDemoClients) {
+            log.warn("Seeding DEMO OAuth clients with well-known secrets (espi.authserver.seed.demo-clients=true)"
+                    + " - NEVER enable this in production");
+            // Seed default clients, and reconcile existing ones to the code definition (see below).
+            initializeDefaultClients(repository, datacustodianAdmin, thirdPartyClient, thirdPartyAdmin,
+                    dataCustodianIntrospection);
+        } else {
+            log.info("Demo OAuth clients not seeded (espi.authserver.seed.demo-clients=false)");
+            // Rows seeded by an earlier release still accept the published secrets: retire them.
+            retireWellKnownSecrets(repository, passwordEncoder, datacustodianAdmin, thirdPartyClient,
+                    thirdPartyAdmin, dataCustodianIntrospection);
+        }
+
+        // Infrastructure clients a real deployment needs, provisioned from configured secrets (hashed).
+        seedConfiguredClient(repository, passwordEncoder, dataCustodianIntrospection, dataCustodianClientSecret);
+        seedConfiguredClient(repository, passwordEncoder, datacustodianAdmin, dataCustodianAdminClientSecret);
 
         seedRegistrarClient(repository, passwordEncoder);
 
@@ -869,6 +905,52 @@ public class AuthorizationServerConfig {
                     .clientSecret(passwordEncoder.encode(registrarClientSecret))
                     .build());
             System.out.println("ESPI registrar client secret rotated");
+        }
+    }
+
+    /**
+     * With demo seeding off, an existing demo-client row (seeded by an earlier release) that still accepts
+     * its published {@code {noop}} secret gets a random, hashed secret instead, so the published secret no
+     * longer authenticates. A row whose secret was already changed is left alone; a configured secret
+     * ({@link #seedConfiguredClient}) is applied afterwards.
+     */
+    void retireWellKnownSecrets(RegisteredClientRepository repository, PasswordEncoder passwordEncoder,
+                                RegisteredClient... demoClients) {
+        java.security.SecureRandom random = new java.security.SecureRandom();
+        for (RegisteredClient demo : demoClients) {
+            RegisteredClient existing = repository.findByClientId(demo.getClientId());
+            String wellKnown = demo.getClientSecret().replaceFirst("^\\{noop\\}", "");
+            if (existing != null && existing.getClientSecret() != null
+                    && passwordEncoder.matches(wellKnown, existing.getClientSecret())) {
+                byte[] bytes = new byte[32];
+                random.nextBytes(bytes);
+                String replacement = java.util.HexFormat.of().formatHex(bytes);
+                repository.save(RegisteredClient.from(existing)
+                        .clientSecret(passwordEncoder.encode(replacement)).build());
+                log.warn("Retired the published demo secret of client '{}' (demo seeding is off); "
+                        + "configure a secret for it if it is still needed.", demo.getClientId());
+            }
+        }
+    }
+
+    /**
+     * Provision an infrastructure client from a configured secret, stored hashed. A blank secret does
+     * nothing. An existing row (for example a demo row from an earlier start) keeps its id and settings but
+     * has its secret replaced when the configured secret no longer matches, so configuring a secret also
+     * retires the well-known demo secret.
+     */
+    void seedConfiguredClient(RegisteredClientRepository repository, PasswordEncoder passwordEncoder,
+                              RegisteredClient definition, String secret) {
+        if (secret == null || secret.isBlank()) {
+            return;
+        }
+        RegisteredClient existing = repository.findByClientId(definition.getClientId());
+        if (existing == null) {
+            repository.save(RegisteredClient.from(definition).clientSecret(passwordEncoder.encode(secret)).build());
+            log.info("Provisioned client '{}' from configured secret.", definition.getClientId());
+        } else if (!passwordEncoder.matches(secret, existing.getClientSecret())) {
+            repository.save(RegisteredClient.from(existing).clientSecret(passwordEncoder.encode(secret)).build());
+            log.info("Rotated the secret of client '{}' to the configured value.", definition.getClientId());
         }
     }
 
