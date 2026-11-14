@@ -65,3 +65,6 @@ package-lock.json
 
 # Dev-only ESPI XML capture output (EspiXmlCaptureFilter, #119) — never committed
 dev-xml-capture/
+
+# Logs of scripts/local/start-all (#254)
+.local-run/

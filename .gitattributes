@@ -1,0 +1,4 @@
+# Shell scripts must keep LF line endings, or bash fails on checkouts with core.autocrlf=true (Windows).
+*.sh text eol=lf
+# PowerShell scripts are fine with CRLF on Windows.
+*.ps1 text eol=crlf

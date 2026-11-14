@@ -57,7 +57,7 @@ cat <<EOF
 
 All three applications are up (local profile, in-memory H2: data resets on restart).
 
-  Authorization Server  http://localhost:9999               admin console: /admin  (admin / admin + passkey)
+  Authorization Server  http://localhost:9999               admin login: /login  (admin / admin, then a passkey)
   Data Custodian        http://localhost:8081/DataCustodian  (admin / admin)
   Third Party           http://localhost:8082/ThirdParty
 
