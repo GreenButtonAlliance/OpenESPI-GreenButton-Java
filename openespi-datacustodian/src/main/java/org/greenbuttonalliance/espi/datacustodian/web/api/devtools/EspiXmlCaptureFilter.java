@@ -167,7 +167,14 @@ public class EspiXmlCaptureFilter extends OncePerRequestFilter {
     private void write(String fileName, byte[] content, String what) {
         try {
             Files.createDirectories(runDir);
-            Path file = runDir.resolve(fileName);
+            // The name comes from the request path. fileName() already strips path separators; this
+            // containment check makes it explicit that nothing can be written outside the run directory.
+            Path base = runDir.toAbsolutePath().normalize();
+            Path file = base.resolve(fileName).normalize();
+            if (!file.startsWith(base) || !base.equals(file.getParent())) {
+                log.warn("[dev] ESPI capture skipped: '{}' resolves outside {}", fileName, base);
+                return;
+            }
             Files.write(file, content);
             log.info("[dev] {} ({} bytes) -> {}", what, content.length, file.toAbsolutePath());
         } catch (IOException e) {

@@ -168,11 +168,30 @@ class EspiXmlCaptureFilterTest {
     }
 
     @Test
+    @DisplayName("a path-traversal request path cannot write outside the run directory")
+    void traversalStaysInsideRunDir(@TempDir Path dir) throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET",
+                "/espi/1_1/resource/../../../../outside/evil");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        new EspiXmlCaptureFilter(true, dir.resolve("capture").toString())
+                .doFilter(request, response, chain("application/atom+xml", XML));
+
+        try (var paths = Files.walk(dir)) {
+            assertThat(paths.filter(Files::isRegularFile).toList())
+                    .allSatisfy(p -> assertThat(p.getParent().getParent()).isEqualTo(dir.resolve("capture")));
+        }
+        assertThat(dir.resolve("outside")).doesNotExist();
+    }
+
+    @Test
     @DisplayName("a relative capture dir is anchored at the repository root")
     void relativeDirResolvesToRepoRoot() {
         Path resolved = EspiXmlCaptureFilter.resolveCaptureDir("dev-xml-capture");
 
-        assertThat(resolved).isAbsolute().endsWith(Path.of("dev-xml-capture"));
+        // endsWithRaw: plain endsWith canonicalises the path and fails when the directory does not
+        // exist yet, as on a fresh CI checkout
+        assertThat(resolved).isAbsolute().endsWithRaw(Path.of("dev-xml-capture"));
         assertThat(resolved.getParent().resolve(".git")).exists();
     }
 }
