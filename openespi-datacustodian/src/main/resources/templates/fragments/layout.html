@@ -22,8 +22,8 @@
          application.css so the GBA palette and shapes take precedence. -->
     <link th:href="@{/css/gba-theme.css}" rel="stylesheet" type="text/css">
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" th:href="@{/images/favicon.png}">
+    <!-- Favicon: the Green Button Alliance mark (OpenESPI-Common, META-INF/resources) -->
+    <link rel="icon" type="image/png" th:href="@{/images/gba-favicon.png}">
 
     <!-- Bootstrap bundle (incl. Popper). Loaded once here, deferred so it executes after the DOM is
          parsed — every page that includes this head fragment gets working navbar dropdowns/collapse
@@ -61,12 +61,13 @@
     </li>
 
     <!-- Navigation Header Fragment -->
-    <nav th:fragment="header" class="navbar navbar-expand-lg navbar-dark gba-navbar">
+    <nav th:fragment="header" class="navbar navbar-expand-lg gba-navbar">
         <div class="container">
             <a class="navbar-brand" th:href="@{/}">
-                <span class="gba-brand-mark" aria-hidden="true"><i class="bi bi-download"></i></span>
+                <img class="gba-logo" th:src="@{/images/gba-logo.png}" src="/images/gba-logo.png"
+                     alt="Green Button Alliance" width="60" height="60">
                 <span class="gba-brand-text">
-                    <span class="gba-brand-org">Green Button Alliance</span>
+                    <span class="gba-brand-org">OpenESPI</span>
                     <span class="gba-brand-app">Data Custodian</span>
                 </span>
             </a>
@@ -101,10 +102,11 @@
     </nav>
 
     <!-- Customer Header Fragment -->
-    <nav th:fragment="customerHeader" class="navbar navbar-expand-lg navbar-dark gba-navbar">
+    <nav th:fragment="customerHeader" class="navbar navbar-expand-lg gba-navbar">
         <div class="container">
             <a class="navbar-brand" th:href="@{/customer/authorizations}">
-                <span class="gba-brand-mark" aria-hidden="true"><i class="bi bi-download"></i></span>
+                <img class="gba-logo" th:src="@{/images/gba-logo.png}" src="/images/gba-logo.png"
+                     alt="Green Button Alliance" width="60" height="60">
                 <span class="gba-brand-text">
                     <span class="gba-brand-org">Data Custodian</span>
                     <span class="gba-brand-app">Customer Portal</span>
@@ -136,12 +138,13 @@
     </nav>
 
     <!-- Custodian Header Fragment -->
-    <!-- The admin portal uses the slate variant of the GBA navbar so it is clearly distinct from the
-         customer-facing pages (it was amber bg-warning). -->
-    <nav th:fragment="custodianHeader" class="navbar navbar-expand-lg navbar-dark gba-navbar gba-navbar-admin">
+    <!-- The admin portal uses the slate variant of the GBA navbar (slate top bar) so it is clearly
+         distinct from the customer-facing pages (it was amber bg-warning). -->
+    <nav th:fragment="custodianHeader" class="navbar navbar-expand-lg gba-navbar gba-navbar-admin">
         <div class="container">
             <a class="navbar-brand" th:href="@{/custodian/home}">
-                <span class="gba-brand-mark" aria-hidden="true"><i class="bi bi-gear"></i></span>
+                <img class="gba-logo" th:src="@{/images/gba-logo.png}" src="/images/gba-logo.png"
+                     alt="Green Button Alliance" width="60" height="60">
                 <span class="gba-brand-text">
                     <span class="gba-brand-org">Data Custodian</span>
                     <span class="gba-brand-app">Custodian Portal</span>

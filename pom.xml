@@ -180,6 +180,25 @@
                     <exclude>/10.xml</exclude>
                 </excludes>
             </resource>
+            <!-- Everything else (images, XSD schemas, fonts...) is copied as-is. Without this entry
+                 the include list above dropped every binary/other resource from the jars: the ESPI
+                 XSDs, the DC favicon and the shared GBA logo were never packaged. Binary files must
+                 never be filtered, which would corrupt them. *.disabled files stay out. -->
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>**/*.yml</exclude>
+                    <exclude>**/*.yaml</exclude>
+                    <exclude>**/*.properties</exclude>
+                    <exclude>**/*.xml</exclude>
+                    <exclude>**/*.sql</exclude>
+                    <exclude>**/*.html</exclude>
+                    <exclude>**/*.js</exclude>
+                    <exclude>**/*.css</exclude>
+                    <exclude>**/*.disabled</exclude>
+                </excludes>
+            </resource>
         </resources>
 
         <testResources>

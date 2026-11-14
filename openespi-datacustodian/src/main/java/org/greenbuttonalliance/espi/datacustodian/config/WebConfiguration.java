@@ -182,8 +182,10 @@ public class WebConfiguration implements WebMvcConfigurer {
             .addResourceLocations("classpath:/static/js/")
             .setCachePeriod(3600);
 
+        // classpath:/META-INF/resources/images/ serves the shared GBA logo and favicon from the
+        // OpenESPI-Common jar.
         registry.addResourceHandler("/images/**")
-            .addResourceLocations("classpath:/static/images/")
+            .addResourceLocations("classpath:/static/images/", "classpath:/META-INF/resources/images/")
             .setCachePeriod(86400);
     }
 
