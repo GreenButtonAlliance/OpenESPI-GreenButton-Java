@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
@@ -7,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Green Button Third Party Login">
     <meta name="author" content="Green Button Alliance">
-    
+
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
@@ -18,7 +19,7 @@
 <!-- Navigation -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
     <div class="container">
-        <a class="navbar-brand" href="/">
+        <a class="navbar-brand" th:href="@{/}">
             <i class="bi bi-lightning-charge-fill"></i>
             OpenESPI Third Party
         </a>
@@ -50,7 +51,7 @@
 
                     <!-- OAuth2 Login Options -->
                     <div class="d-grid gap-2 mb-4">
-                        <a href="/oauth2/authorization/datacustodian" class="btn btn-primary btn-lg">
+                        <a th:href="@{/oauth2/authorization/datacustodian}" class="btn btn-primary btn-lg">
                             <i class="bi bi-shield-lock"></i>
                             Sign in with Data Custodian
                         </a>
@@ -73,18 +74,18 @@
                                 <span class="input-group-text">
                                     <i class="bi bi-person"></i>
                                 </span>
-                                <input type="text" class="form-control" id="username" name="username" 
+                                <input type="text" class="form-control" id="username" name="username"
                                        placeholder="Enter your username" required autofocus>
                             </div>
                         </div>
-                        
+
                         <div class="mb-4">
                             <label for="password" class="form-label">Password</label>
                             <div class="input-group">
                                 <span class="input-group-text">
                                     <i class="bi bi-lock"></i>
                                 </span>
-                                <input type="password" class="form-control" id="password" name="password" 
+                                <input type="password" class="form-control" id="password" name="password"
                                        placeholder="Enter your password" required>
                             </div>
                         </div>

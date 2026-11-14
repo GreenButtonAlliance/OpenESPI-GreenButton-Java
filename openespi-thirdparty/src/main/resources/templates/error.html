@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
@@ -5,7 +6,7 @@
     <meta charset="utf-8">
     <title>Error - OpenESPI Third Party</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
+
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
@@ -16,7 +17,7 @@
 <!-- Navigation -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
     <div class="container">
-        <a class="navbar-brand" href="/">
+        <a class="navbar-brand" th:href="@{/}">
             <i class="bi bi-lightning-charge-fill"></i>
             OpenESPI Third Party
         </a>
@@ -32,16 +33,16 @@
                 <p class="lead text-muted" th:text="${error} ?: 'An unexpected error occurred'">
                     An unexpected error occurred
                 </p>
-                
+
                 <div class="mt-4" th:if="${message}">
                     <div class="alert alert-danger" role="alert">
                         <strong>Error Details:</strong>
                         <span th:text="${message}"></span>
                     </div>
                 </div>
-                
+
                 <div class="mt-4">
-                    <a href="/" class="btn btn-primary">
+                    <a th:href="@{/}" class="btn btn-primary">
                         <i class="bi bi-house"></i>
                         Return to Home
                     </a>
