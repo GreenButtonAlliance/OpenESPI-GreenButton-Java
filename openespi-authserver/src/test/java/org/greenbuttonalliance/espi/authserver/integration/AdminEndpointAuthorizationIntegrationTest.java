@@ -87,6 +87,8 @@ class AdminEndpointAuthorizationIntegrationTest extends AbstractAuthserverIntegr
 
 	private static final String REDIRECT_URI = "https://tp.example/cb";
 	private static final String SCOPE = "FB_1";
+	/** client_credentials yields only administrative scopes (#251, EspiGrantScopePolicy). */
+	private static final String CLIENT_CREDENTIALS_SCOPE = "ThirdParty_Admin_Access";
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -131,6 +133,7 @@ class AdminEndpointAuthorizationIntegrationTest extends AbstractAuthserverIntegr
 				.authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
 				.redirectUri(REDIRECT_URI)
 				.scope(SCOPE)
+				.scope(CLIENT_CREDENTIALS_SCOPE)
 				.clientSettings(ClientSettings.builder()
 						.requireAuthorizationConsent(true)
 						.requireProofKey(false)
@@ -357,7 +360,7 @@ class AdminEndpointAuthorizationIntegrationTest extends AbstractAuthserverIntegr
 		MvcResult token = mockMvc.perform(post("/oauth2/token")
 						.with(httpBasic(victimClientId, victimClientSecret))
 						.param("grant_type", "client_credentials")
-						.param("scope", SCOPE))
+						.param("scope", CLIENT_CREDENTIALS_SCOPE))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.access_token").isNotEmpty())
 				.andReturn();
