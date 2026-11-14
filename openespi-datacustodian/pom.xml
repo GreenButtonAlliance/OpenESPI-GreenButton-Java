@@ -360,6 +360,15 @@
                         </exclude>
                     </excludes>
                 </configuration>
+                <executions>
+                    <!-- META-INF/build-info.properties -> BuildProperties bean (About page version/build
+                         time; also shown by the admin-only /actuator/info). -->
+                    <execution>
+                        <goals>
+                            <goal>build-info</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
 

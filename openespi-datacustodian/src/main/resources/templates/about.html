@@ -8,25 +8,43 @@
     <nav th:replace="~{fragments/layout :: header}"></nav>
 
     <div class="container">
-        <h2 class="mt-4">About</h2>
-        <p class="text-muted">
+        <h1 class="h2 mt-4 gba-section-title">About</h1>
+        <p class="lead">
             A reference implementation of the NAESB ESPI (Green Button) Data Custodian, maintained by the
-            <a href="https://www.greenbuttonalliance.org">Green Button Alliance</a>.
+            <a href="https://www.greenbuttonalliance.org" target="_blank" rel="noopener">Green Button Alliance</a>.
         </p>
 
-        <div class="card mt-3">
-            <div class="table-responsive">
-                <table class="table table-striped mb-0">
-                    <tbody>
-                        <tr th:each="entry : ${info}">
-                            <th class="w-25" th:text="${entry.key}">Key</th>
-                            <td th:text="${entry.value}">value</td>
-                        </tr>
-                    </tbody>
-                </table>
+        <div class="row g-4 mt-1">
+            <div class="col-lg-7">
+                <section class="card h-100">
+                    <div class="gba-card-header"><h2>This installation</h2></div>
+                    <div class="table-responsive">
+                        <table class="table mb-0">
+                            <tbody>
+                                <tr th:each="entry : ${info}">
+                                    <th scope="row" class="w-25" th:text="${entry.key}">Key</th>
+                                    <td th:text="${entry.value}">value</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+
+            <div class="col-lg-5">
+                <section class="card h-100">
+                    <div class="gba-card-header"><h2>Resources</h2></div>
+                    <div class="card-body">
+                        <ul class="list-unstyled mb-0">
+                            <li class="mb-2"><a href="https://www.greenbuttonalliance.org" target="_blank" rel="noopener">Green Button Alliance</a></li>
+                            <li class="mb-2"><a href="https://greenbuttonalliance.github.io/OpenESPI-GreenButton-API-Documentation/" target="_blank" rel="noopener">Green Button API documentation</a></li>
+                            <li class="mb-2"><a href="https://github.com/GreenButtonAlliance/OpenESPI-GreenButton-Java" target="_blank" rel="noopener">Source code</a> (Apache License 2.0)</li>
+                            <li><a href="https://github.com/GreenButtonAlliance/OpenESPI-GreenButton-Java/blob/main/SECURITY.md" target="_blank" rel="noopener">Report a security vulnerability</a></li>
+                        </ul>
+                    </div>
+                </section>
             </div>
         </div>
-
     </div>
 
     <footer th:replace="~{fragments/layout :: footer}"></footer>

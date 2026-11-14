@@ -42,19 +42,27 @@ class GbaLayoutPagesTest {
 	@Autowired
 	private MockMvc mockMvc;
 
+	/** The production context path; rendering under it is what makes the #235 check meaningful. */
+	private static final String CONTEXT_PATH = "/ThirdParty";
+
 	@ParameterizedTest
-	@ValueSource(strings = {"/", "/login", "/TermsOfService", "/UsagePolicy"})
+	@ValueSource(strings = {"/", "/login", "/about", "/TermsOfService", "/UsagePolicy"})
 	void public_pages_render_anonymously_with_the_gba_layout(String path) throws Exception {
-		String html = mockMvc.perform(get(path))
+		// Render under the real context path. With MockMvc's default empty context path, a correct
+		// th:href="@{/about}" and a broken href="/about" produce the same HTML, so #235 could not
+		// be detected.
+		String html = mockMvc.perform(get(CONTEXT_PATH + path).contextPath(CONTEXT_PATH))
 				.andExpect(status().isOk())
 				.andReturn().getResponse().getContentAsString();
 
 		assertThat(html)
-				.contains("/css/gba-theme.css", "/images/gba-logo.png", "/images/gba-favicon.png")
+				.contains(CONTEXT_PATH + "/css/gba-theme.css", CONTEXT_PATH + "/images/gba-logo.png",
+						CONTEXT_PATH + "/images/gba-favicon.png")
 				.contains("gba-navbar", "gba-footer", "data-gba-app=\"thirdparty\"")
 				.contains("integrity=\"sha384-")
-				// no root-relative internal links (#235): the layout uses th:href="@{...}"
-				.doesNotContain("href=\"/about\"");
+				// #235: every internal link must carry the context path. Allowed: /ThirdParty...,
+				// protocol-relative //host and absolute https:// links.
+				.doesNotContainPattern("(href|src)=\"/(?!ThirdParty[/\"]|/)");
 	}
 
 	@ParameterizedTest
