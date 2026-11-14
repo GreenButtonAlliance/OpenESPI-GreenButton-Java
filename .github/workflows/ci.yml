@@ -32,9 +32,6 @@ jobs:
           - module: openespi-datacustodian
           - module: openespi-thirdparty
           - module: openespi-authserver
-            # TODO(#129): AS unit tests are broken on the H2 test profiles; only the Docker-backed
-            # @Tag("testcontainers-it") suite runs until #129 is fixed. Remove this line then.
-            test-args: -Dgroups=testcontainers-it -DfailIfNoTests=false
     steps:
       - uses: actions/checkout@v7
 

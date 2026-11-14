@@ -28,8 +28,8 @@ default to `permissions: contents: read`; jobs add only what they need.
   An install-once job that shares `~/.m2/repository/org/greenbuttonalliance` as an artifact was
   rejected. It would add a serial job, plus artifact upload and download, that cost more than the
   30 s compile it saves.
-  - `openespi-authserver` runs only `-Dgroups=testcontainers-it` until **#129** fixes the
-    unit tests on the H2 profiles.
+  - `openespi-authserver` runs its full suite (unit tests plus the Testcontainers integration
+    tests) since **#129**.
   - Testcontainers suites use the Docker daemon on `ubuntu-latest`.
   - On failure the job uploads `surefire-reports-<module>`. It always uploads that module's
     `jacoco.xml` for the `quality` job.
@@ -190,7 +190,7 @@ create and approve pull requests**. The release workflow needs this to open its 
 
 ```bash
 mvn install -DskipTests -pl openespi-datacustodian -am && mvn verify -pl openespi-datacustodian
-mvn verify -pl openespi-authserver -Dgroups=testcontainers-it -DfailIfNoTests=false   # until #129
+mvn install -DskipTests -pl openespi-authserver -am && mvn verify -pl openespi-authserver
 mvn install -DskipTests && mvn org.owasp:dependency-check-maven:aggregate
 docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:latest -color             # lint workflows
 ```

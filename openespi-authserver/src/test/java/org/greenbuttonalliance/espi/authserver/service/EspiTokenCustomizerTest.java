@@ -24,47 +24,46 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
-import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
+import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
+import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
+import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
+import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.util.Collection;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
-import static org.mockito.ArgumentMatchers.*;
 
 /**
- * Comprehensive unit tests for EspiTokenCustomizer
- * 
- * Tests ESPI-specific JWT token customization including Green Button Alliance
- * standard claims, client type determination, and resource URI generation.
- * 
- * Note: ESPI standard uses opaque tokens, JWT customization is experimental.
- * 
- * @author Green Button Alliance
- * @version 1.0.0
- * @since Spring Boot 3.5
+ * Unit tests for {@link EspiTokenCustomizer}.
+ *
+ * <p>The customizer is EXPERIMENTAL: it only fires when {@code espi.token.format=jwt}; the ESPI
+ * standard (and this AS's default) is opaque tokens. The tests drive it with a real
+ * {@link JwtEncodingContext} and inspect the resulting claims, rather than mocking the context
+ * and verifying builder calls (#129).</p>
  */
-@ExtendWith(MockitoExtension.class)
 @DisplayName("EspiTokenCustomizer Tests")
 class EspiTokenCustomizerTest {
+
+    private static final String DC_ENDPOINT = "http://localhost:8080";
+    private static final String RESOURCE_BASE = DC_ENDPOINT + "/espi/1_1/resource";
 
     private EspiTokenCustomizer customizer;
 
     @BeforeEach
     void setUp() {
         customizer = new EspiTokenCustomizer();
-        // Set default property values using reflection
-        ReflectionTestUtils.setField(customizer, "dataCustodianEndpoint", "http://localhost:8080");
+        ReflectionTestUtils.setField(customizer, "dataCustodianEndpoint", DC_ENDPOINT);
         ReflectionTestUtils.setField(customizer, "tokenFormat", "jwt");
     }
 
@@ -72,71 +71,32 @@ class EspiTokenCustomizerTest {
     @DisplayName("Token Format Tests")
     class TokenFormatTests {
 
-        @Test
-        @DisplayName("Should skip customization when token format is opaque (ESPI standard)")
-        void shouldSkipCustomizationWhenTokenFormatIsOpaque() {
-            // Given
-            ReflectionTestUtils.setField(customizer, "tokenFormat", "opaque");
-            
-            JwtEncodingContext context = createMockJwtEncodingContext();
-            JwtClaimsSet.Builder claimsBuilder = spy(JwtClaimsSet.builder());
-            when(context.getClaims()).thenReturn(claimsBuilder);
+        @ParameterizedTest(name = "espi.token.format={0} -> no ESPI claims")
+        @ValueSource(strings = {"opaque", "reference"})
+        @DisplayName("Should skip customization when the token format is not jwt (ESPI standard)")
+        void shouldSkipCustomizationWhenTokenFormatIsNotJwt(String format) {
+            ReflectionTestUtils.setField(customizer, "tokenFormat", format);
 
-            // When
-            customizer.customize(context);
-
-            // Then
-            verify(claimsBuilder, never()).claim(anyString(), any());
+            assertThat(customize(clientCredentials("data_custodian_admin", "ROLE_DC_ADMIN")))
+                    .isEmpty();
         }
 
         @Test
-        @DisplayName("Should skip customization when token format is reference")
-        void shouldSkipCustomizationWhenTokenFormatIsReference() {
-            // Given
-            ReflectionTestUtils.setField(customizer, "tokenFormat", "reference");
-            
-            JwtEncodingContext context = createMockJwtEncodingContext();
-            JwtClaimsSet.Builder claimsBuilder = spy(JwtClaimsSet.builder());
-            when(context.getClaims()).thenReturn(claimsBuilder);
-
-            // When
-            customizer.customize(context);
-
-            // Then
-            verify(claimsBuilder, never()).claim(anyString(), any());
-        }
-
-        @Test
-        @DisplayName("Should customize tokens when format is jwt (experimental)")
+        @DisplayName("Should add the base ESPI claims when the format is jwt (experimental)")
         void shouldCustomizeTokensWhenFormatIsJwt() {
-            // Given
-            JwtEncodingContext context = createMockJwtEncodingContext();
-            JwtClaimsSet.Builder claimsBuilder = spy(JwtClaimsSet.builder());
-            when(context.getClaims()).thenReturn(claimsBuilder);
-
-            // When
-            customizer.customize(context);
-
-            // Then
-            verify(claimsBuilder).claim("espi_version", "1.1");
-            verify(claimsBuilder).claim("data_custodian_endpoint", "http://localhost:8080");
+            assertThat(customize(clientCredentials("data_custodian_admin", "ROLE_DC_ADMIN")))
+                    .containsEntry("espi_version", "1.1")
+                    .containsEntry("data_custodian_endpoint", DC_ENDPOINT);
         }
 
         @Test
         @DisplayName("Should only customize access tokens")
         void shouldOnlyCustomizeAccessTokens() {
-            // Given
-            JwtEncodingContext context = createMockJwtEncodingContext();
-            when(context.getTokenType()).thenReturn(OAuth2TokenType.REFRESH_TOKEN);
-            
-            JwtClaimsSet.Builder claimsBuilder = spy(JwtClaimsSet.builder());
-            when(context.getClaims()).thenReturn(claimsBuilder);
+            JwtEncodingContext.Builder refreshToken = context("third_party",
+                    AuthorizationGrantType.AUTHORIZATION_CODE, customer())
+                    .tokenType(OAuth2TokenType.REFRESH_TOKEN);
 
-            // When
-            customizer.customize(context);
-
-            // Then
-            verify(claimsBuilder, never()).claim(anyString(), any());
+            assertThat(customize(refreshToken)).isEmpty();
         }
     }
 
@@ -147,107 +107,50 @@ class EspiTokenCustomizerTest {
         @Test
         @DisplayName("Should customize token for DataCustodian admin client")
         void shouldCustomizeTokenForDataCustodianAdminClient() {
-            // Given
-            JwtEncodingContext context = createClientCredentialsContext("data_custodian_admin", "ROLE_DC_ADMIN");
-            JwtClaimsSet.Builder claimsBuilder = spy(JwtClaimsSet.builder());
-            when(context.getClaims()).thenReturn(claimsBuilder);
+            assertThat(customize(clientCredentials("data_custodian_admin", "ROLE_DC_ADMIN")))
+                    .containsEntry("espi_version", "1.1")
+                    .containsEntry("data_custodian_endpoint", DC_ENDPOINT)
+                    .containsEntry("espi_client_type", "admin")
+                    .containsEntry("espi_grant_type", "client_credentials")
+                    .containsEntry("resource_uri", RESOURCE_BASE + "/")
+                    .hasEntrySatisfying("authorization_uri", uri -> assertThat(uri.toString())
+                            .matches(RESOURCE_BASE.replace(".", "\\.") + "/Authorization/\\d+"));
+        }
 
-            // When
-            customizer.customize(context);
-
-            // Then
-            verify(claimsBuilder).claim("espi_version", "1.1");
-            verify(claimsBuilder).claim("data_custodian_endpoint", "http://localhost:8080");
-            verify(claimsBuilder).claim("espi_client_type", "admin");
-            verify(claimsBuilder).claim("espi_grant_type", "client_credentials");
-            verify(claimsBuilder).claim("resource_uri", "http://localhost:8080/espi/1_1/resource/");
-            verify(claimsBuilder).claim(eq("authorization_uri"), argThat(uri -> 
-                uri.toString().startsWith("http://localhost:8080/espi/1_1/resource/Authorization/")));
+        @ParameterizedTest(name = "{0} -> {1}")
+        @CsvSource({
+                "ROLE_DC_ADMIN,        /",
+                "ROLE_TP_ADMIN,        /Batch/Bulk/**",
+                "ROLE_UL_ADMIN,        /Batch/Upload/**",
+                "ROLE_TP_REGISTRATION, /ApplicationInformation/**",
+                "ROLE_UNKNOWN,         /"
+        })
+        @DisplayName("Should derive the resource URI from the client's role")
+        void shouldDeriveResourceUriFromRole(String authority, String resourcePath) {
+            assertThat(customize(clientCredentials("admin_client", authority)))
+                    .containsEntry("resource_uri", RESOURCE_BASE + resourcePath);
         }
 
         @Test
-        @DisplayName("Should customize token for ThirdParty admin client")
-        void shouldCustomizeTokenForThirdPartyAdminClient() {
-            // Given
-            JwtEncodingContext context = createClientCredentialsContext("third_party_admin", "ROLE_TP_ADMIN");
-            JwtClaimsSet.Builder claimsBuilder = spy(JwtClaimsSet.builder());
-            when(context.getClaims()).thenReturn(claimsBuilder);
-
-            // When
-            customizer.customize(context);
-
-            // Then
-            verify(claimsBuilder).claim("espi_version", "1.1");
-            verify(claimsBuilder).claim("espi_client_type", "admin");
-            verify(claimsBuilder).claim("espi_grant_type", "client_credentials");
-            verify(claimsBuilder).claim("resource_uri", "http://localhost:8080/espi/1_1/resource/Batch/Bulk/**");
-        }
-
-        @Test
-        @DisplayName("Should customize token for Upload admin client")
-        void shouldCustomizeTokenForUploadAdminClient() {
-            // Given
-            JwtEncodingContext context = createClientCredentialsContext("upload_admin", "ROLE_UL_ADMIN");
-            JwtClaimsSet.Builder claimsBuilder = spy(JwtClaimsSet.builder());
-            when(context.getClaims()).thenReturn(claimsBuilder);
-
-            // When
-            customizer.customize(context);
-
-            // Then
-            verify(claimsBuilder).claim("resource_uri", "http://localhost:8080/espi/1_1/resource/Batch/Upload/**");
-        }
-
-        @Test
-        @DisplayName("Should customize token for Registration admin client")
-        void shouldCustomizeTokenForRegistrationAdminClient() {
-            // Given
-            JwtEncodingContext context = createClientCredentialsContext("registration_admin", "ROLE_TP_REGISTRATION");
-            JwtClaimsSet.Builder claimsBuilder = spy(JwtClaimsSet.builder());
-            when(context.getClaims()).thenReturn(claimsBuilder);
-
-            // When
-            customizer.customize(context);
-
-            // Then
-            verify(claimsBuilder).claim("resource_uri", "http://localhost:8080/espi/1_1/resource/ApplicationInformation/**");
-        }
-
-        @Test
-        @DisplayName("Should use default resource URI for unknown roles")
-        void shouldUseDefaultResourceUriForUnknownRoles() {
-            // Given
-            JwtEncodingContext context = createClientCredentialsContext("unknown_client", "ROLE_UNKNOWN");
-            JwtClaimsSet.Builder claimsBuilder = spy(JwtClaimsSet.builder());
-            when(context.getClaims()).thenReturn(claimsBuilder);
-
-            // When
-            customizer.customize(context);
-
-            // Then
-            verify(claimsBuilder).claim("resource_uri", "http://localhost:8080/espi/1_1/resource/");
-        }
-
-        @Test
-        @DisplayName("Should handle multiple authorities correctly")
+        @DisplayName("Should prioritize DC_ADMIN when a client holds several admin roles")
         void shouldHandleMultipleAuthoritiesCorrectly() {
-            // Given
-            Authentication principal = mock(Authentication.class);
-            when(principal.getAuthorities()).thenReturn((Collection) List.of(
-                    new SimpleGrantedAuthority("ROLE_USER"),
-                    new SimpleGrantedAuthority("ROLE_DC_ADMIN"),
-                    new SimpleGrantedAuthority("ROLE_TP_ADMIN")
-            ));
+            Authentication principal = new TestingAuthenticationToken("multi_role_client", null,
+                    "ROLE_USER", "ROLE_DC_ADMIN", "ROLE_TP_ADMIN");
 
-            JwtEncodingContext context = createClientCredentialsContextWithPrincipal("multi_role_client", principal);
-            JwtClaimsSet.Builder claimsBuilder = spy(JwtClaimsSet.builder());
-            when(context.getClaims()).thenReturn(claimsBuilder);
+            assertThat(customize(context("multi_role_client", AuthorizationGrantType.CLIENT_CREDENTIALS, principal)))
+                    .containsEntry("resource_uri", RESOURCE_BASE + "/");
+        }
 
-            // When
-            customizer.customize(context);
+        @Test
+        @DisplayName("Should use the configured data custodian endpoint")
+        void shouldUseCustomDataCustodianEndpoint() {
+            ReflectionTestUtils.setField(customizer, "dataCustodianEndpoint", "https://datacustodian.example.com");
 
-            // Then - Should prioritize DC_ADMIN
-            verify(claimsBuilder).claim("resource_uri", "http://localhost:8080/espi/1_1/resource/");
+            assertThat(customize(clientCredentials("test_client", "ROLE_DC_ADMIN")))
+                    .containsEntry("data_custodian_endpoint", "https://datacustodian.example.com")
+                    .containsEntry("resource_uri", "https://datacustodian.example.com/espi/1_1/resource/")
+                    .hasEntrySatisfying("authorization_uri", uri -> assertThat(uri.toString())
+                            .startsWith("https://datacustodian.example.com/espi/1_1/resource/Authorization/"));
         }
     }
 
@@ -255,307 +158,52 @@ class EspiTokenCustomizerTest {
     @DisplayName("Authorization Code Grant Tests")
     class AuthorizationCodeGrantTests {
 
-        @Test
-        @DisplayName("Should customize token for authorization code grant")
-        void shouldCustomizeTokenForAuthorizationCodeGrant() {
-            // Given
-            JwtEncodingContext context = createAuthorizationCodeContext("third_party");
-            JwtClaimsSet.Builder claimsBuilder = spy(JwtClaimsSet.builder());
-            when(context.getClaims()).thenReturn(claimsBuilder);
-
-            // When
-            customizer.customize(context);
-
-            // Then
-            verify(claimsBuilder).claim("espi_version", "1.1");
-            verify(claimsBuilder).claim("data_custodian_endpoint", "http://localhost:8080");
-            verify(claimsBuilder).claim("espi_client_type", "customer");
-            verify(claimsBuilder).claim("espi_grant_type", "authorization_code");
-            verify(claimsBuilder).claim("resource_uri", "http://localhost:8080/espi/1_1/resource/");
-            verify(claimsBuilder).claim(eq("authorization_uri"), argThat(uri -> 
-                uri.toString().startsWith("http://localhost:8080/espi/1_1/resource/Authorization/")));
-        }
-
-        @Test
-        @DisplayName("Should customize token for refresh token grant")
-        void shouldCustomizeTokenForRefreshTokenGrant() {
-            // Given
-            JwtEncodingContext context = createRefreshTokenContext("third_party");
-            JwtClaimsSet.Builder claimsBuilder = spy(JwtClaimsSet.builder());
-            when(context.getClaims()).thenReturn(claimsBuilder);
-
-            // When
-            customizer.customize(context);
-
-            // Then
-            verify(claimsBuilder).claim("espi_version", "1.1");
-            verify(claimsBuilder).claim("espi_client_type", "customer");
-            verify(claimsBuilder).claim("espi_grant_type", "authorization_code");
-            verify(claimsBuilder).claim("resource_uri", "http://localhost:8080/espi/1_1/resource/");
+        @ParameterizedTest(name = "grant_type={0} -> customer claims")
+        @ValueSource(strings = {"authorization_code", "refresh_token"})
+        @DisplayName("Should add customer claims for authorization_code and refresh_token grants")
+        void shouldCustomizeTokenForCustomerGrants(String grantType) {
+            assertThat(customize(context("third_party", new AuthorizationGrantType(grantType), customer())))
+                    .containsEntry("espi_version", "1.1")
+                    .containsEntry("data_custodian_endpoint", DC_ENDPOINT)
+                    .containsEntry("espi_client_type", "customer")
+                    .containsEntry("espi_grant_type", "authorization_code")
+                    .containsEntry("resource_uri", RESOURCE_BASE + "/")
+                    .hasEntrySatisfying("authorization_uri", uri -> assertThat(uri.toString())
+                            .matches(RESOURCE_BASE.replace(".", "\\.") + "/Authorization/\\d+"));
         }
     }
 
-    @Nested
-    @DisplayName("Configuration Tests")
-    class ConfigurationTests {
+    // Helpers
 
-        @Test
-        @DisplayName("Should use custom data custodian endpoint")
-        void shouldUseCustomDataCustodianEndpoint() {
-            // Given
-            ReflectionTestUtils.setField(customizer, "dataCustodianEndpoint", "https://datacustodian.example.com");
-            
-            JwtEncodingContext context = createClientCredentialsContext("test_client", "ROLE_DC_ADMIN");
-            JwtClaimsSet.Builder claimsBuilder = spy(JwtClaimsSet.builder());
-            when(context.getClaims()).thenReturn(claimsBuilder);
-
-            // When
-            customizer.customize(context);
-
-            // Then
-            verify(claimsBuilder).claim("data_custodian_endpoint", "https://datacustodian.example.com");
-            verify(claimsBuilder).claim("resource_uri", "https://datacustodian.example.com/espi/1_1/resource/");
-            verify(claimsBuilder).claim(eq("authorization_uri"), argThat(uri -> 
-                uri.toString().startsWith("https://datacustodian.example.com/espi/1_1/resource/Authorization/")));
-        }
-
-        @Test
-        @DisplayName("Should handle null data custodian endpoint gracefully")
-        void shouldHandleNullDataCustodianEndpointGracefully() {
-            // Given
-            ReflectionTestUtils.setField(customizer, "dataCustodianEndpoint", null);
-            
-            JwtEncodingContext context = createClientCredentialsContext("test_client", "ROLE_DC_ADMIN");
-            JwtClaimsSet.Builder claimsBuilder = spy(JwtClaimsSet.builder());
-            when(context.getClaims()).thenReturn(claimsBuilder);
-
-            // When
-            customizer.customize(context);
-
-            // Then
-            verify(claimsBuilder).claim("data_custodian_endpoint", null);
-            verify(claimsBuilder).claim("resource_uri", "null/espi/1_1/resource/");
-        }
+    private Map<String, Object> customize(JwtEncodingContext.Builder contextBuilder) {
+        JwtEncodingContext context = contextBuilder.build();
+        customizer.customize(context);
+        Map<String, Object> claims = new HashMap<>();
+        context.getClaims().claims(claims::putAll);
+        return claims;
     }
 
-    @Nested
-    @DisplayName("Authorization ID Generation Tests")
-    class AuthorizationIdGenerationTests {
-
-        @Test
-        @DisplayName("Should generate unique authorization IDs")
-        void shouldGenerateUniqueAuthorizationIds() {
-            // Given
-            JwtEncodingContext context1 = createClientCredentialsContext("client1", "ROLE_DC_ADMIN");
-            JwtEncodingContext context2 = createClientCredentialsContext("client2", "ROLE_DC_ADMIN");
-            
-            JwtClaimsSet.Builder claimsBuilder1 = spy(JwtClaimsSet.builder());
-            JwtClaimsSet.Builder claimsBuilder2 = spy(JwtClaimsSet.builder());
-            
-            when(context1.getClaims()).thenReturn(claimsBuilder1);
-            when(context2.getClaims()).thenReturn(claimsBuilder2);
-
-            // When
-            customizer.customize(context1);
-            try {
-                Thread.sleep(1); // Ensure different timestamps
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-            customizer.customize(context2);
-
-            // Then
-            verify(claimsBuilder1).claim(eq("authorization_uri"), argThat(uri -> 
-                uri.toString().matches("http://localhost:8080/espi/1_1/resource/Authorization/\\d+")));
-            verify(claimsBuilder2).claim(eq("authorization_uri"), argThat(uri -> 
-                uri.toString().matches("http://localhost:8080/espi/1_1/resource/Authorization/\\d+")));
-        }
+    private static JwtEncodingContext.Builder clientCredentials(String clientId, String authority) {
+        return context(clientId, AuthorizationGrantType.CLIENT_CREDENTIALS,
+                new TestingAuthenticationToken(clientId, null, authority));
     }
 
-    @Nested
-    @DisplayName("ESPI Compliance Tests")
-    class EspiComplianceTests {
-
-        @Test
-        @DisplayName("Should add ESPI version 1.1 claim")
-        void shouldAddEspiVersion11Claim() {
-            // Given
-            JwtEncodingContext context = createClientCredentialsContext("test_client", "ROLE_DC_ADMIN");
-            JwtClaimsSet.Builder claimsBuilder = spy(JwtClaimsSet.builder());
-            when(context.getClaims()).thenReturn(claimsBuilder);
-
-            // When
-            customizer.customize(context);
-
-            // Then
-            verify(claimsBuilder).claim("espi_version", "1.1");
-        }
-
-        @Test
-        @DisplayName("Should use ESPI-compliant resource URI patterns")
-        void shouldUseEspiCompliantResourceUriPatterns() {
-            // Given
-            JwtEncodingContext context = createClientCredentialsContext("test_client", "ROLE_TP_ADMIN");
-            JwtClaimsSet.Builder claimsBuilder = spy(JwtClaimsSet.builder());
-            when(context.getClaims()).thenReturn(claimsBuilder);
-
-            // When
-            customizer.customize(context);
-
-            // Then
-            verify(claimsBuilder).claim("resource_uri", "http://localhost:8080/espi/1_1/resource/Batch/Bulk/**");
-        }
-
-        @Test
-        @DisplayName("Should generate ESPI-compliant authorization URIs")
-        void shouldGenerateEspiCompliantAuthorizationUris() {
-            // Given
-            JwtEncodingContext context = createAuthorizationCodeContext("third_party");
-            JwtClaimsSet.Builder claimsBuilder = spy(JwtClaimsSet.builder());
-            when(context.getClaims()).thenReturn(claimsBuilder);
-
-            // When
-            customizer.customize(context);
-
-            // Then
-            verify(claimsBuilder).claim(eq("authorization_uri"), argThat(uri -> 
-                uri.toString().startsWith("http://localhost:8080/espi/1_1/resource/Authorization/")));
-        }
-
-        @Test
-        @DisplayName("Should distinguish between admin and customer client types")
-        void shouldDistinguishBetweenAdminAndCustomerClientTypes() {
-            // Given
-            JwtEncodingContext adminContext = createClientCredentialsContext("admin_client", "ROLE_DC_ADMIN");
-            JwtEncodingContext customerContext = createAuthorizationCodeContext("customer_client");
-            
-            JwtClaimsSet.Builder adminClaimsBuilder = spy(JwtClaimsSet.builder());
-            JwtClaimsSet.Builder customerClaimsBuilder = spy(JwtClaimsSet.builder());
-            
-            when(adminContext.getClaims()).thenReturn(adminClaimsBuilder);
-            when(customerContext.getClaims()).thenReturn(customerClaimsBuilder);
-
-            // When
-            customizer.customize(adminContext);
-            customizer.customize(customerContext);
-
-            // Then
-            verify(adminClaimsBuilder).claim("espi_client_type", "admin");
-            verify(customerClaimsBuilder).claim("espi_client_type", "customer");
-        }
+    private static Authentication customer() {
+        return new TestingAuthenticationToken("42", null, "ROLE_CUSTOMER");
     }
 
-    @Nested
-    @DisplayName("Error Handling Tests")
-    class ErrorHandlingTests {
-
-        @Test
-        @DisplayName("Should handle null context gracefully")
-        void shouldHandleNullContextGracefully() {
-            // When & Then - Should not throw exception
-            customizer.customize(null);
-        }
-
-        @Test
-        @DisplayName("Should handle context with null claims gracefully")
-        void shouldHandleContextWithNullClaimsGracefully() {
-            // Given
-            JwtEncodingContext context = createMockJwtEncodingContext();
-            when(context.getClaims()).thenReturn(null);
-
-            // When & Then - Should not throw exception
-            customizer.customize(context);
-        }
-
-        @Test
-        @DisplayName("Should handle context with null principal gracefully")
-        void shouldHandleContextWithNullPrincipalGracefully() {
-            // Given
-            JwtEncodingContext context = createMockJwtEncodingContext();
-            when(context.getPrincipal()).thenReturn(null);
-            
-            JwtClaimsSet.Builder claimsBuilder = spy(JwtClaimsSet.builder());
-            when(context.getClaims()).thenReturn(claimsBuilder);
-
-            // When & Then - Should not throw exception
-            customizer.customize(context);
-            
-            // Should still add basic claims
-            verify(claimsBuilder).claim("espi_version", "1.1");
-        }
-    }
-
-    // Helper methods
-
-    private JwtEncodingContext createMockJwtEncodingContext() {
-        JwtEncodingContext context = mock(JwtEncodingContext.class);
-        when(context.getTokenType()).thenReturn(OAuth2TokenType.ACCESS_TOKEN);
-        
-        RegisteredClient client = mock(RegisteredClient.class);
-        when(client.getClientId()).thenReturn("test-client");
-        when(context.getRegisteredClient()).thenReturn(client);
-        
-        when(context.getAuthorizationGrantType()).thenReturn(AuthorizationGrantType.AUTHORIZATION_CODE);
-        
-        Authentication principal = mock(Authentication.class);
-        when(principal.getAuthorities()).thenReturn((Collection) List.of(new SimpleGrantedAuthority("ROLE_USER")));
-        when(context.getPrincipal()).thenReturn(principal);
-        
-        return context;
-    }
-
-    private JwtEncodingContext createClientCredentialsContext(String clientId, String authority) {
-        Authentication principal = mock(Authentication.class);
-        when(principal.getAuthorities()).thenReturn((Collection) List.of(new SimpleGrantedAuthority(authority)));
-        
-        return createClientCredentialsContextWithPrincipal(clientId, principal);
-    }
-
-    private JwtEncodingContext createClientCredentialsContextWithPrincipal(String clientId, Authentication principal) {
-        JwtEncodingContext context = mock(JwtEncodingContext.class);
-        when(context.getTokenType()).thenReturn(OAuth2TokenType.ACCESS_TOKEN);
-        
-        RegisteredClient client = mock(RegisteredClient.class);
-        when(client.getClientId()).thenReturn(clientId);
-        when(context.getRegisteredClient()).thenReturn(client);
-        
-        when(context.getAuthorizationGrantType()).thenReturn(AuthorizationGrantType.CLIENT_CREDENTIALS);
-        when(context.getPrincipal()).thenReturn(principal);
-        
-        return context;
-    }
-
-    private JwtEncodingContext createAuthorizationCodeContext(String clientId) {
-        JwtEncodingContext context = mock(JwtEncodingContext.class);
-        when(context.getTokenType()).thenReturn(OAuth2TokenType.ACCESS_TOKEN);
-        
-        RegisteredClient client = mock(RegisteredClient.class);
-        when(client.getClientId()).thenReturn(clientId);
-        when(context.getRegisteredClient()).thenReturn(client);
-        
-        when(context.getAuthorizationGrantType()).thenReturn(AuthorizationGrantType.AUTHORIZATION_CODE);
-        
-        Authentication principal = mock(Authentication.class);
-        when(principal.getAuthorities()).thenReturn((Collection) List.of(new SimpleGrantedAuthority("ROLE_USER")));
-        when(context.getPrincipal()).thenReturn(principal);
-        
-        return context;
-    }
-
-    private JwtEncodingContext createRefreshTokenContext(String clientId) {
-        JwtEncodingContext context = mock(JwtEncodingContext.class);
-        when(context.getTokenType()).thenReturn(OAuth2TokenType.ACCESS_TOKEN);
-        
-        RegisteredClient client = mock(RegisteredClient.class);
-        when(client.getClientId()).thenReturn(clientId);
-        when(context.getRegisteredClient()).thenReturn(client);
-        
-        when(context.getAuthorizationGrantType()).thenReturn(AuthorizationGrantType.REFRESH_TOKEN);
-        
-        Authentication principal = mock(Authentication.class);
-        when(principal.getAuthorities()).thenReturn((Collection) List.of(new SimpleGrantedAuthority("ROLE_USER")));
-        when(context.getPrincipal()).thenReturn(principal);
-        
-        return context;
+    private static JwtEncodingContext.Builder context(String clientId, AuthorizationGrantType grantType,
+                                                      Authentication principal) {
+        RegisteredClient client = RegisteredClient.withId(clientId + "-id")
+                .clientId(clientId)
+                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+                .authorizationGrantType(grantType)
+                .redirectUri("https://tp.example/cb")
+                .build();
+        return JwtEncodingContext.with(JwsHeader.with(SignatureAlgorithm.RS256), JwtClaimsSet.builder())
+                .registeredClient(client)
+                .principal(principal)
+                .authorizationGrantType(grantType)
+                .tokenType(OAuth2TokenType.ACCESS_TOKEN);
     }
 }

@@ -61,7 +61,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @version 1.0.0
  * @since Spring Boot 3.5
  */
-@Tag("testcontainers-it") // CI runs the Docker-backed AS integration tests via -Dgroups=testcontainers-it
+@Tag("testcontainers-it") // Docker-backed; selectable alone via -Dgroups=testcontainers-it
 @SpringBootTest
 @Testcontainers
 @ActiveProfiles("testcontainers")

@@ -74,7 +74,7 @@ jobs:
         run: bash .github/scripts/set-module-version.sh "$DIR" "$VERSION" "$VERSION_PROPERTY"
 
       # Equivalent to `mvn verify -pl <module> -am`, split so that module-specific test arguments
-      # (authserver's -Dgroups, #129) do not leak into the upstream modules' test runs.
+      # (TEST_ARGS from release-meta.sh, currently none) do not leak into the upstream modules' test runs.
       - name: Verify upstream modules (tests on)
         if: env.UPSTREAM != ''
         run: mvn install -pl "$UPSTREAM" -am # -am only adds the parent pom

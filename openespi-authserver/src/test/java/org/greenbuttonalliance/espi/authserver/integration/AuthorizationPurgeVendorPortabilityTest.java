@@ -61,8 +61,8 @@ import static org.greenbuttonalliance.espi.authserver.integration.AuthorizationP
  *       (#152). Replace with a full migrate once #152 lands.</li>
  * </ul>
  *
- * <p>Tagged {@code testcontainers-it} so CI runs it with the other Docker-backed integration tests
- * (the PostgreSQL half needs Docker; the H2 half is in-memory).</p>
+ * <p>Tagged {@code testcontainers-it} with the other Docker-backed integration tests (the PostgreSQL
+ * half needs Docker; the H2 half is in-memory).</p>
  */
 @Tag("testcontainers-it")
 @DisplayName("Authorization purge (#192) vendor portability")
