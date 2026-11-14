@@ -62,12 +62,5 @@ logging:
   pattern:
     console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
 
-# Management Endpoints for Tests
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info
-  endpoint:
-    health:
-      show-details: always
+# Management endpoints: inherited from application.yml, so the tests exercise the real
+# exposure and access rules.

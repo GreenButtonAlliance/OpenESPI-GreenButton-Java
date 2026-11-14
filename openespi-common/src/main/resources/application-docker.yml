@@ -77,14 +77,6 @@ logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
 
-# Management - Basic configuration (applications should configure endpoints)
-management:
-  endpoints:
-    enabled-by-default: false
-  info:
-    env:
-      enabled: true
-
 # ESPI Configuration for Docker
 espi:
   database:

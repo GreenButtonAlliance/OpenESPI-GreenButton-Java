@@ -78,14 +78,6 @@ logging:
   pattern:
     console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
 
-# Management - Basic configuration (applications should extend)
-management:
-  endpoints:
-    enabled-by-default: false
-  info:
-    env:
-      enabled: true
-
 # ESPI Configuration for Local Development
 espi:
   database:

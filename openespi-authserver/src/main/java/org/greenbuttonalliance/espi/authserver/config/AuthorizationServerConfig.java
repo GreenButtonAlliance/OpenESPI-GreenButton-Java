@@ -23,6 +23,8 @@ package org.greenbuttonalliance.espi.authserver.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.boot.security.autoconfigure.actuate.web.servlet.EndpointRequest;
+import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.Customizer;
@@ -474,6 +476,35 @@ public class AuthorizationServerConfig {
     }
 
     /**
+     * Stateless chain for the Spring Boot Actuator endpoints.
+     *
+     * <p>Only {@code health} (status only, including the {@code liveness} and {@code readiness} probe
+     * groups) is anonymous, so load balancers and orchestrators can check that the server is
+     * operating normally. Every other exposed endpoint ({@code info}, {@code metrics} and the links
+     * page) requires an {@code authserver.admin} bearer token, resolved in-process exactly as on
+     * {@link #adminApiBearerSecurityFilterChain}. Endpoint access is read-only
+     * ({@code management.endpoint.*.access} in application.yml).</p>
+     */
+    @Bean
+    @Order(Ordered.HIGHEST_PRECEDENCE)
+    public SecurityFilterChain actuatorSecurityFilterChain(
+            HttpSecurity http, OAuth2AuthorizationService authorizationService) throws Exception {
+        OpaqueTokenIntrospector introspector = new AdminScopeOpaqueTokenIntrospector(
+                new AuthorizationServiceOpaqueTokenIntrospector(authorizationService));
+
+        http
+                .securityMatcher(EndpointRequest.toAnyEndpoint())
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers(EndpointRequest.to("health")).permitAll()
+                        .anyRequest().hasRole("ADMIN"))
+                .oauth2ResourceServer(resourceServer -> resourceServer
+                        .opaqueToken(opaque -> opaque.introspector(introspector)))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+
+        return http.build();
+    }
+
+    /**
      * Stateless admin-API chain for machine clients (issue #204).
      *
      * <p>Claims a request only when it targets {@link #ADMIN_BEARER_API_PATHS} AND carries an
@@ -559,7 +590,7 @@ public class AuthorizationServerConfig {
                                 "/assets/**", "/webjars/**",
                                 "/login", "/error",
                                 "/.well-known/**",
-                                "/actuator/health", "/actuator/info",
+                                // (actuator endpoints are on actuatorSecurityFilterChain)
                                 // PR C3 — AS↔DC delegation handoff endpoints. Both must be reachable
                                 // without prior authentication: /authorize/delegate is hit BEFORE
                                 // the customer authenticates anywhere (its job is to delegate auth

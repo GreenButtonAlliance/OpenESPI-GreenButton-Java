@@ -91,14 +91,6 @@ logging:
     max-size: 100MB
     max-history: 30
 
-# Management - Basic configuration (applications should configure endpoints)
-management:
-  endpoints:
-    enabled-by-default: false
-  info:
-    env:
-      enabled: false
-
 # ESPI Configuration for Production
 espi:
   database:

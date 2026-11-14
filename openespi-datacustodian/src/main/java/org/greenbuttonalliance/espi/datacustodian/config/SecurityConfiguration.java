@@ -153,11 +153,9 @@ public class SecurityConfiguration {
             // Configure authorization rules. ESPI customer FB scopes are READ-ONLY; every write is
             // admin-gated (see the blanket write rule below).
             .authorizeHttpRequests(authz -> authz
-                // Public endpoints
+                // Public endpoints (actuator endpoints are on ActuatorSecurityConfiguration's chain)
                 .requestMatchers(
                     "/error",
-                    "/actuator/health",
-                    "/actuator/info",
                     "/api-docs/**",
                     "/swagger-ui/**",
                     "/swagger-ui.html",
