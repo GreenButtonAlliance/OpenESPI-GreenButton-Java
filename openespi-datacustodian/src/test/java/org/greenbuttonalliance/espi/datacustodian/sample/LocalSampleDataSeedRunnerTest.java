@@ -35,6 +35,9 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.stream.IntStream;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.opaqueToken;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -69,18 +72,25 @@ class LocalSampleDataSeedRunnerTest {
     @Autowired
     private PasswordEncoder customerPasswordEncoder;
 
+    /**
+     * Asserts on the seeded entries' ids, not on entry counts: every Spring test context in the module shares
+     * the in-memory {@code testdb}, so other tests may have added rows of the same type.
+     */
     @ParameterizedTest(name = "{0}")
     @CsvSource({
             "UsagePoint, 1", "MeterReading, 1", "ReadingType, 1", "IntervalBlock, 2", "UsageSummary, 1",
             "ElectricPowerQualitySummary, 1", "ApplicationInformation, 1", "Customer, 1", "CustomerAccount, 1"})
-    @DisplayName("each seeded ESPI feed returns its sample entries to the DataCustodian admin")
+    @DisplayName("each seeded ESPI feed marshals its sample entries for the DataCustodian admin")
     void feedsReturnSampleEntries(String resource, int entries) throws Exception {
         String xml = mockMvc.perform(get("/espi/1_1/resource/" + resource)
                         .with(opaqueToken().authorities(new SimpleGrantedAuthority("SCOPE_DataCustodian_Admin_Access"))))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
-        assertThat(xml.split("<atom:entry>", -1)).hasSize(entries + 1);
+        List<String> seededEntryIds = IntStream.rangeClosed(1, entries)
+                .mapToObj(n -> "<atom:id>urn:uuid:" + runner.id(resource + "/" + n) + "</atom:id>")
+                .toList();
+        assertThat(xml).contains(seededEntryIds);
     }
 
     @Test
@@ -94,7 +104,8 @@ class LocalSampleDataSeedRunnerTest {
         assertThat(usagePointRepository.findById(runner.id("UsagePoint/1")))
                 .hasValueSatisfying(usagePoint -> assertThat(usagePoint.getRetailCustomer().getUsername())
                         .isEqualTo(LocalSampleDataSeedRunner.CUSTOMER_USERNAME));
-        assertThat(intervalBlockRepository.findAll())
+        assertThat(intervalBlockRepository.findAllById(IntStream.rangeClosed(1, LocalSampleDataSeedRunner.DAYS)
+                        .mapToObj(n -> runner.id("IntervalBlock/" + n)).toList()))
                 .hasSize(LocalSampleDataSeedRunner.DAYS)
                 .allSatisfy(block -> assertThat(block.getIntervalReadings()).hasSize(24));
     }
