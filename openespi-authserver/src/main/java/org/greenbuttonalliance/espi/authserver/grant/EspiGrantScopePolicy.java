@@ -50,26 +50,43 @@ import java.util.function.Consumer;
  *   <li><b>authorization_code</b> (customer consent) may yield only {@code openid} / {@code profile}
  *       and ESPI customer data scopes: scopes that, parsed the way the Data Custodian parses them
  *       ({@code EspiScope}: {@code ;}-separated, trimmed, case-insensitive {@code FB} key, {@code _}-separated
- *       integers), name at least one Function Block and none of the {@link #RESERVED_FUNCTION_BLOCKS}.</li>
+ *       integers), name at least one Function Block and only {@link #CUSTOMER_DATA_FUNCTION_BLOCKS}.</li>
  * </ul>
+ * In ESPI practice {@code FB=34_35} and {@code FB=36_40} are unique Function Block combinations that mean
+ * "client access token" and "registration access token"; every other {@code FB=} scope is a customer scope.
+ * Neither combination can pass the customer rule, because FB 34 and 36 are not customer data Function Blocks.
  * Refresh tokens can only narrow the scopes of the grant they came from, so they need no rule here.
  */
 public final class EspiGrantScopePolicy {
+
+    /**
+     * The Third Party's client access token ({@code client_credentials}): the only token the Data Custodian's
+     * ESPI Authorization and Bulk APIs accept.
+     */
+    public static final String CLIENT_ACCESS_TOKEN_SCOPE = "FB=34_35";
 
     /** Scope that renews an expired registration access token (ESPI {@code FB=36_40}). */
     public static final String REGISTRATION_RENEWAL_SCOPE = "FB=36_40";
 
     /** The only scopes {@code client_credentials} may yield. Never granted through a customer's consent. */
     public static final Set<String> ADMINISTRATIVE_SCOPES = Set.of(
+            CLIENT_ACCESS_TOKEN_SCOPE,
+            REGISTRATION_RENEWAL_SCOPE,
             "ThirdParty_Admin_Access",
             "DataCustodian_Admin_Access",
-            "Upload_Admin_Access",
-            REGISTRATION_RENEWAL_SCOPE,
             "authserver.admin",
             "client.create");
 
-    /** Function Blocks of the registration-renewal scope, which a customer can never grant. */
-    public static final Set<Integer> RESERVED_FUNCTION_BLOCKS = Set.of(36, 40);
+    /**
+     * The customer data Function Blocks a Data Custodian can currently be certified for, per the GBA Green Button
+     * Data Custodian Connect My Data (CMD) Certification Application v2.14: Energy Usage FB 1-13, 15-17, 26-29,
+     * 31, 35, 37, 39, 40 and Retail Customer FB 51, 53-62, 64, 65, 67, 69-71 (FB 68 is reserved for future use).
+     * FB 34 (SFTP bulk) and FB 36 (registration) are absent, so a customer can never grant {@code FB=34_35} or
+     * {@code FB=36_40}, whatever the spelling or extra parameters.
+     */
+    public static final Set<Integer> CUSTOMER_DATA_FUNCTION_BLOCKS = Set.of(
+            1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 17, 26, 27, 28, 29, 31, 35, 37, 39, 40,
+            51, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 64, 65, 67, 69, 70, 71);
 
     /** Non-ESPI scopes a customer authorization request may carry. */
     private static final Set<String> CUSTOMER_IDENTITY_SCOPES = Set.of("openid", "profile");
@@ -88,7 +105,7 @@ public final class EspiGrantScopePolicy {
             return true;
         }
         return functionBlocks(scope)
-                .filter(fbs -> !fbs.isEmpty() && fbs.stream().noneMatch(RESERVED_FUNCTION_BLOCKS::contains))
+                .filter(fbs -> !fbs.isEmpty() && CUSTOMER_DATA_FUNCTION_BLOCKS.containsAll(fbs))
                 .isPresent();
     }
 
@@ -96,7 +113,7 @@ public final class EspiGrantScopePolicy {
      * The Function Blocks the Data Custodian would read from {@code scope} (mirrors {@code EspiScope.parse}),
      * or empty when the scope cannot be parsed, which callers treat as not allowed.
      */
-    static Optional<Set<Integer>> functionBlocks(String scope) {
+    public static Optional<Set<Integer>> functionBlocks(String scope) {
         if (scope == null || scope.isBlank()) {
             return Optional.empty();
         }
