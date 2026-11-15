@@ -143,7 +143,8 @@ class EspiGrantScopePolicyTest {
 
 	@ParameterizedTest
 	@ValueSource(strings = {"FB=1_4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13",
-			"FB=4_5;IntervalDuration=900;BlockDuration=monthly;HistoryLength=13", "FB=4_5"})
+			"FB=4_5;IntervalDuration=900;BlockDuration=monthly;HistoryLength=13", "FB=4_5",
+			"FB=35", "FB=40"}) // narrowings of the registered administrative FB=34_35 and FB=36_40
 	@DisplayName("authorization_code (#211): a scope that widens or changes the registered scope is invalid_scope")
 	void authorizationCodeRejectsNonNarrowing(String scope) {
 		assertThatThrownBy(() -> EspiGrantScopePolicy.authorizationCodeValidator()

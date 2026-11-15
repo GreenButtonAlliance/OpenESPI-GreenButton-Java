@@ -197,8 +197,11 @@ public final class EspiGrantScopePolicy {
     static void requireRegisteredOrNarrowing(OAuth2AuthorizationCodeRequestAuthenticationContext context) {
         Set<String> registered = context.getRegisteredClient().getScopes();
         OAuth2AuthorizationCodeRequestAuthenticationToken request = context.getAuthentication();
-        boolean allowed = request.getScopes().stream().allMatch(scope ->
-                registered.contains(scope) || registered.stream().anyMatch(r -> isNarrowingOf(scope, r)));
+        // Only a customer scope may be narrowed: narrowing FB=34_35 or FB=36_40 to FB=35 or FB=40 would
+        // otherwise turn an administrative registration into a customer scope the client never registered.
+        boolean allowed = request.getScopes().stream().allMatch(scope -> registered.contains(scope)
+                || registered.stream().filter(EspiGrantScopePolicy::isAuthorizationCodeScope)
+                        .anyMatch(r -> isNarrowingOf(scope, r)));
         if (!allowed) {
             throw invalidScope(context, "OAuth 2.0 Parameter: scope");
         }
