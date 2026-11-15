@@ -145,10 +145,63 @@ public final class EspiGrantScopePolicy {
                 .andThen(EspiGrantScopePolicy::requireClientCredentialsScopes);
     }
 
-    /** Spring's default authorization request checks, followed by the ESPI rule. */
+    /**
+     * True when {@code candidate} is an ESPI narrowing of {@code original} (#211): it names a non-empty subset of
+     * the original's Function Blocks and carries exactly the original's other parameters ({@code IntervalDuration},
+     * {@code BlockDuration}, {@code HistoryLength}, ...; keys compared case-insensitively, order ignored). The
+     * Third Party may narrow its registered scope and the customer may narrow the requested scope, but neither may
+     * widen it, so a candidate naming any Function Block the original does not is never a narrowing. Unparseable
+     * input is never a narrowing.
+     */
+    public static boolean isNarrowingOf(String candidate, String original) {
+        Optional<Set<Integer>> candidateFbs = functionBlocks(candidate);
+        Optional<Set<Integer>> originalFbs = functionBlocks(original);
+        return candidateFbs.isPresent() && originalFbs.isPresent()
+                && !candidateFbs.get().isEmpty()
+                && originalFbs.get().containsAll(candidateFbs.get())
+                && otherParameters(candidate).equals(otherParameters(original));
+    }
+
+    /** The non-{@code FB} terms of a scope, normalized as {@code lowercased-key=trimmed-value}. */
+    private static Set<String> otherParameters(String scope) {
+        Set<String> terms = new TreeSet<>();
+        for (String segment : scope.split(";")) {
+            String term = segment.trim();
+            if (term.isEmpty()) {
+                continue;
+            }
+            int eq = term.indexOf('=');
+            String key = (eq < 0 ? term : term.substring(0, eq)).trim().toLowerCase(Locale.ROOT);
+            if (!key.equals("fb")) {
+                terms.add(eq < 0 ? key : key + "=" + term.substring(eq + 1).trim());
+            }
+        }
+        return terms;
+    }
+
+    /**
+     * Spring's default redirect URI check, the ESPI scope check, then the ESPI per-grant rule. The scope check
+     * replaces Spring's exact-match one (#211): every requested scope must be registered for the client or be an
+     * {@linkplain #isNarrowingOf narrowing} of a registered scope. The registered scope may be narrowed twice and
+     * widened never: by the Third Party when it starts the authorization code flow, and again by the customer on
+     * the Data Custodian's Authorization Screen ({@code AuthorizeContinueController} rejects an approved scope that
+     * is not a narrowing of the request, then replays the request with it). The code, the access token and the
+     * Authorization therefore all carry the narrowed scope string.
+     */
     public static Consumer<OAuth2AuthorizationCodeRequestAuthenticationContext> authorizationCodeValidator() {
-        return new OAuth2AuthorizationCodeRequestAuthenticationValidator()
+        return OAuth2AuthorizationCodeRequestAuthenticationValidator.DEFAULT_REDIRECT_URI_VALIDATOR
+                .andThen(EspiGrantScopePolicy::requireRegisteredOrNarrowing)
                 .andThen(EspiGrantScopePolicy::requireAuthorizationCodeScopes);
+    }
+
+    static void requireRegisteredOrNarrowing(OAuth2AuthorizationCodeRequestAuthenticationContext context) {
+        Set<String> registered = context.getRegisteredClient().getScopes();
+        OAuth2AuthorizationCodeRequestAuthenticationToken request = context.getAuthentication();
+        boolean allowed = request.getScopes().stream().allMatch(scope ->
+                registered.contains(scope) || registered.stream().anyMatch(r -> isNarrowingOf(scope, r)));
+        if (!allowed) {
+            throw invalidScope(context, "OAuth 2.0 Parameter: scope");
+        }
     }
 
     static void requireClientCredentialsScopes(OAuth2ClientCredentialsAuthenticationContext context) {
@@ -164,7 +217,14 @@ public final class EspiGrantScopePolicy {
         if (request.getScopes().stream().allMatch(EspiGrantScopePolicy::isAuthorizationCodeScope)) {
             return;
         }
-        // Same shape as Spring's own invalid_scope error: redirected back to the client's redirect URI.
+        throw invalidScope(context,
+                "OAuth 2.0 Parameter: scope (customer authorization grants only ESPI customer data scopes)");
+    }
+
+    /** Same shape as Spring's own invalid_scope error: redirected back to the client's redirect URI. */
+    private static OAuth2AuthorizationCodeRequestAuthenticationException invalidScope(
+            OAuth2AuthorizationCodeRequestAuthenticationContext context, String description) {
+        OAuth2AuthorizationCodeRequestAuthenticationToken request = context.getAuthentication();
         String redirectUri = StringUtils.hasText(request.getRedirectUri())
                 ? request.getRedirectUri()
                 : context.getRegisteredClient().getRedirectUris().iterator().next();
@@ -172,8 +232,7 @@ public final class EspiGrantScopePolicy {
                 request.getAuthorizationUri(), request.getClientId(), (Authentication) request.getPrincipal(),
                 redirectUri, request.getState(), request.getScopes(), request.getAdditionalParameters());
         result.setAuthenticated(true);
-        throw new OAuth2AuthorizationCodeRequestAuthenticationException(new OAuth2Error(OAuth2ErrorCodes.INVALID_SCOPE,
-                "OAuth 2.0 Parameter: scope (customer authorization grants only ESPI customer data scopes)",
-                null), result);
+        return new OAuth2AuthorizationCodeRequestAuthenticationException(
+                new OAuth2Error(OAuth2ErrorCodes.INVALID_SCOPE, description, null), result);
     }
 }

@@ -285,7 +285,7 @@ class OAuth2DynamicClientRegistrationIntegrationTest extends AbstractAuthserverI
     private String authorizationCodeAccessToken(String clientId, String clientSecret) throws Exception {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         String correlationId = "dcr-corr-" + suffix;
-        delegationStateService.save(correlationId, clientId, REDIRECT_URI, "dcr-state-" + suffix);
+        delegationStateService.save(correlationId, clientId, REDIRECT_URI, "dcr-state-" + suffix, ESPI_SCOPE);
         when(backchannelClient.provision(any())).thenReturn(new BackchannelResponse(
                 UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
                 "https://dc.example/Subscription/1", "https://dc.example/Authorization/1",

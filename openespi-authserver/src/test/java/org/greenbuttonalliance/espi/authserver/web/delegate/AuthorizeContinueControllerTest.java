@@ -19,6 +19,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -108,7 +110,7 @@ class AuthorizeContinueControllerTest {
 		@DisplayName("valid allow handoff: pre-populates consent and redirects to /oauth2/authorize")
 		void allowRedirectsToAuthorizeWithConsentSeeded() throws Exception {
 			String cid = "corr-allow-1";
-			delegationStateService.save(cid, "tp-1", "https://tp.example/cb", "tp-state-1");
+			delegationStateService.save(cid, "tp-1", "https://tp.example/cb", "tp-state-1", ESPI_SCOPE);
 			when(registeredClientRepository.findByClientId("tp-1")).thenReturn(client(ESPI_SCOPE));
 
 			String token = codec.encode(allowReturn(cid, ESPI_SCOPE));
@@ -138,7 +140,8 @@ class AuthorizeContinueControllerTest {
 		void spaceSeparatedScopesAreSeparateConsentScopes() throws Exception {
 			String cid = "corr-allow-3";
 			String second = "FB=1_3_4_5_13_14_39;IntervalDuration=900;BlockDuration=daily;HistoryLength=7";
-			delegationStateService.save(cid, "tp-1", "https://tp.example/cb", "tp-state-1");
+			delegationStateService.save(cid, "tp-1", "https://tp.example/cb", "tp-state-1",
+					ESPI_SCOPE + " " + second);
 			when(registeredClientRepository.findByClientId("tp-1")).thenReturn(client(ESPI_SCOPE, second));
 
 			String token = codec.encode(allowReturn(cid, ESPI_SCOPE + "  " + second));
@@ -150,10 +153,46 @@ class AuthorizeContinueControllerTest {
 		}
 
 		@Test
+		@DisplayName("narrowed approved scope (#211): recorded as consent and replayed as the effective scope")
+		void narrowedApprovedScopeIsConsentedAndReplayed() throws Exception {
+			String cid = "corr-allow-narrow";
+			String narrowed = "FB=4_5;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13";
+			delegationStateService.save(cid, "tp-1", "https://tp.example/cb", "tp-state-1", ESPI_SCOPE);
+			when(registeredClientRepository.findByClientId("tp-1")).thenReturn(client(ESPI_SCOPE));
+
+			mockMvc.perform(get("/oauth2/authorize/continue").param("handoff", codec.encode(allowReturn(cid, narrowed))))
+					.andExpect(status().is3xxRedirection())
+					.andExpect(redirectedUrl(
+							"/oauth2/authorize?response_type=code&client_id=tp-1&redirect_uri=https://tp.example/cb"
+									+ "&scope=FB%3D4_5;IntervalDuration%3D3600;BlockDuration%3Dmonthly;HistoryLength%3D13"
+									+ "&state=tp-state-1"));
+
+			assertThat(savedConsent().getScopes()).containsExactly(narrowed);
+		}
+
+		@ParameterizedTest
+		@ValueSource(strings = {
+				"FB=1_4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13", // adds FB 1
+				"FB=4_5;IntervalDuration=900;BlockDuration=monthly;HistoryLength=13",       // changes a parameter
+				"FB=4_5_15"})                                                               // drops parameters
+		@DisplayName("approved scope that is not a narrowing of the request (#211): 400 with no consent write")
+		void approvedScopeThatWidensTheRequestIs400(String approved) throws Exception {
+			String cid = "corr-allow-widen";
+			delegationStateService.save(cid, "tp-1", "https://tp.example/cb", "tp-state-1", ESPI_SCOPE);
+			when(registeredClientRepository.findByClientId("tp-1")).thenReturn(client(ESPI_SCOPE));
+
+			mockMvc.perform(get("/oauth2/authorize/continue").param("handoff", codec.encode(allowReturn(cid, approved))))
+					.andExpect(status().isBadRequest())
+					.andExpect(view().name("error/400"));
+
+			verifyNoInteractions(consentService);
+		}
+
+		@Test
 		@DisplayName("registered client missing at /continue: 400 with no consent write")
 		void clientGoneAtContinueIs400() throws Exception {
 			String cid = "corr-allow-2";
-			delegationStateService.save(cid, "tp-vanished", "https://tp.example/cb", "tp-state");
+			delegationStateService.save(cid, "tp-vanished", "https://tp.example/cb", "tp-state", "FB_1");
 			when(registeredClientRepository.findByClientId("tp-vanished")).thenReturn(null);
 
 			String token = codec.encode(allowReturn(cid, "FB_1"));
@@ -174,7 +213,7 @@ class AuthorizeContinueControllerTest {
 		@DisplayName("valid deny handoff: 302 to TP redirect_uri with error=access_denied + state")
 		void denyRedirectsToTpWithAccessDenied() throws Exception {
 			String cid = "corr-deny-1";
-			delegationStateService.save(cid, "tp-1", "https://tp.example/cb", "tp-state-1");
+			delegationStateService.save(cid, "tp-1", "https://tp.example/cb", "tp-state-1", ESPI_SCOPE);
 			String token = codec.encode(denyReturn(cid));
 
 			mockMvc.perform(get("/oauth2/authorize/continue").param("handoff", token))
@@ -190,7 +229,7 @@ class AuthorizeContinueControllerTest {
 		@DisplayName("deny with no tpState: redirects without state param")
 		void denyWithoutStateOmitsStateParam() throws Exception {
 			String cid = "corr-deny-2";
-			delegationStateService.save(cid, "tp-1", "https://tp.example/cb", null);
+			delegationStateService.save(cid, "tp-1", "https://tp.example/cb", null, ESPI_SCOPE);
 			String token = codec.encode(denyReturn(cid));
 
 			mockMvc.perform(get("/oauth2/authorize/continue").param("handoff", token))
@@ -203,7 +242,7 @@ class AuthorizeContinueControllerTest {
 		@DisplayName("deny with no registered redirect_uri: 400 (cannot deliver access_denied)")
 		void denyWithoutRedirectUriIs400() throws Exception {
 			String cid = "corr-deny-3";
-			delegationStateService.save(cid, "tp-no-uri", null, "tp-state");
+			delegationStateService.save(cid, "tp-no-uri", null, "tp-state", ESPI_SCOPE);
 			String token = codec.encode(denyReturn(cid));
 
 			mockMvc.perform(get("/oauth2/authorize/continue").param("handoff", token))
@@ -215,7 +254,7 @@ class AuthorizeContinueControllerTest {
 		@DisplayName("allow with blank approved_scope falls through to deny semantics")
 		void allowWithBlankApprovedScopeIsDeny() throws Exception {
 			String cid = "corr-deny-4";
-			delegationStateService.save(cid, "tp-1", "https://tp.example/cb", "tp-state-1");
+			delegationStateService.save(cid, "tp-1", "https://tp.example/cb", "tp-state-1", ESPI_SCOPE);
 			String token = codec.encode(allowReturn(cid, ""));
 
 			mockMvc.perform(get("/oauth2/authorize/continue").param("handoff", token))
@@ -263,7 +302,7 @@ class AuthorizeContinueControllerTest {
 		@DisplayName("nonce replay: nonceService throws InvalidHandoffException → 400")
 		void nonceReplayIs400() throws Exception {
 			String cid = "corr-replay";
-			delegationStateService.save(cid, "tp-1", "https://tp.example/cb", "tp-state");
+			delegationStateService.save(cid, "tp-1", "https://tp.example/cb", "tp-state", "FB_1");
 			String token = codec.encode(allowReturn(cid, "FB_1"));
 
 			org.mockito.Mockito.doThrow(new InvalidHandoffException("nonce replay"))

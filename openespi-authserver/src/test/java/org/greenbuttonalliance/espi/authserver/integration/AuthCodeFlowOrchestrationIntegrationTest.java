@@ -24,6 +24,9 @@ import org.greenbuttonalliance.espi.handoff.SignedHandoff;
 import org.greenbuttonalliance.espi.handoff.SignedHandoffCodec;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mock.web.MockHttpSession;
@@ -128,7 +131,7 @@ class AuthCodeFlowOrchestrationIntegrationTest extends AbstractAuthserverIntegra
 		registeredClientRepository.save(testClient);
 
 		// The outbound leg already happened in real life; seed the delegation state it would have left.
-		delegationStateService.save(correlationId, clientId, REDIRECT_URI, "tp-state-" + suffix);
+		delegationStateService.save(correlationId, clientId, REDIRECT_URI, "tp-state-" + suffix, SCOPE);
 
 		// What the DC back-channel will return once the token is minted.
 		UUID authorizationId = UUID.randomUUID();
@@ -222,6 +225,115 @@ class AuthCodeFlowOrchestrationIntegrationTest extends AbstractAuthserverIntegra
 				.andExpect(jsonPath("$.customer_subscription_id").doesNotExist());
 	}
 
+	/**
+	 * Registered {@code FB=4_5_15}. Either the Third Party narrowed it in its authorization request, or the
+	 * customer narrowed the request on the DC Authorization Screen, or both.
+	 */
+	@ParameterizedTest(name = "requested {0}, customer approved {1}")
+	@CsvSource(delimiter = '|', value = {
+			// customer drops FB 15 from the registered scope
+			"FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"
+					+ "|FB=4_5;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13",
+			// Third Party requests FB 4, 5 only; the customer approves all of it
+			"FB=4_5;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"
+					+ "|FB=4_5;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13",
+			// Third Party requests FB 4, 5; the customer narrows further to FB 5
+			"FB=4_5;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"
+					+ "|FB=5;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"})
+	@DisplayName("narrowed scope (#211): code, token, introspection and back-channel carry the narrowed scope")
+	void narrowedScopeCompletesWithTheNarrowedScope(String requested, String narrowed) throws Exception {
+		String suffix = UUID.randomUUID().toString().substring(0, 8);
+		String clientId = "pr-211-tp-" + suffix;
+		String clientSecret = "pr-211-secret-" + suffix;
+		String correlationId = "corr-211-" + suffix;
+		registerClient(clientId, clientSecret);
+		delegationStateService.save(correlationId, clientId, REDIRECT_URI, "tp-state-" + suffix, requested);
+		when(backchannelClient.provision(any())).thenReturn(new BackchannelResponse(
+				UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+				"https://dc.example/Subscription/211", "https://dc.example/Authorization/211", null));
+
+		Instant now = Instant.now();
+		String handoff = codec.encode(SignedHandoff.Return.of(
+				correlationId, now, now.plusSeconds(300),
+				UUID.randomUUID().toString().replace("-", ""),
+				CUSTOMER_ID,
+				List.of(UUID.randomUUID()),
+				SignedHandoff.Return.CONSENT_ALLOW,
+				narrowed));
+		MvcResult continueResult = mockMvc.perform(get("/oauth2/authorize/continue").param("handoff", handoff))
+				.andExpect(status().is3xxRedirection())
+				.andReturn();
+		MockHttpSession session = (MockHttpSession) continueResult.getRequest().getSession(false);
+
+		String location = mockMvc.perform(get(java.net.URI.create(
+								continueResult.getResponse().getHeader("Location"))).session(session))
+				.andExpect(status().is3xxRedirection())
+				.andReturn().getResponse().getHeader("Location");
+		assertThat(location)
+				.as("the narrowed scope must mint a code, not invalid_scope")
+				.startsWith(REDIRECT_URI)
+				.contains("code=")
+				.doesNotContain("error=");
+
+		String body = mockMvc.perform(post("/oauth2/token")
+						.with(httpBasic(clientId, clientSecret))
+						.param("grant_type", "authorization_code")
+						.param("code", extractQueryParam(location, "code"))
+						.param("redirect_uri", REDIRECT_URI))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.scope").value(narrowed))
+				.andReturn().getResponse().getContentAsString();
+		String accessToken = new tools.jackson.databind.ObjectMapper().readTree(body).get("access_token").asString();
+
+		ArgumentCaptor<BackchannelRequest> captor = ArgumentCaptor.forClass(BackchannelRequest.class);
+		verify(backchannelClient).provision(captor.capture());
+		assertThat(captor.getValue().grantedScope()).isEqualTo(narrowed);
+
+		mockMvc.perform(post("/oauth2/introspect")
+						.with(httpBasic(clientId, clientSecret))
+						.param("token", accessToken))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.active").value(true))
+				.andExpect(jsonPath("$.scope").value(narrowed));
+	}
+
+	@Test
+	@DisplayName("Third Party requests a narrowing of its registered scope (#211): delegated to the customer")
+	void thirdPartyNarrowedRequestIsDelegatedToTheCustomer() throws Exception {
+		assertThat(authorizeLocation("FB=4_5;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"))
+				.contains("/authorize/delegate")
+				.doesNotContain("error=");
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = {
+			"FB=1_4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13", // adds FB 1
+			"FB=4_5;IntervalDuration=900;BlockDuration=monthly;HistoryLength=13"})      // changes a parameter
+	@DisplayName("Third Party requests a scope that is not a narrowing of its registration (#211): invalid_scope")
+	void thirdPartyWidenedRequestIsInvalidScope(String scope) throws Exception {
+		assertThat(authorizeLocation(scope)).startsWith(REDIRECT_URI).contains("error=invalid_scope");
+	}
+
+	/** Where an unauthenticated {@code /oauth2/authorize} for a freshly registered client redirects. */
+	private String authorizeLocation(String scope) throws Exception {
+		String suffix = UUID.randomUUID().toString().substring(0, 8);
+		String clientId = "pr-211-direct-" + suffix;
+		registerClient(clientId, "pr-211-secret-" + suffix);
+
+		String authorizeUri = org.springframework.web.util.UriComponentsBuilder.fromPath("/oauth2/authorize")
+				.queryParam("response_type", "code")
+				.queryParam("client_id", clientId)
+				.queryParam("scope", scope)
+				.queryParam("redirect_uri", REDIRECT_URI)
+				.queryParam("state", "s-" + suffix)
+				.encode(java.nio.charset.StandardCharsets.UTF_8)
+				.build().toUriString();
+		return mockMvc.perform(get(java.net.URI.create(authorizeUri))
+						.accept(org.springframework.http.MediaType.TEXT_HTML))
+				.andExpect(status().is3xxRedirection())
+				.andReturn().getResponse().getHeader("Location");
+	}
+
 	@Test
 	@DisplayName("refresh_token grant (#202): no re-provisioning, refreshed response carries the SAME URIs")
 	void refreshDoesNotReprovisionAndKeepsUris() throws Exception {
@@ -230,7 +342,7 @@ class AuthCodeFlowOrchestrationIntegrationTest extends AbstractAuthserverIntegra
 		String clientSecret = "pr-202-secret-" + suffix;
 		String correlationId = "corr-202-" + suffix;
 		registerClient(clientId, clientSecret);
-		delegationStateService.save(correlationId, clientId, REDIRECT_URI, "tp-state-" + suffix);
+		delegationStateService.save(correlationId, clientId, REDIRECT_URI, "tp-state-" + suffix, SCOPE);
 
 		UUID authorizationId = UUID.randomUUID();
 		UUID resourceSubscriptionId = UUID.randomUUID();

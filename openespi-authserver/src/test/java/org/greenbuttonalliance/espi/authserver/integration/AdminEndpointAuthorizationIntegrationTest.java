@@ -380,7 +380,7 @@ class AdminEndpointAuthorizationIntegrationTest extends AbstractAuthserverIntegr
 	 */
 	private MockHttpSession establishCustomerSession() throws Exception {
 		String correlationId = "corr-" + UUID.randomUUID();
-		delegationStateService.save(correlationId, victimClientId, REDIRECT_URI, "tp-state");
+		delegationStateService.save(correlationId, victimClientId, REDIRECT_URI, "tp-state", SCOPE);
 		Instant now = Instant.now();
 		String handoff = codec.encode(SignedHandoff.Return.of(
 				correlationId, now, now.plusSeconds(300),

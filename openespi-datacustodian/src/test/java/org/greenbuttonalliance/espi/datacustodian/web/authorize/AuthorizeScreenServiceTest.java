@@ -181,11 +181,20 @@ class AuthorizeScreenServiceTest {
 				Set.of(),                    // no PII
 				ups);
 
-		EspiScope parsed = EspiScope.parse(approved);
-		// FB 1 + 4 auto-added (implicit base for any energy grant); FB 5 kept; FB 10 dropped
-		// (gas not selected); FB 15 kept (data-shape modifier valid when commodity remains).
-		assertThat(parsed.functionBlocks()).containsExactly(1, 4, 5, 15);
-		assertThat(parsed.intervalDuration()).isEqualTo(3600);
+		// FB 4 kept (requested base, a commodity remains); FB 5 kept; FB 10 dropped (gas not
+		// selected); FB 15 kept (data-shape modifier valid when commodity remains). FB 1 was not
+		// requested, so it is not added (#211).
+		assertThat(approved).isEqualTo("FB=4_5_15;IntervalDuration=3600");
+	}
+
+	@Test
+	void computeApprovedScope_full_approval_returns_the_requested_scope_unchanged() {
+		UUID elec = UUID.randomUUID();
+		String requested = "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13";
+
+		assertThat(service.computeApprovedScope(requested, Set.of(elec), Set.of(),
+				List.of(usagePoint(elec, ServiceCategory.ELECTRICITY))))
+				.isEqualTo(requested);
 	}
 
 	@Test
@@ -196,29 +205,28 @@ class AuthorizeScreenServiceTest {
 				Set.of(54, 58),              // customer approved 54 + 58, denied 55
 				List.of());
 
-		EspiScope parsed = EspiScope.parse(approved);
-		assertThat(parsed.functionBlocks()).containsExactly(51, 54, 58); // FB 51 (customer base) added
-		// FB 55 dropped (denied); FB 4 dropped (no energy in approved scope)
+		// FB 55 dropped (denied); FB 4 dropped (no energy in approved scope); FB 51 not requested,
+		// so not added (#211).
+		assertThat(EspiScope.parse(approved).functionBlocks()).containsExactly(54, 58);
 	}
 
 	@Test
-	void computeApprovedScope_adds_implicit_energy_bases_when_any_commodity_remains() {
+	void computeApprovedScope_never_adds_a_function_block_the_third_party_did_not_request() {
 		UUID elec = UUID.randomUUID();
 		String approved = service.computeApprovedScope(
-				"FB=5", Set.of(elec), Set.of(),                                 // request omits FB 1 + 4
+				"FB=5_54", Set.of(elec), Set.of(54),                            // request omits FB 1, 4, 51
 				List.of(usagePoint(elec, ServiceCategory.ELECTRICITY)));
 
-		// Implementation auto-adds 1 + 4 (required for any energy response to be well-formed).
-		assertThat(EspiScope.parse(approved).functionBlocks()).contains(1, 4);
+		assertThat(EspiScope.parse(approved).functionBlocks()).containsExactly(5, 54);
 	}
 
 	@Test
-	void computeApprovedScope_drops_energy_bases_for_PII_only_outcome() {
+	void computeApprovedScope_keeps_each_requested_base_only_while_what_it_is_the_base_of_remains() {
 		String approved = service.computeApprovedScope(
-				"FB=4_5_54", Set.of(), Set.of(54), List.of());
+				"FB=1_4_5_51_54", Set.of(), Set.of(54), List.of());
 
-		assertThat(EspiScope.parse(approved).functionBlocks()).doesNotContain(1, 4, 5);
-		assertThat(EspiScope.parse(approved).functionBlocks()).contains(54, 51);
+		// No usage point selected: energy FBs 1, 4, 5 drop; PII 54 approved, so its base FB 51 stays.
+		assertThat(EspiScope.parse(approved).functionBlocks()).containsExactly(51, 54);
 	}
 
 	@Test

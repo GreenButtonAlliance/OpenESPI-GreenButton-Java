@@ -30,14 +30,15 @@ class DelegationStateServiceTest {
 	@DisplayName("save+consume round-trip returns the saved entry exactly once")
 	void saveThenConsumeReturnsEntryOnce() {
 		String cid = "corr-1";
-		service.save(cid, "client-x", "https://tp.example/cb", "tp-state");
+		service.save(cid, "client-x", "https://tp.example/cb", "tp-state", "FB=4_5_15");
 
 		DelegationStateService.Entry first = service.consume(cid);
 		assertThat(first).isNotNull()
 				.extracting(DelegationStateService.Entry::clientId,
 						DelegationStateService.Entry::redirectUri,
-						DelegationStateService.Entry::tpState)
-				.containsExactly("client-x", "https://tp.example/cb", "tp-state");
+						DelegationStateService.Entry::tpState,
+						DelegationStateService.Entry::requestedScope)
+				.containsExactly("client-x", "https://tp.example/cb", "tp-state", "FB=4_5_15");
 
 		// Single-use: a second consume returns null
 		assertThat(service.consume(cid)).isNull();
@@ -52,7 +53,7 @@ class DelegationStateServiceTest {
 	@Test
 	@DisplayName("peek returns entry without removing it")
 	void peekReturnsWithoutRemoving() {
-		service.save("corr-peek", "client-x", "https://tp.example/cb", "tp-state");
+		service.save("corr-peek", "client-x", "https://tp.example/cb", "tp-state", "FB=4_5_15");
 
 		assertThat(service.peek("corr-peek")).isNotNull();
 		// Still consumable after peek
@@ -64,7 +65,7 @@ class DelegationStateServiceTest {
 	@Test
 	@DisplayName("save preserves null tpState (TP omitted state param)")
 	void saveAcceptsNullTpState() {
-		service.save("corr-2", "client-x", "https://tp.example/cb", null);
+		service.save("corr-2", "client-x", "https://tp.example/cb", null, "FB=4_5_15");
 
 		assertThat(service.consume("corr-2"))
 				.isNotNull()

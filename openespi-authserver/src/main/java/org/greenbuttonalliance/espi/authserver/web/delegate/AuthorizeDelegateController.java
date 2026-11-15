@@ -100,7 +100,7 @@ public class AuthorizeDelegateController {
 		String resolvedRedirectUri = redirectUri != null && !redirectUri.isBlank()
 				? redirectUri
 				: firstRegisteredRedirectUri(clientId);
-		delegationStateService.save(correlationId, clientId, resolvedRedirectUri, state);
+		delegationStateService.save(correlationId, clientId, resolvedRedirectUri, state, scope);
 
 		String signedToken = handoffBuilder.buildSignedToken(clientId, scope, correlationId);
 

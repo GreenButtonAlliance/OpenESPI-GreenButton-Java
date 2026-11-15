@@ -223,10 +223,11 @@ class AuthorizeScreenControllerTest {
 		assertThat(ret.correlationId()).isEqualTo("corr-5");
 		assertThat(ret.selectedUsagePointIds()).containsExactly(electricityUpId);
 
-		// Effective approved scope: customer kept electricity (5 + implicit 1+4), data-shape 15, PII 54 (+ implicit 51).
-		// Gas (10) dropped, FB 58 dropped (customer didn't approve).
+		// Effective approved scope: customer kept electricity (4, 5), data-shape 15, PII 54. Gas (10)
+		// dropped, FB 58 dropped (customer didn't approve). FB 1 and 51 were not requested, so they
+		// are not added: the customer may only narrow the request (#211).
 		EspiScope approved = EspiScope.parse(ret.approvedScope());
-		assertThat(approved.functionBlocks()).containsExactly(1, 4, 5, 15, 51, 54);
+		assertThat(approved.functionBlocks()).containsExactly(4, 5, 15, 54);
 	}
 
 	@Test

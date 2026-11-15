@@ -466,6 +466,7 @@ public class AuthorizationServerConfig {
         authorizationServerConfigurer.authorizationEndpoint(authorize -> authorize
                 .consentPage("/authorize/delegate")
                 // #251: customer authorization never yields an administrative scope.
+                // #211: the Third Party and the customer may each narrow the registered scope, never widen it.
                 .authenticationProviders(providers -> providers.forEach(provider -> {
                     if (provider instanceof org.springframework.security.oauth2.server.authorization.authentication
                             .OAuth2AuthorizationCodeRequestAuthenticationProvider codeRequest) {
