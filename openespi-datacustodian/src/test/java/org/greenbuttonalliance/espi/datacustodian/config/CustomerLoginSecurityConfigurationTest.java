@@ -20,12 +20,16 @@ import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.greenbuttonalliance.espi.common.repositories.usage.RetailCustomerRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 import java.util.Optional;
 
@@ -38,6 +42,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -136,6 +141,39 @@ class CustomerLoginSecurityConfigurationTest {
 						.param("return_to", "//evil.example.com/steal"))
 				.andExpect(authenticated())
 				.andExpect(redirectedUrl("/custodian/home"));
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = {"https://evil.example.com/steal", "/\\evil.example.com/steal", "javascript:alert(1)"})
+	void return_to_that_is_not_a_same_origin_path_is_ignored(String returnTo) throws Exception {
+		mockMvc.perform(post("/login")
+						.with(csrf())
+						.param("username", ADMIN_USERNAME)
+						.param("password", PASSWORD)
+						.param("return_to", returnTo))
+				.andExpect(authenticated())
+				.andExpect(redirectedUrl("/custodian/home"));
+	}
+
+	@Test
+	void customer_returns_to_the_interrupted_authorization_screen_after_login() throws Exception {
+		// The AS delegation lands the unauthenticated customer on the Authorization Screen: the chain
+		// saves that request and sends the browser to the login page.
+		// A real query string (not .param()): the saved request rebuilds its URL from it.
+		MvcResult interrupted = mockMvc.perform(get("/oauth/authorize-screen?handoff=signed-token")
+						.accept(org.springframework.http.MediaType.TEXT_HTML)) // as a browser sends it
+				.andExpect(status().is3xxRedirection())
+				.andExpect(redirectedUrl("/login"))
+				.andReturn();
+		MockHttpSession session = (MockHttpSession) interrupted.getRequest().getSession(false);
+
+		mockMvc.perform(post("/login")
+						.session(session)
+						.with(csrf())
+						.param("username", CUSTOMER_USERNAME)
+						.param("password", PASSWORD))
+				.andExpect(authenticated())
+				.andExpect(redirectedUrlPattern("http://localhost/oauth/authorize-screen?handoff=signed-token*"));
 	}
 
 	private RetailCustomerEntity buildUser(String username, String role) {

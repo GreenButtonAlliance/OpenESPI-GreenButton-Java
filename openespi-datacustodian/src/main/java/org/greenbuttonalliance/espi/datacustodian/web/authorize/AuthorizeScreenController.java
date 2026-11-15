@@ -17,6 +17,7 @@
 package org.greenbuttonalliance.espi.datacustodian.web.authorize;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.greenbuttonalliance.espi.common.domain.usage.ApplicationInformationEntity;
@@ -62,7 +63,10 @@ import java.util.UUID;
  *       {@link ApplicationInformationEntity}, validates the granted scope is a subset of the
  *       third party's registered scopes, builds the view model, renders.</li>
  *   <li>Customer makes selections, POSTs to this controller.</li>
- *   <li>POST re-verifies the handoff (the form posted it back), computes the effective approved
+ *   <li>POST re-verifies the handoff's signature and expiry (the form posted it back) and takes the
+ *       handoff's pending mark out of the session, so each viewed handoff is submitted at most once
+ *       and only from the session that viewed it. (The GET already consumed the nonce; consuming it
+ *       again here rejected every submission as a replay.) It then computes the effective approved
  *       scope from the customer's checkbox decisions, builds a {@link SignedHandoff.Return},
  *       redirects user-agent to the AS's {@code return_url} with the signed return token.</li>
  * </ol>
@@ -80,6 +84,9 @@ public class AuthorizeScreenController {
 
 	private static final Duration RETURN_HANDOFF_TTL = Duration.ofMinutes(5);
 
+	/** Session attribute prefix marking a handoff (by nonce) as shown to this session and not yet submitted. */
+	static final String PENDING_HANDOFF_ATTRIBUTE = AuthorizeScreenController.class.getName() + ".pending.";
+
 	private final SignedHandoffCodec codec;
 	private final HandoffNonceService nonceService;
 	private final AuthorizeScreenService authorizeScreenService;
@@ -91,7 +98,8 @@ public class AuthorizeScreenController {
 	public String show(@RequestParam("handoff") String handoffToken,
 					   @AuthenticationPrincipal UserDetails principal,
 					   Locale locale,
-					   Model model) {
+					   Model model,
+					   HttpSession session) {
 		SignedHandoff.Outbound outbound = decodeAndConsume(handoffToken);
 		ApplicationInformationEntity application = authorizeScreenService.validateClientAndScope(
 				outbound.clientId(), outbound.grantedScope());
@@ -102,6 +110,7 @@ public class AuthorizeScreenController {
 				application, outbound.grantedScope(), customer.getId(), handoffToken, locale);
 
 		model.addAttribute("viewModel", viewModel);
+		session.setAttribute(PENDING_HANDOFF_ATTRIBUTE + outbound.nonce(), Boolean.TRUE);
 		return "authorize-screen";
 	}
 
@@ -110,9 +119,10 @@ public class AuthorizeScreenController {
 						 @RequestParam("decision") String decision,
 						 @RequestParam(value = "selected_usage_point_ids", required = false) Set<UUID> selectedUsagePointIds,
 						 @RequestParam(value = "approved_pii_fbs", required = false) Set<Integer> approvedPiiFbs,
-						 @AuthenticationPrincipal UserDetails principal) {
+						 @AuthenticationPrincipal UserDetails principal,
+						 HttpSession session) {
 
-		SignedHandoff.Outbound outbound = decodeAndConsume(handoffToken);
+		SignedHandoff.Outbound outbound = decodeAndTakePending(handoffToken, session);
 		ApplicationInformationEntity application = authorizeScreenService.validateClientAndScope(
 				outbound.clientId(), outbound.grantedScope());
 
@@ -174,6 +184,20 @@ public class AuthorizeScreenController {
 	private SignedHandoff.Outbound decodeAndConsume(String handoffToken) {
 		SignedHandoff.Outbound outbound = codec.decodeOutbound(handoffToken);
 		nonceService.consume(outbound.nonce(), outbound.expiresAt());
+		return outbound;
+	}
+
+	/**
+	 * Verifies a posted-back handoff and removes its pending mark, which {@link #show} set when it
+	 * consumed the nonce. A handoff this session never viewed, or one already submitted, is rejected.
+	 */
+	private SignedHandoff.Outbound decodeAndTakePending(String handoffToken, HttpSession session) {
+		SignedHandoff.Outbound outbound = codec.decodeOutbound(handoffToken);
+		String attribute = PENDING_HANDOFF_ATTRIBUTE + outbound.nonce();
+		if (session.getAttribute(attribute) == null) {
+			throw new InvalidHandoffException("handoff not pending in this session (not viewed, or already submitted)");
+		}
+		session.removeAttribute(attribute);
 		return outbound;
 	}
 
