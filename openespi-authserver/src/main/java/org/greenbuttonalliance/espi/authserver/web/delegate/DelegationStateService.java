@@ -50,8 +50,10 @@ public class DelegationStateService {
 	 * Save the original third-party request context so it can be retrieved when the customer
 	 * returns from DC via {@link #consume(String)}.
 	 */
-	public void save(String correlationId, String clientId, String redirectUri, String tpState) {
-		states.put(correlationId, new Entry(clientId, redirectUri, tpState, Instant.now().plus(TTL)));
+	public void save(String correlationId, String clientId, String redirectUri, String tpState,
+					 String requestedScope) {
+		states.put(correlationId, new Entry(clientId, redirectUri, tpState, requestedScope,
+				Instant.now().plus(TTL)));
 		// Lazy reaping: drop expired entries on each save call.
 		Instant now = Instant.now();
 		states.entrySet().removeIf(e -> e.getValue().expiresAt.isBefore(now));
@@ -87,7 +89,10 @@ public class DelegationStateService {
 	 *                    either {@code code=...} (allow) or {@code error=access_denied} (deny)
 	 * @param tpState     the {@code state} parameter the third party supplied in its original
 	 *                    request &mdash; echoed back verbatim per OAuth2 spec
+	 * @param requestedScope the scope the third party requested; the customer's approved scope
+	 *                    must narrow it, never widen it (#211)
 	 * @param expiresAt   when this entry should be considered stale
 	 */
-	public record Entry(String clientId, String redirectUri, String tpState, Instant expiresAt) {}
+	public record Entry(String clientId, String redirectUri, String tpState, String requestedScope,
+						Instant expiresAt) {}
 }

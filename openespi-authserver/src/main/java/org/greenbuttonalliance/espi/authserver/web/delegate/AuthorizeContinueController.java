@@ -21,6 +21,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.greenbuttonalliance.espi.authserver.grant.EspiGrantScopePolicy;
 import org.greenbuttonalliance.espi.authserver.grant.GrantContext;
 import org.greenbuttonalliance.espi.authserver.grant.GrantContextSessionStore;
 import org.greenbuttonalliance.espi.handoff.HandoffNonceService;
@@ -132,6 +133,7 @@ public class AuthorizeContinueController {
 		if (client == null) {
 			throw new InvalidHandoffException("registered client disappeared: " + state.clientId());
 		}
+		requireNarrowingOfRequest(payload.approvedScope(), state.requestedScope());
 
 		// Pre-populate the consent store with the customer's effective approved scope so Spring
 		// AS's consent check passes when /oauth2/authorize is replayed.
@@ -223,6 +225,24 @@ public class AuthorizeContinueController {
 	 */
 	private static String[] parseScopes(String approvedScope) {
 		return StringUtils.tokenizeToStringArray(approvedScope, " ");
+	}
+
+	/**
+	 * The customer may narrow the scope the third party requested, never widen it (#211): every
+	 * approved scope must be one of the requested scopes or an
+	 * {@linkplain EspiGrantScopePolicy#isNarrowingOf ESPI narrowing} of one. A Return handoff that
+	 * widens the request is a DC contract violation, rejected before any consent is recorded.
+	 */
+	private static void requireNarrowingOfRequest(String approvedScope, String requestedScope) {
+		List<String> requested = List.of(parseScopes(requestedScope != null ? requestedScope : ""));
+		for (String approved : parseScopes(approvedScope)) {
+			boolean narrows = requested.contains(approved)
+					|| requested.stream().anyMatch(r -> EspiGrantScopePolicy.isNarrowingOf(approved, r));
+			if (!narrows) {
+				throw new InvalidHandoffException("approved scope '" + approved
+						+ "' is not a narrowing of the requested scope '" + requestedScope + "'");
+			}
+		}
 	}
 
 	/**

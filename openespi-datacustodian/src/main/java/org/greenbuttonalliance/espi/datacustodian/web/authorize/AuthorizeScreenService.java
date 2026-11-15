@@ -123,8 +123,10 @@ public class AuthorizeScreenService {
 	 *   <li>Energy data-shape FBs: kept if any commodity FB remains (data-shape modifiers only
 	 *       matter alongside energy data).</li>
 	 *   <li>Customer/PII FBs: kept only if the customer explicitly opted in.</li>
-	 *   <li>Implicit base FBs (1, 4, 51): kept iff still relevant after the above narrowing
-	 *       (energy bases iff any commodity remains; customer base iff any PII remains).</li>
+	 *   <li>Implicit base FBs (1, 4, 51): kept iff requested and still relevant after the above
+	 *       narrowing (energy bases iff any commodity remains; customer base iff any PII remains).
+	 *       A base FB the Third Party did not request is never added: the customer may narrow
+	 *       the requested scope but not widen it (#211).</li>
 	 *   <li>Other terms (IntervalDuration, BlockDuration, HistoryLength): preserved.</li>
 	 * </ul>
 	 *
@@ -170,7 +172,14 @@ public class AuthorizeScreenService {
 				}
 			}
 			else if (FunctionBlock.isImplicitBase(fb)) {
-				// Implicit-base FBs are added below from the outcome, not preserved from input.
+				// A requested base FB stays only while what it is the base of stays (#211).
+				boolean relevant = (fb == 51)
+						? scope.functionBlocks().stream().anyMatch(
+								f -> FunctionBlock.isPiiSelectable(f) && approvedPiiFbs.contains(f))
+						: !grantedKinds.isEmpty();
+				if (relevant) {
+					keptFbs.add(fb);
+				}
 			}
 			else {
 				// Unknown / non-screen-aware FB: preserve as-is (defensive — the AS will further
@@ -179,19 +188,11 @@ public class AuthorizeScreenService {
 			}
 		}
 
-		// Implicit base FBs are added based on the OUTCOME, not on whether they were in the
-		// original scope: they are by definition structural prerequisites — the response cannot
-		// be well-formed without them. Auto-adding here avoids the case where the TP requests
-		// "FB=4_54" without FB 51 and the DC emits malformed customer feed content.
-		if (!grantedKinds.isEmpty()) {
-			keptFbs.add(1);   // Common (Energy Usage)
-			keptFbs.add(4);   // Interval Metering registry
-		}
-		if (!approvedPiiFbs.isEmpty()) {
-			keptFbs.add(51);  // Common (Retail Customer)
-		}
-
-		if (grantedKinds.isEmpty() && approvedPiiFbs.isEmpty()) {
+		// The customer may only narrow the requested scope, never widen it (#211): no Function
+		// Block the Third Party did not request is ever added, implicit bases included. The AS
+		// rejects an approved scope that is not a narrowing of the requested one.
+		boolean anyPii = keptFbs.stream().anyMatch(FunctionBlock::isPiiSelectable);
+		if (grantedKinds.isEmpty() && !anyPii) {
 			return null;
 		}
 		return rebuildScope(scope, keptFbs);

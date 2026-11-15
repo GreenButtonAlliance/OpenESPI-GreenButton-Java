@@ -131,6 +131,47 @@ class EspiGrantScopePolicyTest {
 				.doesNotThrowAnyException();
 	}
 
+	@ParameterizedTest
+	@ValueSource(strings = {"FB=4_5;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13",
+			"FB=15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"})
+	@DisplayName("authorization_code (#211): a narrowing of a registered scope is allowed, no prior consent needed")
+	void authorizationCodeAllowsNarrowing(String narrowed) {
+		assertThatCode(() -> EspiGrantScopePolicy.authorizationCodeValidator()
+				.accept(authorizationRequest(Set.of(narrowed))))
+				.doesNotThrowAnyException();
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = {"FB=1_4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13",
+			"FB=4_5;IntervalDuration=900;BlockDuration=monthly;HistoryLength=13", "FB=4_5",
+			"FB=35", "FB=40"}) // narrowings of the registered administrative FB=34_35 and FB=36_40
+	@DisplayName("authorization_code (#211): a scope that widens or changes the registered scope is invalid_scope")
+	void authorizationCodeRejectsNonNarrowing(String scope) {
+		assertThatThrownBy(() -> EspiGrantScopePolicy.authorizationCodeValidator()
+				.accept(authorizationRequest(Set.of(scope))))
+				.isInstanceOfSatisfying(OAuth2AuthorizationCodeRequestAuthenticationException.class,
+						e -> assertThat(e.getError().getErrorCode()).isEqualTo(OAuth2ErrorCodes.INVALID_SCOPE));
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = {"FB=4_5;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13",
+			"FB=15;historylength=13;IntervalDuration=3600; BlockDuration=monthly", CUSTOMER_SCOPE})
+	@DisplayName("isNarrowingOf (#211): a subset of the Function Blocks with the same other parameters")
+	void narrowings(String candidate) {
+		assertThat(EspiGrantScopePolicy.isNarrowingOf(candidate, CUSTOMER_SCOPE)).isTrue();
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = {"FB=1_4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13",
+			"FB=4_5;IntervalDuration=900;BlockDuration=monthly;HistoryLength=13",
+			"FB=4_5;IntervalDuration=3600;BlockDuration=monthly", "FB=4_5_15",
+			"FB=4_5;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13;Extra=1",
+			"FB=;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13", "FB=x", ""})
+	@DisplayName("isNarrowingOf (#211): an added Function Block, a changed, missing or extra parameter, or no FB is not")
+	void notNarrowings(String candidate) {
+		assertThat(EspiGrantScopePolicy.isNarrowingOf(candidate, CUSTOMER_SCOPE)).isFalse();
+	}
+
 	/** Spellings the Data Custodian's tolerant parser still reads as customer Function Blocks. */
 	@ParameterizedTest
 	@ValueSource(strings = {"IntervalDuration=3600;FB=4_5_15", " FB=4_5_15", "fb=4_5_15", "FB =4", "Foo;FB=1_3_4"})
