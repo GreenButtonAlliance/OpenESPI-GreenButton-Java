@@ -36,6 +36,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -58,6 +59,9 @@ import java.util.UUID;
 @Tag(name = "Usage Summary", description = "Multi-Commodity Usage Summary Data Management API")
 @SecurityRequirement(name = "oauth2")
 @RequiredArgsConstructor
+// open-in-view is off: map and marshal inside one read-only session, or the lazy
+// costAdditionalDetailLastPeriod fails (#253)
+@Transactional(readOnly = true)
 public class UsageSummaryRESTController {
 
     private final UsageSummaryRepository usageSummaryRepository;

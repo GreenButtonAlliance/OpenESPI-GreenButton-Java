@@ -35,6 +35,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -56,6 +57,8 @@ import java.util.UUID;
 @Tag(name = "Customer Account", description = "ESPI Customer Account resource endpoints")
 @SecurityRequirement(name = "oauth2")
 @RequiredArgsConstructor
+// open-in-view is off: map and marshal inside one read-only session, or the lazy notifications fail (#253)
+@Transactional(readOnly = true)
 public class CustomerAccountRESTController {
 
     private final CustomerAccountRepository customerAccountRepository;

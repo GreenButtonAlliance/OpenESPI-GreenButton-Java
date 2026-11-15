@@ -31,7 +31,7 @@ Logs go to `.local-run/<app>.log`. Run the smoke check before testing by hand; i
 |---|---|---|
 | AS admin | `admin` / `admin` at http://localhost:9999/login | A passkey is enrolled at first login (`/webauthn/register`), by design. Override with `ESPI_BOOTSTRAP_ADMIN_USERNAME` / `ESPI_BOOTSTRAP_ADMIN_PASSWORD_HASH`. |
 | DC admin | `admin` / `admin` | Sandbox custodian user (dev/test profiles only). |
-| DC customer | *not yet* | Sample customer and usage data: #253. |
+| DC customer | `customer` / `customer` | Owns the sample UsagePoint (see "Sample data"). `local` profile only. |
 | TP user | *not yet* | TP username/password login: #249. |
 
 ## OAuth clients (AS)
@@ -89,11 +89,26 @@ open "$TP/oauth2/authorization/datacustodian-monthly"
 
 On the `local` profile the DC writes every ESPI resource response to `dev-xml-capture/run-<timestamp>/` at the repository root (`GET_UsagePoint.xml`, …), and an `.error.txt` with the status, body or exception chain for any 4xx/5xx or unhandled exception. The folder is git-ignored.
 
+## Sample data (DC)
+
+On the `local` profile the DC seeds a small, deterministic ESPI dataset at startup (`LocalSampleDataSeedRunner`, #253). The data is in-memory, so it is recreated on every restart, with the same ids.
+
+| Resource | Sample |
+|---|---|
+| RetailCustomer | `customer` / `customer` (`ROLE_USER`), owner of the UsagePoint |
+| UsagePoint | Electricity, LocalTimeParameters US Eastern (UTC-5, DST rules `360E2000` / `B40E2000`) |
+| ReadingType | Energy delivered, hourly, Wh × 10⁻³, USD (`accumulationBehaviour 4`, `kind 12`, `uom 72`) |
+| MeterReading / IntervalBlock | 2 daily blocks (2026-01-01 and 02) of 24 hourly readings, with cost |
+| UsageSummary / ElectricPowerQualitySummary | January 2026 billing period |
+| Customer, CustomerAccount, CustomerAgreement, ServiceLocation, Meter | One residential customer |
+| ApplicationInformation | The `third_party` client, with the TP's local redirect and notification URIs |
+
+The schema values follow the most common shapes in the Green Button CMD certification test feeds. Every identifying value is synthetic (`example.com`, `555-01xx`, `SAMPLE-…` numbers).
+
 ## Known limitations
 
 The customer flow does not complete yet. Open blockers, in the order they are hit (see the roadmap, #255):
 
-- **#253:** no sample customer or usage data on the DC, so feeds are empty.
 - **#249:** the TP has no user login page.
 - **#232:** the AS → DC delegation (`/authorize/delegate`) drops the authorization parameters and returns 400.
 - **#146 / #202:** the TP's token handling and the resource URIs in the token response.
