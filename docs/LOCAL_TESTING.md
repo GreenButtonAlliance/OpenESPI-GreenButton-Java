@@ -39,14 +39,15 @@ Logs go to `.local-run/<app>.log`. Run the smoke check before testing by hand; i
 | client_id | Secret | Grant | Scope | Purpose |
 |---|---|---|---|---|
 | `third_party` | `tp-secret` | authorization_code, refresh_token | ESPI FB scopes (`FB=4_5_15;IntervalDuration=3600;…`) | The TP's customer flow (customer access token) |
-| `third_party` | `tp-secret` | client_credentials | `ThirdParty_Admin_Access` | The TP's client access token: ESPI Authorization (and later Bulk) APIs, TP actuator |
+| `third_party` | `tp-secret` | client_credentials | `FB=34_35` | The TP's client access token: the only TP token the ESPI Authorization (and later Bulk) APIs accept |
+| `third_party` | `tp-secret` | client_credentials | `ThirdParty_Admin_Access` | TP actuator |
 | `data_custodian_admin` | `dc-secret` | client_credentials | `DataCustodian_Admin_Access` | DC operator: every ESPI resource, DC actuator |
 | `third_party_admin` | `tpadmin-secret` | client_credentials | `ThirdParty_Admin_Access` | Legacy separate TP admin client |
 | `datacustodian` | `datacustodian-secret` | client_credentials | – | DC token introspection |
 | `espi_admin` | `local-admin-secret` | client_credentials | `authserver.admin` | AS admin APIs, AS actuator |
 | `espi_registrar` | `local-registrar-secret` | client_credentials | `client.create` | RFC 7591 initial access token |
 
-Each grant yields only its own kind of scope: `client_credentials` never yields a customer FB scope, and customer authorization never yields an administrative scope (#251).
+Each grant yields only its own kind of scope (#251). `FB=34_35` (client access token) and `FB=36_40` (registration access token) are unique Function Block combinations that only `client_credentials` yields. Customer authorization yields only scopes naming customer data Function Blocks from the CMD Certification Application v2.14. A customer token whose scope includes FB_51 always carries `customerResourceURI`.
 
 The TP's Spring OAuth2 registrations match these: `datacustodian-monthly` and `datacustodian-daily` (authorization_code, redirect `http://localhost:8082/ThirdParty/login/oauth2/code/<registration>`) and `datacustodian-admin` (client_credentials).
 
@@ -59,7 +60,7 @@ AS=http://localhost:9999; DC=http://localhost:8081/DataCustodian; TP=http://loca
 DC_ADMIN=$(curl -s -u data_custodian_admin:dc-secret -d grant_type=client_credentials \
   -d scope=DataCustodian_Admin_Access $AS/oauth2/token | sed -n 's/.*"access_token":"\([^"]*\)".*/\1/p')
 TP_CLIENT=$(curl -s -u third_party:tp-secret -d grant_type=client_credentials \
-  -d scope=ThirdParty_Admin_Access $AS/oauth2/token | sed -n 's/.*"access_token":"\([^"]*\)".*/\1/p')
+  -d scope=FB=34_35 $AS/oauth2/token | sed -n 's/.*"access_token":"\([^"]*\)".*/\1/p')
 
 # Introspection (as the DC does it)
 curl -s -u datacustodian:datacustodian-secret -d "token=$DC_ADMIN" $AS/oauth2/introspect

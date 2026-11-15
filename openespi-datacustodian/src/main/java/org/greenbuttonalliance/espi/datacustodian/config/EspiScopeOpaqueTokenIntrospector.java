@@ -48,10 +48,23 @@ import java.util.Set;
  * {@code ThirdParty_Admin_Access}, {@code openid}, {@code profile} — are passed through with the
  * conventional {@code SCOPE_} prefix so existing admin endpoint rules keep working.</p>
  *
+ * <p>The Third Party's <b>client access token</b> ({@code client_credentials}, scope {@code FB=34_35}) is not
+ * customer consent, so it yields no {@code FB_} authorities. It yields {@link #CLIENT_ACCESS_TOKEN} instead,
+ * the only Third Party token the ESPI Authorization (and Bulk) APIs accept. It is recognised by its exact
+ * scope and by the introspected {@code sub} being its own {@code client_id}, which Spring Authorization Server
+ * sets for {@code client_credentials} tokens only (a customer token's subject is the customer). An
+ * {@code FB=34_35} scope on any other token grants nothing.</p>
+ *
  * <p>This replaces the contractor's non-ESPI {@code SCOPE_FB_<n>_READ/WRITE_3rd_party} vocabulary,
  * which had no relationship to the scopes the AS actually issues.</p>
  */
 public final class EspiScopeOpaqueTokenIntrospector implements OpaqueTokenIntrospector {
+
+	/** Scope of the ESPI Third Party client access token (unique Function Block combination). */
+	public static final String CLIENT_ACCESS_TOKEN_SCOPE = "FB=34_35";
+
+	/** Authority of a Third Party client access token. */
+	public static final String CLIENT_ACCESS_TOKEN = "ESPI_CLIENT_ACCESS_TOKEN";
 
 	private final OpaqueTokenIntrospector delegate;
 
@@ -64,6 +77,12 @@ public final class EspiScopeOpaqueTokenIntrospector implements OpaqueTokenIntros
 		OAuth2AuthenticatedPrincipal principal = delegate.introspect(token);
 		Set<GrantedAuthority> authorities = new LinkedHashSet<>();
 		for (String scope : scopesOf(principal)) {
+			if (CLIENT_ACCESS_TOKEN_SCOPE.equals(scope)) {
+				if (isClientCredentialsToken(principal)) {
+					authorities.add(new SimpleGrantedAuthority(CLIENT_ACCESS_TOKEN));
+				}
+				continue;
+			}
 			EspiScope parsed = EspiScope.parse(scope);
 			if (parsed.functionBlocks().isEmpty()) {
 				// admin / OIDC / any non-ESPI scope — keep the stock SCOPE_ authority.
@@ -76,6 +95,13 @@ public final class EspiScopeOpaqueTokenIntrospector implements OpaqueTokenIntros
 			}
 		}
 		return new DefaultOAuth2AuthenticatedPrincipal(principal.getName(), principal.getAttributes(), authorities);
+	}
+
+	/** A {@code client_credentials} token: its subject is the client itself ({@code sub} == {@code client_id}). */
+	private static boolean isClientCredentialsToken(OAuth2AuthenticatedPrincipal principal) {
+		Object clientId = principal.getAttribute("client_id");
+		Object sub = principal.getAttribute("sub");
+		return clientId != null && !clientId.toString().isBlank() && clientId.toString().equals(String.valueOf(sub));
 	}
 
 	/**

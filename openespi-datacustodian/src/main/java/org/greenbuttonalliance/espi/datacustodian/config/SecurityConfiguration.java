@@ -107,6 +107,11 @@ public class SecurityConfiguration {
         AuthorizationManager<RequestAuthorizationContext> adminOrTpAdmin =
                 AuthorityAuthorizationManager.hasAnyAuthority(
                         "SCOPE_DataCustodian_Admin_Access", "SCOPE_ThirdParty_Admin_Access");
+        // ESPI Authorization (and Bulk) APIs: the DataCustodian admin, or a Third Party's client access token
+        // (FB=34_35, client_credentials). The client access token is the only Third Party token they accept.
+        AuthorizationManager<RequestAuthorizationContext> adminOrClientAccessToken =
+                AuthorityAuthorizationManager.hasAnyAuthority(
+                        "SCOPE_DataCustodian_Admin_Access", EspiScopeOpaqueTokenIntrospector.CLIENT_ACCESS_TOKEN);
 
         // Usage data (UsagePoint + its interval data: MeterReading, ReadingType, IntervalBlock,
         // LocalTimeParameters, Batch). ESPI: base FB_4 (Interval Metering) AND at least one
@@ -166,7 +171,7 @@ public class SecurityConfiguration {
                 .requestMatchers(HttpMethod.GET, "/espi/1_1/resource/ApplicationInformation/**")
                     .access(adminOrTpAdmin)
                 .requestMatchers(HttpMethod.GET, "/espi/1_1/resource/Authorization/**")
-                    .access(adminOrTpAdmin)
+                    .access(adminOrClientAccessToken)
 
                 // --- Usage summaries (GET) : data-shape FBs, or admin. The summary/PQ leaf rules
                 //     (including Subscription-/RetailCustomer-scoped XPath forms) MUST precede the

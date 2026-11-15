@@ -77,4 +77,4 @@ spring.security.oauth2.client.registration.datacustodian-daily.scope: "FB=4_5_15
 # The ESPI client access token (Authorization and Bulk APIs) is client_credentials, never customer consent.
 spring.security.oauth2.client.registration.datacustodian-admin.client-secret: tp-secret
 spring.security.oauth2.client.registration.datacustodian-admin.authorization-grant-type: client_credentials
-spring.security.oauth2.client.registration.datacustodian-admin.scope: ThirdParty_Admin_Access
+spring.security.oauth2.client.registration.datacustodian-admin.scope: "FB=34_35"

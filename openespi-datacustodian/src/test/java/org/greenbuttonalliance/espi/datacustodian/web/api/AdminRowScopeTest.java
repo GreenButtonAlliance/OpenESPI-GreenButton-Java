@@ -21,6 +21,7 @@ import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
 import org.greenbuttonalliance.espi.common.dto.atom.AtomFeedDto;
 import org.greenbuttonalliance.espi.common.dto.atom.UsageAtomEntryDto;
 import org.greenbuttonalliance.espi.common.repositories.usage.AuthorizationRepository;
+import org.greenbuttonalliance.espi.datacustodian.config.EspiScopeOpaqueTokenIntrospector;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -70,6 +71,17 @@ class AdminRowScopeTest extends AbstractControllerMockTest {
                 .attributes(a -> {
                     if (clientId != null) {
                         a.put("client_id", clientId);
+                    }
+                });
+    }
+
+    /** A Third Party client access token (FB=34_35, client_credentials) as EspiScopeOpaqueTokenIntrospector maps it. */
+    private static RequestPostProcessor clientAccessToken(String clientId) {
+        return opaqueToken().authorities(new SimpleGrantedAuthority(EspiScopeOpaqueTokenIntrospector.CLIENT_ACCESS_TOKEN))
+                .attributes(a -> {
+                    if (clientId != null) {
+                        a.put("client_id", clientId);
+                        a.put("sub", clientId);
                     }
                 });
     }
@@ -155,12 +167,12 @@ class AdminRowScopeTest extends AbstractControllerMockTest {
         }
 
         @Test
-        @DisplayName("feed: a ThirdParty admin is queried by its own client_id, never findAll")
-        void thirdPartyAdminFeedQueriesByClientId() throws Exception {
+        @DisplayName("feed: a client access token is queried by its own client_id, never findAll")
+        void clientAccessTokenFeedQueriesByClientId() throws Exception {
             when(authorizationRepository.findAllByApplicationClientId(eq(TP_A), any(Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(authorizationOf(TP_A))));
 
-            mockMvc.perform(get("/espi/1_1/resource/Authorization").with(tpAdmin(TP_A)))
+            mockMvc.perform(get("/espi/1_1/resource/Authorization").with(clientAccessToken(TP_A)))
                     .andExpect(status().isOk());
 
             verify(authorizationRepository).findAllByApplicationClientId(eq(TP_A), any(Pageable.class));
@@ -180,12 +192,23 @@ class AdminRowScopeTest extends AbstractControllerMockTest {
         }
 
         @Test
-        @DisplayName("feed: a ThirdParty admin token without client_id queries nothing")
-        void thirdPartyAdminWithoutClientIdQueriesNothing() throws Exception {
-            mockMvc.perform(get("/espi/1_1/resource/Authorization").with(tpAdmin(null)))
+        @DisplayName("feed: a client access token without client_id queries nothing")
+        void clientAccessTokenWithoutClientIdQueriesNothing() throws Exception {
+            mockMvc.perform(get("/espi/1_1/resource/Authorization").with(clientAccessToken(null)))
                     .andExpect(status().isOk());
 
             verify(authorizationRepository, never()).findAll(any(Pageable.class));
+            verify(authorizationRepository, never()).findAllByApplicationClientId(anyString(), any(Pageable.class));
+        }
+
+        @Test
+        @DisplayName("ThirdParty_Admin_Access is not a client access token: 403 on feed and entry")
+        void thirdPartyAdminScopeIsForbidden() throws Exception {
+            mockMvc.perform(get("/espi/1_1/resource/Authorization").with(tpAdmin(TP_A)))
+                    .andExpect(status().isForbidden());
+            mockMvc.perform(get("/espi/1_1/resource/Authorization/" + UUID.randomUUID()).with(tpAdmin(TP_A)))
+                    .andExpect(status().isForbidden());
+
             verify(authorizationRepository, never()).findAllByApplicationClientId(anyString(), any(Pageable.class));
         }
 
@@ -200,9 +223,9 @@ class AdminRowScopeTest extends AbstractControllerMockTest {
             oneEntry.setEntries(List.of(new UsageAtomEntryDto()));
             when(usageExportService.buildFeed(anyString(), anyString(), any(), any())).thenReturn(oneEntry);
 
-            mockMvc.perform(get("/espi/1_1/resource/Authorization/" + foreign.getId()).with(tpAdmin(TP_A)))
+            mockMvc.perform(get("/espi/1_1/resource/Authorization/" + foreign.getId()).with(clientAccessToken(TP_A)))
                     .andExpect(status().isNotFound());
-            mockMvc.perform(get("/espi/1_1/resource/Authorization/" + own.getId()).with(tpAdmin(TP_A)))
+            mockMvc.perform(get("/espi/1_1/resource/Authorization/" + own.getId()).with(clientAccessToken(TP_A)))
                     .andExpect(status().isOk());
         }
     }

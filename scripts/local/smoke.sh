@@ -32,11 +32,13 @@ check "TP health" 200 "$(status "$TP/actuator/health")"
 
 echo "== Client credentials tokens (AS)"
 DC_ADMIN=$(token data_custodian_admin dc-secret DataCustodian_Admin_Access)
-TP_CLIENT=$(token third_party tp-secret ThirdParty_Admin_Access)
+TP_CLIENT=$(token third_party tp-secret FB=34_35)
+TP_ADMIN=$(token third_party tp-secret ThirdParty_Admin_Access)
 AS_ADMIN=$(token espi_admin local-admin-secret authserver.admin)
 REGISTRAR=$(token espi_registrar local-registrar-secret client.create)
 check "data_custodian_admin -> DataCustodian_Admin_Access" yes "$([[ -n "$DC_ADMIN" ]] && echo yes || echo no)"
-check "third_party -> ThirdParty_Admin_Access (client access token)" yes "$([[ -n "$TP_CLIENT" ]] && echo yes || echo no)"
+check "third_party -> FB=34_35 (client access token)" yes "$([[ -n "$TP_CLIENT" ]] && echo yes || echo no)"
+check "third_party -> ThirdParty_Admin_Access (TP actuator)" yes "$([[ -n "$TP_ADMIN" ]] && echo yes || echo no)"
 check "espi_admin -> authserver.admin" yes "$([[ -n "$AS_ADMIN" ]] && echo yes || echo no)"
 check "espi_registrar -> client.create (RFC 7591 initial access token)" yes "$([[ -n "$REGISTRAR" ]] && echo yes || echo no)"
 check "third_party cannot get a customer FB scope with client_credentials" 400 \
@@ -55,12 +57,14 @@ for resource in ApplicationInformation Authorization UsagePoint MeterReading Rea
 done
 check "GET Authorization feed with the Third Party client access token" 200 \
   "$(status -H "Authorization: Bearer $TP_CLIENT" "$DC/espi/1_1/resource/Authorization")"
+check "GET Authorization feed with ThirdParty_Admin_Access (not a client access token)" 403 \
+  "$(status -H "Authorization: Bearer $TP_ADMIN" "$DC/espi/1_1/resource/Authorization")"
 check "GET UsagePoint feed without a token" 401 "$(status "$DC/espi/1_1/resource/UsagePoint")"
 
 echo "== Admin actuator endpoints"
 check "AS /actuator/info (authserver.admin)" 200 "$(status -H "Authorization: Bearer $AS_ADMIN" "$AS/actuator/info")"
 check "DC /actuator/info (DataCustodian_Admin_Access)" 200 "$(status -H "Authorization: Bearer $DC_ADMIN" "$DC/actuator/info")"
-check "TP /actuator/info (ThirdParty_Admin_Access)" 200 "$(status -H "Authorization: Bearer $TP_CLIENT" "$TP/actuator/info")"
+check "TP /actuator/info (ThirdParty_Admin_Access)" 200 "$(status -H "Authorization: Bearer $TP_ADMIN" "$TP/actuator/info")"
 check "AS /actuator/info without a token" 401 "$(status "$AS/actuator/info")"
 
 echo

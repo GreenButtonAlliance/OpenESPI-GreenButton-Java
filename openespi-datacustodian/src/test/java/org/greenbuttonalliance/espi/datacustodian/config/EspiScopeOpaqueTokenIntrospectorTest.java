@@ -84,6 +84,43 @@ class EspiScopeOpaqueTokenIntrospectorTest {
 				.contains("SCOPE_profile", "FB_4", "FB_10");
 	}
 
+	private static OpaqueTokenIntrospector delegate(String sub, String clientId, Object scope) {
+		return token -> new DefaultOAuth2AuthenticatedPrincipal(sub,
+				Map.of("scope", scope, "active", true, "sub", sub, "client_id", clientId),
+				AuthorityUtils.NO_AUTHORITIES);
+	}
+
+	@Test
+	@DisplayName("client access token (FB=34_35, sub == client_id) -> ESPI_CLIENT_ACCESS_TOKEN only, no FB authorities")
+	void clientAccessTokenMapsToClientAccessTokenAuthority() {
+		OpaqueTokenIntrospector introspector = new EspiScopeOpaqueTokenIntrospector(
+				delegate("third_party", "third_party", List.of("FB=34_35")));
+
+		assertThat(authorities(introspector.introspect("tok")))
+				.containsExactly(EspiScopeOpaqueTokenIntrospector.CLIENT_ACCESS_TOKEN);
+	}
+
+	@Test
+	@DisplayName("FB=34_35 on a customer token (sub != client_id) grants nothing")
+	void clientAccessTokenScopeOnCustomerTokenGrantsNothing() {
+		OpaqueTokenIntrospector introspector = new EspiScopeOpaqueTokenIntrospector(
+				delegate("customer", "third_party", List.of("FB=34_35", "FB=1_3_4_5")));
+
+		assertThat(authorities(introspector.introspect("tok")))
+				.containsExactlyInAnyOrder("FB_1", "FB_3", "FB_4", "FB_5")
+				.doesNotContain(EspiScopeOpaqueTokenIntrospector.CLIENT_ACCESS_TOKEN, "FB_34", "FB_35");
+	}
+
+	@Test
+	@DisplayName("a customer scope listing FB 35 stays a customer token: FB_35 authority, no client access token")
+	void customerScopeWithBulkFunctionBlockIsNotClientAccessToken() {
+		OpaqueTokenIntrospector introspector = new EspiScopeOpaqueTokenIntrospector(
+				delegate("third_party", "third_party", List.of("FB=1_3_35_51")));
+
+		assertThat(authorities(introspector.introspect("tok")))
+				.containsExactlyInAnyOrder("FB_1", "FB_3", "FB_35", "FB_51");
+	}
+
 	@Test
 	@DisplayName("attributes (e.g. ESPI URI claims) are preserved")
 	void attributesArePreserved() {

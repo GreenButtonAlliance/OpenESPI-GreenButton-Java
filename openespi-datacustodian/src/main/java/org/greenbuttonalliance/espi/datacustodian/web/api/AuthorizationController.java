@@ -59,7 +59,8 @@ import java.util.UUID;
  * authorization codes and state never appear in the XML: those {@link AuthorizationDto} fields are
  * {@code @XmlTransient}.
  * <p>Row-level scope ({@link AdminCaller}): a {@code DataCustodian_Admin_Access} caller sees every
- * Authorization; a {@code ThirdParty_Admin_Access} caller only those granted to its own application.</p>
+ * Authorization; a Third Party's client access token ({@code FB=34_35}, the only Third Party token these
+ * endpoints accept) only those granted to its own application.</p>
  */
 @RestController
 @RequestMapping("/espi/1_1/resource")
@@ -86,7 +87,7 @@ public class AuthorizationController {
             @ApiResponse(responseCode = "403", description = "Forbidden - admin access required")
         }
     )
-    @PreAuthorize("hasAnyAuthority('SCOPE_DataCustodian_Admin_Access', 'SCOPE_ThirdParty_Admin_Access')")
+    @PreAuthorize("hasAnyAuthority('SCOPE_DataCustodian_Admin_Access', 'ESPI_CLIENT_ACCESS_TOKEN')")
     public ResponseEntity<byte[]> getAllAuthorizations(
             @Parameter(description = "Maximum number of results to return", example = "50")
             @RequestParam(defaultValue = "50") int limit,
@@ -126,7 +127,7 @@ public class AuthorizationController {
             @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
         }
     )
-    @PreAuthorize("hasAnyAuthority('SCOPE_DataCustodian_Admin_Access', 'SCOPE_ThirdParty_Admin_Access')")
+    @PreAuthorize("hasAnyAuthority('SCOPE_DataCustodian_Admin_Access', 'ESPI_CLIENT_ACCESS_TOKEN')")
     public ResponseEntity<byte[]> getAuthorization(
             @Parameter(description = "Unique identifier of the Authorization", required = true)
             @PathVariable UUID authorizationId,

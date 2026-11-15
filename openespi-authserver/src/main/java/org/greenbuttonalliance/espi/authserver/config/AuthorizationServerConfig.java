@@ -57,6 +57,7 @@ import org.springframework.security.oauth2.server.resource.introspection.SpringO
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
+import org.greenbuttonalliance.espi.authserver.grant.EspiGrantScopePolicy;
 import org.greenbuttonalliance.espi.authserver.service.EspiTokenCustomizer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
@@ -755,6 +756,9 @@ public class AuthorizationServerConfig {
                 .scope(OidcScopes.OPENID)
                 .scope(OidcScopes.PROFILE)
                 .scopes(scopes -> scopes.addAll(ESPI_THIRD_PARTY_SCOPES))
+                // FB=34_35: the ESPI client access token (client_credentials) for the DC Authorization and
+                // Bulk APIs. ThirdParty_Admin_Access: the TP's own actuator endpoints.
+                .scope(EspiGrantScopePolicy.CLIENT_ACCESS_TOKEN_SCOPE)
                 .scope("ThirdParty_Admin_Access")
                 .tokenSettings(TokenSettings.builder()
                     .accessTokenTimeToLive(Duration.ofMinutes(360))
