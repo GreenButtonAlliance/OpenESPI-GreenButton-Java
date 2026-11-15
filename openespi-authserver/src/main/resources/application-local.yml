@@ -76,3 +76,6 @@ espi:
     jwt:
       access-token-validity: PT1H     # 1 hour for testing
       refresh-token-validity: PT6H    # 6 hours for testing
+
+# Seed the demo OAuth clients (well-known secrets; never in production).
+espi.authserver.seed.demo-clients: true

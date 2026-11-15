@@ -48,6 +48,9 @@ espi:
   authserver:
     registrar:
       client-secret: registrar-test-secret
+    # The integration tests use the demo clients (third_party, data_custodian_admin, ...).
+    seed:
+      demo-clients: true
 
 # Logging Configuration for Tests
 logging:

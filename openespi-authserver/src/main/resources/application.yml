@@ -148,6 +148,17 @@ espi:
     # stored bcrypt-encoded; leave unset to keep dynamic registration disabled (registrar not seeded).
     registrar:
       client-secret: ${ESPI_REGISTRAR_CLIENT_SECRET:}
+    # Demo OAuth clients (data_custodian_admin, third_party, third_party_admin, datacustodian) have
+    # well-known secrets written in the public source. OFF by default; only local/dev/test profiles
+    # turn it on. A production AS starts with no Third Party clients (they register via RFC 7591).
+    seed:
+      demo-clients: false
+    # Infrastructure clients for a real deployment, provisioned from secrets (stored bcrypt-encoded).
+    # Leave unset to not provision them. datacustodian = the DC's token-introspection client.
+    datacustodian-client:
+      secret: ${ESPI_DATACUSTODIAN_CLIENT_SECRET:}
+    datacustodian-admin-client:
+      secret: ${ESPI_DATACUSTODIAN_ADMIN_CLIENT_SECRET:}
 
 # Application Information
 info:
