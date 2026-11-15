@@ -290,6 +290,51 @@ class AuthCodeFlowOrchestrationIntegrationTest extends AbstractAuthserverIntegra
 	}
 
 	@Test
+	@DisplayName("outbound leg (#232): unauthenticated /oauth2/authorize -> /authorize/delegate -> signed DC handoff")
+	void unauthenticatedAuthorizeDelegatesToDataCustodian() throws Exception {
+		String suffix = UUID.randomUUID().toString().substring(0, 8);
+		String clientId = "pr-232-tp-" + suffix;
+		String tpState = "tp-state-" + suffix;
+		registerClient(clientId, "pr-232-secret-" + suffix);
+
+		// 1) The customer's browser arrives unauthenticated -> 302 to the delegate WITH the request parameters.
+		// A real query string (not .param()): Spring AS reads a GET authorization request from it.
+		java.net.URI authorizeUri = org.springframework.web.util.UriComponentsBuilder.fromPath("/oauth2/authorize")
+				.queryParam("response_type", "code")
+				.queryParam("client_id", clientId)
+				.queryParam("scope", SCOPE)
+				.queryParam("redirect_uri", REDIRECT_URI)
+				.queryParam("state", tpState)
+				.encode()
+				.build()
+				.toUri();
+		MvcResult authorizeResult = mockMvc.perform(get(authorizeUri)
+						.accept(org.springframework.http.MediaType.TEXT_HTML))
+				.andExpect(status().is3xxRedirection())
+				.andReturn();
+		String delegateUrl = authorizeResult.getResponse().getHeader("Location");
+		assertThat(java.net.URI.create(delegateUrl).getPath()).isEqualTo("/authorize/delegate");
+
+		// 2) The delegate signs the outbound handoff and redirects to the DC Authorization Screen.
+		MvcResult delegateResult = mockMvc.perform(get(java.net.URI.create(delegateUrl)))
+				.andExpect(status().is3xxRedirection())
+				.andReturn();
+		String dcUrl = delegateResult.getResponse().getHeader("Location");
+		assertThat(java.net.URI.create(dcUrl).getPath()).endsWith("/oauth/authorize-screen");
+		SignedHandoff.Outbound outbound = codec.decodeOutbound(extractQueryParam(dcUrl, "handoff"));
+		assertThat(outbound)
+				.extracting(SignedHandoff.Outbound::clientId, SignedHandoff.Outbound::grantedScope,
+						SignedHandoff.Outbound::correlationId)
+				.containsExactly(clientId, SCOPE, tpState);
+
+		// 3) The delegation state the return leg needs was saved under the TP state.
+		assertThat(delegationStateService.consume(tpState))
+				.extracting(DelegationStateService.Entry::clientId, DelegationStateService.Entry::redirectUri,
+						DelegationStateService.Entry::tpState)
+				.containsExactly(clientId, REDIRECT_URI, tpState);
+	}
+
+	@Test
 	@DisplayName("seeded third_party client has PKCE disabled (ESPI does not support PKCE)")
 	void seededThirdPartyClientDoesNotRequireProofKey() {
 		RegisteredClient thirdParty = registeredClientRepository.findByClientId("third_party");

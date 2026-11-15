@@ -55,10 +55,10 @@ import org.springframework.security.oauth2.server.authorization.token.OAuth2Toke
 import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector;
 import org.springframework.security.oauth2.server.resource.introspection.SpringOpaqueTokenIntrospector;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 import org.greenbuttonalliance.espi.authserver.grant.EspiGrantScopePolicy;
 import org.greenbuttonalliance.espi.authserver.service.EspiTokenCustomizer;
+import org.greenbuttonalliance.espi.authserver.web.delegate.DelegateAuthorizationEntryPoint;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 
@@ -516,11 +516,12 @@ public class AuthorizationServerConfig {
                 .csrf(csrf -> csrf.ignoringRequestMatchers(endpointsMatcher))
                 .with(authorizationServerConfigurer, Customizer.withDefaults())
                 // For non-consent unauthenticated cases, the same delegate endpoint is the
-                // login page — Spring AS will append ?scope=...&client_id=...&state=... so the
-                // delegate has the same context it needs to build the outbound handoff.
+                // login page. A static login URL would arrive without parameters (#232), so the
+                // entry point forwards the validated client_id, scope, state and redirect_uri
+                // the delegate needs to build the outbound handoff.
                 .exceptionHandling(exceptions -> exceptions
                         .defaultAuthenticationEntryPointFor(
-                                new LoginUrlAuthenticationEntryPoint("/authorize/delegate"),
+                                new DelegateAuthorizationEntryPoint(),
                                 new MediaTypeRequestMatcher(MediaType.TEXT_HTML)
                         )
                 );
