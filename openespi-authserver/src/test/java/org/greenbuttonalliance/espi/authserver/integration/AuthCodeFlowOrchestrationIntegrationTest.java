@@ -298,13 +298,18 @@ class AuthCodeFlowOrchestrationIntegrationTest extends AbstractAuthserverIntegra
 		registerClient(clientId, "pr-232-secret-" + suffix);
 
 		// 1) The customer's browser arrives unauthenticated -> 302 to the delegate WITH the request parameters.
-		MvcResult authorizeResult = mockMvc.perform(get("/oauth2/authorize")
-						.accept(org.springframework.http.MediaType.TEXT_HTML)
-						.param("response_type", "code")
-						.param("client_id", clientId)
-						.param("scope", SCOPE)
-						.param("redirect_uri", REDIRECT_URI)
-						.param("state", tpState))
+		// A real query string (not .param()): Spring AS reads a GET authorization request from it.
+		java.net.URI authorizeUri = org.springframework.web.util.UriComponentsBuilder.fromPath("/oauth2/authorize")
+				.queryParam("response_type", "code")
+				.queryParam("client_id", clientId)
+				.queryParam("scope", SCOPE)
+				.queryParam("redirect_uri", REDIRECT_URI)
+				.queryParam("state", tpState)
+				.encode()
+				.build()
+				.toUri();
+		MvcResult authorizeResult = mockMvc.perform(get(authorizeUri)
+						.accept(org.springframework.http.MediaType.TEXT_HTML))
 				.andExpect(status().is3xxRedirection())
 				.andReturn();
 		String delegateUrl = authorizeResult.getResponse().getHeader("Location");
