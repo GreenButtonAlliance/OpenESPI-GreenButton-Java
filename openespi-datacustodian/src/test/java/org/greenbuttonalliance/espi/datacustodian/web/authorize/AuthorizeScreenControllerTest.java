@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -203,6 +204,7 @@ class AuthorizeScreenControllerTest {
 				TP_CLIENT_ID, "FB=4_5_10_15_54_58", "https://as.example.com/continue?state=abc"));
 
 		MvcResult result = mockMvc.perform(post("/oauth/authorize-screen")
+						.session(viewScreen(token))
 						.with(csrf())
 						.with(user(CUSTOMER_USERNAME).roles("USER"))
 						.param("handoff", token)
@@ -234,6 +236,7 @@ class AuthorizeScreenControllerTest {
 				TP_CLIENT_ID, "FB=4_5_15", "https://as.example.com/continue"));
 
 		MvcResult result = mockMvc.perform(post("/oauth/authorize-screen")
+						.session(viewScreen(token))
 						.with(csrf())
 						.with(user(CUSTOMER_USERNAME).roles("USER"))
 						.param("handoff", token)
@@ -257,6 +260,7 @@ class AuthorizeScreenControllerTest {
 				TP_CLIENT_ID, "FB=4_5_15_54", "https://as.example.com/continue"));
 
 		MvcResult result = mockMvc.perform(post("/oauth/authorize-screen")
+						.session(viewScreen(token))
 						.with(csrf())
 						.with(user(CUSTOMER_USERNAME).roles("USER"))
 						.param("handoff", token)
@@ -271,5 +275,59 @@ class AuthorizeScreenControllerTest {
 		// Customer clicked Allow but checked nothing → effectively a deny.
 		assertThat(ret.consent()).isEqualTo(SignedHandoff.Return.CONSENT_DENY);
 		assertThat(ret.approvedScope()).isNull();
+	}
+
+	@Test
+	void GET_then_POST_of_the_same_handoff_completes_once_and_rejects_a_second_submit() throws Exception {
+		String token = codec.encode(SignedHandoff.Outbound.of(
+				"corr-8", Instant.now(), Instant.now().plusSeconds(120), UUID.randomUUID().toString(),
+				TP_CLIENT_ID, "FB=4_5_15", "https://as.example.com/continue"));
+		MockHttpSession session = viewScreen(token);
+
+		// The browser posts back the very handoff the GET consumed: accepted once.
+		mockMvc.perform(post("/oauth/authorize-screen")
+						.session(session)
+						.with(csrf())
+						.with(user(CUSTOMER_USERNAME).roles("USER"))
+						.param("handoff", token)
+						.param("decision", "allow")
+						.param("selected_usage_point_ids", electricityUpId.toString()))
+				.andExpect(status().is3xxRedirection())
+				.andExpect(redirectedUrlPattern("https://as.example.com/continue?handoff=*"));
+
+		// A second submit of the same handoff is rejected.
+		mockMvc.perform(post("/oauth/authorize-screen")
+						.session(session)
+						.with(csrf())
+						.with(user(CUSTOMER_USERNAME).roles("USER"))
+						.param("handoff", token)
+						.param("decision", "allow")
+						.param("selected_usage_point_ids", electricityUpId.toString()))
+				.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void POST_of_a_handoff_this_session_never_viewed_returns_400() throws Exception {
+		String token = codec.encode(SignedHandoff.Outbound.of(
+				"corr-9", Instant.now(), Instant.now().plusSeconds(120), UUID.randomUUID().toString(),
+				TP_CLIENT_ID, "FB=4_5_15", "https://as.example.com/continue"));
+
+		mockMvc.perform(post("/oauth/authorize-screen")
+						.with(csrf())
+						.with(user(CUSTOMER_USERNAME).roles("USER"))
+						.param("handoff", token)
+						.param("decision", "allow")
+						.param("selected_usage_point_ids", electricityUpId.toString()))
+				.andExpect(status().isBadRequest());
+	}
+
+	/** Shows the Authorization Screen for {@code token} as the customer and returns the session it ran in. */
+	private MockHttpSession viewScreen(String token) throws Exception {
+		MvcResult result = mockMvc.perform(get("/oauth/authorize-screen")
+						.param("handoff", token)
+						.with(user(CUSTOMER_USERNAME).roles("USER")))
+				.andExpect(status().isOk())
+				.andReturn();
+		return (MockHttpSession) result.getRequest().getSession(false);
 	}
 }

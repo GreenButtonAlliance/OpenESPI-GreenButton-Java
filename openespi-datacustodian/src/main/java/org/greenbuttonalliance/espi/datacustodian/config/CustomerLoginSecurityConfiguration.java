@@ -32,6 +32,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+import org.springframework.security.web.savedrequest.RequestCache;
+import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.security.web.util.matcher.OrRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
@@ -53,9 +56,9 @@ import java.net.URI;
  * </ul>
  *
  * <p>Form login with BCrypt, {@code IF_REQUIRED} session, CSRF on via cookie-based token repo.
- * The success handler honors a {@code return_to} form parameter (absolute URL or path);
- * unset &rarr; default landing page. The {@code return_to} carries the AS-issued signed handoff
- * from PR C1 in the AS&rarr;DC delegation flow built in PR C3.</p>
+ * The success handler honors a same-origin {@code return_to} form parameter, then the request the
+ * login page interrupted (such as the Authorization Screen carrying the AS-issued signed handoff),
+ * then the role-aware landing page.</p>
  *
  * <h3>Three-chain architecture</h3>
  * <ul>
@@ -131,23 +134,33 @@ public class CustomerLoginSecurityConfiguration {
 	}
 
 	/**
-	 * On successful authentication, redirect to the {@code return_to} request parameter if present
-	 * (the AS-issued signed handoff destination from PR C1 / C3), otherwise to the default landing
-	 * page.
+	 * On successful authentication, redirect to, in order: the {@code return_to} request parameter
+	 * when it is a same-origin path; the request saved when the login page interrupted it (for
+	 * example the Authorization Screen with its signed handoff, reached from the AS delegation);
+	 * otherwise the role-aware landing page.
 	 */
 	private SimpleUrlAuthenticationSuccessHandler returnToSuccessHandler() {
+		RequestCache requestCache = new HttpSessionRequestCache();
 		return new SimpleUrlAuthenticationSuccessHandler() {
 			@Override
 			public void onAuthenticationSuccess(HttpServletRequest request,
 												HttpServletResponse response,
 												Authentication authentication) throws IOException {
 				String returnTo = request.getParameter("return_to");
+				SavedRequest savedRequest = requestCache.getRequest(request, response);
+				String target;
 				if (isSafeReturnTo(returnTo)) {
-					getRedirectStrategy().sendRedirect(request, response, returnTo);
+					target = returnTo;
+				}
+				else if (savedRequest != null) {
+					target = savedRequest.getRedirectUrl();
 				}
 				else {
-					getRedirectStrategy().sendRedirect(request, response, landingFor(authentication));
+					target = landingFor(authentication);
 				}
+				requestCache.removeRequest(request, response);
+				clearAuthenticationAttributes(request);
+				getRedirectStrategy().sendRedirect(request, response, target);
 			}
 		};
 	}
@@ -167,18 +180,15 @@ public class CustomerLoginSecurityConfiguration {
 	}
 
 	/**
-	 * Accept only same-origin paths ({@code /foo}) or absolute URLs whose URI parses cleanly.
-	 * Defense in depth against open-redirect &mdash; the AS-issued signed handoff in PR C3 will
-	 * carry its own signature verification, but the success handler must reject obvious abuse
-	 * (e.g. {@code //evil.example.com}).
+	 * Accept only same-origin paths ({@code /foo}): no scheme, no host, and none of the forms a
+	 * browser reads as protocol-relative ({@code //host}, {@code /\host}).
 	 */
-	private static boolean isSafeReturnTo(String returnTo) {
+	static boolean isSafeReturnTo(String returnTo) {
 		if (returnTo == null || returnTo.isBlank()) return false;
-		if (returnTo.startsWith("//")) return false;
-		if (returnTo.startsWith("/")) return true;
+		if (!returnTo.startsWith("/") || returnTo.startsWith("//") || returnTo.indexOf('\\') >= 0) return false;
 		try {
 			URI uri = URI.create(returnTo);
-			return uri.isAbsolute() && uri.getHost() != null;
+			return uri.getScheme() == null && uri.getRawAuthority() == null;
 		}
 		catch (IllegalArgumentException e) {
 			return false;
