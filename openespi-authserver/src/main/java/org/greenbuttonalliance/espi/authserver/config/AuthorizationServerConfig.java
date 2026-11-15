@@ -445,7 +445,16 @@ public class AuthorizationServerConfig {
         // URL in return_to) and back. So delegating only the consent path covers both — the
         // login step is handled transparently inside DC.
         authorizationServerConfigurer.authorizationEndpoint(authorize -> authorize
-                .consentPage("/authorize/delegate"));
+                .consentPage("/authorize/delegate")
+                // #251: customer authorization never yields an administrative scope.
+                .authenticationProviders(providers -> providers.forEach(provider -> {
+                    if (provider instanceof org.springframework.security.oauth2.server.authorization.authentication
+                            .OAuth2AuthorizationCodeRequestAuthenticationProvider codeRequest) {
+                        codeRequest.setAuthenticationValidator(
+                                org.greenbuttonalliance.espi.authserver.grant.EspiGrantScopePolicy
+                                        .authorizationCodeValidator());
+                    }
+                })));
 
         // Advertise the RFC 7591 endpoint (wired on its own chain, see clientRegistrationSecurityFilterChain)
         // in /.well-known/oauth-authorization-server. The stock clientRegistrationEndpoint(...) configurer
@@ -469,6 +478,15 @@ public class AuthorizationServerConfig {
                 http.getSharedObject(org.springframework.context.ApplicationContext.class)
                         .getBean(OAuth2AuthorizationService.class);
         authorizationServerConfigurer.tokenEndpoint(tokenEndpoint -> tokenEndpoint
+                // #251: client_credentials never yields an ESPI customer data (FB) scope.
+                .authenticationProviders(providers -> providers.forEach(provider -> {
+                    if (provider instanceof org.springframework.security.oauth2.server.authorization.authentication
+                            .OAuth2ClientCredentialsAuthenticationProvider clientCredentials) {
+                        clientCredentials.setAuthenticationValidator(
+                                org.greenbuttonalliance.espi.authserver.grant.EspiGrantScopePolicy
+                                        .clientCredentialsValidator());
+                    }
+                }))
                 .accessTokenResponseHandler(
                         new org.greenbuttonalliance.espi.authserver.service
                                 .EspiTokenResponseSuccessHandler(authorizationServiceForHandler)));
