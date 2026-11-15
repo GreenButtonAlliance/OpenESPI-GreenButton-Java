@@ -55,6 +55,8 @@ for resource in ApplicationInformation Authorization UsagePoint MeterReading Rea
                 UsageSummary ElectricPowerQualitySummary Customer CustomerAccount; do
   check "GET $resource feed" 200 "$(status -H "Authorization: Bearer $DC_ADMIN" "$DC/espi/1_1/resource/$resource")"
 done
+check "IntervalBlock feed contains the sample data (#253)" yes \
+  "$(curl -s -H "Authorization: Bearer $DC_ADMIN" "$DC/espi/1_1/resource/IntervalBlock" | grep -q '<atom:entry>' && echo yes || echo no)"
 check "GET Authorization feed with the Third Party client access token" 200 \
   "$(status -H "Authorization: Bearer $TP_CLIENT" "$DC/espi/1_1/resource/Authorization")"
 check "GET Authorization feed with ThirdParty_Admin_Access (not a client access token)" 403 \

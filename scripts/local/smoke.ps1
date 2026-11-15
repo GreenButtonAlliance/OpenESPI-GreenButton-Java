@@ -66,6 +66,10 @@ foreach ($resource in 'ApplicationInformation', 'Authorization', 'UsagePoint', '
                       'IntervalBlock', 'UsageSummary', 'ElectricPowerQualitySummary', 'Customer', 'CustomerAccount') {
     Check "GET $resource feed" 200 (Status "$DC/espi/1_1/resource/$resource" (Bearer $dcAdmin))
 }
+$intervalBlocks = try {
+    (Invoke-WebRequest -Uri "$DC/espi/1_1/resource/IntervalBlock" -Headers (Bearer $dcAdmin) -UseBasicParsing).Content
+} catch { '' }
+Check 'IntervalBlock feed contains the sample data (#253)' $true ($intervalBlocks -match '<atom:entry>')
 Check 'GET Authorization feed with the Third Party client access token' 200 `
     (Status "$DC/espi/1_1/resource/Authorization" (Bearer $tpClient))
 Check 'GET Authorization feed with ThirdParty_Admin_Access (not a client access token)' 403 `
