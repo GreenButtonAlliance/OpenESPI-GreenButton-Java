@@ -66,3 +66,15 @@ espi:
     # Must match the AS's seeded dev client (AuthorizationServerConfig: {noop}tp-secret); used to
     # introspect actuator admin tokens.
     client-secret: tp-secret
+
+# OAuth2 client registrations aligned with the AS's local third_party seed (#254, configuration part of
+# #146): same client id and secret, redirect URIs the AS registers on the local profile, and the exact
+# ESPI scopes the AS allows. No openid/profile: the AS issues opaque ESPI tokens only.
+spring.security.oauth2.client.registration.datacustodian-monthly.client-secret: tp-secret
+spring.security.oauth2.client.registration.datacustodian-monthly.scope: "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"
+spring.security.oauth2.client.registration.datacustodian-daily.client-secret: tp-secret
+spring.security.oauth2.client.registration.datacustodian-daily.scope: "FB=4_5_15;IntervalDuration=900;BlockDuration=monthly;HistoryLength=13"
+# The ESPI client access token (Authorization and Bulk APIs) is client_credentials, never customer consent.
+spring.security.oauth2.client.registration.datacustodian-admin.client-secret: tp-secret
+spring.security.oauth2.client.registration.datacustodian-admin.authorization-grant-type: client_credentials
+spring.security.oauth2.client.registration.datacustodian-admin.scope: ThirdParty_Admin_Access

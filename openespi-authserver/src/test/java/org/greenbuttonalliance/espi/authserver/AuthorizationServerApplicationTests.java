@@ -138,7 +138,7 @@ class AuthorizationServerApplicationTests extends AbstractAuthserverIntegrationT
     }
 
     @Test
-    @DisplayName("seeds third_party: authorization_code + refresh_token, ESPI scopes, opaque, 6 h, consent, no PKCE")
+    @DisplayName("seeds third_party: authorization_code + refresh_token + client_credentials, ESPI scopes, opaque, 6 h, consent, no PKCE")
     void seedsThirdPartyClient() {
         assertThat(registeredClientRepository.findByClientId("third_party"))
                 .isNotNull()
@@ -150,15 +150,17 @@ class AuthorizationServerApplicationTests extends AbstractAuthserverIntegrationT
                                 c -> c.getClientSettings().isRequireAuthorizationConsent(),
                                 c -> c.getClientSettings().isRequireProofKey())
                         .containsExactly(
+                                // client_credentials: the ESPI client access token (#251, #254)
                                 Set.of(AuthorizationGrantType.AUTHORIZATION_CODE,
-                                        AuthorizationGrantType.REFRESH_TOKEN),
+                                        AuthorizationGrantType.REFRESH_TOKEN,
+                                        AuthorizationGrantType.CLIENT_CREDENTIALS),
                                 OAuth2TokenFormat.REFERENCE,
                                 Duration.ofHours(6),
                                 true,
                                 false))
                 .extracting(RegisteredClient::getScopes)
                 .satisfies(scopes -> assertThat(scopes).contains(
-                        "openid", "profile",
+                        "openid", "profile", "ThirdParty_Admin_Access",
                         "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13",
                         "FB=4_5_15;IntervalDuration=900;BlockDuration=monthly;HistoryLength=13"));
     }

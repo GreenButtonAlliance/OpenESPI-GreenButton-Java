@@ -208,6 +208,24 @@ public class AuthorizationServerConfig {
     @Value("${oauth2.client.defaults.redirect-uri-base:http://localhost}")
     private String defaultRedirectUriBase;
 
+    /**
+     * Redirect URIs of the seeded {@code third_party} client. Empty (the default) keeps the historical
+     * {@code <redirect-uri-base>:8080/DataCustodian/oauth/callback} and {@code :9090/ThirdParty/oauth/callback}.
+     * The {@code local} profile lists the Third Party's real Spring OAuth2 client callbacks (#254).
+     */
+    @Value("${espi.authserver.seed.third-party.redirect-uris:}")
+    private List<String> thirdPartyRedirectUris;
+
+    /** The configured {@code third_party} redirect URIs, or the historical defaults when none are set. */
+    List<String> thirdPartyRedirectUris() {
+        List<String> configured = thirdPartyRedirectUris == null ? List.of()
+                : thirdPartyRedirectUris.stream().map(String::trim).filter(uri -> !uri.isEmpty()).toList();
+        return configured.isEmpty()
+                ? List.of(defaultRedirectUriBase + ":8080/DataCustodian/oauth/callback",
+                        defaultRedirectUriBase + ":9090/ThirdParty/oauth/callback")
+                : configured;
+    }
+
     @Value("${espi.authorization-server.introspection-endpoint:http://localhost:8080/oauth2/introspect}")
     private String introspectionUri;
 
@@ -728,13 +746,16 @@ public class AuthorizationServerConfig {
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
+                // ESPI client access token for the Authorization and Bulk APIs (#251, #256). Customer FB
+                // scopes cannot be obtained this way (EspiGrantScopePolicy).
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
                 .clientIdIssuedAt(Instant.now())
-                .redirectUri(defaultRedirectUriBase + ":8080/DataCustodian/oauth/callback")
-                .redirectUri(defaultRedirectUriBase + ":9090/ThirdParty/oauth/callback")
+                .redirectUris(uris -> uris.addAll(thirdPartyRedirectUris()))
                 .postLogoutRedirectUri(defaultRedirectUriBase + ":8080/")
                 .scope(OidcScopes.OPENID)
                 .scope(OidcScopes.PROFILE)
                 .scopes(scopes -> scopes.addAll(ESPI_THIRD_PARTY_SCOPES))
+                .scope("ThirdParty_Admin_Access")
                 .tokenSettings(TokenSettings.builder()
                     .accessTokenTimeToLive(Duration.ofMinutes(360))
                     .refreshTokenTimeToLive(Duration.ofMinutes(3600))

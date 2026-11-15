@@ -79,3 +79,16 @@ espi:
 
 # Seed the demo OAuth clients (well-known secrets; never in production).
 espi.authserver.seed.demo-clients: true
+
+# ---- Local manual-test kit (#254). DEV ONLY: every value below is published in this repository. ----
+# AS admin console login admin / admin (bcrypt of "admin"); a passkey is enrolled at first login.
+# Environment variables still win, so a developer can use their own.
+espi.authserver.admin.bootstrap.username: ${ESPI_BOOTSTRAP_ADMIN_USERNAME:admin}
+espi.authserver.admin.bootstrap.password-hash: ${ESPI_BOOTSTRAP_ADMIN_PASSWORD_HASH:$2a$10$lBNJLX4/6hEqECVzSTxCqeOM3Ve.w3FxG2F2y.KeN8kkS9Y/0/f6e}
+# espi_admin (authserver.admin bearer access) and espi_registrar (RFC 7591 initial access tokens)
+espi.authserver.admin-client.secret: ${ESPI_ADMIN_CLIENT_SECRET:local-admin-secret}
+espi.authserver.registrar.client-secret: ${ESPI_REGISTRAR_CLIENT_SECRET:local-registrar-secret}
+# third_party redirect URIs = the local Third Party's Spring OAuth2 client callbacks
+espi.authserver.seed.third-party.redirect-uris: >-
+  http://localhost:8082/ThirdParty/login/oauth2/code/datacustodian-monthly,
+  http://localhost:8082/ThirdParty/login/oauth2/code/datacustodian-daily

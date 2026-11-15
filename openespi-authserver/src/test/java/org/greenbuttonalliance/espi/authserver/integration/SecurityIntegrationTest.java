@@ -103,15 +103,17 @@ class SecurityIntegrationTest extends AbstractAuthserverIntegrationTest {
 
     /** Per-test ESPI authorization_code client with an https redirect URI (Spring AS rejects "localhost"). */
     private String authCodeClientId;
+    private String authCodeClientSecret;
 
     @BeforeEach
     void seedAuthorizationCodeClient() {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         authCodeClientId = "sec-it-tp-" + suffix;
+        authCodeClientSecret = "sec-it-secret-" + suffix; // JdbcRegisteredClientRepository requires unique secrets
         registeredClientRepository.save(RegisteredClient.withId(UUID.randomUUID().toString())
                 .clientId(authCodeClientId)
                 .clientName("Security IT ThirdParty")
-                .clientSecret("{noop}sec-it-secret-" + suffix) // JdbcRegisteredClientRepository requires unique secrets
+                .clientSecret("{noop}" + authCodeClientSecret)
                 .clientIdIssuedAt(Instant.now())
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
@@ -241,8 +243,8 @@ class SecurityIntegrationTest extends AbstractAuthserverIntegrationTest {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.error").value("invalid_grant"));
 
-            // third_party is authorization_code/refresh_token only
-            mockMvc.perform(clientCredentials(TP_CLIENT_ID, TP_CLIENT_SECRET, ESPI_SCOPE_HOURLY))
+            // the per-test ThirdParty client is authorization_code only
+            mockMvc.perform(clientCredentials(authCodeClientId, authCodeClientSecret, ESPI_SCOPE_HOURLY))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.error").value("unauthorized_client"));
         }
