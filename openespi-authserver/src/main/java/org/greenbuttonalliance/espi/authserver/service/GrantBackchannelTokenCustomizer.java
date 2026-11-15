@@ -22,6 +22,7 @@ import org.greenbuttonalliance.espi.authserver.backchannel.BackchannelRequest;
 import org.greenbuttonalliance.espi.authserver.backchannel.BackchannelResponse;
 import org.greenbuttonalliance.espi.authserver.backchannel.DataCustodianBackchannelClient;
 import org.greenbuttonalliance.espi.authserver.backchannel.DataCustodianBackchannelException;
+import org.greenbuttonalliance.espi.authserver.grant.EspiGrantScopePolicy;
 import org.greenbuttonalliance.espi.authserver.grant.GrantContextEnrichingAuthorizationService;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
@@ -34,6 +35,7 @@ import org.springframework.security.oauth2.server.authorization.token.OAuth2Toke
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -89,6 +91,9 @@ public class GrantBackchannelTokenCustomizer implements OAuth2TokenCustomizer<OA
 	/** The ESPI 4.0 (REQ.21 6.1.2) token-response URI claims, in wire order. */
 	public static final List<String> ESPI_URI_CLAIMS = List.of(
 			CLAIM_RESOURCE_URI, CLAIM_AUTHORIZATION_URI, CLAIM_CUSTOMER_RESOURCE_URI);
+
+	/** ESPI Function Block 51: the retail customer resources (customer.xsd). Requires customerResourceURI. */
+	static final int CUSTOMER_FUNCTION_BLOCK = 51;
 
 	private final DataCustodianBackchannelClient backchannelClient;
 
@@ -152,7 +157,28 @@ public class GrantBackchannelTokenCustomizer implements OAuth2TokenCustomizer<OA
 							"Subscription provisioning failed at the Data Custodian", null), e);
 		}
 
+		if (grantsCustomerResources(grantedScope) && isBlank(response.customerResourceUri())) {
+			// ESPI: every access token whose scope includes FB_51 carries customerResourceURI. Without it the
+			// Third Party cannot locate the customer resources it was granted, so issue no token at all.
+			log.error("DC back-channel returned no customerResourceURI for an FB_51 grant, client={}, correlation_id={}",
+					clientId, correlationId);
+			throw new OAuth2AuthenticationException(
+					new OAuth2Error(OAuth2ErrorCodes.SERVER_ERROR,
+							"The Data Custodian returned no customerResourceURI for a scope that includes FB_51", null));
+		}
+
 		writeClaims(context, response);
+	}
+
+	/** Function Block 51 (customer resources) is granted when any of the space-separated scopes names it. */
+	static boolean grantsCustomerResources(String grantedScope) {
+		return Arrays.stream(grantedScope.trim().split("\\s+"))
+				.map(EspiGrantScopePolicy::functionBlocks)
+				.anyMatch(fbs -> fbs.map(set -> set.contains(CUSTOMER_FUNCTION_BLOCK)).orElse(false));
+	}
+
+	private static boolean isBlank(String value) {
+		return value == null || value.isBlank();
 	}
 
 	private static void copyClaimsFromPreviousAccessToken(OAuth2TokenClaimsContext context,

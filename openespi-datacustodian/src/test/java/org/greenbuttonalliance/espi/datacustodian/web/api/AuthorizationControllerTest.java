@@ -42,7 +42,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *
  * <p>This test verifies <em>only</em> the security boundary. The controller bodies are stubs
  * (returning {@code null}) as of this PR; functional behavior (per-TP filtering when called with
- * {@code SCOPE_ThirdParty_Admin_Access}, etc.) is a follow-up. Tests therefore assert that the
+ * the client access token, etc.) is covered by {@code AdminRowScopeTest}. Tests therefore assert that the
  * security gate allows authorized callers through &mdash; the response body content is out of
  * scope here.</p>
  */
@@ -91,12 +91,20 @@ class AuthorizationControllerTest {
 		}
 
 		@Test
-		@DisplayName("ThirdParty admin scope (client_credentials) passes the security gate")
-		void tpAdmin_passes() throws Exception {
+		@DisplayName("Third Party client access token (FB=34_35, client_credentials) passes the security gate")
+		void clientAccessToken_passes() throws Exception {
 			int httpStatus = mockMvc.perform(get("/espi/1_1/resource/Authorization")
-							.with(opaqueAuthority("SCOPE_ThirdParty_Admin_Access")))
+							.with(opaqueAuthority("ESPI_CLIENT_ACCESS_TOKEN")))
 					.andReturn().getResponse().getStatus();
 			assertPassedSecurityGate(httpStatus);
+		}
+
+		@Test
+		@DisplayName("returns 403 with ThirdParty_Admin_Access: only the client access token is accepted")
+		void tpAdminScope_is_403() throws Exception {
+			mockMvc.perform(get("/espi/1_1/resource/Authorization")
+							.with(opaqueAuthority("SCOPE_ThirdParty_Admin_Access")))
+					.andExpect(status().isForbidden());
 		}
 	}
 
@@ -129,10 +137,10 @@ class AuthorizationControllerTest {
 		}
 
 		@Test
-		@DisplayName("ThirdParty admin scope (client_credentials) passes the security gate")
-		void tpAdmin_passes() throws Exception {
+		@DisplayName("Third Party client access token (FB=34_35, client_credentials) passes the security gate")
+		void clientAccessToken_passes() throws Exception {
 			int httpStatus = mockMvc.perform(get("/espi/1_1/resource/Authorization/" + UUID.randomUUID())
-							.with(opaqueAuthority("SCOPE_ThirdParty_Admin_Access")))
+							.with(opaqueAuthority("ESPI_CLIENT_ACCESS_TOKEN")))
 					.andReturn().getResponse().getStatus();
 			assertPassedSecurityGate(httpStatus);
 		}

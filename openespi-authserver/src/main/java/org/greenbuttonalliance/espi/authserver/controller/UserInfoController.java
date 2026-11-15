@@ -291,10 +291,6 @@ public class UserInfoController {
             rights.add("ADMIN_ACCESS");
         }
         
-        if (scopes.contains("Upload_Admin_Access")) {
-            rights.add("UPLOAD_ACCESS");
-        }
-        
         return rights;
     }
 

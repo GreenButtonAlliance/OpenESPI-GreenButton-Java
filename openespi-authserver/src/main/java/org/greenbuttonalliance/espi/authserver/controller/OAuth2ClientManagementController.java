@@ -103,8 +103,9 @@ public class OAuth2ClientManagementController {
         "FB=4_5_15;IntervalDuration=900;BlockDuration=monthly;HistoryLength=13",
         "FB=4_5_15;IntervalDuration=3600;BlockDuration=daily;HistoryLength=7",
         "FB=4_5_16;IntervalDuration=900;BlockDuration=daily;HistoryLength=7",
+        "FB=34_35",   // Third Party client access token (client_credentials)
+        "FB=36_40",   // registration access token renewal
         "DataCustodian_Admin_Access",
-        "Upload_Admin_Access", 
         "ThirdParty_Admin_Access"
     );
 

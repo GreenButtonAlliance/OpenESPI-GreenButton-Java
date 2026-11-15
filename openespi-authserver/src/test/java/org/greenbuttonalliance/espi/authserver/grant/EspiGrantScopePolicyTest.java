@@ -61,6 +61,7 @@ class EspiGrantScopePolicyTest {
 			.redirectUri("https://tp.example/cb")
 			.scope(CUSTOMER_SCOPE)
 			.scope("ThirdParty_Admin_Access")
+			.scope(EspiGrantScopePolicy.CLIENT_ACCESS_TOKEN_SCOPE)
 			.scope(EspiGrantScopePolicy.REGISTRATION_RENEWAL_SCOPE)
 			.build();
 
@@ -90,8 +91,9 @@ class EspiGrantScopePolicyTest {
 	}
 
 	@ParameterizedTest
-	@ValueSource(strings = {"ThirdParty_Admin_Access", EspiGrantScopePolicy.REGISTRATION_RENEWAL_SCOPE})
-	@DisplayName("client_credentials: the client access token and renewal scopes are allowed")
+	@ValueSource(strings = {EspiGrantScopePolicy.CLIENT_ACCESS_TOKEN_SCOPE, EspiGrantScopePolicy.REGISTRATION_RENEWAL_SCOPE,
+			"ThirdParty_Admin_Access"})
+	@DisplayName("client_credentials: the client access token (FB=34_35) and renewal (FB=36_40) scopes are allowed")
 	void clientCredentialsAllowsAdministrativeScopes(String scope) {
 		assertThatCode(() -> EspiGrantScopePolicy.clientCredentialsValidator().accept(clientCredentials(Set.of(scope))))
 				.doesNotThrowAnyException();
@@ -107,7 +109,8 @@ class EspiGrantScopePolicyTest {
 	}
 
 	@ParameterizedTest
-	@ValueSource(strings = {"ThirdParty_Admin_Access", EspiGrantScopePolicy.REGISTRATION_RENEWAL_SCOPE})
+	@ValueSource(strings = {"ThirdParty_Admin_Access", EspiGrantScopePolicy.CLIENT_ACCESS_TOKEN_SCOPE,
+			EspiGrantScopePolicy.REGISTRATION_RENEWAL_SCOPE})
 	@DisplayName("authorization_code: an administrative scope is invalid_scope, redirected to the client")
 	void authorizationCodeRejectsAdministrativeScope(String scope) {
 		assertThatThrownBy(() -> EspiGrantScopePolicy.authorizationCodeValidator()
@@ -139,17 +142,45 @@ class EspiGrantScopePolicyTest {
 
 	@ParameterizedTest
 	@ValueSource(strings = {"ThirdParty_Admin_Access", "DataCustodian_Admin_Access", "Upload_Admin_Access",
-			"FB=36_40", "fb=36_40", "FB=36", "FB=40;IntervalDuration=900", "FB=4_36", "authserver.admin",
-			"client.create", "FB=abc", "FB=", "FB_1", "anything_else"})
-	@DisplayName("authorization_code: administrative, reserved-FB, unparseable and unknown scopes are not allowed")
+			"FB=36_40", "fb=36_40", "FB=40_36", "FB=36_40;IntervalDuration=900", "FB=34_35", "FB=35_34", " fb=34_35",
+			"FB=34_35;BR=000112", "authserver.admin", "client.create", "FB=abc", "FB=", "FB_1", "anything_else"})
+	@DisplayName("authorization_code: administrative, client/registration token (any spelling), unparseable and unknown scopes are not allowed")
 	void authorizationCodeAllowlist(String scope) {
 		assertThat(EspiGrantScopePolicy.isAuthorizationCodeScope(scope)).isFalse();
+	}
+
+	/** Customer scopes as certified Third Parties send them: bulk (35) and offline (40) among other FBs. */
+	@ParameterizedTest
+	@ValueSource(strings = {
+			"FB=1_3_4_5_6_7_8_9_13_15_16_17_27_28_31_35_37_39_40_51_53_54_55_56_57_58_59_60_61_62_64_65_67_69_70",
+			"FB=1_3_4_5_7_10_15_16_51_53_56_57_58_60;IntervalDuration=Monthly_3600_900_300;BlockDuration=Monthly_Daily",
+			"FB=1_3_4_5_6_7_8_9_10_11_12_13_15_16_17_26_27_28_29_31_35_37_39_40_51_53_54_55_56_57_58_59_60_61_62_64_65_67_69_70_71",
+			"FB=35", "FB=40;IntervalDuration=900", "FB=4_5_15"})
+	@DisplayName("authorization_code: scopes naming only certifiable customer data Function Blocks (CMD v2.14) are allowed")
+	void authorizationCodeAllowsCertifiableCustomerScopes(String scope) {
+		assertThat(EspiGrantScopePolicy.isAuthorizationCodeScope(scope)).isTrue();
+	}
+
+	/** Function Blocks outside the CMD v2.14 certification list, alone or among valid ones. */
+	@ParameterizedTest
+	@ValueSource(strings = {"FB=1_3_4_5_13_14_39", "FB=1_3_34_35_51", "FB=1_3_36_40", "FB=36", "FB=4_36", "FB=68",
+			"FB=2", "FB=18_19", "FB=1_3_4_5_66"})
+	@DisplayName("authorization_code: a Function Block outside the certifiable customer data list is invalid_scope")
+	void authorizationCodeRejectsNonCertifiableFunctionBlocks(String scope) {
+		assertThat(EspiGrantScopePolicy.isAuthorizationCodeScope(scope)).isFalse();
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = {"Upload_Admin_Access", "FB=35", "FB=34_35;BR=000112", "FB=35_34"})
+	@DisplayName("client_credentials: only the exact client access token string; Upload_Admin_Access is not migrated")
+	void clientCredentialsRejectsOtherScopes(String scope) {
+		assertThat(EspiGrantScopePolicy.isClientCredentialsScope(scope)).isFalse();
 	}
 
 	@Test
 	@DisplayName("scope classification: each grant's allowlist")
 	void scopeClassification() {
-		assertThat(Set.of(CUSTOMER_SCOPE, "FB=1_3_4_5_13_14_39", "openid", "profile"))
+		assertThat(Set.of(CUSTOMER_SCOPE, "FB=1_3_4_5_13_15_39", "openid", "profile"))
 				.allMatch(EspiGrantScopePolicy::isAuthorizationCodeScope)
 				.noneMatch(EspiGrantScopePolicy::isClientCredentialsScope);
 		assertThat(EspiGrantScopePolicy.ADMINISTRATIVE_SCOPES)

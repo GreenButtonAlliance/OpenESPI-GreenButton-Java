@@ -160,6 +160,60 @@ class GrantBackchannelTokenCustomizerTest {
 	}
 
 	@Test
+	@DisplayName("FB_51 granted but no customerResourceURI from the DC: server_error, no token")
+	void customerScopeWithoutCustomerResourceUriFails() {
+		OAuth2Authorization auth = authorizationWithGrantContext(
+				"corr-fb51", 9L, "FB=1_3_4_5_13_51_53;IntervalDuration=900", UP_1.toString());
+		when(client.provision(any())).thenReturn(new BackchannelResponse(
+				AUTH_ID, RES_SUB_ID, null,
+				"https://dc.example/Subscription/" + RES_SUB_ID,
+				"https://dc.example/Authorization/" + AUTH_ID,
+				null));
+
+		OAuth2TokenClaimsContext ctx = buildContext(auth);
+
+		assertThatThrownBy(() -> customizer.customize(ctx))
+				.isInstanceOfSatisfying(OAuth2AuthenticationException.class,
+						e -> assertThat(e.getError().getErrorCode()).isEqualTo(OAuth2ErrorCodes.SERVER_ERROR));
+		assertThat(ctx.getClaims().build().getClaims())
+				.doesNotContainKeys(GrantBackchannelTokenCustomizer.ESPI_URI_CLAIMS.toArray(String[]::new));
+	}
+
+	@Test
+	@DisplayName("FB_51 granted with a customerResourceURI: all three URI claims are written")
+	void customerScopeWithCustomerResourceUriWritesIt() {
+		OAuth2Authorization auth = authorizationWithGrantContext(
+				"corr-fb51-ok", 9L, "FB=1_3_4_5_13_51_53", UP_1.toString());
+		when(client.provision(any())).thenReturn(new BackchannelResponse(
+				AUTH_ID, RES_SUB_ID, CUST_SUB_ID,
+				"https://dc.example/Subscription/" + RES_SUB_ID,
+				"https://dc.example/Authorization/" + AUTH_ID,
+				"https://dc.example/RetailCustomer/9/Customer/" + CUST_SUB_ID));
+
+		OAuth2TokenClaimsContext ctx = buildContext(auth);
+		customizer.customize(ctx);
+
+		assertThat(ctx.getClaims().build().getClaims())
+				.containsKeys(GrantBackchannelTokenCustomizer.ESPI_URI_CLAIMS.toArray(String[]::new))
+				.containsEntry(GrantBackchannelTokenCustomizer.CLAIM_CUSTOMER_RESOURCE_URI,
+						"https://dc.example/RetailCustomer/9/Customer/" + CUST_SUB_ID);
+	}
+
+	@Test
+	@DisplayName("FB_51 detection: any space-separated ESPI scope naming Function Block 51")
+	void detectsCustomerFunctionBlock() {
+		assertThat(Map.of(
+						"FB=1_3_51", true,
+						"FB=4_5_15;IntervalDuration=900 FB=51_53", true,
+						" fb=51 ", true,
+						"FB=4_5_15;IntervalDuration=900", false,
+						"FB=1_3_510", false,
+						"FB_1;FB_51", false))
+				.allSatisfy((scope, expected) -> assertThat(GrantBackchannelTokenCustomizer.grantsCustomerResources(scope))
+						.as(scope).isEqualTo(expected));
+	}
+
+	@Test
 	@DisplayName("refresh-token customization: skipped")
 	void refreshTokenSkipped() {
 		OAuth2Authorization auth = authorizationWithGrantContext(
