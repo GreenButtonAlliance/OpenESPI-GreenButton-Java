@@ -30,6 +30,6 @@ public class CustodianHomeControllerTests {
 	@Test
 	public void index_displaysCustodianHomeView() throws Exception {
 		CustodianHomeController controller = new CustodianHomeController();
-		assertEquals("/custodian/home", controller.index());
+		assertEquals("custodian/home", controller.index());
 	}
 }

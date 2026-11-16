@@ -19,16 +19,29 @@
 
 package org.greenbuttonalliance.espi.thirdparty.web;
 
+import org.greenbuttonalliance.espi.thirdparty.security.ReturnToAuthenticationSuccessHandler;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
+/**
+ * Renders the Third Party's username/password login form (#249). Spring Security's form login
+ * handles the POST to the same path ({@code SecurityConfiguration}). A same-origin
+ * {@code return_to} query parameter is carried through the form as a hidden field and honored by
+ * {@link ReturnToAuthenticationSuccessHandler}; anything else is dropped here.
+ */
 @Controller
 @RequestMapping("/login")
 public class LoginController {
 
 	@GetMapping
-	public String index() {
+	public String index(@RequestParam(value = ReturnToAuthenticationSuccessHandler.RETURN_TO_PARAMETER,
+			required = false) String returnTo, Model model) {
+		if (ReturnToAuthenticationSuccessHandler.isSafeReturnTo(returnTo)) {
+			model.addAttribute("returnTo", returnTo);
+		}
 		return "login";
 	}
 }

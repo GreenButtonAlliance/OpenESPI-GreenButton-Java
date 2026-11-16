@@ -20,16 +20,19 @@
 package org.greenbuttonalliance.espi.thirdparty.web;
 
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 
+/** The Third Party administrator's landing page after login (#249). */
 @Controller
 @RequestMapping("/custodian/home")
+@PreAuthorize("hasRole('ROLE_CUSTODIAN')")
 public class CustodianHomeController extends BaseController {
 
-	@RequestMapping(method = RequestMethod.GET)
+	@GetMapping
 	public String index() {
-		return "/custodian/home";
+		return "custodian/home";
 	}
 }

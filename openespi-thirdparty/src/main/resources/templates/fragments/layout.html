@@ -70,7 +70,12 @@
                         <i class="bi bi-person-circle"></i> <span sec:authentication="name">User</span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" th:href="@{/logout}">Logout</a></li>
+                        <li>
+                            <!-- POST with the CSRF token (th:action): with CSRF on, GET /logout does not sign out. -->
+                            <form th:action="@{/logout}" method="post" class="m-0">
+                                <button type="submit" class="dropdown-item">Logout</button>
+                            </form>
+                        </li>
                     </ul>
                 </li>
             </ul>

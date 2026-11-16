@@ -19,14 +19,20 @@
 
 package org.greenbuttonalliance.espi.thirdparty.config;
 
+import org.greenbuttonalliance.espi.thirdparty.security.RetailCustomerUserDetailsService;
+import org.greenbuttonalliance.espi.thirdparty.security.ReturnToAuthenticationSuccessHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProvider;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProviderBuilder;
@@ -52,11 +58,30 @@ import java.util.Arrays;
  */
 @Configuration
 @EnableWebSecurity
+// Makes the controllers' @PreAuthorize role checks (ROLE_USER / ROLE_CUSTODIAN) take effect.
+@EnableMethodSecurity
 public class SecurityConfiguration {
 
+    /** BCrypt encoder for the TP's own accounts ({@code retail_customers.password}). */
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public PasswordEncoder customerPasswordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    /**
+     * Two separate steps (#249): a TP customer or administrator first signs in to the Third Party
+     * with {@code formLogin} against the TP's own accounts; {@code oauth2Login} is then used from the
+     * home page only to authorize the TP at a Data Custodian, never to sign in to the TP.
+     */
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http,
+                                           RetailCustomerUserDetailsService userDetailsService,
+                                           PasswordEncoder customerPasswordEncoder) throws Exception {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
+        provider.setPasswordEncoder(customerPasswordEncoder);
+
         http
+            .authenticationProvider(provider)
             .authorizeHttpRequests(authz -> authz
                 // Public pages (Terms of Service and Usage Policy are linked from the navbar, About from
                 // the footer)
@@ -70,6 +95,15 @@ public class SecurityConfiguration {
                 .requestMatchers("/h2-console/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
+            .formLogin(form -> form
+                .loginPage("/login")
+                .loginProcessingUrl("/login")
+                .usernameParameter("username")
+                .passwordParameter("password")
+                .successHandler(new ReturnToAuthenticationSuccessHandler())
+                .failureUrl("/login?error")
+                .permitAll()
+            )
             .oauth2Login(oauth2 -> oauth2
                 .loginPage("/login")
                 .defaultSuccessUrl("/", true)
@@ -77,7 +111,7 @@ public class SecurityConfiguration {
             )
             .logout(logout -> logout
                 .logoutUrl("/logout")
-                .logoutSuccessUrl("/")
+                .logoutSuccessUrl("/login?logout")
                 .invalidateHttpSession(true)
                 .deleteCookies("JSESSIONID")
             )
@@ -92,7 +126,12 @@ public class SecurityConfiguration {
                     .referrerPolicy(referrerPolicyConfig -> referrerPolicyConfig.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
             )
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .csrf(AbstractHttpConfigurer::disable); // Disabled for API access patterns
+            // CSRF on for the browser UI (Thymeleaf th:action adds the token to every form, including
+            // login and logout). Exempt: the DC's server-to-server Notification POST, which carries no
+            // session or token, and the H2 console.
+            .csrf(csrf -> csrf.ignoringRequestMatchers(
+                PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.POST, "/espi/1_1/Notification"),
+                PathPatternRequestMatcher.withDefaults().matcher("/h2-console/**")));
 
         return http.build();
     }
