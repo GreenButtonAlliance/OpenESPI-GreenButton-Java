@@ -35,7 +35,8 @@ spring:
       enabled: true
       path: /h2-console
       settings:
-        web-allow-others: true
+        # Localhost only. The Third Party's security rules also block /h2-console for everyone.
+        web-allow-others: false
 
 # Development-specific logging
 logging:

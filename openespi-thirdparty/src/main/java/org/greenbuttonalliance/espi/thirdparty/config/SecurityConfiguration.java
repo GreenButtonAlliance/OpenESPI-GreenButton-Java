@@ -89,8 +89,10 @@ public class SecurityConfiguration {
                 // OAuth access token. (The Third Party, as an OAuth client, presents its access token
                 // only when it later fetches the source URLs carried in the BatchList.)
                 .requestMatchers(HttpMethod.POST, "/espi/1_1/Notification").permitAll()
-                // H2 console (enabled on the local profile only): TP administrators.
-                .requestMatchers("/h2-console/**").hasRole("CUSTODIAN")
+                // H2 console (enabled on the local, dev and h2 profiles): blocked for everyone. The
+                // console runs arbitrary SQL, and H2's CREATE ALIAS runs Java code, so opening it to an
+                // account with seeded, public credentials (admin/admin) would expose code execution.
+                .requestMatchers("/h2-console/**").denyAll()
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
@@ -129,10 +131,9 @@ public class SecurityConfiguration {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             // CSRF on for the browser UI (Thymeleaf th:action adds the token to every form, including
             // login and logout). Exempt: the DC's server-to-server Notification POST, which carries no
-            // session or token, and the H2 console, whose own forms carry no CSRF token.
+            // session or token.
             .csrf(csrf -> csrf.ignoringRequestMatchers(
-                PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.POST, "/espi/1_1/Notification"),
-                PathPatternRequestMatcher.withDefaults().matcher("/h2-console/**")));
+                PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.POST, "/espi/1_1/Notification")));
 
         return http.build();
     }
