@@ -251,8 +251,18 @@ class FormLoginTest {
 
 		assertThat(mockMvc.perform(get("/").param("authorization_error", "").with(user(CUSTOMER).roles("USER")))
 				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString())
-				.contains("The Data Custodian authorization did not complete")
-				.doesNotContain("Invalid username or password");
+				.contains("The Data Custodian authorization did not complete", "you can try again below")
+				.doesNotContain("Invalid username or password", "Your Third Party session ended");
+	}
+
+	@Test
+	@DisplayName("after a failed DC authorization, a user whose TP session ended is told so and offered the login page")
+	void failed_dc_authorization_after_session_ended_offers_sign_in() throws Exception {
+		assertThat(mockMvc.perform(get("/").param("authorization_error", ""))
+				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString())
+				.contains("Your Third Party session ended during the Data Custodian authorization",
+						"href=\"/login\"", "Sign in</a> and try again")
+				.doesNotContain("you can try again below", "Data Access Authorization");
 	}
 
 	@Test

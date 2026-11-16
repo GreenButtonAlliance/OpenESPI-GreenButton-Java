@@ -108,7 +108,8 @@ public class SecurityConfiguration {
                 // H2 console (spring.h2.console.path): closed here. Where the console is enabled
                 // (spring.h2.console.enabled, development profiles only), H2ConsoleSecurityConfiguration's
                 // chain handles it ahead of this one; everywhere else this rule keeps it shut.
-                .requestMatchers(PathPatternRequestMatcher.withDefaults().matcher(h2ConsolePath + "/**")).denyAll()
+                .requestMatchers(PathPatternRequestMatcher.withDefaults()
+                        .matcher(H2ConsoleSecurityConfiguration.basePath(h2ConsolePath) + "/**")).denyAll()
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form

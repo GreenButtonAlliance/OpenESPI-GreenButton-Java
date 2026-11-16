@@ -32,6 +32,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 
 /**
@@ -68,19 +69,46 @@ public class H2ConsoleSecurityConfiguration {
 	@Bean
 	@Order(0)
 	public SecurityFilterChain h2ConsoleSecurityFilterChain(HttpSecurity http,
-			@Value("${spring.h2.console.path:/h2-console}") String path) throws Exception {
+			@Value("${spring.h2.console.path:/h2-console}") String configuredPath) throws Exception {
+		String path = basePath(configuredPath);
+		SameOriginFetchAuthorizationManager sameOrigin = new SameOriginFetchAuthorizationManager(path);
+
+		// Not signed in: go to the TP login page. Only the console's entry page is saved for the
+		// redirect back after sign-in. A saved action URL (e.g. an attacker's login.do?url=...) would
+		// otherwise be replayed by that redirect, which the browser reports as same-origin.
+		HttpSessionRequestCache entryPageOnly = new HttpSessionRequestCache();
+		entryPageOnly.setRequestMatcher(sameOrigin::isEntryPage);
+		// No "?continue" marker on the replay: it must stay a parameterless GET of the entry page.
+		entryPageOnly.setMatchingRequestParameterName(null);
+
 		return http
 				.securityMatcher(PathPatternRequestMatcher.withDefaults().matcher(path + "/**"))
 				.authorizeHttpRequests(authz -> authz
 						.anyRequest().access(AuthorizationManagers.allOf(
 								AuthorityAuthorizationManager.hasRole("CUSTODIAN"),
-								new SameOriginFetchAuthorizationManager(path))))
-				// Not signed in: go to the TP login page; the saved request brings the
-				// administrator back to the console afterwards.
+								sameOrigin)))
+				.requestCache(cache -> cache.requestCache(entryPageOnly))
 				.exceptionHandling(e -> e.authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/login")))
 				.csrf(AbstractHttpConfigurer::disable)
 				// The console is built from frames on its own origin.
 				.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
 				.build();
+	}
+
+	/**
+	 * {@code spring.h2.console.path} without trailing slashes. Spring Boot accepts {@code /h2-console/};
+	 * appending {@code /**} to that as configured would give {@code /h2-console//**}, which matches
+	 * nothing, so the console would fall through to the main chain's {@code authenticated()}. Used by
+	 * both this chain and {@link SecurityConfiguration}'s rule that closes the console.
+	 */
+	static String basePath(String configuredPath) {
+		String path = configuredPath == null ? "" : configuredPath.trim();
+		while (path.length() > 1 && path.endsWith("/")) {
+			path = path.substring(0, path.length() - 1);
+		}
+		if (path.isEmpty() || path.equals("/") || !path.startsWith("/")) {
+			throw new IllegalStateException("spring.h2.console.path must be a path below '/': '" + configuredPath + "'");
+		}
+		return path;
 	}
 }

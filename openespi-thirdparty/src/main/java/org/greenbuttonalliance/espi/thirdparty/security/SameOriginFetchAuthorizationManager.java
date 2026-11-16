@@ -20,6 +20,7 @@
 package org.greenbuttonalliance.espi.thirdparty.security;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationManager;
@@ -28,23 +29,30 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.util.Assert;
 
+import java.net.URI;
 import java.util.function.Supplier;
 
 /**
- * Fetch Metadata resource-isolation check for a tool, such as the H2 console, that is exempt from
- * CSRF tokens. Allows:
+ * Request-origin check for a tool, such as the H2 console, that is exempt from CSRF tokens. Allows:
  * <ul>
- *   <li>any request the browser reports as coming from this origin
- *       ({@code Sec-Fetch-Site: same-origin}): the tool's own frames, links and forms;</li>
- *   <li>a request the user started outside any page ({@code none}: typed URL, bookmark, or a link
- *       clicked in another application) only when it is a {@code GET} of the tool's entry page
- *       ({@code <basePath>} or {@code <basePath>/}). A link from an e-mail, chat or PDF can open the
- *       tool but cannot carry an action, such as {@code login.do?url=...;INIT=RUNSCRIPT ...}.</li>
+ *   <li>the tool's <em>entry page</em> ({@code <basePath>} or {@code <basePath>/}, a {@code GET}
+ *       with no parameters) when the browser reports it as same-origin or user-initiated
+ *       ({@code Sec-Fetch-Site: same-origin} or {@code none}: typed URL, bookmark, or a link
+ *       clicked in another application). The entry page performs no action.</li>
+ *   <li>any other request only when it is same-origin <em>and</em> its {@code Referer} is a page of
+ *       the tool itself. The tool's own frames, forms and scripts always send one.</li>
  * </ul>
  *
- * <p>Rejected: {@code cross-site}; {@code same-site}, which is how a page on another
+ * <p>{@code Sec-Fetch-Site} alone is not enough: a same-origin redirect also arrives as
+ * {@code same-origin}. Without the {@code Referer} rule, an action URL from an attacker
+ * ({@code login.do?url=...;INIT=RUNSCRIPT ...}) could be laundered through the TP's sign-in:
+ * saved as the interrupted request, or passed as {@code return_to}, and then replayed by the
+ * redirect after the login form's POST. Such a redirect carries the login page's {@code Referer},
+ * so it is refused.</p>
+ *
+ * <p>Also rejected: {@code cross-site}; {@code same-site}, which is how a page on another
  * {@code localhost} port arrives, and which {@code SameSite=Lax} cookies do not stop; and a missing
- * header (non-browser clients and browsers too old to send it).</p>
+ * header (non-browser clients, and browsers that are too old or strip the {@code Referer}).</p>
  */
 public final class SameOriginFetchAuthorizationManager implements AuthorizationManager<RequestAuthorizationContext> {
 
@@ -52,10 +60,12 @@ public final class SameOriginFetchAuthorizationManager implements AuthorizationM
 
 	private final String basePath;
 
-	/** @param basePath the tool's path within the application, e.g. {@code /h2-console} */
+	/** @param basePath the tool's path within the application, e.g. {@code /h2-console} (no trailing slash) */
 	public SameOriginFetchAuthorizationManager(String basePath) {
 		Assert.hasText(basePath, "basePath must not be empty");
-		this.basePath = basePath.endsWith("/") ? basePath.substring(0, basePath.length() - 1) : basePath;
+		Assert.isTrue(basePath.startsWith("/") && !basePath.endsWith("/"),
+				"basePath must start with '/' and must not end with '/': " + basePath);
+		this.basePath = basePath;
 	}
 
 	@Override
@@ -63,17 +73,38 @@ public final class SameOriginFetchAuthorizationManager implements AuthorizationM
 										 RequestAuthorizationContext context) {
 		HttpServletRequest request = context.getRequest();
 		String site = request.getHeader(SEC_FETCH_SITE);
-		boolean allowed = "same-origin".equals(site) || ("none".equals(site) && isEntryPageGet(request));
+		boolean allowed;
+		if (isEntryPage(request)) {
+			allowed = "same-origin".equals(site) || "none".equals(site);
+		}
+		else {
+			allowed = "same-origin".equals(site) && refererIsInsideTool(request);
+		}
 		return new AuthorizationDecision(allowed);
 	}
 
-	private boolean isEntryPageGet(HttpServletRequest request) {
-		// A plain GET with no parameters: the entry page itself, never an action on it.
+	/** A plain {@code GET} of {@code <basePath>} or {@code <basePath>/} with no parameters: no action. */
+	public boolean isEntryPage(HttpServletRequest request) {
 		if (!HttpMethod.GET.matches(request.getMethod()) || request.getQueryString() != null
 				|| !request.getParameterMap().isEmpty()) {
 			return false;
 		}
 		String path = request.getRequestURI().substring(request.getContextPath().length());
 		return path.equals(basePath) || path.equals(basePath + "/");
+	}
+
+	private boolean refererIsInsideTool(HttpServletRequest request) {
+		String referer = request.getHeader(HttpHeaders.REFERER);
+		if (referer == null) {
+			return false;
+		}
+		try {
+			String path = URI.create(referer).normalize().getRawPath();
+			String tool = request.getContextPath() + basePath;
+			return path != null && (path.equals(tool) || path.startsWith(tool + "/"));
+		}
+		catch (IllegalArgumentException e) {
+			return false;
+		}
 	}
 }
