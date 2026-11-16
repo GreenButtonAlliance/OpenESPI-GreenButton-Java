@@ -89,10 +89,12 @@ public class SecurityConfiguration {
                 // OAuth access token. (The Third Party, as an OAuth client, presents its access token
                 // only when it later fetches the source URLs carried in the BatchList.)
                 .requestMatchers(HttpMethod.POST, "/espi/1_1/Notification").permitAll()
-                // H2 console (enabled on the local, dev and h2 profiles): blocked for everyone. The
-                // console runs arbitrary SQL, and H2's CREATE ALIAS runs Java code, so opening it to an
-                // account with seeded, public credentials (admin/admin) would expose code execution.
-                .requestMatchers("/h2-console/**").denyAll()
+                // H2 console (enabled on the local, dev and h2 profiles), for developer diagnostics.
+                // It runs arbitrary SQL, and H2's CREATE ALIAS runs Java code, so it is guarded twice:
+                // H2 itself answers localhost only (web-allow-others: false on every profile that
+                // enables it), and a signed-in TP administrator is required, so a cross-site page in
+                // the developer's browser cannot drive it without their session cookie (SameSite=Lax).
+                .requestMatchers("/h2-console/**").hasRole("CUSTODIAN")
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
@@ -131,9 +133,11 @@ public class SecurityConfiguration {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             // CSRF on for the browser UI (Thymeleaf th:action adds the token to every form, including
             // login and logout). Exempt: the DC's server-to-server Notification POST, which carries no
-            // session or token.
+            // session or token, and the H2 console, whose own forms carry no CSRF token (guarded by
+            // the localhost-only and administrator rules above instead).
             .csrf(csrf -> csrf.ignoringRequestMatchers(
-                PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.POST, "/espi/1_1/Notification")));
+                PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.POST, "/espi/1_1/Notification"),
+                PathPatternRequestMatcher.withDefaults().matcher("/h2-console/**")));
 
         return http.build();
     }

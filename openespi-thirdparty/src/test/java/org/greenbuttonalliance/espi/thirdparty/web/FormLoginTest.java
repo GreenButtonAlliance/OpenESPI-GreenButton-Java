@@ -251,14 +251,19 @@ class FormLoginTest {
 	}
 
 	@Test
-	@DisplayName("the H2 console is blocked for every account, including TP administrators")
-	void h2_console_is_blocked() throws Exception {
+	@DisplayName("the H2 console requires a signed-in TP administrator and works without a CSRF token")
+	void h2_console_is_administrator_only() throws Exception {
+		mockMvc.perform(get("/h2-console/"))
+				.andExpect(status().is3xxRedirection())
+				.andExpect(redirectedUrl("/login"));
 		mockMvc.perform(get("/h2-console/").with(user(CUSTOMER).roles("USER")))
 				.andExpect(status().isForbidden());
+		// The console is not enabled on the test profile, so an administrator gets past security
+		// to a 404 rather than a 403 - including on its tokenless login POST.
 		mockMvc.perform(get("/h2-console/").with(user(ADMIN).roles("CUSTODIAN")))
-				.andExpect(status().isForbidden());
+				.andExpect(status().isNotFound());
 		mockMvc.perform(post("/h2-console/login.do").with(user(ADMIN).roles("CUSTODIAN")))
-				.andExpect(status().isForbidden());
+				.andExpect(status().isNotFound());
 	}
 
 	@Test

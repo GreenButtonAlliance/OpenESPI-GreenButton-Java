@@ -35,7 +35,7 @@ spring:
       enabled: true
       path: /h2-console
       settings:
-        # Localhost only. The Third Party's security rules also block /h2-console for everyone.
+        # Localhost only. The Third Party's security rules also require a signed-in TP administrator.
         web-allow-others: false
 
 # Development-specific logging
@@ -53,6 +53,13 @@ logging:
   
 server:
   port: 8082
+  servlet:
+    session:
+      cookie:
+        # Explicit, not left to browser defaults: cross-site POSTs (e.g. to the CSRF-exempt H2
+        # console) carry no session cookie. Lax still sends it on the top-level redirect back from
+        # the Authorization Server, so Data Custodian authorization keeps working.
+        same-site: lax
 
 espi:
   thirdparty:
