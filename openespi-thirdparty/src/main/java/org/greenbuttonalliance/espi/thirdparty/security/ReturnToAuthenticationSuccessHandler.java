@@ -19,15 +19,15 @@
 
 package org.greenbuttonalliance.espi.thirdparty.security;
 
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.savedrequest.RequestCache;
-import org.springframework.security.web.savedrequest.SavedRequest;
 
 import java.io.IOException;
 import java.net.URI;
@@ -36,38 +36,45 @@ import java.net.URI;
  * Form-login success handler for the Third Party (#249). Redirects to, in order:
  * <ol>
  *   <li>the {@code return_to} form parameter, when it is a same-origin path;</li>
- *   <li>the request the login page interrupted;</li>
+ *   <li>the request the login page interrupted (Spring Security's
+ *       {@link SavedRequestAwareAuthenticationSuccessHandler} behavior);</li>
  *   <li>the role landing page: {@code /custodian/home} for a TP administrator
  *       ({@code ROLE_CUSTODIAN}), otherwise the customer home {@code /}, which shows the
  *       Data Access Authorization cards.</li>
  * </ol>
  */
-public class ReturnToAuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
+public class ReturnToAuthenticationSuccessHandler extends SavedRequestAwareAuthenticationSuccessHandler {
 
 	public static final String RETURN_TO_PARAMETER = "return_to";
 	static final String CUSTODIAN_LANDING = "/custodian/home";
 	static final String CUSTOMER_LANDING = "/";
 
-	private final RequestCache requestCache = new HttpSessionRequestCache();
+	private RequestCache requestCache = new HttpSessionRequestCache();
 
 	@Override
 	public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
-										Authentication authentication) throws IOException {
+										Authentication authentication) throws ServletException, IOException {
 		String returnTo = request.getParameter(RETURN_TO_PARAMETER);
-		SavedRequest savedRequest = requestCache.getRequest(request, response);
-		String target;
 		if (isSafeReturnTo(returnTo)) {
-			target = returnTo;
+			requestCache.removeRequest(request, response);
+			clearAuthenticationAttributes(request);
+			getRedirectStrategy().sendRedirect(request, response, returnTo);
+			return;
 		}
-		else if (savedRequest != null) {
-			target = savedRequest.getRedirectUrl();
-		}
-		else {
-			target = landingFor(authentication);
-		}
-		requestCache.removeRequest(request, response);
-		clearAuthenticationAttributes(request);
-		getRedirectStrategy().sendRedirect(request, response, target);
+		super.onAuthenticationSuccess(request, response, authentication);
+	}
+
+	/** Used by the superclass when there is no saved request: the role landing page. */
+	@Override
+	protected String determineTargetUrl(HttpServletRequest request, HttpServletResponse response,
+										Authentication authentication) {
+		return landingFor(authentication);
+	}
+
+	@Override
+	public void setRequestCache(RequestCache requestCache) {
+		super.setRequestCache(requestCache);
+		this.requestCache = requestCache;
 	}
 
 	static String landingFor(Authentication authentication) {

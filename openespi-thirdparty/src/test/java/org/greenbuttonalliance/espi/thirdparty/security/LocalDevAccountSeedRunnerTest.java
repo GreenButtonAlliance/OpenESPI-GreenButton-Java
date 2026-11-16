@@ -33,13 +33,16 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class LocalDevAdminSeedRunnerTest {
+class LocalDevAccountSeedRunnerTest {
 
 	@Mock
 	private RetailCustomerRepository repository;
@@ -48,29 +51,33 @@ class LocalDevAdminSeedRunnerTest {
 
 	@Test
 	void runs_on_the_local_profile_only() {
-		assertThat(LocalDevAdminSeedRunner.class.getAnnotation(Profile.class).value()).containsExactly("local");
+		assertThat(LocalDevAccountSeedRunner.class.getAnnotation(Profile.class).value()).containsExactly("local");
 	}
 
 	@Test
-	void seeds_an_enabled_bcrypt_custodian_admin() {
-		when(repository.findByUsername("admin")).thenReturn(Optional.empty());
+	void seeds_an_enabled_bcrypt_administrator_and_customer() {
+		when(repository.findByUsername(anyString())).thenReturn(Optional.empty());
 
-		new LocalDevAdminSeedRunner(repository, encoder).run();
+		new LocalDevAccountSeedRunner(repository, encoder).run();
 
 		ArgumentCaptor<RetailCustomerEntity> saved = ArgumentCaptor.forClass(RetailCustomerEntity.class);
-		verify(repository).save(saved.capture());
-		assertThat(saved.getValue())
+		verify(repository, times(2)).save(saved.capture());
+		assertThat(saved.getAllValues())
+				.allSatisfy(account -> assertThat(encoder.matches(account.getUsername(), account.getPassword()))
+						.as("password of %s is the BCrypt hash of its username", account.getUsername())
+						.isTrue())
 				.extracting(RetailCustomerEntity::getUsername, RetailCustomerEntity::getRole,
 						RetailCustomerEntity::getEnabled, RetailCustomerEntity::getAccountLocked)
-				.containsExactly("admin", RetailCustomerEntity.ROLE_CUSTODIAN, true, false);
-		assertThat(encoder.matches("admin", saved.getValue().getPassword())).isTrue();
+				.containsExactly(
+						tuple("admin", RetailCustomerEntity.ROLE_CUSTODIAN, true, false),
+						tuple("customer", RetailCustomerEntity.ROLE_USER, true, false));
 	}
 
 	@Test
-	void does_nothing_when_the_admin_exists() {
-		when(repository.findByUsername("admin")).thenReturn(Optional.of(new RetailCustomerEntity()));
+	void does_nothing_when_the_accounts_exist() {
+		when(repository.findByUsername(anyString())).thenReturn(Optional.of(new RetailCustomerEntity()));
 
-		new LocalDevAdminSeedRunner(repository, encoder).run();
+		new LocalDevAccountSeedRunner(repository, encoder).run();
 
 		verify(repository, never()).save(any());
 	}
