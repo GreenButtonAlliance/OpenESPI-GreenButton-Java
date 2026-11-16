@@ -55,8 +55,11 @@ test-output/
 
 # Temporary workaround directories - should not be committed
 temp-services/
-*/temp-services/.claude/settings.local.json
-.claude/settings.local.json
+
+# Local AI-assistant and browser-automation state - personal, never committed
+# (Claude Code settings, session notes and locks; Playwright MCP snapshots and screenshots)
+.claude/
+.playwright-mcp/
 
 # npm tooling (not part of Maven build)
 node_modules/
