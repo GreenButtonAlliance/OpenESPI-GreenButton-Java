@@ -9,36 +9,65 @@
 
 <main class="container">
     <div class="row justify-content-center mt-5">
-        <div class="col-md-6 col-lg-5">
+        <div class="col-md-6 col-lg-4">
             <section class="card">
                 <div class="gba-card-header"><h2>Login to Third Party</h2></div>
-                <div class="card-body p-4 p-lg-5">
-                    <p class="text-center text-muted mb-4">Access your Green Button data</p>
-
+                <div class="card-body">
                     <div th:if="${param.error}" class="alert alert-danger" role="alert">
-                        <i class="bi bi-exclamation-triangle-fill"></i>
-                        Sign-in failed. Please try again.
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Invalid username or password. Please try again.
                     </div>
 
                     <div th:if="${param.logout}" class="alert alert-success" role="alert">
-                        <i class="bi bi-check-circle-fill"></i>
-                        You have been logged out successfully.
+                        <i class="bi bi-check-circle"></i>
+                        You have been successfully logged out.
                     </div>
 
-                    <div class="d-grid gap-2 mb-4">
-                        <a th:href="@{/oauth2/authorization/datacustodian}" class="btn btn-primary btn-lg">
-                            <i class="bi bi-shield-lock"></i>
-                            Sign in with Data Custodian
-                        </a>
-                    </div>
+                    <!-- th:action adds the CSRF token. return_to (same-origin paths only) is carried
+                         through the POST to the success handler. -->
+                    <form th:action="@{/login}" method="post">
+                        <input type="hidden" name="return_to" th:value="${returnTo}" th:if="${returnTo}">
 
-                    <div class="text-center border-top pt-3">
-                        <small class="text-muted">
-                            Secure OAuth2 authentication with your Green Button Data Custodian
-                        </small>
-                    </div>
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="username" name="username"
+                                   autocomplete="username" required autofocus>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password" name="password"
+                                   autocomplete="current-password" required>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">Login</button>
+                    </form>
                 </div>
             </section>
+        </div>
+    </div>
+
+    <div class="row mt-5">
+        <div class="col-md-4">
+            <div class="text-center">
+                <i class="bi bi-shield-check fs-1 gba-icon"></i>
+                <h3 class="h5">Secure Access</h3>
+                <p class="text-muted">Your account is protected with industry-standard security measures.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="text-center">
+                <i class="bi bi-lightning-charge fs-1 gba-icon"></i>
+                <h3 class="h5">Green Button Standard</h3>
+                <p class="text-muted">Compliant with the North American Energy Standards Board (NAESB) specifications.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="text-center">
+                <i class="bi bi-people fs-1 gba-icon"></i>
+                <h3 class="h5">Customer Control</h3>
+                <p class="text-muted">You choose which Data Custodians this Third Party may access your energy data from.</p>
+            </div>
         </div>
     </div>
 </main>

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head(~{::title})}">
+    <title>Administration - Third Party - Green Button Alliance</title>
+</head>
+<body data-gba-app="thirdparty">
+
+<nav th:replace="~{fragments/layout :: header}"></nav>
+
+<main class="container mt-4">
+    <section class="card">
+        <div class="gba-card-header"><h2>Third Party Administration</h2></div>
+        <div class="card-body">
+            <p class="mb-0">
+                Signed in as <strong sec:authentication="name">admin</strong>, a Third Party administrator.
+                Administration functions for this Third Party will appear here.
+            </p>
+        </div>
+    </section>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+
+</body>
+</html>

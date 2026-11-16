@@ -19,41 +19,31 @@
 
 package org.greenbuttonalliance.espi.thirdparty.web;
 
-// UserRoles constants replaced with direct strings
-import org.greenbuttonalliance.espi.common.service.RetailCustomerService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
+import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import jakarta.servlet.http.HttpServletRequest;
-import java.security.Principal;
 
+/**
+ * The Third Party home page. A TP administrator ({@code ROLE_CUSTODIAN}) is sent to the admin page;
+ * everyone else gets {@code home}, which for a signed-in TP customer ({@code ROLE_USER}) shows the
+ * Data Access Authorization cards used to authorize the TP at a Data Custodian (#249).
+ */
 @Controller
 public class HomeController {
 
-	@Autowired
-	private RetailCustomerService retailCustomerService;
-
 	@GetMapping("/")
-	public String index(HttpServletRequest request, Principal principal) {
-		if (request.isUserInRole("ROLE_CUSTODIAN")) {
+	public String index(HttpServletRequest request) {
+		if (request.isUserInRole(RetailCustomerEntity.ROLE_CUSTODIAN)) {
 			return "redirect:/custodian/home";
-		} else if (request.isUserInRole("ROLE_USER")) {
-			if (principal instanceof Authentication auth) {
-				var customer = retailCustomerService.findByUsername(auth.getName());
-				if (customer != null) {
-					return "redirect:/RetailCustomer/" + customer.getId() + "/home";
-				}
-			}
 		}
-
 		return "home";
 	}
 
 	@GetMapping("/home")
-	public String home(HttpServletRequest request, Principal principal) {
-		return index(request, principal);
+	public String home(HttpServletRequest request) {
+		return index(request);
 	}
 
 	@GetMapping("/TermsOfService")
