@@ -20,6 +20,7 @@
 package org.greenbuttonalliance.espi.thirdparty.config;
 
 import org.greenbuttonalliance.espi.thirdparty.security.SameOriginFetchAuthorizationManager;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -31,6 +32,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 
 /**
  * Security for the H2 web console, a development-only diagnostic tool. Loaded only where the
@@ -46,27 +48,33 @@ import org.springframework.security.web.authentication.LoginUrlAuthenticationEnt
  *   <li>a signed-in TP administrator ({@code ROLE_CUSTODIAN}; the session from the TP's form login
  *       applies here too);</li>
  *   <li>{@link SameOriginFetchAuthorizationManager}: the browser must report the request as
- *       same-origin or user-initiated, which stops cross-site pages, and pages on other
- *       {@code localhost} ports that {@code SameSite=Lax} cookies do not, from driving the console
- *       with the developer's session.</li>
+ *       same-origin; a user-initiated request ({@code Sec-Fetch-Site: none}, e.g. a bookmark or a
+ *       link clicked in another application) may only open the console's entry page. This stops
+ *       cross-site pages, pages on other {@code localhost} ports (which {@code SameSite=Lax} cookies
+ *       do not stop) and links carrying a console action from driving it with the developer's
+ *       session.</li>
  * </ul>
  */
 @Configuration
 @ConditionalOnProperty(name = "spring.h2.console.enabled", havingValue = "true")
 public class H2ConsoleSecurityConfiguration {
 
-	static final String CONSOLE_PATHS = "/h2-console/**";
-
-	/** Ahead of the main chain, which has no request matcher and would otherwise take every request. */
+	/**
+	 * Ahead of the main chain, which has no request matcher and would otherwise take every request.
+	 * The console's path comes from {@code spring.h2.console.path} (Spring Boot's default
+	 * {@code /h2-console}), the same property the console itself is served from, so the rules follow
+	 * the console if the path changes.
+	 */
 	@Bean
 	@Order(0)
-	public SecurityFilterChain h2ConsoleSecurityFilterChain(HttpSecurity http) throws Exception {
+	public SecurityFilterChain h2ConsoleSecurityFilterChain(HttpSecurity http,
+			@Value("${spring.h2.console.path:/h2-console}") String path) throws Exception {
 		return http
-				.securityMatcher(CONSOLE_PATHS)
+				.securityMatcher(PathPatternRequestMatcher.withDefaults().matcher(path + "/**"))
 				.authorizeHttpRequests(authz -> authz
 						.anyRequest().access(AuthorizationManagers.allOf(
 								AuthorityAuthorizationManager.hasRole("CUSTODIAN"),
-								new SameOriginFetchAuthorizationManager())))
+								new SameOriginFetchAuthorizationManager(path))))
 				// Not signed in: go to the TP login page; the saved request brings the
 				// administrator back to the console afterwards.
 				.exceptionHandling(e -> e.authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/login")))

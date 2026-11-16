@@ -19,10 +19,13 @@
 
 package org.greenbuttonalliance.espi.thirdparty.config;
 
+import org.greenbuttonalliance.espi.thirdparty.security.RetailCustomerUserDetailsService;
 import org.greenbuttonalliance.espi.thirdparty.security.ReturnToAuthenticationSuccessHandler;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -67,17 +70,30 @@ public class SecurityConfiguration {
     }
 
     /**
-     * Two separate steps (#249): a TP customer or administrator first signs in to the Third Party
-     * with {@code formLogin} against the TP's own accounts; {@code oauth2Login} is then used from the
-     * home page only to authorize the TP at a Data Custodian, never to sign in to the TP.
-     *
-     * <p>Form login authenticates through the provider Spring Security builds from the single
-     * {@code UserDetailsService} bean ({@code RetailCustomerUserDetailsService}) and the single
-     * {@code PasswordEncoder} bean above. Do not also add a {@code DaoAuthenticationProvider} here:
-     * a second provider re-checks every failed login (two lookups, two BCrypt checks).</p>
+     * The one provider for TP form login, declared explicitly: the TP's accounts with the BCrypt
+     * {@link #customerPasswordEncoder()}, whatever other {@code PasswordEncoder} beans exist. As an
+     * {@code AuthenticationProvider} bean it becomes the global (parent) provider, so it must not also
+     * be added to a chain with {@code http.authenticationProvider(...)}: a second copy re-checks every
+     * failed login (two lookups, two BCrypt checks). Not {@code http.authenticationManager(...)}
+     * either: that would drop the provider {@code oauth2Login} registers on the chain.
      */
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public DaoAuthenticationProvider customerAuthenticationProvider(RetailCustomerUserDetailsService userDetailsService) {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
+        provider.setPasswordEncoder(customerPasswordEncoder());
+        return provider;
+    }
+
+    /**
+     * Two separate steps (#249): a TP customer or administrator first signs in to the Third Party
+     * with {@code formLogin} against the TP's own accounts ({@link #customerAuthenticationProvider});
+     * {@code oauth2Login} is then used from the home page only to authorize the TP at a Data
+     * Custodian, never to sign in to the TP.
+     */
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http,
+                                           @Value("${spring.h2.console.path:/h2-console}") String h2ConsolePath)
+            throws Exception {
         http
             .authorizeHttpRequests(authz -> authz
                 // Public pages (Terms of Service and Usage Policy are linked from the navbar, About from
@@ -89,10 +105,10 @@ public class SecurityConfiguration {
                 // OAuth access token. (The Third Party, as an OAuth client, presents its access token
                 // only when it later fetches the source URLs carried in the BatchList.)
                 .requestMatchers(HttpMethod.POST, "/espi/1_1/Notification").permitAll()
-                // H2 console: closed here. Where the console is enabled (spring.h2.console.enabled,
-                // development profiles only), H2ConsoleSecurityConfiguration's chain handles
-                // /h2-console/** ahead of this one; everywhere else this rule keeps it shut.
-                .requestMatchers("/h2-console/**").denyAll()
+                // H2 console (spring.h2.console.path): closed here. Where the console is enabled
+                // (spring.h2.console.enabled, development profiles only), H2ConsoleSecurityConfiguration's
+                // chain handles it ahead of this one; everywhere else this rule keeps it shut.
+                .requestMatchers(PathPatternRequestMatcher.withDefaults().matcher(h2ConsolePath + "/**")).denyAll()
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
