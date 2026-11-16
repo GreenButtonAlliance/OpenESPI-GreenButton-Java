@@ -35,7 +35,9 @@ spring:
       enabled: true
       path: /h2-console
       settings:
-        web-allow-others: true
+        # Localhost only. H2ConsoleSecurityConfiguration also requires a signed-in TP administrator
+        # and a same-origin or user-initiated request (Sec-Fetch-Site).
+        web-allow-others: false
 
 # Development-specific logging
 logging:

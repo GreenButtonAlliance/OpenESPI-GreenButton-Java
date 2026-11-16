@@ -21,6 +21,9 @@ package org.greenbuttonalliance.espi.thirdparty.web;
 
 import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.greenbuttonalliance.espi.common.repositories.usage.RetailCustomerRepository;
+import org.greenbuttonalliance.espi.thirdparty.config.H2ConsoleSecurityConfiguration;
+import org.greenbuttonalliance.espi.thirdparty.security.RetailCustomerUserDetailsService;
+import org.springframework.context.ApplicationContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -31,11 +34,15 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.authenticated;
@@ -64,6 +71,12 @@ class FormLoginTest {
 
 	@Autowired
 	private PasswordEncoder customerPasswordEncoder;
+
+	@MockitoSpyBean
+	private RetailCustomerUserDetailsService userDetailsService;
+
+	@Autowired
+	private ApplicationContext applicationContext;
 
 	@BeforeEach
 	void createAccounts() {
@@ -215,6 +228,53 @@ class FormLoginTest {
 		mockMvc.perform(post("/logout").with(user(CUSTOMER).roles("USER")).with(csrf()))
 				.andExpect(redirectedUrl("/login?logout"))
 				.andExpect(unauthenticated());
+	}
+
+	@Test
+	@DisplayName("a wrong password is checked once, not again by a second authentication provider")
+	void wrong_password_is_checked_once() throws Exception {
+		clearInvocations(userDetailsService);
+
+		mockMvc.perform(post("/login").with(csrf()).param("username", CUSTOMER).param("password", "wrong"))
+				.andExpect(redirectedUrl("/login?error"));
+
+		verify(userDetailsService, times(1)).loadUserByUsername(CUSTOMER);
+	}
+
+	@Test
+	@DisplayName("a failed Data Custodian authorization returns home with its own message, not the login error")
+	void failed_dc_authorization_has_its_own_message() throws Exception {
+		// No saved authorization request, so the OAuth2 callback fails (authorization_request_not_found).
+		mockMvc.perform(get("/login/oauth2/code/datacustodian").with(user(CUSTOMER).roles("USER"))
+						.param("error", "access_denied").param("state", "unknown"))
+				.andExpect(redirectedUrl("/?authorization_error"));
+
+		assertThat(mockMvc.perform(get("/").param("authorization_error", "").with(user(CUSTOMER).roles("USER")))
+				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString())
+				.contains("The Data Custodian authorization did not complete", "you can try again below")
+				.doesNotContain("Invalid username or password", "Your Third Party session ended");
+	}
+
+	@Test
+	@DisplayName("after a failed DC authorization, a user whose TP session ended is told so and offered the login page")
+	void failed_dc_authorization_after_session_ended_offers_sign_in() throws Exception {
+		assertThat(mockMvc.perform(get("/").param("authorization_error", ""))
+				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString())
+				.contains("Your Third Party session ended during the Data Custodian authorization",
+						"href=\"/login\"", "Sign in</a> and try again")
+				.doesNotContain("you can try again below", "Data Access Authorization");
+	}
+
+	@Test
+	@DisplayName("where the H2 console is not enabled, its security chain is absent and the console is closed to everyone")
+	void h2_console_is_closed_where_not_enabled() throws Exception {
+		assertThat(applicationContext.getBeanNamesForType(H2ConsoleSecurityConfiguration.class)).isEmpty();
+
+		mockMvc.perform(get("/h2-console/").header("Sec-Fetch-Site", "none").with(user(ADMIN).roles("CUSTODIAN")))
+				.andExpect(status().isForbidden());
+		mockMvc.perform(post("/h2-console/login.do").header("Sec-Fetch-Site", "same-origin").with(csrf())
+						.with(user(ADMIN).roles("CUSTODIAN")))
+				.andExpect(status().isForbidden());
 	}
 
 	@Test

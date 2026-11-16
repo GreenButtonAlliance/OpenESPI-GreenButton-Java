@@ -21,6 +21,7 @@ package org.greenbuttonalliance.espi.thirdparty.config;
 
 import org.greenbuttonalliance.espi.thirdparty.security.RetailCustomerUserDetailsService;
 import org.greenbuttonalliance.espi.thirdparty.security.ReturnToAuthenticationSuccessHandler;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -69,19 +70,31 @@ public class SecurityConfiguration {
     }
 
     /**
+     * The one provider for TP form login, declared explicitly: the TP's accounts with the BCrypt
+     * {@link #customerPasswordEncoder()}, whatever other {@code PasswordEncoder} beans exist. As an
+     * {@code AuthenticationProvider} bean it becomes the global (parent) provider, so it must not also
+     * be added to a chain with {@code http.authenticationProvider(...)}: a second copy re-checks every
+     * failed login (two lookups, two BCrypt checks). Not {@code http.authenticationManager(...)}
+     * either: that would drop the provider {@code oauth2Login} registers on the chain.
+     */
+    @Bean
+    public DaoAuthenticationProvider customerAuthenticationProvider(RetailCustomerUserDetailsService userDetailsService) {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
+        provider.setPasswordEncoder(customerPasswordEncoder());
+        return provider;
+    }
+
+    /**
      * Two separate steps (#249): a TP customer or administrator first signs in to the Third Party
-     * with {@code formLogin} against the TP's own accounts; {@code oauth2Login} is then used from the
-     * home page only to authorize the TP at a Data Custodian, never to sign in to the TP.
+     * with {@code formLogin} against the TP's own accounts ({@link #customerAuthenticationProvider});
+     * {@code oauth2Login} is then used from the home page only to authorize the TP at a Data
+     * Custodian, never to sign in to the TP.
      */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
-                                           RetailCustomerUserDetailsService userDetailsService,
-                                           PasswordEncoder customerPasswordEncoder) throws Exception {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
-        provider.setPasswordEncoder(customerPasswordEncoder);
-
+                                           @Value("${spring.h2.console.path:/h2-console}") String h2ConsolePath)
+            throws Exception {
         http
-            .authenticationProvider(provider)
             .authorizeHttpRequests(authz -> authz
                 // Public pages (Terms of Service and Usage Policy are linked from the navbar, About from
                 // the footer)
@@ -92,7 +105,11 @@ public class SecurityConfiguration {
                 // OAuth access token. (The Third Party, as an OAuth client, presents its access token
                 // only when it later fetches the source URLs carried in the BatchList.)
                 .requestMatchers(HttpMethod.POST, "/espi/1_1/Notification").permitAll()
-                .requestMatchers("/h2-console/**").hasRole("ADMIN")
+                // H2 console (spring.h2.console.path): closed here. Where the console is enabled
+                // (spring.h2.console.enabled, development profiles only), H2ConsoleSecurityConfiguration's
+                // chain handles it ahead of this one; everywhere else this rule keeps it shut.
+                .requestMatchers(PathPatternRequestMatcher.withDefaults()
+                        .matcher(H2ConsoleSecurityConfiguration.basePath(h2ConsolePath) + "/**")).denyAll()
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
@@ -107,7 +124,10 @@ public class SecurityConfiguration {
             .oauth2Login(oauth2 -> oauth2
                 .loginPage("/login")
                 .defaultSuccessUrl("/", true)
-                .failureUrl("/login?error=true")
+                // A refused or failed Data Custodian authorization is not a TP sign-in failure:
+                // send the customer home with its own message, not to the login page's
+                // "Invalid username or password".
+                .failureUrl("/?authorization_error")
             )
             .logout(logout -> logout
                 .logoutUrl("/logout")
@@ -128,10 +148,9 @@ public class SecurityConfiguration {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             // CSRF on for the browser UI (Thymeleaf th:action adds the token to every form, including
             // login and logout). Exempt: the DC's server-to-server Notification POST, which carries no
-            // session or token, and the H2 console.
+            // session or token.
             .csrf(csrf -> csrf.ignoringRequestMatchers(
-                PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.POST, "/espi/1_1/Notification"),
-                PathPatternRequestMatcher.withDefaults().matcher("/h2-console/**")));
+                PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.POST, "/espi/1_1/Notification")));
 
         return http.build();
     }

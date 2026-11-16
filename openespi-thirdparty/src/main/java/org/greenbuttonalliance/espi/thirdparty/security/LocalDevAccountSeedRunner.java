@@ -29,41 +29,50 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 /**
- * Seeds the Third Party's development administrator ({@code admin} / {@code admin},
- * {@code ROLE_CUSTODIAN}) on the {@code local} profile only (#249).
+ * Seeds the Third Party's development accounts on the {@code local} profile only (#249):
+ * <ul>
+ *   <li>{@code admin} / {@code admin}, a TP administrator ({@code ROLE_CUSTODIAN});</li>
+ *   <li>{@code customer} / {@code customer}, a TP customer ({@code ROLE_USER}), who sees the
+ *       Data Access Authorization cards and can try the TP &rarr; Data Custodian authorization.</li>
+ * </ul>
  *
  * <p><strong>DEV ONLY.</strong> The credentials are public by being in this file. Other profiles
  * (MySQL, PostgreSQL) need working TP Flyway first (#267) and never seed an account. Idempotent:
- * does nothing when an {@code admin} account already exists. Mirrors the DC's
- * {@code DevSandboxAdminSeedRunner}.</p>
+ * an account that already exists is left alone. Mirrors the DC's {@code DevSandboxAdminSeedRunner}.</p>
  */
 @Slf4j
 @Component
 @Profile("local")
 @RequiredArgsConstructor
-public class LocalDevAdminSeedRunner implements CommandLineRunner {
+public class LocalDevAccountSeedRunner implements CommandLineRunner {
 
 	static final String ADMIN_USERNAME = "admin";
-	static final String ADMIN_PASSWORD = "admin";
+	static final String CUSTOMER_USERNAME = "customer";
 
 	private final RetailCustomerRepository repository;
 	private final PasswordEncoder customerPasswordEncoder;
 
 	@Override
 	public void run(String... args) {
-		if (repository.findByUsername(ADMIN_USERNAME).isPresent()) {
-			log.debug("Third Party dev admin '{}' already present; skipping seed.", ADMIN_USERNAME);
+		seed(ADMIN_USERNAME, "Third Party", "Admin", RetailCustomerEntity.ROLE_CUSTODIAN);
+		seed(CUSTOMER_USERNAME, "Third Party", "Customer", RetailCustomerEntity.ROLE_USER);
+	}
+
+	/** Seeds one account whose password equals its username. */
+	private void seed(String username, String firstName, String lastName, String role) {
+		if (repository.findByUsername(username).isPresent()) {
+			log.debug("Third Party dev account '{}' already present; skipping seed.", username);
 			return;
 		}
 
-		RetailCustomerEntity admin = new RetailCustomerEntity(
-				ADMIN_USERNAME, "Third Party", "Admin", "admin@example.local", RetailCustomerEntity.ROLE_CUSTODIAN);
-		admin.setPassword(customerPasswordEncoder.encode(ADMIN_PASSWORD));
-		admin.setEnabled(Boolean.TRUE);
-		admin.setAccountLocked(Boolean.FALSE);
-		repository.save(admin);
+		RetailCustomerEntity account = new RetailCustomerEntity(
+				username, firstName, lastName, username + "@example.local", role);
+		account.setPassword(customerPasswordEncoder.encode(username));
+		account.setEnabled(Boolean.TRUE);
+		account.setAccountLocked(Boolean.FALSE);
+		repository.save(account);
 
-		log.warn("Seeded Third Party DEV admin: username='{}', password='{}' - DO NOT USE IN PRODUCTION",
-				ADMIN_USERNAME, ADMIN_PASSWORD);
+		log.warn("Seeded Third Party DEV account: username='{}', password='{}', role={} - DO NOT USE IN PRODUCTION",
+				username, username, role);
 	}
 }
