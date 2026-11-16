@@ -21,7 +21,9 @@ package org.greenbuttonalliance.espi.thirdparty.web;
 
 import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.greenbuttonalliance.espi.common.repositories.usage.RetailCustomerRepository;
+import org.greenbuttonalliance.espi.thirdparty.config.H2ConsoleSecurityConfiguration;
 import org.greenbuttonalliance.espi.thirdparty.security.RetailCustomerUserDetailsService;
+import org.springframework.context.ApplicationContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -72,6 +74,9 @@ class FormLoginTest {
 
 	@MockitoSpyBean
 	private RetailCustomerUserDetailsService userDetailsService;
+
+	@Autowired
+	private ApplicationContext applicationContext;
 
 	@BeforeEach
 	void createAccounts() {
@@ -251,19 +256,15 @@ class FormLoginTest {
 	}
 
 	@Test
-	@DisplayName("the H2 console requires a signed-in TP administrator and works without a CSRF token")
-	void h2_console_is_administrator_only() throws Exception {
-		mockMvc.perform(get("/h2-console/"))
-				.andExpect(status().is3xxRedirection())
-				.andExpect(redirectedUrl("/login"));
-		mockMvc.perform(get("/h2-console/").with(user(CUSTOMER).roles("USER")))
+	@DisplayName("where the H2 console is not enabled, its security chain is absent and the console is closed to everyone")
+	void h2_console_is_closed_where_not_enabled() throws Exception {
+		assertThat(applicationContext.getBeanNamesForType(H2ConsoleSecurityConfiguration.class)).isEmpty();
+
+		mockMvc.perform(get("/h2-console/").header("Sec-Fetch-Site", "none").with(user(ADMIN).roles("CUSTODIAN")))
 				.andExpect(status().isForbidden());
-		// The console is not enabled on the test profile, so an administrator gets past security
-		// to a 404 rather than a 403 - including on its tokenless login POST.
-		mockMvc.perform(get("/h2-console/").with(user(ADMIN).roles("CUSTODIAN")))
-				.andExpect(status().isNotFound());
-		mockMvc.perform(post("/h2-console/login.do").with(user(ADMIN).roles("CUSTODIAN")))
-				.andExpect(status().isNotFound());
+		mockMvc.perform(post("/h2-console/login.do").header("Sec-Fetch-Site", "same-origin").with(csrf())
+						.with(user(ADMIN).roles("CUSTODIAN")))
+				.andExpect(status().isForbidden());
 	}
 
 	@Test

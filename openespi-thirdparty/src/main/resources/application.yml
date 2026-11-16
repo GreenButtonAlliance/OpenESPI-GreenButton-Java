@@ -129,6 +129,12 @@ server:
   port: 8082
   servlet:
     context-path: /ThirdParty
+    session:
+      cookie:
+        # Every profile, not left to browser defaults: cross-site POSTs carry no session cookie.
+        # Not Strict: the redirect back from the Authorization Server (a cross-site top-level GET)
+        # must carry the session, or Data Custodian authorization fails.
+        same-site: lax
     encoding:
       charset: UTF-8
       enabled: true
