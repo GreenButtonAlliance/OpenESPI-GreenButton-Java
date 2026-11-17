@@ -47,6 +47,14 @@ mvn spring-boot:run -Dspring-boot.run.profiles=dev-postgresql # PostgreSQL on lo
 In every profile Flyway creates the schema from the openespi-common scripts (`db/migration` plus
 `db/vendor/{h2,mysql,postgres}`), and Hibernate only validates it (`ddl-auto: validate`).
 
+**Existing MySQL or PostgreSQL database from before #267:** Hibernate built it, so Flyway refuses it
+(or fails on V1's tables). Drop and recreate it once, then start the Third Party:
+
+```bash
+mysql -u root -p -e "DROP DATABASE thirdparty; CREATE DATABASE thirdparty; GRANT ALL ON thirdparty.* TO 'espi'@'%';"
+dropdb thirdparty && createdb -O espi thirdparty
+```
+
 The `local` profile listens on `127.0.0.1` only: it seeds published DEV ONLY accounts (`admin`/`admin`,
 `customer`/`customer`) and enables the H2 console. To reach the Third Party from another machine or
 from outside a container, use `dev-mysql` or `dev-postgresql`.

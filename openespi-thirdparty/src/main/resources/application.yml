@@ -36,7 +36,10 @@ spring:
   # nonces, from openespi-handoff) is not used by the Third Party, so its absence is expected.
   flyway:
     enabled: true
-    baseline-on-migrate: true
+    # No baselining: no Third Party database was ever built by Flyway (before #267 Hibernate built
+    # it), so marking an existing one as "already at V1" is never right. Flyway stops with a clear
+    # error instead; drop and recreate such a database once (see the README).
+    baseline-on-migrate: false
     locations: classpath:db/migration,classpath:db/vendor/mysql
     table: flyway_schema_history
   

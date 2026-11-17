@@ -2,7 +2,8 @@
 spring:
   datasource:
     # One in-memory database per Spring test context, so contexts never share or recreate each
-    # other's tables. Same H2 mode as the `local` profile and the openespi-common tests.
+    # other's tables. Same H2 settings as the openespi-common tests. The `local` profile adds
+    # DATABASE_TO_LOWER and CASE_INSENSITIVE_IDENTIFIERS; LocalProfileSchemaTest runs on its exact URL.
     url: jdbc:h2:mem:tp-${random.uuid};MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     username: sa
     password:

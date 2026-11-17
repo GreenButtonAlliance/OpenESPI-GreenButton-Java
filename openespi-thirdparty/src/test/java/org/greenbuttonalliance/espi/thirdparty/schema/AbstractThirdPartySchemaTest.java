@@ -52,10 +52,10 @@ abstract class AbstractThirdPartySchemaTest {
 	private Flyway flyway;
 
 	@Autowired
-	private Environment environment;
+	protected Environment environment;
 
 	@Autowired
-	private RetailCustomerRepository retailCustomerRepository;
+	protected RetailCustomerRepository retailCustomerRepository;
 
 	@Test
 	@DisplayName("Flyway applied the openespi-common migrations, and Hibernate only validates the schema")

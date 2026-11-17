@@ -16,7 +16,8 @@ spring:
   
   # Flyway creates the schema from the openespi-common scripts (H2 vendor folder); Hibernate only
   # validates it (ddl-auto: validate, from application.yml), as on MySQL and PostgreSQL (#267).
-  # Default Spring Boot naming, as the scripts expect.
+  # Naming comes from openespi-common's application.properties (PhysicalNamingStrategyStandardImpl),
+  # as on every other profile; no local override.
   jpa:
     show-sql: true
     properties:

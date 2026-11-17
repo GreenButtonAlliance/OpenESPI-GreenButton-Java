@@ -19,12 +19,9 @@
 
 package org.greenbuttonalliance.espi.thirdparty.schema;
 
-import org.greenbuttonalliance.espi.common.repositories.usage.RetailCustomerRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.core.env.Environment;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -37,12 +34,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 		"spring.datasource.url=jdbc:h2:mem:tp-local-schema-test;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE")
 @DisplayName("Third Party schema: default profile is local (H2)")
 class LocalProfileSchemaTest extends AbstractThirdPartySchemaTest {
-
-	@Autowired
-	private RetailCustomerRepository retailCustomerRepository;
-
-	@Autowired
-	private Environment environment;
 
 	@Test
 	@DisplayName("with no profile chosen, the Third Party runs on local (not dev-mysql from openespi-common)")
