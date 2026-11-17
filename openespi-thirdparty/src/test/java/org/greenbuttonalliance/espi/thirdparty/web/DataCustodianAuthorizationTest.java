@@ -93,6 +93,9 @@ class DataCustodianAuthorizationTest {
 	private static final String BULK_CUSTOMER_RESOURCE_URI = "http://localhost:8081/DataCustodian/espi/1_1/resource/Batch/Bulk/13";
 	private static final String MONTHLY_SCOPE ="FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13";
 
+	/** HttpSessionRequestCache's session attribute: the request saved for after sign-in. */
+	private static final String SAVED_REQUEST = "SPRING_SECURITY_SAVED_REQUEST";
+
 	private static HttpServer tokenEndpoint;
 
 	/** The form parameters of each token request the stub received, by grant type. */
@@ -281,6 +284,28 @@ class DataCustodianAuthorizationTest {
 				.contains("The Data Custodian authorized this Third Party", "Your authorizations",
 						"Data Custodian (Monthly)", RESOURCE_URI, AUTHORIZATION_URI, CUSTOMER_RESOURCE_URI)
 				.doesNotContain("customer-token-1234", "customer-refresh");
+	}
+
+	@Test
+	@DisplayName("a visitor who starts signed out signs in, consents once, and lands on the callback, not on a second authorization")
+	void start_signed_out_then_consent_once() throws Exception {
+		MockHttpSession session = new MockHttpSession();
+		mockMvc.perform(get("/oauth2/authorization/" + DataCustodianRegistrations.MONTHLY).session(session))
+				.andExpect(redirectedUrl("/login"));
+		assertThat(session.getAttribute(SAVED_REQUEST)).as("the request saved for after sign-in").isNotNull();
+
+		// Signed in by form login, which resumes the saved /oauth2/authorization request.
+		session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
+				new SecurityContextImpl(UsernamePasswordAuthenticationToken.authenticated(CUSTOMER, null,
+						AuthorityUtils.createAuthorityList(RetailCustomerEntity.ROLE_USER))));
+		String state = startAuthorization(session);
+		assertThat(session.getAttribute(SAVED_REQUEST)).as("the saved request, used up").isNull();
+
+		mockMvc.perform(get(TP_BASE + CALLBACK).queryParam("code", "the-code")
+						.queryParam("state", state).contextPath("/ThirdParty").session(session))
+				.andExpect(redirectedUrl(TP_BASE + CALLBACK));
+		mockMvc.perform(get(TP_BASE + CALLBACK).contextPath("/ThirdParty").session(session))
+				.andExpect(redirectedUrl("/ThirdParty/?authorized"));
 	}
 
 	@Test

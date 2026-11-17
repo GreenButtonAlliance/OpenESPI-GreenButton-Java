@@ -71,14 +71,19 @@ public class EspiAuthorizationOAuth2AuthorizedClientService implements OAuth2Aut
 	private final ClientRegistrationRepository clientRegistrationRepository;
 	private final AuthorizationRepository authorizationRepository;
 	private final RetailCustomerRepository retailCustomerRepository;
-	private final EspiIdGeneratorService idGenerator = new EspiIdGeneratorService();
+	private final EspiIdGeneratorService idGenerator;
+	private final EspiTokenResponseParameters tokenResponseParameters;
 
 	public EspiAuthorizationOAuth2AuthorizedClientService(ClientRegistrationRepository clientRegistrationRepository,
 														  AuthorizationRepository authorizationRepository,
-														  RetailCustomerRepository retailCustomerRepository) {
+														  RetailCustomerRepository retailCustomerRepository,
+														  EspiIdGeneratorService idGenerator,
+														  EspiTokenResponseParameters tokenResponseParameters) {
 		this.clientRegistrationRepository = clientRegistrationRepository;
 		this.authorizationRepository = authorizationRepository;
 		this.retailCustomerRepository = retailCustomerRepository;
+		this.idGenerator = idGenerator;
+		this.tokenResponseParameters = tokenResponseParameters;
 	}
 
 	@Override
@@ -121,7 +126,7 @@ public class EspiAuthorizationOAuth2AuthorizedClientService implements OAuth2Aut
 		authorization.setGrantType(isClientCredentials(registration) ? GrantType.CLIENT_CREDENTIALS
 				: GrantType.AUTHORIZATION_CODE);
 		// A refresh response that repeats no URI keeps the ones the authorization_code response gave.
-		EspiTokenResponseParameters.take(accessToken.getTokenValue()).ifPresent(uris -> {
+		tokenResponseParameters.take(accessToken.getTokenValue()).ifPresent(uris -> {
 			if (uris.resourceUri() != null) {
 				authorization.setResourceURI(uris.resourceUri());
 			}
@@ -180,7 +185,7 @@ public class EspiAuthorizationOAuth2AuthorizedClientService implements OAuth2Aut
 
 	private static OAuth2AuthorizedClient toAuthorizedClient(ClientRegistration registration, String principalName,
 															 AuthorizationEntity authorization) {
-		Instant expiresAt = authorization.getExpiresIn() == null ? null : Instant.ofEpochMilli(authorization.getExpiresIn());
+		Instant expiresAt = authorization.getExpirationInstant();
 		Instant issuedAt = issuedAt(authorization.getUpdated(), expiresAt);
 		Set<String> scopes = authorization.getScope() == null ? Set.of()
 				: new LinkedHashSet<>(Arrays.asList(authorization.getScope().trim().split("\\s+")));

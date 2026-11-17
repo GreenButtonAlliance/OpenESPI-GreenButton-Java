@@ -44,8 +44,8 @@ public record AuthorizationView(String access, String status, String scope, Stri
 		ClientRegistration registration = authorization.getClientRegistrationId() == null ? null
 				: registrations.findByRegistrationId(authorization.getClientRegistrationId());
 		String access = registration == null ? authorization.getClientRegistrationId() : registration.getClientName();
-		String expires = authorization.getExpiresIn() == null ? "-"
-				: TIME.format(Instant.ofEpochMilli(authorization.getExpiresIn()));
+		Instant expiresAt = authorization.getExpirationInstant();
+		String expires = expiresAt == null ? "-" : TIME.format(expiresAt);
 		String obtained = authorization.getUpdated() == null ? "-"
 				: TIME.format(authorization.getUpdated().atZone(ZoneId.systemDefault()));
 		String token = authorization.getAccessToken();

@@ -30,6 +30,8 @@ import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequest
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 import org.springframework.security.oauth2.core.endpoint.PkceParameterNames;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
@@ -51,6 +53,8 @@ public class TpCustomerAuthorizationRequestResolver implements OAuth2Authorizati
 
 	private final ClientRegistrationRepository clientRegistrationRepository;
 	private final DefaultOAuth2AuthorizationRequestResolver delegate;
+	/** Spring Security's default request cache, which the form login and the grant filter both use. */
+	private final RequestCache requestCache = new HttpSessionRequestCache();
 	private final RequestMatcher authorizationRequestMatcher = PathPatternRequestMatcher.withDefaults()
 			.matcher(AUTHORIZATION_BASE_URI + "/{" + REGISTRATION_ID + "}");
 
@@ -86,7 +90,15 @@ public class TpCustomerAuthorizationRequestResolver implements OAuth2Authorizati
 				|| !AuthorizationGrantType.AUTHORIZATION_CODE.equals(registration.getAuthorizationGrantType())) {
 			return null;
 		}
-		return delegate.resolve(request, clientRegistrationId);
+		OAuth2AuthorizationRequest authorizationRequest = delegate.resolve(request, clientRegistrationId);
+		if (authorizationRequest != null) {
+			// A request saved before sign-in (e.g. this very /oauth2/authorization URL, when an anonymous
+			// visitor started here) has been used by now. Left in the session, OAuth2AuthorizationCodeGrantFilter
+			// would redirect to it after the code exchange instead of to the callback, starting a second
+			// round trip to the Data Custodian or skipping the "authorized" message.
+			requestCache.removeRequest(request, null);
+		}
+		return authorizationRequest;
 	}
 
 	private static boolean isTpCustomer() {

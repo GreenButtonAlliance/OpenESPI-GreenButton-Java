@@ -22,6 +22,7 @@ package org.greenbuttonalliance.espi.thirdparty.config;
 import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.greenbuttonalliance.espi.common.repositories.usage.AuthorizationRepository;
 import org.greenbuttonalliance.espi.common.repositories.usage.RetailCustomerRepository;
+import org.greenbuttonalliance.espi.common.service.EspiIdGeneratorService;
 import org.greenbuttonalliance.espi.thirdparty.oauth.EspiAuthorizationOAuth2AuthorizedClientService;
 import org.greenbuttonalliance.espi.thirdparty.oauth.EspiTokenResponseParameters;
 import org.greenbuttonalliance.espi.thirdparty.oauth.TpCustomerAuthorizationRequestResolver;
@@ -186,27 +187,38 @@ public class SecurityConfiguration {
     public EspiAuthorizationOAuth2AuthorizedClientService authorizedClientService(
             ClientRegistrationRepository clientRegistrationRepository,
             AuthorizationRepository authorizationRepository,
-            RetailCustomerRepository retailCustomerRepository) {
+            RetailCustomerRepository retailCustomerRepository,
+            EspiIdGeneratorService espiIdGeneratorService,
+            EspiTokenResponseParameters espiTokenResponseParameters) {
         return new EspiAuthorizationOAuth2AuthorizedClientService(clientRegistrationRepository,
-                authorizationRepository, retailCustomerRepository);
+                authorizationRepository, retailCustomerRepository, espiIdGeneratorService, espiTokenResponseParameters);
+    }
+
+    /** Hands each token response's ESPI URIs from the token-response clients to the token store. */
+    @Bean
+    public EspiTokenResponseParameters espiTokenResponseParameters() {
+        return new EspiTokenResponseParameters();
     }
 
     /** authorization_code token exchange, keeping the response's ESPI URIs for the token store. */
     @Bean
-    public OAuth2AccessTokenResponseClient<OAuth2AuthorizationCodeGrantRequest> authorizationCodeTokenResponseClient() {
-        return EspiTokenResponseParameters.capturing(new RestClientAuthorizationCodeTokenResponseClient());
+    public OAuth2AccessTokenResponseClient<OAuth2AuthorizationCodeGrantRequest> authorizationCodeTokenResponseClient(
+            EspiTokenResponseParameters espiTokenResponseParameters) {
+        return espiTokenResponseParameters.capturing(new RestClientAuthorizationCodeTokenResponseClient());
     }
 
     /** refresh_token exchange, keeping the response's ESPI URIs (if it repeats them) for the token store. */
     @Bean
-    public OAuth2AccessTokenResponseClient<OAuth2RefreshTokenGrantRequest> refreshTokenTokenResponseClient() {
-        return EspiTokenResponseParameters.capturing(new RestClientRefreshTokenTokenResponseClient());
+    public OAuth2AccessTokenResponseClient<OAuth2RefreshTokenGrantRequest> refreshTokenTokenResponseClient(
+            EspiTokenResponseParameters espiTokenResponseParameters) {
+        return espiTokenResponseParameters.capturing(new RestClientRefreshTokenTokenResponseClient());
     }
 
     /** client_credentials exchange (the TP's client access token), keeping any ESPI URIs for the token store. */
     @Bean
-    public OAuth2AccessTokenResponseClient<OAuth2ClientCredentialsGrantRequest> clientCredentialsTokenResponseClient() {
-        return EspiTokenResponseParameters.capturing(new RestClientClientCredentialsTokenResponseClient());
+    public OAuth2AccessTokenResponseClient<OAuth2ClientCredentialsGrantRequest> clientCredentialsTokenResponseClient(
+            EspiTokenResponseParameters espiTokenResponseParameters) {
+        return espiTokenResponseParameters.capturing(new RestClientClientCredentialsTokenResponseClient());
     }
 
     /**

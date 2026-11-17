@@ -27,6 +27,10 @@ import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AccessTokenResponse;
 import org.springframework.web.context.request.RequestContextHolder;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -37,8 +41,35 @@ class EspiTokenResponseParametersTest {
 	private static final String RESOURCE_URI = "https://dc.example/espi/1_1/resource/Batch/Subscription/1";
 	private static final String AUTHORIZATION_URI = "https://dc.example/espi/1_1/resource/Authorization/2";
 
-	private static OAuth2AccessTokenResponseClient<OAuth2RefreshTokenGrantRequest> capturing(String tokenValue) {
-		return EspiTokenResponseParameters.capturing(grantRequest -> OAuth2AccessTokenResponse.withToken(tokenValue)
+	/** A clock the test moves forward. */
+	private static final class MovableClock extends Clock {
+		private Instant now = Instant.parse("2026-11-17T12:00:00Z");
+
+		void advance(java.time.Duration duration) {
+			now = now.plus(duration);
+		}
+
+		@Override
+		public ZoneId getZone() {
+			return ZoneOffset.UTC;
+		}
+
+		@Override
+		public Clock withZone(ZoneId zone) {
+			return this;
+		}
+
+		@Override
+		public Instant instant() {
+			return now;
+		}
+	}
+
+	private final MovableClock clock = new MovableClock();
+	private final EspiTokenResponseParameters parameters = new EspiTokenResponseParameters(clock);
+
+	private OAuth2AccessTokenResponseClient<OAuth2RefreshTokenGrantRequest> capturing(String tokenValue) {
+		return parameters.capturing(grantRequest -> OAuth2AccessTokenResponse.withToken(tokenValue)
 				.tokenType(OAuth2AccessToken.TokenType.BEARER)
 				.expiresIn(3600)
 				.additionalParameters(Map.of(EspiTokenResponseParameters.RESOURCE_URI, RESOURCE_URI,
@@ -54,7 +85,7 @@ class EspiTokenResponseParametersTest {
 			capturing("off-request-token").getTokenResponse(null);
 		}).get();
 
-		assertThat(EspiTokenResponseParameters.take("off-request-token"))
+		assertThat(parameters.take("off-request-token"))
 				.hasValue(new EspiTokenResponseParameters.EspiUris(RESOURCE_URI, AUTHORIZATION_URI, null));
 	}
 
@@ -63,7 +94,17 @@ class EspiTokenResponseParametersTest {
 	void uris_are_taken_once() {
 		capturing("once-token").getTokenResponse(null);
 
-		assertThat(EspiTokenResponseParameters.take("once-token")).isPresent();
-		assertThat(EspiTokenResponseParameters.take("once-token")).isEmpty();
+		assertThat(parameters.take("once-token")).isPresent();
+		assertThat(parameters.take("once-token")).isEmpty();
+	}
+
+	@Test
+	@DisplayName("URIs never taken (the store failed) are dropped after the retention, also when only a take follows")
+	void untaken_uris_expire() {
+		capturing("stranded-token").getTokenResponse(null);
+		clock.advance(EspiTokenResponseParameters.RETENTION.plusSeconds(1));
+
+		assertThat(parameters.take("some-other-token")).isEmpty();
+		assertThat(parameters.pendingCount()).isZero();
 	}
 }

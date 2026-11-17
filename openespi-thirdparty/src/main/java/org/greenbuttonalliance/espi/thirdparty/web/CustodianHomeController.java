@@ -23,7 +23,6 @@ import org.greenbuttonalliance.espi.thirdparty.oauth.DataCustodianRegistrations;
 import org.greenbuttonalliance.espi.thirdparty.oauth.EspiAuthorizationOAuth2AuthorizedClientService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.dao.DataAccessException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
@@ -31,14 +30,12 @@ import org.springframework.security.oauth2.client.endpoint.OAuth2AccessTokenResp
 import org.springframework.security.oauth2.client.endpoint.OAuth2ClientCredentialsGrantRequest;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
-import org.springframework.security.oauth2.core.OAuth2AuthorizationException;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AccessTokenResponse;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.client.RestClientException;
 
 /**
  * The Third Party administrator's landing page after login (#249), with a check of the TP's ESPI
@@ -83,6 +80,11 @@ public class CustodianHomeController extends BaseController {
 	public String obtainClientToken(Authentication authentication) {
 		ClientRegistration registration = clientRegistrationRepository
 				.findByRegistrationId(DataCustodianRegistrations.CLIENT_ACCESS);
+		if (registration == null) {
+			logger.warn("No {} client registration is configured, so no client access token can be obtained",
+					DataCustodianRegistrations.CLIENT_ACCESS);
+			return "redirect:/custodian/home?client_token_error";
+		}
 		try {
 			OAuth2AccessTokenResponse tokenResponse = clientCredentialsTokenResponseClient
 					.getTokenResponse(new OAuth2ClientCredentialsGrantRequest(registration));
@@ -90,8 +92,10 @@ public class CustodianHomeController extends BaseController {
 					authentication.getName(), tokenResponse.getAccessToken(), tokenResponse.getRefreshToken()),
 					authentication);
 			return "redirect:/custodian/home?client_token";
-		} catch (OAuth2AuthorizationException | RestClientException | DataAccessException ex) {
-			logger.warn("Could not obtain the TP client access token: {}", ex.getMessage());
+		} catch (RuntimeException ex) {
+			// Any failure (the AS refusing or unreachable, an unreadable response, the save or its commit)
+			// leaves the token already held in use; the admin gets the error message, never a 500.
+			logger.warn("Could not obtain the TP client access token", ex);
 			return "redirect:/custodian/home?client_token_error";
 		}
 	}
