@@ -51,8 +51,10 @@ In every profile Flyway creates the schema from the openespi-common scripts (`db
 (or fails on V1's tables). Drop and recreate it once, then start the Third Party:
 
 ```bash
-mysql -u root -p -e "DROP DATABASE thirdparty; CREATE DATABASE thirdparty; GRANT ALL ON thirdparty.* TO 'espi'@'%';"
-dropdb thirdparty && createdb -O espi thirdparty
+# MySQL (the espi user's grants on thirdparty.* survive the drop)
+mysql -u root -p -e "DROP DATABASE IF EXISTS thirdparty; CREATE DATABASE thirdparty;"
+# PostgreSQL
+dropdb --if-exists thirdparty; createdb -O espi thirdparty
 ```
 
 The `local` profile listens on `127.0.0.1` only: it seeds published DEV ONLY accounts (`admin`/`admin`,

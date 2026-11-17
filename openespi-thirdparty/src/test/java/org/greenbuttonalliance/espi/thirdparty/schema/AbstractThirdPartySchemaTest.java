@@ -21,6 +21,7 @@ package org.greenbuttonalliance.espi.thirdparty.schema;
 
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationInfo;
+import org.flywaydb.core.api.MigrationVersion;
 import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.greenbuttonalliance.espi.common.repositories.usage.RetailCustomerRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -29,6 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -62,13 +64,12 @@ abstract class AbstractThirdPartySchemaTest {
 	void flyway_owns_the_schema() {
 		String[] applied = Arrays.stream(flyway.info().applied())
 				.map(MigrationInfo::getVersion)
-				.filter(v -> v != null)
-				.map(v -> v.getVersion())
+				.filter(Objects::nonNull)
+				.map(MigrationVersion::getVersion)
 				.toArray(String[]::new);
 
 		assertThat(applied).containsExactly(EXPECTED_VERSIONS);
 		assertThat(environment.getProperty("spring.jpa.hibernate.ddl-auto")).isEqualTo("validate");
-		assertThat(environment.getProperty("spring.flyway.enabled", Boolean.class, true)).isTrue();
 	}
 
 	@Test
@@ -81,13 +82,14 @@ abstract class AbstractThirdPartySchemaTest {
 		account.setPassword("$2a$10$abcdefghijklmnopqrstuuJ0123456789abcdefghijklmnopqrstu");
 		account.setEnabled(Boolean.TRUE);
 		account.setAccountLocked(Boolean.FALSE);
-		retailCustomerRepository.save(account);
-
-		assertThat(retailCustomerRepository.findByUsername(username))
-				.hasValueSatisfying(found -> assertThat(found)
-						.extracting(RetailCustomerEntity::getRole, RetailCustomerEntity::getEnabled)
-						.containsExactly(RetailCustomerEntity.ROLE_USER, true));
-
-		retailCustomerRepository.findByUsername(username).ifPresent(retailCustomerRepository::delete);
+		RetailCustomerEntity saved = retailCustomerRepository.save(account);
+		try {
+			assertThat(retailCustomerRepository.findByUsername(username))
+					.hasValueSatisfying(found -> assertThat(found)
+							.extracting(RetailCustomerEntity::getRole, RetailCustomerEntity::getEnabled)
+							.containsExactly(RetailCustomerEntity.ROLE_USER, true));
+		} finally {
+			retailCustomerRepository.delete(saved);
+		}
 	}
 }

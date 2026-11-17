@@ -113,7 +113,7 @@
             <scope>runtime</scope>
         </dependency>
         <!-- H2 web console (Spring Boot 4 moved its auto-configuration into this module). Active only
-             where spring.h2.console.enabled=true (local, dev, h2 profiles); H2ConsoleSecurityConfiguration
+             where spring.h2.console.enabled=true (the local profile only); H2ConsoleSecurityConfiguration
              limits it to a signed-in TP administrator, and web-allow-others: false limits it to localhost. -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
