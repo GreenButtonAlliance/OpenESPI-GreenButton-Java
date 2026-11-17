@@ -14,22 +14,19 @@ spring:
       auto-commit: false
       connection-test-query: SELECT 1
   
+  # Flyway creates the schema from the openespi-common scripts (H2 vendor folder); Hibernate only
+  # validates it (ddl-auto: validate, from application.yml), as on MySQL and PostgreSQL (#267).
+  # Default Spring Boot naming, as the scripts expect.
   jpa:
-    hibernate:
-      ddl-auto: create-drop
-      naming:
-        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
-        implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl
     show-sql: true
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.H2Dialect
         generate_statistics: true
         format_sql: true
-        
+
   flyway:
-    enabled: false # Use JPA DDL auto for H2 local development
-  
+    locations: classpath:db/migration,classpath:db/vendor/h2
+
   h2:
     console:
       enabled: true

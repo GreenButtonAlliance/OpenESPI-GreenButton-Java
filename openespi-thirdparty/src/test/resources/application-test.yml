@@ -1,23 +1,27 @@
 # Test Configuration
 spring:
   datasource:
-    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    # One in-memory database per Spring test context, so contexts never share or recreate each
+    # other's tables. Same H2 mode as the `local` profile and the openespi-common tests.
+    url: jdbc:h2:mem:tp-${random.uuid};MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     username: sa
     password:
     driver-class-name: org.h2.Driver
-  
+
+  # Flyway owns the schema (#267), as in every application profile: the openespi-common scripts
+  # create it and Hibernate only validates it, so entity/script drift fails every Spring test.
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: validate
     show-sql: false
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.H2Dialect
         generate_statistics: false
-  
+
   flyway:
-    enabled: false
-  
+    enabled: true
+    locations: classpath:db/migration,classpath:db/vendor/h2
+
   security:
     oauth2:
       client:
