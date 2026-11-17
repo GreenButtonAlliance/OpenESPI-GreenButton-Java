@@ -13,23 +13,16 @@ spring:
       auto-commit: false
       connection-test-query: SELECT 1
   
+  # Flyway creates the schema from the openespi-common scripts (MySQL vendor folder) on the
+  # datasource above; Hibernate only validates it (ddl-auto: validate, from application.yml) (#267).
   jpa:
     show-sql: true
-    # Dev sandbox: the Third Party module ships no Flyway migrations yet, so let Hibernate create
-    # the schema (e.g. batch_lists) for local DC→TP notification testing. (Full TP schema/Flyway
-    # bring-up is tracked under #146.)
-    hibernate:
-      ddl-auto: update
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.MySQLDialect
         generate_statistics: true
-        
+
   flyway:
-    locations: classpath:db/migration/mysql
-    url: ${spring.datasource.url}
-    user: ${spring.datasource.username}
-    password: ${spring.datasource.password}
+    locations: classpath:db/migration,classpath:db/vendor/mysql
 
 # Development-specific logging
 logging:

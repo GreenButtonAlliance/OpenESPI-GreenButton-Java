@@ -32,7 +32,8 @@ Logs go to `.local-run/<app>.log`. Run the smoke check before testing by hand; i
 | AS admin | `admin` / `admin` at http://localhost:9999/login | A passkey is enrolled at first login (`/webauthn/register`), by design. Override with `ESPI_BOOTSTRAP_ADMIN_USERNAME` / `ESPI_BOOTSTRAP_ADMIN_PASSWORD_HASH`. |
 | DC admin | `admin` / `admin` | Sandbox custodian user (dev/test profiles only). |
 | DC customer | `customer` / `customer` | Owns the sample UsagePoint (see "Sample data"). `local` profile only. |
-| TP user | *not yet* | TP username/password login: #249. |
+| TP admin | `admin` / `admin` at http://localhost:8082/ThirdParty/login | TP administrator (`ROLE_CUSTODIAN`); also opens the H2 console at `/ThirdParty/h2-console/`. `local` profile only. |
+| TP customer | `customer` / `customer` | TP customer (`ROLE_USER`); sees the Data Access Authorization cards. `local` profile only. |
 
 ## OAuth clients (AS)
 

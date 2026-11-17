@@ -37,7 +37,7 @@ import org.springframework.stereotype.Component;
  * </ul>
  *
  * <p><strong>DEV ONLY.</strong> The credentials are public by being in this file. Other profiles
- * (MySQL, PostgreSQL) need working TP Flyway first (#267) and never seed an account. Idempotent:
+ * (dev-mysql, dev-postgresql) never seed an account. Idempotent:
  * an account that already exists is left alone. Mirrors the DC's {@code DevSandboxAdminSeedRunner}.</p>
  */
 @Slf4j
