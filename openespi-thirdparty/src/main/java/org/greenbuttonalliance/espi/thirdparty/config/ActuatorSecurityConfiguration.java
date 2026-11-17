@@ -40,7 +40,7 @@ import org.springframework.security.web.SecurityFilterChain;
  * ({@code ThirdParty_Admin_Access} by default). Endpoint access is read-only
  * ({@code management.endpoint.*.access} in application.yml).</p>
  *
- * <p>Ordered first so actuator requests never reach the {@code oauth2Login} chain in
+ * <p>Ordered first so actuator requests never reach the browser (form login) chain in
  * {@link SecurityConfiguration}, which would redirect them to the login page.</p>
  */
 @Configuration

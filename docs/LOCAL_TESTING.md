@@ -32,8 +32,8 @@ Logs go to `.local-run/<app>.log`. Run the smoke check before testing by hand; i
 | AS admin | `admin` / `admin` at http://localhost:9999/login | A passkey is enrolled at first login (`/webauthn/register`), by design. Override with `ESPI_BOOTSTRAP_ADMIN_USERNAME` / `ESPI_BOOTSTRAP_ADMIN_PASSWORD_HASH`. |
 | DC admin | `admin` / `admin` | Sandbox custodian user (dev/test profiles only). |
 | DC customer | `customer` / `customer` | Owns the sample UsagePoint (see "Sample data"). `local` profile only. |
-| TP admin | `admin` / `admin` at http://localhost:8082/ThirdParty/login | TP administrator (`ROLE_CUSTODIAN`); also opens the H2 console at `/ThirdParty/h2-console/`. `local` profile only. |
-| TP customer | `customer` / `customer` | TP customer (`ROLE_USER`); sees the Data Access Authorization cards. `local` profile only. |
+| TP admin | `admin` / `admin` at http://localhost:8082/ThirdParty/login | TP administrator (`ROLE_CUSTODIAN`); obtains the TP's client access token on the admin page, and opens the H2 console at `/ThirdParty/h2-console/`. `local` profile only. |
+| TP customer | `customer` / `customer` | TP customer (`ROLE_USER`); authorizes the TP at the DC from the Data Access Authorization cards (see "Customer flow"). `local` profile only. |
 
 ## OAuth clients (AS)
 
@@ -106,12 +106,20 @@ On the `local` profile the DC seeds a small, deterministic ESPI dataset at start
 
 The schema values follow the most common shapes in the Green Button CMD certification test feeds. Every identifying value is synthetic (`example.com`, `555-01xx`, `SAMPLE-…` numbers).
 
+## Customer flow (TP → AS → DC → TP)
+
+1. Sign in to the TP as `customer` / `customer` at http://localhost:8082/ThirdParty/login.
+2. On the TP home page, choose **Authorize Monthly Access** (or Daily). The TP sends you to the AS, which hands the login and consent to the DC.
+3. At the DC, sign in as `customer` / `customer` and approve the requested data on the Authorization Screen.
+4. You return to the TP home page, still signed in to the TP, with "The Data Custodian authorized this Third Party". **Your authorizations** lists the scope, the access token's expiry, and the `resourceURI`, `authorizationURI` and `customerResourceURI` from the token response.
+
+The TP stores each token in its own ESPI `authorizations` table (Spring Security `oauth2Client`, #146), so the tokens survive a TP restart only on `dev-mysql` / `dev-postgresql`; on `local` the H2 database is in memory.
+
+The TP administrator (`admin` / `admin`) can obtain the TP's own client access token (client_credentials, `FB=34_35`) from the **Client Access Token** card on the admin page; it shows the scope, expiry, the first characters of the token only, and the token response's `authorizationURI`, `resourceURI` (energy usage Bulk) and `customerResourceURI` (Customer PII Bulk, when applicable). The AS does not return these URIs for client_credentials tokens yet (#202).
+
 ## Known limitations
 
-The customer flow does not complete yet. Open blockers, in the order they are hit (see the roadmap, #255):
+The customer flow stops after the token is stored. Open items (see the roadmap, #255):
 
-- **#249:** the TP has no user login page.
-- **#232:** the AS → DC delegation (`/authorize/delegate`) drops the authorization parameters and returns 400.
-- **#146 / #202:** the TP's token handling and the resource URIs in the token response.
 - **#197 / #89:** the TP cannot yet read and display the DC's feeds.
-- **#211:** a customer narrowing the requested data at consent gets `invalid_scope`.
+- **#202:** the AS's token-response URIs: `customerResourceURI` is gated on FB 54–62 instead of FB_51, a refresh re-provisions the subscription, and the `FB=34_35` client access token carries no `authorizationURI`, `resourceURI` (energy usage Bulk) or `customerResourceURI` (Customer PII Bulk).

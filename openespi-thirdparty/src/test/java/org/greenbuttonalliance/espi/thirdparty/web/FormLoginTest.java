@@ -244,7 +244,8 @@ class FormLoginTest {
 	@Test
 	@DisplayName("a failed Data Custodian authorization returns home with its own message, not the login error")
 	void failed_dc_authorization_has_its_own_message() throws Exception {
-		// No saved authorization request, so the OAuth2 callback fails (authorization_request_not_found).
+		// No authorization in progress in this session, so the grant filter passes the callback on and
+		// OAuth2ClientController reports it as not completed.
 		mockMvc.perform(get("/login/oauth2/code/datacustodian").with(user(CUSTOMER).roles("USER"))
 						.param("error", "access_denied").param("state", "unknown"))
 				.andExpect(redirectedUrl("/?authorization_error"));

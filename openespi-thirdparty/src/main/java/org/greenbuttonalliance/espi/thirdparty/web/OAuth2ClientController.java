@@ -19,103 +19,67 @@
 
 package org.greenbuttonalliance.espi.thirdparty.web;
 
+import org.greenbuttonalliance.espi.thirdparty.oauth.DataCustodianRegistrations;
+import org.greenbuttonalliance.espi.thirdparty.oauth.EspiAuthorizationOAuth2AuthorizedClientService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
-import org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient;
-import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import java.util.Map;
 
 /**
- * Modern OAuth2 Client Controller using Spring Security 6.x OAuth2 client features.
- * 
- * Replaces legacy manual OAuth2 handling with Spring Security's built-in capabilities.
- * Supports multiple OAuth2 client registrations for different ESPI scope requirements.
+ * A TP customer authorizing the Third Party at a Data Custodian (#146), with Spring Security's
+ * {@code oauth2Client}: the home page's cards start the authorization-code flow, and the customer
+ * comes back here when it has finished.
  */
 @Controller
-@RequestMapping("/oauth2")
 public class OAuth2ClientController {
 
-    private static final Logger logger = LoggerFactory.getLogger(OAuth2ClientController.class);
+	private static final Logger logger = LoggerFactory.getLogger(OAuth2ClientController.class);
 
-    /**
-     * Initiate OAuth2 authorization flow for monthly usage data access.
-     * Uses Spring Security's OAuth2 client with predefined scope configuration.
-     */
-    @GetMapping("/authorize/monthly")
-    public String authorizeMonthly() {
-        logger.info("Initiating OAuth2 flow for monthly usage data access");
-        return "redirect:/oauth2/authorization/datacustodian-monthly";
-    }
+	private final EspiAuthorizationOAuth2AuthorizedClientService authorizedClientService;
 
-    /**
-     * Initiate OAuth2 authorization flow for daily usage data access.
-     * Uses Spring Security's OAuth2 client with predefined scope configuration.
-     */
-    @GetMapping("/authorize/daily")
-    public String authorizeDaily() {
-        logger.info("Initiating OAuth2 flow for daily usage data access");
-        return "redirect:/oauth2/authorization/datacustodian-daily";
-    }
+	public OAuth2ClientController(EspiAuthorizationOAuth2AuthorizedClientService authorizedClientService) {
+		this.authorizedClientService = authorizedClientService;
+	}
 
-    /**
-     * Initiate OAuth2 authorization flow for admin access.
-     * Uses Spring Security's OAuth2 client with admin scope configuration.
-     */
-    @GetMapping("/authorize/admin")
-    public String authorizeAdmin() {
-        logger.info("Initiating OAuth2 flow for admin access");
-        return "redirect:/oauth2/authorization/datacustodian-admin";
-    }
+	/** Monthly usage data, 1-hour intervals (the home page's "Monthly Data" card). */
+	@GetMapping("/oauth2/authorize/monthly")
+	public String authorizeMonthly() {
+		return "redirect:/oauth2/authorization/" + DataCustodianRegistrations.MONTHLY;
+	}
 
-    /**
-     * Display authorized client information after successful OAuth2 flow.
-     * Demonstrates how to access OAuth2 tokens and user information.
-     */
-    @GetMapping("/client/{registrationId}")
-    public String clientInfo(@PathVariable String registrationId,
-                           @RegisteredOAuth2AuthorizedClient OAuth2AuthorizedClient authorizedClient,
-                           @AuthenticationPrincipal OAuth2User oauth2User,
-                           Model model) {
-        
-        logger.info("Displaying client info for registration: {}", registrationId);
-        
-        if (authorizedClient != null) {
-            model.addAttribute("clientName", authorizedClient.getClientRegistration().getClientName());
-            model.addAttribute("userName", oauth2User.getName());
-            model.addAttribute("userAttributes", oauth2User.getAttributes());
-            model.addAttribute("accessToken", authorizedClient.getAccessToken().getTokenValue());
-            model.addAttribute("scopes", authorizedClient.getAccessToken().getScopes());
-            
-            // Token expiration info
-            if (authorizedClient.getAccessToken().getExpiresAt() != null) {
-                model.addAttribute("expiresAt", authorizedClient.getAccessToken().getExpiresAt().toString());
-            }
-            
-            // Refresh token availability
-            if (authorizedClient.getRefreshToken() != null) {
-                model.addAttribute("hasRefreshToken", true);
-            }
-        }
-        
-        return "oauth2/client-info";
-    }
+	/** Daily usage data, 15-minute intervals (the home page's "Daily Data" card). */
+	@GetMapping("/oauth2/authorize/daily")
+	public String authorizeDaily() {
+		return "redirect:/oauth2/authorization/" + DataCustodianRegistrations.DAILY;
+	}
 
-    /**
-     * Home page after successful OAuth2 authentication.
-     */
-    @GetMapping("/success")
-    public String success(@AuthenticationPrincipal OAuth2User oauth2User, Model model) {
-        logger.info("OAuth2 authentication successful for user: {}", oauth2User.getName());
-        
-        model.addAttribute("userName", oauth2User.getName());
-        model.addAttribute("userAttributes", oauth2User.getAttributes());
-        
-        return "oauth2/success";
-    }
+	/**
+	 * Where the customer lands after the Data Custodian: {@code OAuth2AuthorizationCodeGrantFilter}
+	 * has handled the callback (exchanged the code and stored the token) and redirects here again,
+	 * without parameters on success and with {@code ?error=...} when consent was refused or the
+	 * exchange failed. A callback the filter did not recognise (no authorization in progress in this
+	 * session, or a forged one) also arrives here, still carrying {@code code} and {@code state}.
+	 * Success is reported only if a token is actually stored for this customer.
+	 */
+	@GetMapping("/login/oauth2/code/{registrationId}")
+	public String authorizationFinished(@PathVariable String registrationId,
+										@RequestParam Map<String, String> parameters,
+										Authentication authentication) {
+		boolean callbackParameters = parameters.containsKey(OAuth2ParameterNames.ERROR)
+				|| parameters.containsKey(OAuth2ParameterNames.CODE) || parameters.containsKey(OAuth2ParameterNames.STATE);
+		if (!callbackParameters
+				&& authorizedClientService.loadAuthorizedClient(registrationId, authentication.getName()) != null) {
+			return "redirect:/?authorized";
+		}
+		logger.info("Data Custodian authorization for {} did not complete: error={}", registrationId,
+				parameters.getOrDefault(OAuth2ParameterNames.ERROR, "(none, no token stored)"));
+		return "redirect:/?authorization_error";
+	}
 }

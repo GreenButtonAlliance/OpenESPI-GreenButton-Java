@@ -8,8 +8,14 @@
 <nav th:replace="~{fragments/layout :: header}"></nav>
 
 <main class="container mt-4">
-    <!-- Set by oauth2Login's failure URL: consent refused at the Data Custodian, the token exchange
-         failed, or the Third Party session ended during the round trip (authorization_request_not_found).
+    <!-- Set by OAuth2ClientController when the customer returns from the Data Custodian (#146). -->
+    <div th:if="${param.authorized}" class="alert alert-success" role="alert">
+        <i class="bi bi-check-circle"></i>
+        The Data Custodian authorized this Third Party. Your authorizations are listed below.
+    </div>
+
+    <!-- Also from OAuth2ClientController: consent refused at the Data Custodian, the token exchange
+         failed, or the Third Party session ended during the round trip (no authorization in progress).
          Signed in: the authorization cards below are shown, so offer a retry. Not signed in: the cards are
          hidden, so say the session ended and offer the login page. -->
     <th:block th:if="${param.authorization_error}">
@@ -45,15 +51,15 @@
         </div>
     </section>
 
-    <!-- OAuth2 Authorization (authenticated users) -->
-    <section class="card mb-4" sec:authorize="isAuthenticated()">
+    <!-- Data Custodian authorization (TP customers; a TP administrator is sent to the admin page) -->
+    <section class="card mb-4" sec:authorize="hasRole('USER')">
         <div class="gba-card-header"><h2>Data Access Authorization</h2></div>
         <div class="card-body">
             <p>Authorize this application to access your energy usage data from the Data Custodian.
                 Choose the appropriate access level based on your needs:</p>
 
             <div class="row g-3">
-                <div class="col-md-4">
+                <div class="col-md-6">
                     <div class="card h-100">
                         <div class="card-body text-center">
                             <i class="bi bi-calendar-month gba-icon" style="font-size: 2rem;"></i>
@@ -66,7 +72,7 @@
                     </div>
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-md-6">
                     <div class="card h-100">
                         <div class="card-body text-center">
                             <i class="bi bi-calendar-day gba-icon" style="font-size: 2rem;"></i>
@@ -79,19 +85,38 @@
                     </div>
                 </div>
 
-                <div class="col-md-4">
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <i class="bi bi-gear gba-icon" style="font-size: 2rem;"></i>
-                            <h3 class="h5 card-title mt-2">Admin Access</h3>
-                            <p class="card-text small">Administrative access for third party application management and configuration.</p>
-                            <a th:href="@{/oauth2/authorize/admin}" class="btn btn-outline-primary btn-sm">
-                                <i class="bi bi-shield-exclamation"></i> Authorize Admin Access
-                            </a>
-                        </div>
-                    </div>
-                </div>
             </div>
+
+            <!-- The customer's stored Data Custodian authorizations (authorizations table, #146) -->
+            <th:block th:if="${authorizations != null and !authorizations.isEmpty()}">
+                <h3 class="h5 mt-4">Your authorizations</h3>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle" id="authorizations">
+                        <thead>
+                        <tr>
+                            <th scope="col">Access</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Scope</th>
+                            <th scope="col">Access token expires</th>
+                            <th scope="col">Data Custodian resources</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="authorization : ${authorizations}">
+                            <td th:text="${authorization.access}">Data Custodian (Monthly)</td>
+                            <td th:text="${authorization.status}">ACTIVE</td>
+                            <td><code th:text="${authorization.scope}">FB=4_5_15</code></td>
+                            <td th:text="${authorization.expires}">-</td>
+                            <td class="small">
+                                <div th:if="${authorization.resourceUri}">Resource: <code th:text="${authorization.resourceUri}"></code></div>
+                                <div th:if="${authorization.authorizationUri}">Authorization: <code th:text="${authorization.authorizationUri}"></code></div>
+                                <div th:if="${authorization.customerResourceUri}">Customer: <code th:text="${authorization.customerResourceUri}"></code></div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </th:block>
         </div>
     </section>
 

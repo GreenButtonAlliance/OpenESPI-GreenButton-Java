@@ -8,13 +8,54 @@
 <nav th:replace="~{fragments/layout :: header}"></nav>
 
 <main class="container mt-4">
-    <section class="card">
+    <section class="card mb-4">
         <div class="gba-card-header"><h2>Third Party Administration</h2></div>
         <div class="card-body">
             <p class="mb-0">
                 Signed in as <strong sec:authentication="name">admin</strong>, a Third Party administrator.
                 Administration functions for this Third Party will appear here.
             </p>
+        </div>
+    </section>
+
+    <!-- The TP's ESPI client access token (client_credentials, #146): the only TP token the Data
+         Custodian's Authorization and Bulk APIs accept. -->
+    <section class="card" id="client-access-token">
+        <div class="gba-card-header"><h2>Client Access Token</h2></div>
+        <div class="card-body">
+            <div th:if="${param.client_token}" class="alert alert-success" role="alert">
+                <i class="bi bi-check-circle"></i> A new client access token was obtained from the Authorization Server.
+            </div>
+            <div th:if="${param.client_token_error}" class="alert alert-warning" role="alert">
+                <i class="bi bi-exclamation-triangle"></i>
+                The Authorization Server did not issue a client access token. Check that it is running and that this
+                Third Party's client credentials and scope are registered there.
+            </div>
+
+            <p>The Third Party's own token (OAuth client_credentials grant), used for the Data Custodian's ESPI
+                Authorization and Bulk APIs. It belongs to the Third Party, not to a customer.</p>
+
+            <dl class="row mb-3" th:if="${clientToken != null}">
+                <dt class="col-sm-3">Status</dt><dd class="col-sm-9" th:text="${clientToken.status}">ACTIVE</dd>
+                <dt class="col-sm-3">Scope</dt><dd class="col-sm-9"><code th:text="${clientToken.scope}">FB=34_35</code></dd>
+                <dt class="col-sm-3">Obtained</dt><dd class="col-sm-9" th:text="${clientToken.obtained}">-</dd>
+                <dt class="col-sm-3">Expires</dt><dd class="col-sm-9" th:text="${clientToken.expires}">-</dd>
+                <dt class="col-sm-3">Token</dt>
+                <dd class="col-sm-9"><code th:text="${clientToken.tokenPrefix ?: '(none)'}">abcd1234…</code></dd>
+                <dt class="col-sm-3">Authorization URI</dt>
+                <dd class="col-sm-9"><code th:text="${clientToken.authorizationUri ?: '(none in the token response)'}"></code></dd>
+                <dt class="col-sm-3">Resource URI <small class="text-muted">(energy usage Bulk)</small></dt>
+                <dd class="col-sm-9"><code th:text="${clientToken.resourceUri ?: '(none in the token response)'}"></code></dd>
+                <dt class="col-sm-3">Customer Resource URI <small class="text-muted">(Customer PII Bulk)</small></dt>
+                <dd class="col-sm-9"><code th:text="${clientToken.customerResourceUri ?: '(none in the token response)'}"></code></dd>
+            </dl>
+            <p th:if="${clientToken == null}" class="text-muted">No client access token has been obtained yet.</p>
+
+            <form th:action="@{/custodian/home/client-token}" method="post">
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <i class="bi bi-key"></i> Obtain a new client access token
+                </button>
+            </form>
         </div>
     </section>
 </main>

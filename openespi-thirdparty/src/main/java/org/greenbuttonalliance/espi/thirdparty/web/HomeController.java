@@ -19,31 +19,54 @@
 
 package org.greenbuttonalliance.espi.thirdparty.web;
 
+import jakarta.servlet.http.HttpServletRequest;
+import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
+import org.greenbuttonalliance.espi.common.repositories.usage.AuthorizationRepository;
+import org.greenbuttonalliance.espi.common.repositories.usage.RetailCustomerRepository;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
-import jakarta.servlet.http.HttpServletRequest;
+import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.List;
 
 /**
  * The Third Party home page. A TP administrator ({@code ROLE_CUSTODIAN}) is sent to the admin page;
  * everyone else gets {@code home}, which for a signed-in TP customer ({@code ROLE_USER}) shows the
- * Data Access Authorization cards used to authorize the TP at a Data Custodian (#249).
+ * Data Access Authorization cards (#249) and the customer's stored authorizations (#146).
  */
 @Controller
 public class HomeController {
 
+	private final RetailCustomerRepository retailCustomerRepository;
+	private final AuthorizationRepository authorizationRepository;
+	private final ClientRegistrationRepository clientRegistrationRepository;
+
+	public HomeController(RetailCustomerRepository retailCustomerRepository,
+						  AuthorizationRepository authorizationRepository,
+						  ClientRegistrationRepository clientRegistrationRepository) {
+		this.retailCustomerRepository = retailCustomerRepository;
+		this.authorizationRepository = authorizationRepository;
+		this.clientRegistrationRepository = clientRegistrationRepository;
+	}
+
 	@GetMapping("/")
-	public String index(HttpServletRequest request) {
+	public String index(HttpServletRequest request, Model model) {
 		if (request.isUserInRole(RetailCustomerEntity.ROLE_CUSTODIAN)) {
 			return "redirect:/custodian/home";
+		}
+		if (request.isUserInRole(RetailCustomerEntity.ROLE_USER) && request.getUserPrincipal() != null) {
+			model.addAttribute("authorizations", authorizationsOf(request.getUserPrincipal().getName()));
 		}
 		return "home";
 	}
 
 	@GetMapping("/home")
-	public String home(HttpServletRequest request) {
-		return index(request);
+	public String home(HttpServletRequest request, Model model) {
+		return index(request, model);
 	}
 
 	@GetMapping("/TermsOfService")
@@ -56,4 +79,15 @@ public class HomeController {
 		return "/UsagePolicy";
 	}
 
+	/** The customer's Data Custodian authorizations obtained by this TP, newest first. */
+	private List<AuthorizationView> authorizationsOf(String username) {
+		return retailCustomerRepository.findByUsername(username)
+				.map(customer -> authorizationRepository.findAllByRetailCustomerId(customer.getId()).stream()
+						.filter(authorization -> authorization.getClientRegistrationId() != null)
+						.sorted(Comparator.comparing(AuthorizationEntity::getUpdated,
+								Comparator.nullsLast(Comparator.<LocalDateTime>reverseOrder())))
+						.map(authorization -> AuthorizationView.of(authorization, clientRegistrationRepository))
+						.toList())
+				.orElse(List.of());
+	}
 }
