@@ -32,41 +32,31 @@ import java.util.List;
  * Specialized entry for customer.xsd resources (Customer, CustomerAccount, etc.)
  * that ensures only the cust namespace (http://naesb.org/espi/customer) is declared.
  * <p>
+ * The resource is the single child of the entry's {@code atom:content} element (#197), as in
+ * {@link UsageAtomEntryDto}: a bare {@code atom:content} with no {@code type} and no {@code atom:author},
+ * the ESPI profile of RFC 4287 ({@code docs/ESPI_ATOM_PROFILE.md}).
+ * <p>
  * Per NAESB ESPI standard, usage and customer domains are mutually exclusive.
  */
 @XmlRootElement(name = "entry", namespace = "http://www.w3.org/2005/Atom")
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "CustomerAtomEntry", namespace = "http://www.w3.org/2005/Atom", propOrder = {
-    "content"
+    "atomContent"
 })
 @NoArgsConstructor
 public class CustomerAtomEntryDto extends AtomEntryDto {
 
-    /**
-     * Customer domain resource content - only customer.xsd types.
-     * JAXB will only declare xmlns:cust namespace since all types use http://naesb.org/espi/customer.
-     */
-    @XmlElements({
-        @XmlElement(name = "Customer", type = CustomerDto.class, namespace = "http://naesb.org/espi/customer"),
-        @XmlElement(name = "CustomerAccount", type = CustomerAccountDto.class, namespace = "http://naesb.org/espi/customer"),
-        @XmlElement(name = "CustomerAgreement", type = CustomerAgreementDto.class, namespace = "http://naesb.org/espi/customer"),
-        @XmlElement(name = "EndDevice", type = EndDeviceDto.class, namespace = "http://naesb.org/espi/customer"),
-        @XmlElement(name = "Meter", type = MeterDto.class, namespace = "http://naesb.org/espi/customer"),
-        @XmlElement(name = "ProgramDateIdMappings", type = ProgramDateIdMappingsDto.class, namespace = "http://naesb.org/espi/customer"),
-        @XmlElement(name = "ServiceLocation", type = ServiceLocationDto.class, namespace = "http://naesb.org/espi/customer"),
-        @XmlElement(name = "Statement", type = StatementDto.class, namespace = "http://naesb.org/espi/customer"),
-        @XmlElement(name = "StatementRef", type = StatementRefDto.class, namespace = "http://naesb.org/espi/customer"),
-        @XmlElement(name = "ServiceSupplier", type = ServiceSupplierDto.class, namespace = "http://naesb.org/espi/customer")
-    })
-    protected Object content;
+    /** The {@code atom:content} element holding one customer.xsd resource. */
+    @XmlElement(name = "content", namespace = "http://www.w3.org/2005/Atom")
+    private Content atomContent;
 
     /**
      * All-args constructor.
      */
     public CustomerAtomEntryDto(String id, String title, OffsetDateTime published, OffsetDateTime updated,
                                List<LinkDto> links, Object content) {
-        super(id, title, published, updated, links, content);
-        this.content = content;
+        super(id, title, published, updated, links);
+        setContent(content);
     }
 
     /**
@@ -77,24 +67,45 @@ public class CustomerAtomEntryDto extends AtomEntryDto {
      * @param content the customer resource content
      */
     public CustomerAtomEntryDto(String id, String title, Object content) {
-        super(id, title, content);
-        this.content = content;
+        super(id, title);
+        setContent(content);
     }
 
-    /**
-     * Override getContent to return this class's content field (with @XmlElements)
-     * instead of parent's @XmlTransient content field.
-     */
     @Override
     public Object getContent() {
-        return this.content;
+        return atomContent == null ? null : atomContent.resource;
+    }
+
+    @Override
+    public void setContent(Object content) {
+        this.atomContent = content == null ? null : new Content(content);
     }
 
     /**
-     * Override setContent to set this class's content field.
+     * The {@code atom:content} element of a customer entry. Only customer.xsd types are listed, so JAXB
+     * declares only the {@code cust} namespace (http://naesb.org/espi/customer).
      */
-    @Override
-    public void setContent(Object content) {
-        this.content = content;
+    @XmlAccessorType(XmlAccessType.FIELD)
+    @XmlType(name = "CustomerAtomContent", namespace = "http://www.w3.org/2005/Atom")
+    @NoArgsConstructor
+    public static class Content {
+
+        @XmlElements({
+            @XmlElement(name = "Customer", type = CustomerDto.class, namespace = "http://naesb.org/espi/customer"),
+            @XmlElement(name = "CustomerAccount", type = CustomerAccountDto.class, namespace = "http://naesb.org/espi/customer"),
+            @XmlElement(name = "CustomerAgreement", type = CustomerAgreementDto.class, namespace = "http://naesb.org/espi/customer"),
+            @XmlElement(name = "EndDevice", type = EndDeviceDto.class, namespace = "http://naesb.org/espi/customer"),
+            @XmlElement(name = "Meter", type = MeterDto.class, namespace = "http://naesb.org/espi/customer"),
+            @XmlElement(name = "ProgramDateIdMappings", type = ProgramDateIdMappingsDto.class, namespace = "http://naesb.org/espi/customer"),
+            @XmlElement(name = "ServiceLocation", type = ServiceLocationDto.class, namespace = "http://naesb.org/espi/customer"),
+            @XmlElement(name = "Statement", type = StatementDto.class, namespace = "http://naesb.org/espi/customer"),
+            @XmlElement(name = "StatementRef", type = StatementRefDto.class, namespace = "http://naesb.org/espi/customer"),
+            @XmlElement(name = "ServiceSupplier", type = ServiceSupplierDto.class, namespace = "http://naesb.org/espi/customer")
+        })
+        private Object resource;
+
+        Content(Object resource) {
+            this.resource = resource;
+        }
     }
 }

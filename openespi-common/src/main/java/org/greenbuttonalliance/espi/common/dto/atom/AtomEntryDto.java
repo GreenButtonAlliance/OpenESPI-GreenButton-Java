@@ -68,38 +68,35 @@ public abstract class AtomEntryDto {
     private List<LinkDto> links;
 
     /**
-     * ESPI resource content - subclasses define specific @XmlElements
-     * for their domain (usage or customer) to ensure proper namespace declarations.
+     * Constructor for the Atom metadata; the subclass sets the ESPI resource ({@link #setContent}).
      */
-    @XmlTransient
-    protected Object content;
-
-    /**
-     * All-args constructor.
-     */
-    public AtomEntryDto(String id, String title, OffsetDateTime published, OffsetDateTime updated,
-                       List<LinkDto> links, Object content) {
+    protected AtomEntryDto(String id, String title, OffsetDateTime published, OffsetDateTime updated,
+                           List<LinkDto> links) {
         this.id = id;
         this.title = title;
         this.published = published;
         this.updated = updated;
         this.links = links;
-        this.content = content;
     }
 
     /**
-     * Convenience constructor for testing with auto-generated timestamps.
-     * Creates an AtomEntryDto with current timestamp and no links.
-     *
-     * @param id the entry identifier (urn:uuid:xxx format)
-     * @param title the entry title
-     * @param content the resource content
+     * Constructor with the current time (to the second) as published and updated, and no links.
      */
-    public AtomEntryDto(String id, String title, Object content) {
-        LocalDateTime localDateTime = LocalDateTime.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS);
-        OffsetDateTime now = localDateTime.atOffset(ZoneOffset.UTC).toZonedDateTime().toOffsetDateTime();
-        this(id, title, now, now, null, content);
+    protected AtomEntryDto(String id, String title) {
+        OffsetDateTime now = LocalDateTime.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS)
+                .atOffset(ZoneOffset.UTC);
+        this(id, title, now, now, null);
     }
+
+    /**
+     * The ESPI resource this entry carries ({@code espi:UsagePoint}, {@code cust:Customer}, ...). In the XML
+     * it is the single child of the entry's {@code atom:content} element, as REQ.21 and certified feeds use
+     * it (#197). Each subclass maps it for its own schema (usage or customer), so that only that schema's
+     * namespace is declared.
+     */
+    public abstract Object getContent();
+
+    public abstract void setContent(Object content);
 
 
     /**
@@ -127,11 +124,12 @@ public abstract class AtomEntryDto {
     }
 
     /**
-     * Gets the resource content from the entry.
+     * Gets the ESPI resource carried by the entry: the same as {@link #getContent()}. It used to return a
+     * base-class field that unmarshalling never set, so it was always null for a parsed entry (#197).
      *
-     * @return resource content or null if not available
+     * @return the resource, or null if the entry has none
      */
     public Object getResource() {
-        return content; // != null ? content.resource() : null;
+        return getContent();
     }
 }

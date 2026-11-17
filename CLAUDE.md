@@ -235,6 +235,7 @@ ESPI uses Atom XML feeds for data exchange. Key patterns:
 - Entry links include `rel="self"` (resource URL), `rel="up"` (parent collection), `rel="related"` (related resources)
 - All IDs are Type 5 UUIDs in format: `urn:uuid:xxxxxxxx-xxxx-5xxx-xxxx-xxxxxxxxxxxx`
 - Link type attributes use `espi-entry/{resource}` or `espi-feed/{resource}` format
+- Each entry carries its resource inside a bare `<atom:content>` (no `type`); feeds and entries have no `atom:author` (privacy). This is an ESPI profile of RFC 4287: do not "fix" it to match the RFC. See `docs/ESPI_ATOM_PROFILE.md`; `EspiXmlSchemaValidator` (openespi-common `xml/`) validates against atom.xsd + espi.xsd + customer.xsd
 
 ### Core ESPI Resources
 

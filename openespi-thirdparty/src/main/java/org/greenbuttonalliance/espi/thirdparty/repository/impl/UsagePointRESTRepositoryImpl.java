@@ -32,6 +32,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.greenbuttonalliance.espi.common.dto.atom.AtomEntryDto;
 import org.greenbuttonalliance.espi.common.dto.atom.AtomFeedDto;
 import org.greenbuttonalliance.espi.common.dto.atom.UsageAtomEntryDto;
 import org.greenbuttonalliance.espi.common.dto.usage.UsagePointDto;
@@ -42,6 +43,7 @@ import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.Unmarshaller;
 import java.io.ByteArrayInputStream;
 import java.io.StringReader;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -120,15 +122,17 @@ public class UsagePointRESTRepositoryImpl implements UsagePointRESTRepository {
 		Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
 		AtomFeedDto feedDto = (AtomFeedDto) unmarshaller.unmarshal(new StringReader(xmlResponse));
 
-		// Use openespi-common mappers for transformation
-		List<UsagePointEntity> usagePoints = feedDto.getEntries().stream()
-				.map(entry -> {
-					UsagePointDto dto = (UsagePointDto) entry.getResource();
-					return usagePointMapper.toEntity(dto);
-				})
+		// An empty feed has no entries at all (#197). Each entry's resource is the child of its
+		// atom:content; a feed may also carry other resources (MeterReading, ReadingType, ...), which are
+		// not UsagePoints.
+		if (feedDto == null || feedDto.getEntries() == null) {
+			return new ArrayList<>();
+		}
+		return feedDto.getEntries().stream()
+				.map(AtomEntryDto::getResource)
+				.filter(UsagePointDto.class::isInstance)
+				.map(dto -> usagePointMapper.toEntity((UsagePointDto) dto))
 				.collect(Collectors.toList());
-
-		return usagePoints;
 	}
 
 	@Override

@@ -238,14 +238,19 @@ public abstract class BaseExportService {
     /**
      * Builds an Atom feed whose entries carry the ESPI resources, per REQ.21:
      * <ul>
-     *   <li>feed: {@code urn:uuid} id (UUID v5 of {@code feedHref}), title, published/updated (now, UTC),
-     *       {@code self} link of type {@code espi-feed/<Resource>};</li>
+     *   <li>feed: {@code urn:uuid} id (UUID v5 of {@code feedHref}), title, updated (now, UTC; an Atom
+     *       feed has no published), {@code self} link of type {@code espi-feed/<Resource>}, also when the
+     *       feed is empty;</li>
      *   <li>entry: {@code urn:uuid:<entity id>}, title (the entity description, else the resource name),
      *       the entity's published/updated, {@code self} ({@code espi-entry/<Resource>}) and {@code up}
-     *       ({@code espi-feed/<Resource>}) links, and the mapped DTO as {@code <content>}.</li>
+     *       ({@code espi-feed/<Resource>}) links, and the mapped DTO inside {@code <atom:content>}.</li>
      * </ul>
      * Stored self/up links are used when they are absolute URLs; otherwise they are derived from
      * {@code feedHref} ({@code <feedHref>/<id>} and {@code feedHref}).
+     * <p>
+     * Every link carries {@code rel} and {@code type}, and every entry has {@code self} and {@code up}: the GBA
+     * atom.xsd requires them, although RFC 4287 makes them optional. No {@code atom:author} is written
+     * (privacy). See {@code docs/ESPI_ATOM_PROFILE.md}.
      */
     public <E extends IdentifiedObject> AtomFeedDto buildFeed(String feedHref, String title, List<E> entities,
                                                               Function<? super E, ?> toContent) {
@@ -277,8 +282,9 @@ public abstract class BaseExportService {
         feed.setTitle(title);
         feed.setPublished(now);
         feed.setUpdated(now);
+        // atom.xsd requires a type on every link: an empty feed takes the resource from its href (#197).
         feed.setLinks(List.of(new LinkDto("self", feedHref,
-                resource != null ? "espi-feed/" + resource : null)));
+                "espi-feed/" + (resource != null ? resource : lastPathSegment(feedHref)))));
         feed.setEntries(entries);
         return feed;
     }
@@ -294,6 +300,12 @@ public abstract class BaseExportService {
     }
 
     private static final EspiIdGeneratorService ID_GENERATOR = new EspiIdGeneratorService();
+
+    /** The last path segment of a feed href ({@code .../resource/UsagePoint?x=1} gives {@code UsagePoint}). */
+    static String lastPathSegment(String href) {
+        String path = href.replaceFirst("[?#].*$", "").replaceFirst("/+$", "");
+        return path.substring(path.lastIndexOf('/') + 1);
+    }
 
     /** The ESPI resource name: the DTO's {@code @XmlRootElement} name, else its class name without "Dto". */
     static String resourceName(Object content) {
