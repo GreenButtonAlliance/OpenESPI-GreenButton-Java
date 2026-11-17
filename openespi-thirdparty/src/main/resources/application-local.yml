@@ -51,6 +51,11 @@ logging:
   
 server:
   port: 8082
+  # Loopback only. local is the default profile and seeds published DEV ONLY accounts (admin/admin
+  # with ROLE_CUSTODIAN, customer/customer) and the H2 console, so a deployment that forgets
+  # SPRING_PROFILES_ACTIVE must not serve them to the network (#267). To reach the TP from another
+  # machine or from outside a container, use dev-mysql or dev-postgresql.
+  address: 127.0.0.1
 
 espi:
   thirdparty:

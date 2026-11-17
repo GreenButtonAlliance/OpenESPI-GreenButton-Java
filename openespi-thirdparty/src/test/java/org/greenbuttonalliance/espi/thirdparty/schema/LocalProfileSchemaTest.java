@@ -51,6 +51,12 @@ class LocalProfileSchemaTest extends AbstractThirdPartySchemaTest {
 	}
 
 	@Test
+	@DisplayName("the default local profile listens on loopback only, so its DEV ONLY accounts never reach the network")
+	void local_profile_binds_loopback_only() {
+		assertThat(environment.getProperty("server.address")).isEqualTo("127.0.0.1");
+	}
+
+	@Test
 	@DisplayName("the local profile's development accounts are seeded into the Flyway-created schema")
 	void dev_accounts_are_seeded() {
 		assertThat(retailCustomerRepository.findByUsername("admin")).isPresent();

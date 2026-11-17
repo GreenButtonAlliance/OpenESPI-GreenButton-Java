@@ -47,6 +47,10 @@ mvn spring-boot:run -Dspring-boot.run.profiles=dev-postgresql # PostgreSQL on lo
 In every profile Flyway creates the schema from the openespi-common scripts (`db/migration` plus
 `db/vendor/{h2,mysql,postgres}`), and Hibernate only validates it (`ddl-auto: validate`).
 
+The `local` profile listens on `127.0.0.1` only: it seeds published DEV ONLY accounts (`admin`/`admin`,
+`customer`/`customer`) and enables the H2 console. To reach the Third Party from another machine or
+from outside a container, use `dev-mysql` or `dev-postgresql`.
+
 
 ## IDE Setup
 
