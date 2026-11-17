@@ -19,7 +19,21 @@
 
 package org.greenbuttonalliance.espi.thirdparty.config;
 
+import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
+import org.greenbuttonalliance.espi.common.repositories.usage.AuthorizationRepository;
+import org.greenbuttonalliance.espi.common.repositories.usage.RetailCustomerRepository;
+import org.greenbuttonalliance.espi.common.service.EspiIdGeneratorService;
+import org.greenbuttonalliance.espi.thirdparty.oauth.EspiAuthorizationOAuth2AuthorizedClientService;
+import org.greenbuttonalliance.espi.thirdparty.oauth.EspiTokenResponseParameters;
+import org.greenbuttonalliance.espi.thirdparty.oauth.TpCustomerAuthorizationRequestResolver;
 import org.greenbuttonalliance.espi.thirdparty.security.RetailCustomerUserDetailsService;
+import org.springframework.security.oauth2.client.endpoint.OAuth2AccessTokenResponseClient;
+import org.springframework.security.oauth2.client.endpoint.OAuth2AuthorizationCodeGrantRequest;
+import org.springframework.security.oauth2.client.endpoint.OAuth2ClientCredentialsGrantRequest;
+import org.springframework.security.oauth2.client.endpoint.OAuth2RefreshTokenGrantRequest;
+import org.springframework.security.oauth2.client.endpoint.RestClientAuthorizationCodeTokenResponseClient;
+import org.springframework.security.oauth2.client.endpoint.RestClientClientCredentialsTokenResponseClient;
+import org.springframework.security.oauth2.client.endpoint.RestClientRefreshTokenTokenResponseClient;
 import org.greenbuttonalliance.espi.thirdparty.security.ReturnToAuthenticationSuccessHandler;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -74,8 +88,7 @@ public class SecurityConfiguration {
      * {@link #customerPasswordEncoder()}, whatever other {@code PasswordEncoder} beans exist. As an
      * {@code AuthenticationProvider} bean it becomes the global (parent) provider, so it must not also
      * be added to a chain with {@code http.authenticationProvider(...)}: a second copy re-checks every
-     * failed login (two lookups, two BCrypt checks). Not {@code http.authenticationManager(...)}
-     * either: that would drop the provider {@code oauth2Login} registers on the chain.
+     * failed login (two lookups, two BCrypt checks).
      */
     @Bean
     public DaoAuthenticationProvider customerAuthenticationProvider(RetailCustomerUserDetailsService userDetailsService) {
@@ -85,17 +98,26 @@ public class SecurityConfiguration {
     }
 
     /**
-     * Two separate steps (#249): a TP customer or administrator first signs in to the Third Party
-     * with {@code formLogin} against the TP's own accounts ({@link #customerAuthenticationProvider});
-     * {@code oauth2Login} is then used from the home page only to authorize the TP at a Data
-     * Custodian, never to sign in to the TP.
+     * Two separate steps (#249, #146): a TP customer or administrator signs in to the Third Party
+     * with {@code formLogin} against the TP's own accounts ({@link #customerAuthenticationProvider}).
+     * A signed-in TP customer then authorizes the TP at a Data Custodian with {@code oauth2Client}:
+     * it completes the authorization-code grant and stores the token for the TP customer, without
+     * ever signing anyone in or changing who is signed in ({@code oauth2Login} replaced the customer's
+     * sign-in with the Data Custodian's, and signed in visitors who had no TP account).
      */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
-                                           @Value("${spring.h2.console.path:/h2-console}") String h2ConsolePath)
+                                           @Value("${spring.h2.console.path:/h2-console}") String h2ConsolePath,
+                                           ClientRegistrationRepository clientRegistrationRepository,
+                                           OAuth2AccessTokenResponseClient<OAuth2AuthorizationCodeGrantRequest>
+                                                   authorizationCodeTokenResponseClient)
             throws Exception {
         http
             .authorizeHttpRequests(authz -> authz
+                // Starting a Data Custodian authorization is for a signed-in TP customer only (an
+                // anonymous visitor goes to the login page first; see TpCustomerAuthorizationRequestResolver).
+                .requestMatchers(TpCustomerAuthorizationRequestResolver.AUTHORIZATION_BASE_URI + "/**",
+                        "/oauth2/authorize/**").hasAuthority(RetailCustomerEntity.ROLE_USER)
                 // Public pages (Terms of Service and Usage Policy are linked from the navbar, About from
                 // the footer)
                 .requestMatchers("/", "/home", "/login", "/about", "/TermsOfService", "/UsagePolicy", "/error",
@@ -121,13 +143,15 @@ public class SecurityConfiguration {
                 .failureUrl("/login?error")
                 .permitAll()
             )
-            .oauth2Login(oauth2 -> oauth2
-                .loginPage("/login")
-                .defaultSuccessUrl("/", true)
-                // A refused or failed Data Custodian authorization is not a TP sign-in failure:
-                // send the customer home with its own message, not to the login page's
-                // "Invalid username or password".
-                .failureUrl("/?authorization_error")
+            // The Data Custodian redirects back to {baseUrl}/login/oauth2/code/{registrationId} (the
+            // redirect URIs the AS registers). OAuth2AuthorizationCodeGrantFilter exchanges the code and
+            // then redirects to that path again, with ?error=... if consent was refused or the exchange
+            // failed; OAuth2ClientController turns that into the home page's message.
+            .oauth2Client(client -> client
+                .authorizationCodeGrant(grant -> grant
+                    .authorizationRequestResolver(new TpCustomerAuthorizationRequestResolver(clientRegistrationRepository))
+                    .accessTokenResponseClient(authorizationCodeTokenResponseClient)
+                )
             )
             .logout(logout -> logout
                 .logoutUrl("/logout")
@@ -156,18 +180,63 @@ public class SecurityConfiguration {
     }
 
     /**
-     * OAuth2 Authorized Client Manager for handling OAuth2 flows.
-     * Supports authorization_code, refresh_token flows with automatic token refresh.
+     * The Third Party's Data Custodian tokens live in its ESPI {@code authorizations} table, with the
+     * token response's ESPI URIs (#146), not in Spring's in-memory store.
+     */
+    @Bean
+    public EspiAuthorizationOAuth2AuthorizedClientService authorizedClientService(
+            ClientRegistrationRepository clientRegistrationRepository,
+            AuthorizationRepository authorizationRepository,
+            RetailCustomerRepository retailCustomerRepository,
+            EspiIdGeneratorService espiIdGeneratorService,
+            EspiTokenResponseParameters espiTokenResponseParameters) {
+        return new EspiAuthorizationOAuth2AuthorizedClientService(clientRegistrationRepository,
+                authorizationRepository, retailCustomerRepository, espiIdGeneratorService, espiTokenResponseParameters);
+    }
+
+    /** Hands each token response's ESPI URIs from the token-response clients to the token store. */
+    @Bean
+    public EspiTokenResponseParameters espiTokenResponseParameters() {
+        return new EspiTokenResponseParameters();
+    }
+
+    /** authorization_code token exchange, keeping the response's ESPI URIs for the token store. */
+    @Bean
+    public OAuth2AccessTokenResponseClient<OAuth2AuthorizationCodeGrantRequest> authorizationCodeTokenResponseClient(
+            EspiTokenResponseParameters espiTokenResponseParameters) {
+        return espiTokenResponseParameters.capturing(new RestClientAuthorizationCodeTokenResponseClient());
+    }
+
+    /** refresh_token exchange, keeping the response's ESPI URIs (if it repeats them) for the token store. */
+    @Bean
+    public OAuth2AccessTokenResponseClient<OAuth2RefreshTokenGrantRequest> refreshTokenTokenResponseClient(
+            EspiTokenResponseParameters espiTokenResponseParameters) {
+        return espiTokenResponseParameters.capturing(new RestClientRefreshTokenTokenResponseClient());
+    }
+
+    /** client_credentials exchange (the TP's client access token), keeping any ESPI URIs for the token store. */
+    @Bean
+    public OAuth2AccessTokenResponseClient<OAuth2ClientCredentialsGrantRequest> clientCredentialsTokenResponseClient(
+            EspiTokenResponseParameters espiTokenResponseParameters) {
+        return espiTokenResponseParameters.capturing(new RestClientClientCredentialsTokenResponseClient());
+    }
+
+    /**
+     * Obtains and refreshes Data Custodian tokens: a customer's (authorization_code, refreshed with
+     * its refresh token) and the TP's client access token (client_credentials).
      */
     @Bean
     public OAuth2AuthorizedClientManager authorizedClientManager(
             ClientRegistrationRepository clientRegistrationRepository,
-            OAuth2AuthorizedClientRepository authorizedClientRepository) {
+            OAuth2AuthorizedClientRepository authorizedClientRepository,
+            OAuth2AccessTokenResponseClient<OAuth2RefreshTokenGrantRequest> refreshTokenTokenResponseClient,
+            OAuth2AccessTokenResponseClient<OAuth2ClientCredentialsGrantRequest> clientCredentialsTokenResponseClient) {
 
         OAuth2AuthorizedClientProvider authorizedClientProvider =
                 OAuth2AuthorizedClientProviderBuilder.builder()
                         .authorizationCode()
-                        .refreshToken()
+                        .refreshToken(refresh -> refresh.accessTokenResponseClient(refreshTokenTokenResponseClient))
+                        .clientCredentials(client -> client.accessTokenResponseClient(clientCredentialsTokenResponseClient))
                         .build();
 
         DefaultOAuth2AuthorizedClientManager authorizedClientManager =

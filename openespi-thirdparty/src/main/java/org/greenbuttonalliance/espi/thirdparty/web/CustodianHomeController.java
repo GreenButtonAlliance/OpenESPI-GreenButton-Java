@@ -19,20 +19,84 @@
 
 package org.greenbuttonalliance.espi.thirdparty.web;
 
-
+import org.greenbuttonalliance.espi.thirdparty.oauth.DataCustodianRegistrations;
+import org.greenbuttonalliance.espi.thirdparty.oauth.EspiAuthorizationOAuth2AuthorizedClientService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.endpoint.OAuth2AccessTokenResponseClient;
+import org.springframework.security.oauth2.client.endpoint.OAuth2ClientCredentialsGrantRequest;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.core.endpoint.OAuth2AccessTokenResponse;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-/** The Third Party administrator's landing page after login (#249). */
+/**
+ * The Third Party administrator's landing page after login (#249), with a check of the TP's ESPI
+ * client access token (#146): obtained from the Authorization Server with client_credentials
+ * ({@code datacustodian-admin}), stored in the {@code authorizations} table with no customer, and
+ * shown by scope, expiry, any ESPI URIs, and the first characters of the token only.
+ */
 @Controller
 @RequestMapping("/custodian/home")
 @PreAuthorize("hasRole('ROLE_CUSTODIAN')")
 public class CustodianHomeController extends BaseController {
 
+	private static final Logger logger = LoggerFactory.getLogger(CustodianHomeController.class);
+
+	private final OAuth2AccessTokenResponseClient<OAuth2ClientCredentialsGrantRequest> clientCredentialsTokenResponseClient;
+	private final EspiAuthorizationOAuth2AuthorizedClientService authorizedClientService;
+	private final ClientRegistrationRepository clientRegistrationRepository;
+
+	public CustodianHomeController(
+			OAuth2AccessTokenResponseClient<OAuth2ClientCredentialsGrantRequest> clientCredentialsTokenResponseClient,
+			EspiAuthorizationOAuth2AuthorizedClientService authorizedClientService,
+			ClientRegistrationRepository clientRegistrationRepository) {
+		this.clientCredentialsTokenResponseClient = clientCredentialsTokenResponseClient;
+		this.authorizedClientService = authorizedClientService;
+		this.clientRegistrationRepository = clientRegistrationRepository;
+	}
+
 	@GetMapping
-	public String index() {
+	public String index(Authentication authentication, Model model) {
+		authorizedClientService.findAuthorization(DataCustodianRegistrations.CLIENT_ACCESS, authentication.getName())
+				.map(authorization -> AuthorizationView.of(authorization, clientRegistrationRepository))
+				.ifPresent(view -> model.addAttribute("clientToken", view));
 		return "custodian/home";
+	}
+
+	/**
+	 * Obtains a new client access token from the Authorization Server, even while a valid one is
+	 * stored, and replaces the stored one only once the new one has been issued and saved. If the AS
+	 * is unreachable or refuses, or the save fails, the token already held stays in use.
+	 */
+	@PostMapping("/client-token")
+	public String obtainClientToken(Authentication authentication) {
+		ClientRegistration registration = clientRegistrationRepository
+				.findByRegistrationId(DataCustodianRegistrations.CLIENT_ACCESS);
+		if (registration == null) {
+			logger.warn("No {} client registration is configured, so no client access token can be obtained",
+					DataCustodianRegistrations.CLIENT_ACCESS);
+			return "redirect:/custodian/home?client_token_error";
+		}
+		try {
+			OAuth2AccessTokenResponse tokenResponse = clientCredentialsTokenResponseClient
+					.getTokenResponse(new OAuth2ClientCredentialsGrantRequest(registration));
+			authorizedClientService.saveAuthorizedClient(new OAuth2AuthorizedClient(registration,
+					authentication.getName(), tokenResponse.getAccessToken(), tokenResponse.getRefreshToken()),
+					authentication);
+			return "redirect:/custodian/home?client_token";
+		} catch (RuntimeException ex) {
+			// Any failure (the AS refusing or unreachable, an unreadable response, the save or its commit)
+			// leaves the token already held in use; the admin gets the error message, never a 500.
+			logger.warn("Could not obtain the TP client access token", ex);
+			return "redirect:/custodian/home?client_token_error";
+		}
 	}
 }

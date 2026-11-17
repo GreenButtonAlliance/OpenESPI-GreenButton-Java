@@ -17,19 +17,20 @@
  *
  */
 
-package org.greenbuttonalliance.espi.thirdparty.web.custodian;
+package org.greenbuttonalliance.espi.thirdparty.oauth;
 
-import org.greenbuttonalliance.espi.thirdparty.web.CustodianHomeController;
-import org.junit.jupiter.api.Test;
+/** The Spring OAuth2 client registration ids the Third Party uses with the Data Custodian (application.yml). */
+public final class DataCustodianRegistrations {
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+	/** authorization_code: a TP customer's monthly usage data. */
+	public static final String MONTHLY = "datacustodian-monthly";
 
+	/** authorization_code: a TP customer's daily usage data. */
+	public static final String DAILY = "datacustodian-daily";
 
-public class CustodianHomeControllerTests {
+	/** client_credentials: the TP's client access token (ESPI Authorization and Bulk APIs). */
+	public static final String CLIENT_ACCESS = "datacustodian-admin";
 
-	@Test
-	public void index_displaysCustodianHomeView() throws Exception {
-		CustodianHomeController controller = new CustodianHomeController();
-		assertEquals("custodian/home", controller.index());
+	private DataCustodianRegistrations() {
 	}
 }

@@ -244,7 +244,8 @@ class FormLoginTest {
 	@Test
 	@DisplayName("a failed Data Custodian authorization returns home with its own message, not the login error")
 	void failed_dc_authorization_has_its_own_message() throws Exception {
-		// No saved authorization request, so the OAuth2 callback fails (authorization_request_not_found).
+		// No authorization in progress in this session, so the grant filter passes the callback on and
+		// OAuth2ClientController reports it as not completed.
 		mockMvc.perform(get("/login/oauth2/code/datacustodian").with(user(CUSTOMER).roles("USER"))
 						.param("error", "access_denied").param("state", "unknown"))
 				.andExpect(redirectedUrl("/?authorization_error"));
@@ -252,17 +253,14 @@ class FormLoginTest {
 		assertThat(mockMvc.perform(get("/").param("authorization_error", "").with(user(CUSTOMER).roles("USER")))
 				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString())
 				.contains("The Data Custodian authorization did not complete", "you can try again below")
-				.doesNotContain("Invalid username or password", "Your Third Party session ended");
+				.doesNotContain("Invalid username or password");
 	}
 
 	@Test
-	@DisplayName("after a failed DC authorization, a user whose TP session ended is told so and offered the login page")
-	void failed_dc_authorization_after_session_ended_offers_sign_in() throws Exception {
-		assertThat(mockMvc.perform(get("/").param("authorization_error", ""))
-				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString())
-				.contains("Your Third Party session ended during the Data Custodian authorization",
-						"href=\"/login\"", "Sign in</a> and try again")
-				.doesNotContain("you can try again below", "Data Access Authorization");
+	@DisplayName("a DC callback after the TP session ended asks the customer to sign in first")
+	void dc_callback_after_session_ended_requires_sign_in() throws Exception {
+		mockMvc.perform(get("/login/oauth2/code/datacustodian-monthly").param("code", "a-code").param("state", "a-state"))
+				.andExpect(redirectedUrl("/login"));
 	}
 
 	@Test

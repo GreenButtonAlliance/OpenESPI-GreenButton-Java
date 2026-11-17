@@ -44,11 +44,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 abstract class AbstractThirdPartySchemaTest {
 
 	/**
-	 * The openespi-common migrations: V1 and V3 shared, V2 vendor-specific, V5 shared. V4 is the Data
+	 * The openespi-common migrations: V1 and V3 shared, V2 vendor-specific, V5 and V6 (the TP's
+	 * authorization client registration id, #146) shared. V4 is the Data
 	 * Custodian's handoff-nonce table from openespi-handoff, which the Third Party does not use; the
 	 * gap is expected.
 	 */
-	static final String[] EXPECTED_VERSIONS = {"1", "2", "3", "5"};
+	static final String[] EXPECTED_VERSIONS = {"1", "2", "3", "5", "6"};
 
 	@Autowired
 	private Flyway flyway;

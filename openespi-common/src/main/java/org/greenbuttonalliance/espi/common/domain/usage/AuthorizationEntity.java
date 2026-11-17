@@ -231,6 +231,13 @@ public class AuthorizationEntity extends IdentifiedObject {
     private String correlationId;
 
     /**
+     * Third Party only (#146): the Spring OAuth2 client registration that obtained this
+     * Authorization's tokens (e.g. {@code datacustodian-monthly}). Not in the ESPI XSD; never exported.
+     */
+    @Column(name = "client_registration_id", length = 100)
+    private String clientRegistrationId;
+
+    /**
      * Retail customer who granted this authorization.
      * Many authorizations can belong to one customer.
      */
@@ -509,6 +516,7 @@ public class AuthorizationEntity extends IdentifiedObject {
                 "customerResourceURI = " + getCustomerResourceURI() + ", " +
                 "thirdParty = " + getThirdParty() + ", " +
                 "correlationId = " + getCorrelationId() + ", " +
+                "clientRegistrationId = " + getClientRegistrationId() + ", " +
                 "description = " + getDescription() + ", " +
                 "created = " + getCreated() + ", " +
                 "updated = " + getUpdated() + ", " +

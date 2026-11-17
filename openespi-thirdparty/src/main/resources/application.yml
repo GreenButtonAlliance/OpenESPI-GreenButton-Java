@@ -91,47 +91,48 @@ spring:
       suffix: .html
     static-path-pattern: /**
 
-  # OAuth2 Client Configuration - ESPI Third Party
+  # OAuth2 Client Configuration - ESPI Third Party (#146). Spring Security's oauth2Client (not
+  # oauth2Login): a signed-in TP customer authorizes the TP at the Data Custodian, and the tokens are
+  # stored in the TP's ESPI authorizations table. ESPI scopes only: the AS issues opaque ESPI tokens,
+  # never OpenID Connect ones (#134), so no openid/profile and no user-info endpoint.
   security:
     oauth2:
       client:
         registration:
-          # Monthly usage data with 1-hour intervals
+          # Monthly usage data with 1-hour intervals (a customer's authorization, authorization_code)
           datacustodian-monthly:
             client-id: ${OAUTH2_CLIENT_ID:third_party}
             client-secret: ${OAUTH2_CLIENT_SECRET:secret}
             authorization-grant-type: authorization_code
             redirect-uri: "${espi.thirdparty.base-url}/login/oauth2/code/datacustodian-monthly"
-            scope: "openid,profile,FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"
+            scope: "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"
             client-name: Data Custodian (Monthly)
             provider: datacustodian
-          
-          # Daily usage data with 15-minute intervals
+
+          # Daily usage data with 15-minute intervals (a customer's authorization, authorization_code)
           datacustodian-daily:
             client-id: ${OAUTH2_CLIENT_ID:third_party}
             client-secret: ${OAUTH2_CLIENT_SECRET:secret}
             authorization-grant-type: authorization_code
             redirect-uri: "${espi.thirdparty.base-url}/login/oauth2/code/datacustodian-daily"
-            scope: "openid,profile,FB=4_5_15;IntervalDuration=900;BlockDuration=daily;HistoryLength=7"
+            scope: "FB=4_5_15;IntervalDuration=900;BlockDuration=daily;HistoryLength=7"
             client-name: Data Custodian (Daily)
             provider: datacustodian
-          
-          # Admin access for third party applications
+
+          # The TP's ESPI client access token (client_credentials, never customer consent): the only TP
+          # token the Data Custodian's Authorization and Bulk APIs accept.
           datacustodian-admin:
             client-id: ${OAUTH2_CLIENT_ID:third_party}
             client-secret: ${OAUTH2_CLIENT_SECRET:secret}
-            authorization-grant-type: authorization_code
-            redirect-uri: "${espi.thirdparty.base-url}/login/oauth2/code/datacustodian-admin"
-            scope: "openid,profile,ThirdParty_Admin_Access"
-            client-name: Data Custodian (Admin)
+            authorization-grant-type: client_credentials
+            scope: "FB=34_35"
+            client-name: Data Custodian (Client Access)
             provider: datacustodian
-            
+
         provider:
           datacustodian:
             authorization-uri: ${OAUTH2_AUTHORIZATION_URI:http://localhost:9999/oauth2/authorize}
             token-uri: ${OAUTH2_TOKEN_URI:http://localhost:9999/oauth2/token}
-            user-info-uri: ${OAUTH2_USER_INFO_URI:http://localhost:8081/DataCustodian/espi/1_1/resource/Authorization}
-            user-name-attribute: uuid
 
 # Server Configuration  
 server:

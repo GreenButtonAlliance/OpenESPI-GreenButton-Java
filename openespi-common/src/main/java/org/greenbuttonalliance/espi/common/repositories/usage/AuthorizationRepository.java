@@ -49,6 +49,24 @@ public interface AuthorizationRepository extends JpaRepository<AuthorizationEnti
 
 	Optional<AuthorizationEntity> findByState(String state);
 
+	/**
+	 * Third Party token store (#146): the Authorization a TP customer obtained through one OAuth2
+	 * client registration (authorization_code). Newest first, in case of duplicates.
+	 */
+	Optional<AuthorizationEntity> findFirstByClientRegistrationIdAndRetailCustomer_UsernameOrderByUpdatedDesc(
+			String clientRegistrationId, String username);
+
+	/**
+	 * Third Party token store (#146): the TP's own client access token (client_credentials), which
+	 * belongs to the Third Party, not to a customer.
+	 */
+	Optional<AuthorizationEntity> findFirstByClientRegistrationIdAndRetailCustomerIsNullOrderByUpdatedDesc(
+			String clientRegistrationId);
+
+	/** Third Party token store (#146): every Authorization a TP customer obtained, newest first. */
+	List<AuthorizationEntity> findAllByRetailCustomer_UsernameAndClientRegistrationIdIsNotNullOrderByUpdatedDesc(
+			String username);
+
 	/** Back-channel idempotency lookup (#202): the Authorization provisioned for an AS grant. */
 	Optional<AuthorizationEntity> findByCorrelationId(String correlationId);
 

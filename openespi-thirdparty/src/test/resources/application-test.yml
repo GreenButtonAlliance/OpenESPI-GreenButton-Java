@@ -32,12 +32,11 @@ spring:
             client-secret: test-secret
             authorization-grant-type: authorization_code
             redirect-uri: "http://localhost:8082/ThirdParty/login/oauth2/code/datacustodian"
-            scope: "openid,profile,FB=4_5_15"
+            scope: "FB=4_5_15"
         provider:
           datacustodian:
             authorization-uri: http://localhost:9999/oauth2/authorize
             token-uri: http://localhost:9999/oauth2/token
-            user-info-uri: http://localhost:8081/DataCustodian/espi/1_1/resource/Authorization
 
 logging:
   level:
