@@ -63,6 +63,10 @@ public interface AuthorizationRepository extends JpaRepository<AuthorizationEnti
 	Optional<AuthorizationEntity> findFirstByClientRegistrationIdAndRetailCustomerIsNullOrderByUpdatedDesc(
 			String clientRegistrationId);
 
+	/** Third Party token store (#146): every Authorization a TP customer obtained, newest first. */
+	List<AuthorizationEntity> findAllByRetailCustomer_UsernameAndClientRegistrationIdIsNotNullOrderByUpdatedDesc(
+			String username);
+
 	/** Back-channel idempotency lookup (#202): the Authorization provisioned for an AS grant. */
 	Optional<AuthorizationEntity> findByCorrelationId(String correlationId);
 

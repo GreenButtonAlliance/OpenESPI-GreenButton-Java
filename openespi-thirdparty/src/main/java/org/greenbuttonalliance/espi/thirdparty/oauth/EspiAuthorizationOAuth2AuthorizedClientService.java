@@ -25,6 +25,7 @@ import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.greenbuttonalliance.espi.common.repositories.usage.AuthorizationRepository;
 import org.greenbuttonalliance.espi.common.repositories.usage.RetailCustomerRepository;
+import org.greenbuttonalliance.espi.common.service.EspiIdGeneratorService;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
@@ -65,9 +66,12 @@ import java.util.stream.Collectors;
  */
 public class EspiAuthorizationOAuth2AuthorizedClientService implements OAuth2AuthorizedClientService {
 
+	private static final String AUTHORIZATION_ENTITY_TYPE = "ThirdPartyAuthorization";
+
 	private final ClientRegistrationRepository clientRegistrationRepository;
 	private final AuthorizationRepository authorizationRepository;
 	private final RetailCustomerRepository retailCustomerRepository;
+	private final EspiIdGeneratorService idGenerator = new EspiIdGeneratorService();
 
 	public EspiAuthorizationOAuth2AuthorizedClientService(ClientRegistrationRepository clientRegistrationRepository,
 														  AuthorizationRepository authorizationRepository,
@@ -157,10 +161,21 @@ public class EspiAuthorizationOAuth2AuthorizedClientService implements OAuth2Aut
 							"Only a Third Party customer can authorize " + registration.getRegistrationId()));
 		}
 		AuthorizationEntity authorization = new AuthorizationEntity(customer, null, null);
-		authorization.setId(UUID.randomUUID());
+		authorization.setId(authorizationId(registration, principalName));
 		authorization.setThirdParty(registration.getClientId());
 		authorization.setClientRegistrationId(registration.getRegistrationId());
 		return authorization;
+	}
+
+	/**
+	 * The row's id: a UUID5 of the registration and, for authorization_code, the customer. Each pair
+	 * has exactly one row, so two saves racing to create it cannot both insert one: the second fails
+	 * on the primary key instead of adding a duplicate.
+	 */
+	UUID authorizationId(ClientRegistration registration, String principalName) {
+		String naturalKey = isClientCredentials(registration) ? registration.getRegistrationId()
+				: registration.getRegistrationId() + ":" + principalName;
+		return idGenerator.generateEntityId(AUTHORIZATION_ENTITY_TYPE, naturalKey);
 	}
 
 	private static OAuth2AuthorizedClient toAuthorizedClient(ClientRegistration registration, String principalName,

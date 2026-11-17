@@ -24,6 +24,9 @@ import org.greenbuttonalliance.espi.thirdparty.oauth.EspiAuthorizationOAuth2Auth
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -43,9 +46,12 @@ public class OAuth2ClientController {
 	private static final Logger logger = LoggerFactory.getLogger(OAuth2ClientController.class);
 
 	private final EspiAuthorizationOAuth2AuthorizedClientService authorizedClientService;
+	private final ClientRegistrationRepository clientRegistrationRepository;
 
-	public OAuth2ClientController(EspiAuthorizationOAuth2AuthorizedClientService authorizedClientService) {
+	public OAuth2ClientController(EspiAuthorizationOAuth2AuthorizedClientService authorizedClientService,
+								  ClientRegistrationRepository clientRegistrationRepository) {
 		this.authorizedClientService = authorizedClientService;
+		this.clientRegistrationRepository = clientRegistrationRepository;
 	}
 
 	/** Monthly usage data, 1-hour intervals (the home page's "Monthly Data" card). */
@@ -66,7 +72,8 @@ public class OAuth2ClientController {
 	 * without parameters on success and with {@code ?error=...} when consent was refused or the
 	 * exchange failed. A callback the filter did not recognise (no authorization in progress in this
 	 * session, or a forged one) also arrives here, still carrying {@code code} and {@code state}.
-	 * Success is reported only if a token is actually stored for this customer.
+	 * Success is reported only for a customer (authorization_code) registration and only if a token is
+	 * actually stored for this customer; the TP's own client access token never counts.
 	 */
 	@GetMapping("/login/oauth2/code/{registrationId}")
 	public String authorizationFinished(@PathVariable String registrationId,
@@ -74,7 +81,10 @@ public class OAuth2ClientController {
 										Authentication authentication) {
 		boolean callbackParameters = parameters.containsKey(OAuth2ParameterNames.ERROR)
 				|| parameters.containsKey(OAuth2ParameterNames.CODE) || parameters.containsKey(OAuth2ParameterNames.STATE);
-		if (!callbackParameters
+		ClientRegistration registration = clientRegistrationRepository.findByRegistrationId(registrationId);
+		boolean customerRegistration = registration != null
+				&& AuthorizationGrantType.AUTHORIZATION_CODE.equals(registration.getAuthorizationGrantType());
+		if (customerRegistration && !callbackParameters
 				&& authorizedClientService.loadAuthorizedClient(registrationId, authentication.getName()) != null) {
 			return "redirect:/?authorized";
 		}

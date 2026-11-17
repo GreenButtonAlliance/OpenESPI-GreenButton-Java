@@ -98,6 +98,9 @@ class DataCustodianAuthorizationTest {
 	/** The form parameters of each token request the stub received, by grant type. */
 	private static final Map<String, String> tokenRequests = new ConcurrentHashMap<>();
 
+	/** When set, the stub token endpoint answers 401 invalid_client, as an AS that refuses the TP. */
+	private static volatile boolean tokenEndpointRefuses;
+
 	@BeforeAll
 	static void startTokenEndpoint() throws IOException {
 		tokenEndpoint = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
@@ -105,6 +108,15 @@ class DataCustodianAuthorizationTest {
 			String form = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
 			String grantType = UriComponentsBuilder.newInstance().query(form).build().getQueryParams().getFirst("grant_type");
 			tokenRequests.put(grantType, form);
+			if (tokenEndpointRefuses) {
+				byte[] error = "{\"error\":\"invalid_client\"}".getBytes(StandardCharsets.UTF_8);
+				exchange.getResponseHeaders().add("Content-Type", "application/json;charset=UTF-8");
+				exchange.sendResponseHeaders(401, error.length);
+				try (OutputStream out = exchange.getResponseBody()) {
+					out.write(error);
+				}
+				return;
+			}
 			String body = "client_credentials".equals(grantType)
 					? "{\"access_token\":\"cc-token-1234567890\",\"token_type\":\"Bearer\",\"expires_in\":3600,"
 							+ "\"scope\":\"FB=34_35\",\"resourceURI\":\"" + BULK_RESOURCE_URI + "\","
@@ -166,6 +178,7 @@ class DataCustodianAuthorizationTest {
 		List.of(CUSTOMER, ADMIN).forEach(name ->
 				retailCustomerRepository.findByUsername(name).ifPresent(retailCustomerRepository::delete));
 		tokenRequests.clear();
+		tokenEndpointRefuses = false;
 	}
 
 	private static RetailCustomerEntity account(String username, String role) {
@@ -248,10 +261,11 @@ class DataCustodianAuthorizationTest {
 						.extracting(AuthorizationEntity::getAccessToken, AuthorizationEntity::getRefreshToken,
 								AuthorizationEntity::getScope, AuthorizationEntity::getStatus,
 								AuthorizationEntity::getResourceURI, AuthorizationEntity::getAuthorizationURI,
-								AuthorizationEntity::getCustomerResourceURI, AuthorizationEntity::getThirdParty)
+								AuthorizationEntity::getCustomerResourceURI, AuthorizationEntity::getThirdParty,
+								stored -> stored.getId().version())
 						.containsExactly("customer-token-1234", "customer-refresh", MONTHLY_SCOPE,
 								AuthorizationEntity.STATUS_ACTIVE, RESOURCE_URI, AUTHORIZATION_URI,
-								CUSTOMER_RESOURCE_URI, "third_party"));
+								CUSTOMER_RESOURCE_URI, "third_party", 5));
 
 		// Still the TP customer (ROLE_USER, form login), not a Data Custodian principal.
 		assertThat(((SecurityContext) callback.getRequest().getSession()
@@ -344,6 +358,36 @@ class DataCustodianAuthorizationTest {
 				.contains("A new client access token was obtained", "FB=34_35", "cc-token…",
 						BULK_RESOURCE_URI, BULK_AUTHORIZATION_URI, BULK_CUSTOMER_RESOURCE_URI)
 				.doesNotContain("cc-token-1234567890");
+	}
+
+	@Test
+	@DisplayName("when the AS refuses a new client access token, the one already held stays in use")
+	void refused_client_token_keeps_the_current_one() throws Exception {
+		MockHttpSession session = signedInSession(ADMIN, RetailCustomerEntity.ROLE_CUSTODIAN);
+		mockMvc.perform(post("/custodian/home/client-token").with(csrf()).session(session))
+				.andExpect(redirectedUrl("/custodian/home?client_token"));
+
+		tokenEndpointRefuses = true;
+		mockMvc.perform(post("/custodian/home/client-token").with(csrf()).session(session))
+				.andExpect(redirectedUrl("/custodian/home?client_token_error"));
+
+		assertThat(authorizedClientService.<OAuth2AuthorizedClient>loadAuthorizedClient(
+						DataCustodianRegistrations.CLIENT_ACCESS, ADMIN))
+				.isNotNull()
+				.extracting(client -> client.getAccessToken().getTokenValue())
+				.isEqualTo("cc-token-1234567890");
+	}
+
+	@Test
+	@DisplayName("the TP's client access token never counts as a customer's authorization on the callback page")
+	void callback_page_ignores_the_client_access_token() throws Exception {
+		mockMvc.perform(post("/custodian/home/client-token").with(csrf())
+						.session(signedInSession(ADMIN, RetailCustomerEntity.ROLE_CUSTODIAN)))
+				.andExpect(redirectedUrl("/custodian/home?client_token"));
+
+		mockMvc.perform(get("/login/oauth2/code/" + DataCustodianRegistrations.CLIENT_ACCESS)
+						.session(signedInSession(CUSTOMER, RetailCustomerEntity.ROLE_USER)))
+				.andExpect(redirectedUrl("/?authorization_error"));
 	}
 
 	@Test

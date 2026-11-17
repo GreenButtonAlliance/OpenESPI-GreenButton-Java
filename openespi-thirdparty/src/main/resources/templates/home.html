@@ -15,18 +15,12 @@
     </div>
 
     <!-- Also from OAuth2ClientController: consent refused at the Data Custodian, the token exchange
-         failed, or the Third Party session ended during the round trip (no authorization in progress).
-         Signed in: the authorization cards below are shown, so offer a retry. Not signed in: the cards are
-         hidden, so say the session ended and offer the login page. -->
+         failed, or no authorization was in progress in this session (e.g. the TP session ended during the
+         round trip; the callback requires sign-in, so the customer signs in again first). -->
     <th:block th:if="${param.authorization_error}">
         <div sec:authorize="isAuthenticated()" class="alert alert-warning" role="alert">
             <i class="bi bi-exclamation-triangle"></i>
             The Data Custodian authorization did not complete. No data access was granted; you can try again below.
-        </div>
-        <div sec:authorize="!isAuthenticated()" class="alert alert-warning" role="alert">
-            <i class="bi bi-exclamation-triangle"></i>
-            Your Third Party session ended during the Data Custodian authorization, so no data access was granted.
-            <a th:href="@{/login}" class="alert-link">Sign in</a> and try again.
         </div>
     </th:block>
 

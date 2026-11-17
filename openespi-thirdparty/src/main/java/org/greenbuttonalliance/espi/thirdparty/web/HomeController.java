@@ -20,17 +20,13 @@
 package org.greenbuttonalliance.espi.thirdparty.web;
 
 import jakarta.servlet.http.HttpServletRequest;
-import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.greenbuttonalliance.espi.common.repositories.usage.AuthorizationRepository;
-import org.greenbuttonalliance.espi.common.repositories.usage.RetailCustomerRepository;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
-import java.time.LocalDateTime;
-import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -41,14 +37,11 @@ import java.util.List;
 @Controller
 public class HomeController {
 
-	private final RetailCustomerRepository retailCustomerRepository;
 	private final AuthorizationRepository authorizationRepository;
 	private final ClientRegistrationRepository clientRegistrationRepository;
 
-	public HomeController(RetailCustomerRepository retailCustomerRepository,
-						  AuthorizationRepository authorizationRepository,
+	public HomeController(AuthorizationRepository authorizationRepository,
 						  ClientRegistrationRepository clientRegistrationRepository) {
-		this.retailCustomerRepository = retailCustomerRepository;
 		this.authorizationRepository = authorizationRepository;
 		this.clientRegistrationRepository = clientRegistrationRepository;
 	}
@@ -81,13 +74,9 @@ public class HomeController {
 
 	/** The customer's Data Custodian authorizations obtained by this TP, newest first. */
 	private List<AuthorizationView> authorizationsOf(String username) {
-		return retailCustomerRepository.findByUsername(username)
-				.map(customer -> authorizationRepository.findAllByRetailCustomerId(customer.getId()).stream()
-						.filter(authorization -> authorization.getClientRegistrationId() != null)
-						.sorted(Comparator.comparing(AuthorizationEntity::getUpdated,
-								Comparator.nullsLast(Comparator.<LocalDateTime>reverseOrder())))
-						.map(authorization -> AuthorizationView.of(authorization, clientRegistrationRepository))
-						.toList())
-				.orElse(List.of());
+		return authorizationRepository
+				.findAllByRetailCustomer_UsernameAndClientRegistrationIdIsNotNullOrderByUpdatedDesc(username).stream()
+				.map(authorization -> AuthorizationView.of(authorization, clientRegistrationRepository))
+				.toList();
 	}
 }
