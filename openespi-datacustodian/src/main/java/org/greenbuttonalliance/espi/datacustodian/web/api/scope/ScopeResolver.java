@@ -27,9 +27,11 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -141,28 +143,42 @@ public class ScopeResolver {
     }
 
     /**
-     * The token's ESPI scope (the {@code FB=...} scope string, with its {@code HistoryLength} and other
-     * terms), or empty for the admin, a token without one, or a scope that does not parse.
+     * Every ESPI scope of the token (each {@code FB=...} scope string, with its {@code HistoryLength} and other
+     * terms), except the client access token's {@code FB=34_35}; empty for a token without one.
+     *
+     * @throws IllegalArgumentException if an FB scope does not parse: the caller must refuse the request rather
+     *                                  than read it as "no limits" (fail closed)
      */
-    public Optional<EspiScope> espiScope(Authentication authentication) {
+    public List<EspiScope> espiScopes(Authentication authentication) {
         if (authentication == null || !(authentication.getPrincipal() instanceof OAuth2AuthenticatedPrincipal principal)) {
-            return Optional.empty();
+            return List.of();
         }
         Object scope = principal.getAttribute("scope");
         Collection<?> scopes = scope instanceof Collection<?> collection ? collection
                 : scope instanceof String s ? List.of(s.trim().split("\\s+")) : List.of();
+        List<EspiScope> parsed = new ArrayList<>();
         for (Object value : scopes) {
             String text = value == null ? "" : value.toString().trim();
             if (text.regionMatches(true, 0, "FB=", 0, 3)
                     && !EspiScopeOpaqueTokenIntrospector.CLIENT_ACCESS_TOKEN_SCOPE.equals(text)) {
-                try {
-                    return Optional.of(EspiScope.parse(text));
-                } catch (IllegalArgumentException ex) {
-                    return Optional.empty();
-                }
+                parsed.add(EspiScope.parse(text));
             }
         }
-        return Optional.empty();
+        return parsed;
+    }
+
+    /**
+     * The token's {@code HistoryLength} in seconds: the shortest among its FB scopes, or empty if none states
+     * one.
+     *
+     * @throws IllegalArgumentException if an FB scope does not parse (see {@link #espiScopes})
+     */
+    public Optional<Long> historyLengthSeconds(Authentication authentication) {
+        return espiScopes(authentication).stream()
+                .map(EspiScope::historyLength)
+                .filter(Objects::nonNull)
+                .map(Integer::longValue)
+                .min(Long::compare);
     }
 
     /** Whether the caller holds the DataCustodian admin authority. */
@@ -179,13 +195,8 @@ public class ScopeResolver {
         return false;
     }
 
-    private boolean hasAdminAuthority(Authentication authentication) {
-        for (GrantedAuthority authority : authentication.getAuthorities()) {
-            if (ADMIN_AUTHORITY.equals(authority.getAuthority())) {
-                return true;
-            }
-        }
-        return false;
+    private static boolean hasAdminAuthority(Authentication authentication) {
+        return hasAuthority(authentication, ADMIN_AUTHORITY);
     }
 
     private static String stringAttribute(OAuth2AuthenticatedPrincipal principal, String name) {

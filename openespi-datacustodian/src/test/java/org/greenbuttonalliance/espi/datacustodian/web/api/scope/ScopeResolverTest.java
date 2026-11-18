@@ -19,6 +19,7 @@
 package org.greenbuttonalliance.espi.datacustodian.web.api.scope;
 
 import org.greenbuttonalliance.espi.common.repositories.usage.SubscriptionRepository;
+import org.greenbuttonalliance.espi.common.scope.EspiScope;
 import org.greenbuttonalliance.espi.common.uri.EspiBatchUri;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -159,18 +161,22 @@ class ScopeResolverTest {
     }
 
     @Test
-    @DisplayName("espiScope: the FB scope among the token's scopes, with its HistoryLength; none for FB=34_35 alone")
-    void espiScope() {
-        assertThat(resolver.espiScope(auth(Map.of("scope", List.of("openid", "FB=4_5_16;HistoryLength=86400")))))
-                .hasValueSatisfying(scope -> assertThat(scope)
-                        .returns(86_400, org.greenbuttonalliance.espi.common.scope.EspiScope::historyLength)
-                        .returns(true, s -> s.containsFunctionBlock(16)));
-        assertThat(resolver.espiScope(auth(Map.of("scope", "FB=4_5 openid")))).isPresent();
+    @DisplayName("espiScopes: every FB scope but FB=34_35; HistoryLength is the shortest stated; a bad FB scope throws")
+    void espiScopes() {
+        Authentication twoScopes = auth(Map.of("scope",
+                List.of("openid", "FB=4_5_16;HistoryLength=86400", "FB=4_5;HistoryLength=3600", "FB=34_35")));
+
+        assertThat(resolver.espiScopes(twoScopes))
+                .extracting(EspiScope::historyLength)
+                .containsExactly(86_400, 3_600);
+        assertThat(resolver.historyLengthSeconds(twoScopes)).contains(3_600L);
+        assertThat(resolver.historyLengthSeconds(auth(Map.of("scope", "FB=4_5 openid")))).isEmpty();
         assertThat(List.of(
-                resolver.espiScope(auth(Map.of("scope", List.of("FB=34_35")))),
-                resolver.espiScope(auth(Map.of("scope", List.of("FB=4_x")))),
-                resolver.espiScope(auth(Map.of("active", true))),
-                resolver.espiScope(null)))
+                resolver.espiScopes(auth(Map.of("scope", List.of("FB=34_35")))),
+                resolver.espiScopes(auth(Map.of("active", true))),
+                resolver.espiScopes(null)))
                 .allSatisfy(result -> assertThat(result).isEmpty());
+        assertThatThrownBy(() -> resolver.historyLengthSeconds(auth(Map.of("scope", List.of("FB=4_5", "FB=4_x")))))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 }

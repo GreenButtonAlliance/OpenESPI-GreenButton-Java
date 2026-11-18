@@ -51,10 +51,12 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -97,6 +99,13 @@ class BatchSubscriptionIntegrationTest {
 	private static final UUID OLD_USAGE_SUMMARY = UUID.fromString("8c6cf3e3-ab2d-5f77-82c2-4f3e5a6b7c02");
 	private static final UUID OLD_QUALITY_SUMMARY = UUID.fromString("9d7d04f4-bc3e-5088-93d3-504f6b7c8d02");
 	private static final UUID LOCAL_TIME_A = UUID.fromString("ae8e1505-cd4f-5199-a4e4-61507c8d9e01");
+	private static final UUID SHARED_SUBSCRIPTION = UUID.fromString("3c9d0e6b-6a56-5f11-9a3e-0d1c3b1c2a04");
+	private static final UUID SHARED_POINT_1 = UUID.fromString("48c2a019-5598-5e16-b0f9-49e4ff27f503");
+	private static final UUID SHARED_POINT_2 = UUID.fromString("48c2a019-5598-5e16-b0f9-49e4ff27f504");
+	private static final UUID SHARED_LOCAL_TIME = UUID.fromString("ae8e1505-cd4f-5199-a4e4-61507c8d9e02");
+
+	/** When the fixtures were made, in epoch seconds. */
+	private long now;
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -118,7 +127,7 @@ class BatchSubscriptionIntegrationTest {
 
 	@BeforeEach
 	void setUp() {
-		long now = Instant.now().getEpochSecond();
+		now = Instant.now().getEpochSecond();
 		UsagePointEntity usagePointA = usagePointRepository.save(usagePointA(now));
 		UsagePointEntity usagePointB = new UsagePointEntity();
 		usagePointB.setId(USAGE_POINT_B);
@@ -132,7 +141,7 @@ class BatchSubscriptionIntegrationTest {
 	}
 
 	@Test
-	@DisplayName("a customer token gets exactly its subscription's resources, in certified order, as valid ESPI XML")
+	@DisplayName("without query parameters: the last 24 hours, plus the latest summaries, in certified order, as valid ESPI XML")
 	void customer_token_gets_its_subscription() throws Exception {
 		String xml = fetch(SUBSCRIPTION_A, customer(SUBSCRIPTION_A, "FB=1_3_4_5_16_17", "FB_16", "FB_17"));
 		String subscription = BASE + "/Subscription/" + SUBSCRIPTION_A;
@@ -154,11 +163,63 @@ class BatchSubscriptionIntegrationTest {
 						"href=\"" + usagePoint + "/UsageSummary/" + USAGE_SUMMARY_A + "\"",
 						"href=\"" + usagePoint + "/ElectricPowerQualitySummary/" + QUALITY_SUMMARY_A + "\"",
 						"<espi:LocalTimeParameters>")
-				.doesNotContain(USAGE_POINT_B.toString(), "<atom:published/>", "xsi:type");
+				.doesNotContain(USAGE_POINT_B.toString(), "<atom:published/>", "xsi:type", OLD_BLOCK.toString(),
+						OLD_USAGE_SUMMARY.toString(), OLD_QUALITY_SUMMARY.toString());
+		// The UsageSummary's billing period runs to now (overlap); the power quality summary ended 5 days ago and
+		// is there as the UsagePoint's latest.
+		assertThat(entryResources(xml)).containsExactly("UsagePoint", "MeterReading", "ReadingType",
+				"IntervalBlock", "UsageSummary", "ElectricPowerQualitySummary", "LocalTimeParameters");
+		assertValid(xml);
+	}
+
+	@Test
+	@DisplayName("published-min/max select by interval overlap, with no latest-summary exception")
+	void published_range_selects_by_interval() throws Exception {
+		String xml = fetch(SUBSCRIPTION_A, customer(SUBSCRIPTION_A, "FB=1_3_4_5_16_17", "FB_16", "FB_17"),
+				"published-min", ago(100 * DAY), "published-max", ago(70 * DAY));
+
+		assertThat(xml)
+				.contains(OLD_USAGE_SUMMARY.toString(), OLD_QUALITY_SUMMARY.toString())
+				.doesNotContain(RECENT_BLOCK.toString(), OLD_BLOCK.toString(), USAGE_SUMMARY_A.toString(),
+						QUALITY_SUMMARY_A.toString());
+		assertValid(xml);
+	}
+
+	@Test
+	@DisplayName("a wide range returns every block and summary, sorted by interval start")
+	void entries_are_chronological() throws Exception {
+		String xml = fetch(SUBSCRIPTION_A, customer(SUBSCRIPTION_A, "FB=1_3_4_5_16_17", "FB_16", "FB_17"),
+				"published-min", ago(100 * DAY));
+
+		// The fixtures add the newer one first.
+		assertThat(List.of(
+				xml.indexOf(OLD_BLOCK.toString()) < xml.indexOf(RECENT_BLOCK.toString()),
+				xml.indexOf(OLD_USAGE_SUMMARY.toString()) < xml.indexOf(USAGE_SUMMARY_A.toString()),
+				xml.indexOf(OLD_QUALITY_SUMMARY.toString()) < xml.indexOf(QUALITY_SUMMARY_A.toString())))
+				.containsOnly(true);
 		assertThat(entryResources(xml)).containsExactly("UsagePoint", "MeterReading", "ReadingType",
 				"IntervalBlock", "IntervalBlock", "UsageSummary", "UsageSummary", "ElectricPowerQualitySummary",
 				"ElectricPowerQualitySummary", "LocalTimeParameters");
 		assertValid(xml);
+	}
+
+	@Test
+	@DisplayName("updated-min/max select by atom:updated")
+	void updated_range_selects_by_atom_updated() throws Exception {
+		String xml = fetch(SUBSCRIPTION_A, customer(SUBSCRIPTION_A, "FB=1_3_4_5_16_17", "FB_16", "FB_17"),
+				"published-min", ago(100 * DAY), "updated-max", "2000-01-01T00:00:00Z");
+
+		assertThat(entryResources(xml)).containsExactly("UsagePoint", "MeterReading", "ReadingType",
+				"LocalTimeParameters");
+	}
+
+	@Test
+	@DisplayName("a query parameter that is not an xs:dateTime is a 400")
+	void malformed_query_parameter_is_bad_request() throws Exception {
+		mockMvc.perform(get(BASE + "/Batch/Subscription/" + SUBSCRIPTION_A)
+						.param("published-min", "yesterday")
+						.with(customer(SUBSCRIPTION_A, "FB=1_3_4_5")))
+				.andExpect(status().isBadRequest());
 	}
 
 	@Test
@@ -174,14 +235,52 @@ class BatchSubscriptionIntegrationTest {
 	}
 
 	@Test
-	@DisplayName("HistoryLength (seconds) leaves out IntervalBlocks and summaries that ended before now minus that length")
-	void history_length_limits_time_bounded_resources() throws Exception {
-		String xml = fetch(SUBSCRIPTION_A,
-				customer(SUBSCRIPTION_A, "FB=1_3_4_5_16_17;HistoryLength=" + (7 * DAY), "FB_16", "FB_17"));
+	@DisplayName("HistoryLength is a ceiling: nothing that ended before now minus it, whatever the range asks for")
+	void history_length_is_a_ceiling() throws Exception {
+		String wide = fetch(SUBSCRIPTION_A,
+				customer(SUBSCRIPTION_A, "FB=1_3_4_5_16_17;HistoryLength=" + (7 * DAY), "FB_16", "FB_17"),
+				"published-min", ago(100 * DAY));
+		// By default the latest power quality summary is added, but not past the ceiling: it ended 5 days ago.
+		String latest = fetch(SUBSCRIPTION_A,
+				customer(SUBSCRIPTION_A, "FB=1_3_4_5_16_17;HistoryLength=" + (2 * DAY), "FB_16", "FB_17"));
 
-		assertThat(xml)
+		assertThat(wide)
 				.contains(RECENT_BLOCK.toString(), USAGE_SUMMARY_A.toString(), QUALITY_SUMMARY_A.toString())
 				.doesNotContain(OLD_BLOCK.toString(), OLD_USAGE_SUMMARY.toString(), OLD_QUALITY_SUMMARY.toString());
+		assertThat(latest)
+				.contains(RECENT_BLOCK.toString(), USAGE_SUMMARY_A.toString())
+				.doesNotContain(QUALITY_SUMMARY_A.toString(), OLD_QUALITY_SUMMARY.toString());
+		assertValid(wide);
+	}
+
+	@Test
+	@DisplayName("an FB scope that does not parse is refused, not read as 'no HistoryLength'")
+	void unreadable_scope_is_refused() throws Exception {
+		mockMvc.perform(get(BASE + "/Batch/Subscription/" + SUBSCRIPTION_A)
+						.with(customer(SUBSCRIPTION_A, "FB=4_x;HistoryLength=86400")))
+				.andExpect(status().isForbidden());
+	}
+
+	@Test
+	@DisplayName("a LocalTimeParameters shared by two UsagePoints is one entry, linked from both")
+	void shared_local_time_parameters_is_one_entry() throws Exception {
+		TimeConfigurationEntity shared = localTime(SHARED_LOCAL_TIME);
+		List<UsagePointEntity> usagePoints = new ArrayList<>();
+		for (UUID id : List.of(SHARED_POINT_1, SHARED_POINT_2)) {
+			UsagePointEntity usagePoint = new UsagePointEntity();
+			usagePoint.setId(id);
+			usagePoint.setServiceCategory(ServiceCategory.ELECTRICITY);
+			usagePoint.setLocalTimeParameters(shared);
+			usagePoints.add(usagePointRepository.save(usagePoint));
+		}
+		subscriptionRepository.saveAndFlush(subscription(SHARED_SUBSCRIPTION, usagePoints));
+
+		String xml = fetch(SHARED_SUBSCRIPTION, admin());
+
+		// It closes the first UsagePoint's group; the second UsagePoint only links to it.
+		assertThat(entryResources(xml)).containsExactly("UsagePoint", "LocalTimeParameters", "UsagePoint");
+		assertThat(Pattern.compile("rel=\"related\" href=\"" + BASE + "/LocalTimeParameters/" + SHARED_LOCAL_TIME)
+				.matcher(xml).results().count()).isEqualTo(2);
 		assertValid(xml);
 	}
 
@@ -229,10 +328,20 @@ class BatchSubscriptionIntegrationTest {
 
 	// --- helpers ------------------------------------------------------------------------------------------
 
-	private String fetch(UUID subscriptionId, RequestPostProcessor token) throws Exception {
-		return mockMvc.perform(get(BASE + "/Batch/Subscription/" + subscriptionId).with(token))
+	/** GET the subscription's feed, expecting 200; {@code params} are query parameter name/value pairs. */
+	private String fetch(UUID subscriptionId, RequestPostProcessor token, String... params) throws Exception {
+		MockHttpServletRequestBuilder request = get(BASE + "/Batch/Subscription/" + subscriptionId).with(token);
+		for (int i = 0; i + 1 < params.length; i += 2) {
+			request.param(params[i], params[i + 1]);
+		}
+		return mockMvc.perform(request)
 				.andExpect(status().isOk())
 				.andReturn().getResponse().getContentAsString();
+	}
+
+	/** {@code seconds} before the fixtures' now, as an xs:dateTime. */
+	private String ago(long seconds) {
+		return Instant.ofEpochSecond(now - seconds).toString();
 	}
 
 	/** The entries' resource names, in feed order (from each entry's self link type). */
@@ -298,7 +407,8 @@ class BatchSubscriptionIntegrationTest {
 	}
 
 	/** One UsagePoint with every child kind; one IntervalBlock from yesterday, one from 30 days ago; one
-	 *  UsageSummary and one ElectricPowerQualitySummary ending now, one of each ending 60 days ago. */
+	 *  UsageSummary ending now and one ElectricPowerQualitySummary ending 5 days ago, and one of each ending
+	 *  60 days ago. Each collection gets its newer item first, so the feed's order comes from sorting. */
 	private static UsagePointEntity usagePointA(long now) {
 		UsagePointEntity usagePoint = new UsagePointEntity();
 		usagePoint.setId(USAGE_POINT_A);
@@ -306,13 +416,7 @@ class BatchSubscriptionIntegrationTest {
 		usagePoint.setStatus((short) 1);
 		usagePoint.setServiceCategory(ServiceCategory.ELECTRICITY);
 
-		TimeConfigurationEntity localTime = new TimeConfigurationEntity();
-		localTime.setId(LOCAL_TIME_A);
-		localTime.setTzOffset(-18_000L);
-		localTime.setDstOffset(3_600L);
-		localTime.setDstStartRule(new byte[]{0x36, 0x0E, 0x20, 0x00});
-		localTime.setDstEndRule(new byte[]{(byte) 0xB4, 0x0E, 0x20, 0x00});
-		usagePoint.setLocalTimeParameters(localTime);
+		usagePoint.setLocalTimeParameters(localTime(LOCAL_TIME_A));
 
 		ReadingTypeEntity readingType = new ReadingTypeEntity();
 		readingType.setId(READING_TYPE_A);
@@ -334,9 +438,19 @@ class BatchSubscriptionIntegrationTest {
 
 		usagePoint.getUsageSummaries().add(usageSummary(USAGE_SUMMARY_A, usagePoint, now - 30 * DAY, now));
 		usagePoint.getUsageSummaries().add(usageSummary(OLD_USAGE_SUMMARY, usagePoint, now - 90 * DAY, now));
-		usagePoint.getElectricPowerQualitySummaries().add(qualitySummary(QUALITY_SUMMARY_A, usagePoint, now - 30 * DAY));
+		usagePoint.getElectricPowerQualitySummaries().add(qualitySummary(QUALITY_SUMMARY_A, usagePoint, now - 35 * DAY));
 		usagePoint.getElectricPowerQualitySummaries().add(qualitySummary(OLD_QUALITY_SUMMARY, usagePoint, now - 90 * DAY));
 		return usagePoint;
+	}
+
+	private static TimeConfigurationEntity localTime(UUID id) {
+		TimeConfigurationEntity localTime = new TimeConfigurationEntity();
+		localTime.setId(id);
+		localTime.setTzOffset(-18_000L);
+		localTime.setDstOffset(3_600L);
+		localTime.setDstStartRule(new byte[]{0x36, 0x0E, 0x20, 0x00});
+		localTime.setDstEndRule(new byte[]{(byte) 0xB4, 0x0E, 0x20, 0x00});
+		return localTime;
 	}
 
 	/** A 30-day billing period starting at {@code start}. */

@@ -25,11 +25,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.greenbuttonalliance.espi.common.dto.atom.AtomFeedDto;
-import org.greenbuttonalliance.espi.common.scope.EspiScope;
 import org.greenbuttonalliance.espi.common.service.impl.UsageExportService;
 import org.greenbuttonalliance.espi.datacustodian.config.UsageFunctionBlockAuthorities;
 import org.greenbuttonalliance.espi.datacustodian.web.api.SubscriptionFeedAssembler.Grants;
+import org.greenbuttonalliance.espi.datacustodian.web.api.SubscriptionFeedAssembler.Range;
 import org.greenbuttonalliance.espi.datacustodian.web.api.scope.ScopeResolver;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.format.annotation.DateTimeFormat.ISO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -37,11 +39,14 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.io.ByteArrayOutputStream;
+import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 /**
@@ -82,6 +87,7 @@ public class BatchSubscriptionController {
 					+ " IntervalBlocks, summaries and LocalTimeParameters, as granted by the token's scope",
 			responses = {
 					@ApiResponse(responseCode = "200", description = "The subscription's feed"),
+					@ApiResponse(responseCode = "400", description = "A query parameter is not an xs:dateTime"),
 					@ApiResponse(responseCode = "401", description = "Unauthorized"),
 					@ApiResponse(responseCode = "403", description = "Not this token's subscription"),
 					@ApiResponse(responseCode = "404", description = "No such subscription (DataCustodian admin only)")
@@ -90,14 +96,28 @@ public class BatchSubscriptionController {
 	public ResponseEntity<byte[]> getSubscription(
 			@Parameter(description = "The subscription id from the token's resourceURI", required = true)
 			@PathVariable UUID subscriptionId,
+			@Parameter(description = "Return data whose interval ends after this time (xs:dateTime)."
+					+ " Without published-min and published-max: the last 24 hours")
+			@RequestParam(name = "published-min", required = false) @DateTimeFormat(iso = ISO.DATE_TIME)
+			OffsetDateTime publishedMin,
+			@Parameter(description = "Return data whose interval starts at or before this time (xs:dateTime)")
+			@RequestParam(name = "published-max", required = false) @DateTimeFormat(iso = ISO.DATE_TIME)
+			OffsetDateTime publishedMax,
+			@Parameter(description = "Return data whose atom:updated is at or after this time (xs:dateTime)")
+			@RequestParam(name = "updated-min", required = false) @DateTimeFormat(iso = ISO.DATE_TIME)
+			OffsetDateTime updatedMin,
+			@Parameter(description = "Return data whose atom:updated is at or before this time (xs:dateTime)")
+			@RequestParam(name = "updated-max", required = false) @DateTimeFormat(iso = ISO.DATE_TIME)
+			OffsetDateTime updatedMax,
 			Authentication authentication) {
 
 		if (!scopeResolver.canReadSubscription(authentication, subscriptionId)) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN);
 		}
+		Range range = new Range(instant(publishedMin), instant(publishedMax), instant(updatedMin), instant(updatedMax));
 		String feedHref = ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString();
 		String resourceBase = feedHref.substring(0, feedHref.indexOf(BATCH_SUBSCRIPTION));
-		AtomFeedDto feed = assembler.build(subscriptionId, resourceBase, feedHref, grants(authentication))
+		AtomFeedDto feed = assembler.build(subscriptionId, resourceBase, feedHref, grants(authentication), range)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -107,15 +127,27 @@ public class BatchSubscriptionController {
 				.body(out.toByteArray());
 	}
 
-	/** The admin sees everything; a customer token sees what its Function Blocks and HistoryLength grant. */
+	/**
+	 * The admin sees everything; a customer token sees what its Function Blocks grant, no further back than its
+	 * HistoryLength. An FB scope that does not parse is refused (403) rather than read as "no limit".
+	 */
 	private Grants grants(Authentication authentication) {
 		if (scopeResolver.isAdmin(authentication)) {
 			return Grants.all();
 		}
-		Integer historyLength = scopeResolver.espiScope(authentication).map(EspiScope::historyLength).orElse(null);
+		Long historyLength;
+		try {
+			historyLength = scopeResolver.historyLengthSeconds(authentication).orElse(null);
+		} catch (IllegalArgumentException ex) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Unreadable ESPI scope");
+		}
 		return new Grants(
 				UsageFunctionBlockAuthorities.hasAny(authentication, UsageFunctionBlockAuthorities.USAGE_SUMMARY),
 				UsageFunctionBlockAuthorities.hasAny(authentication, UsageFunctionBlockAuthorities.POWER_QUALITY),
-				historyLength == null ? null : historyLength.longValue());
+				historyLength);
+	}
+
+	private static Instant instant(OffsetDateTime time) {
+		return time == null ? null : time.toInstant();
 	}
 }
