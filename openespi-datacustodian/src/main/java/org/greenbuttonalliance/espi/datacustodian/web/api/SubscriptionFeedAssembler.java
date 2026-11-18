@@ -68,7 +68,8 @@ import java.util.UUID;
  * links to the resources it refers to that are in the feed.</p>
  *
  * <p>{@code HistoryLength} (REQ.21: "the amount of historical information available from the Data
- * Custodian in seconds") drops IntervalBlocks that ended before now minus that length. {@code BlockDuration}
+ * Custodian in seconds") drops IntervalBlocks, UsageSummaries and ElectricPowerQualitySummaries whose interval
+ * ended before now minus that length. {@code BlockDuration}
  * describes the blocks and selects nothing.</p>
  */
 @Component
@@ -141,9 +142,14 @@ public class SubscriptionFeedAssembler {
 		for (UsagePointEntity usagePoint : subscription.getUsagePoints()) {
 			String usagePointFeed = subscriptionHref + "/UsagePoint";
 			String usagePointHref = usagePointFeed + "/" + usagePoint.getId();
-			List<UsageSummaryEntity> summaries = grants.usageSummaries() ? usagePoint.getUsageSummaries() : List.of();
-			List<ElectricPowerQualitySummaryEntity> qualitySummaries =
-					grants.powerQualitySummaries() ? usagePoint.getElectricPowerQualitySummaries() : List.of();
+			List<UsageSummaryEntity> summaries = !grants.usageSummaries() ? List.of()
+					: usagePoint.getUsageSummaries().stream()
+							.filter(summary -> withinHistory(summary.getBillingPeriod(), earliestEnd))
+							.toList();
+			List<ElectricPowerQualitySummaryEntity> qualitySummaries = !grants.powerQualitySummaries() ? List.of()
+					: usagePoint.getElectricPowerQualitySummaries().stream()
+							.filter(summary -> withinHistory(summary.getSummaryInterval(), earliestEnd))
+							.toList();
 			TimeConfigurationEntity localTime = usagePoint.getLocalTimeParameters();
 
 			List<LinkDto> usagePointRelated = new ArrayList<>();
@@ -192,7 +198,7 @@ public class SubscriptionFeedAssembler {
 		String meterReadingHref = meterReadingFeed + "/" + meterReading.getId();
 		ReadingTypeEntity readingType = meterReading.getReadingType();
 		List<IntervalBlockEntity> blocks = meterReading.getIntervalBlocks().stream()
-				.filter(block -> withinHistory(block, earliestEnd))
+				.filter(block -> withinHistory(block.getInterval(), earliestEnd))
 				.toList();
 
 		List<LinkDto> meterReadingRelated = new ArrayList<>();
@@ -217,9 +223,13 @@ public class SubscriptionFeedAssembler {
 		}
 	}
 
-	/** A block without an interval is kept: there is nothing to measure it against. */
-	private static boolean withinHistory(IntervalBlockEntity block, Long earliestEnd) {
-		DateTimeInterval interval = block.getInterval();
+	/**
+	 * Whether a resource covering {@code interval} (an IntervalBlock's interval, a UsageSummary's billing period
+	 * or an ElectricPowerQualitySummary's summary interval) ends within {@code HistoryLength}. One rule for every
+	 * time-bounded resource in the feed. A resource without an interval is kept: there is nothing to measure it
+	 * against.
+	 */
+	private static boolean withinHistory(DateTimeInterval interval, Long earliestEnd) {
 		if (earliestEnd == null || interval == null || interval.getStart() == null) {
 			return true;
 		}

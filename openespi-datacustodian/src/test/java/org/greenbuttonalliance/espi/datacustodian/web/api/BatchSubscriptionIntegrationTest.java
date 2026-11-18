@@ -94,6 +94,8 @@ class BatchSubscriptionIntegrationTest {
 	private static final UUID OLD_BLOCK = UUID.fromString("7b5be2d2-9a1c-5e66-b1b1-3e2d4f5a6b02");
 	private static final UUID USAGE_SUMMARY_A = UUID.fromString("8c6cf3e3-ab2d-5f77-82c2-4f3e5a6b7c01");
 	private static final UUID QUALITY_SUMMARY_A = UUID.fromString("9d7d04f4-bc3e-5088-93d3-504f6b7c8d01");
+	private static final UUID OLD_USAGE_SUMMARY = UUID.fromString("8c6cf3e3-ab2d-5f77-82c2-4f3e5a6b7c02");
+	private static final UUID OLD_QUALITY_SUMMARY = UUID.fromString("9d7d04f4-bc3e-5088-93d3-504f6b7c8d02");
 	private static final UUID LOCAL_TIME_A = UUID.fromString("ae8e1505-cd4f-5199-a4e4-61507c8d9e01");
 
 	@Autowired
@@ -154,7 +156,8 @@ class BatchSubscriptionIntegrationTest {
 						"<espi:LocalTimeParameters>")
 				.doesNotContain(USAGE_POINT_B.toString(), "<atom:published/>", "xsi:type");
 		assertThat(entryResources(xml)).containsExactly("UsagePoint", "MeterReading", "ReadingType",
-				"IntervalBlock", "IntervalBlock", "UsageSummary", "ElectricPowerQualitySummary", "LocalTimeParameters");
+				"IntervalBlock", "IntervalBlock", "UsageSummary", "UsageSummary", "ElectricPowerQualitySummary",
+				"ElectricPowerQualitySummary", "LocalTimeParameters");
 		assertValid(xml);
 	}
 
@@ -171,11 +174,15 @@ class BatchSubscriptionIntegrationTest {
 	}
 
 	@Test
-	@DisplayName("HistoryLength (seconds) leaves out IntervalBlocks that ended before now minus that length")
-	void history_length_limits_interval_blocks() throws Exception {
-		String xml = fetch(SUBSCRIPTION_A, customer(SUBSCRIPTION_A, "FB=1_3_4_5;HistoryLength=" + (7 * DAY)));
+	@DisplayName("HistoryLength (seconds) leaves out IntervalBlocks and summaries that ended before now minus that length")
+	void history_length_limits_time_bounded_resources() throws Exception {
+		String xml = fetch(SUBSCRIPTION_A,
+				customer(SUBSCRIPTION_A, "FB=1_3_4_5_16_17;HistoryLength=" + (7 * DAY), "FB_16", "FB_17"));
 
-		assertThat(xml).contains(RECENT_BLOCK.toString()).doesNotContain(OLD_BLOCK.toString());
+		assertThat(xml)
+				.contains(RECENT_BLOCK.toString(), USAGE_SUMMARY_A.toString(), QUALITY_SUMMARY_A.toString())
+				.doesNotContain(OLD_BLOCK.toString(), OLD_USAGE_SUMMARY.toString(), OLD_QUALITY_SUMMARY.toString());
+		assertValid(xml);
 	}
 
 	@Test
@@ -290,7 +297,8 @@ class BatchSubscriptionIntegrationTest {
 		return subscription;
 	}
 
-	/** One UsagePoint with every child kind; one IntervalBlock from yesterday, one from 30 days ago. */
+	/** One UsagePoint with every child kind; one IntervalBlock from yesterday, one from 30 days ago; one
+	 *  UsageSummary and one ElectricPowerQualitySummary ending now, one of each ending 60 days ago. */
 	private static UsagePointEntity usagePointA(long now) {
 		UsagePointEntity usagePoint = new UsagePointEntity();
 		usagePoint.setId(USAGE_POINT_A);
@@ -324,17 +332,29 @@ class BatchSubscriptionIntegrationTest {
 		meterReading.getIntervalBlocks().add(block(OLD_BLOCK, meterReading, now - 30 * DAY));
 		usagePoint.getMeterReadings().add(meterReading);
 
-		UsageSummaryEntity summary = new UsageSummaryEntity();
-		summary.setId(USAGE_SUMMARY_A);
-		summary.setUsagePoint(usagePoint);
-		summary.setBillingPeriod(new DateTimeInterval(30 * DAY, now - 30 * DAY));
-		summary.setStatusTimeStamp(now);
-		usagePoint.getUsageSummaries().add(summary);
+		usagePoint.getUsageSummaries().add(usageSummary(USAGE_SUMMARY_A, usagePoint, now - 30 * DAY, now));
+		usagePoint.getUsageSummaries().add(usageSummary(OLD_USAGE_SUMMARY, usagePoint, now - 90 * DAY, now));
+		usagePoint.getElectricPowerQualitySummaries().add(qualitySummary(QUALITY_SUMMARY_A, usagePoint, now - 30 * DAY));
+		usagePoint.getElectricPowerQualitySummaries().add(qualitySummary(OLD_QUALITY_SUMMARY, usagePoint, now - 90 * DAY));
+		return usagePoint;
+	}
 
+	/** A 30-day billing period starting at {@code start}. */
+	private static UsageSummaryEntity usageSummary(UUID id, UsagePointEntity usagePoint, long start, long now) {
+		UsageSummaryEntity summary = new UsageSummaryEntity();
+		summary.setId(id);
+		summary.setUsagePoint(usagePoint);
+		summary.setBillingPeriod(new DateTimeInterval(30 * DAY, start));
+		summary.setStatusTimeStamp(now);
+		return summary;
+	}
+
+	/** A 30-day summary interval starting at {@code start}. */
+	private static ElectricPowerQualitySummaryEntity qualitySummary(UUID id, UsagePointEntity usagePoint, long start) {
 		ElectricPowerQualitySummaryEntity quality = new ElectricPowerQualitySummaryEntity();
-		quality.setId(QUALITY_SUMMARY_A);
+		quality.setId(id);
 		quality.setUsagePoint(usagePoint);
-		quality.setSummaryInterval(new DateTimeInterval(30 * DAY, now - 30 * DAY));
+		quality.setSummaryInterval(new DateTimeInterval(30 * DAY, start));
 		quality.setMeasurementProtocol((short) 0);
 		quality.setMainsVoltage(240_000L);
 		quality.setFlickerPlt(0L);
@@ -348,8 +368,7 @@ class BatchSubscriptionIntegrationTest {
 		quality.setSupplyVoltageImbalance(0L);
 		quality.setSupplyVoltageVariations(0L);
 		quality.setTempOvervoltage(0L);
-		usagePoint.getElectricPowerQualitySummaries().add(quality);
-		return usagePoint;
+		return quality;
 	}
 
 	private static IntervalBlockEntity block(UUID id, MeterReadingEntity meterReading, long start) {
