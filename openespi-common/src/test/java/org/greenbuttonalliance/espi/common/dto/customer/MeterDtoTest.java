@@ -72,7 +72,7 @@ class MeterDtoTest {
         );
 
         AtomFeedDto feed = new AtomFeedDto(
-            "urn:uuid:feed-id", "Meter Feed", now, now, null,
+            "urn:uuid:feed-id", "Meter Feed", now, null,
             List.of(entry)
         );
 
@@ -133,7 +133,7 @@ class MeterDtoTest {
         );
 
         AtomFeedDto feed = new AtomFeedDto(
-            "urn:uuid:feed-id", "Test Feed", now, now, null,
+            "urn:uuid:feed-id", "Test Feed", now, null,
             List.of(entry)
         );
 
@@ -208,7 +208,7 @@ class MeterDtoTest {
         );
 
         AtomFeedDto feed = new AtomFeedDto(
-            "urn:uuid:feed-id", "Minimal Feed", now, now, null,
+            "urn:uuid:feed-id", "Minimal Feed", now, null,
             List.of(entry)
         );
 
@@ -248,7 +248,7 @@ class MeterDtoTest {
         );
 
         AtomFeedDto feed = new AtomFeedDto(
-            "urn:uuid:feed-id", "Lifecycle Feed", now, now, null,
+            "urn:uuid:feed-id", "Lifecycle Feed", now, null,
             List.of(entry)
         );
 
@@ -290,7 +290,7 @@ class MeterDtoTest {
         );
 
         AtomFeedDto feed = new AtomFeedDto(
-            "urn:uuid:feed-id", "AcceptanceTest Feed", now, now, null,
+            "urn:uuid:feed-id", "AcceptanceTest Feed", now, null,
             List.of(entry)
         );
 
@@ -331,7 +331,7 @@ class MeterDtoTest {
         );
 
         AtomFeedDto feed = new AtomFeedDto(
-            "urn:uuid:feed-id", "MeterMultipliers Feed", now, now, null,
+            "urn:uuid:feed-id", "MeterMultipliers Feed", now, null,
             List.of(entry)
         );
 

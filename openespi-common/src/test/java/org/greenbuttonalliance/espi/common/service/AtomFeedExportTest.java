@@ -82,13 +82,13 @@ class AtomFeedExportTest {
                 .contains("rel=\"up\" href=\"" + FEED + "\" type=\"espi-feed/UsagePoint\"")
                 .contains("<atom:published>2026-01-02T03:04:05Z</atom:published>")
                 .contains("<espi:UsagePoint")
-                .doesNotContain("xsi:type", "<atom:published/>", "<atom:updated/>");
+                .doesNotContain("xsi:type", "<atom:published/>", "<atom:updated/>")
+                // #197: each resource inside atom:content; a feed has no published of its own (RFC 4287).
+                .containsPattern("<atom:content>\\s*<espi:UsagePoint")
+                .doesNotContainPattern("<atom:feed[^>]*>\\s*<atom:id>[^<]*</atom:id>\\s*<atom:title>[^<]*</atom:title>\\s*<atom:published>");
         assertThat(feedId).matches("urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}");
         assertThat(count(xml, "<atom:entry")).isEqualTo(2);
-        // #197: each resource inside atom:content; a feed has no published of its own (RFC 4287).
         assertThat(count(xml, "<atom:content>")).isEqualTo(2);
-        assertThat(xml).containsPattern("<atom:content>\\s*<espi:UsagePoint")
-                .doesNotContainPattern("<atom:feed[^>]*>\\s*<atom:id>[^<]*</atom:id>\\s*<atom:title>[^<]*</atom:title>\\s*<atom:published>");
         EspiXmlSchemaValidator.Result validation = EspiXmlSchemaValidator.instance().validate(xml);
         assertThat(validation.valid()).as(String.join("\n", EspiXmlSchemaValidator.describe(validation))).isTrue();
     }

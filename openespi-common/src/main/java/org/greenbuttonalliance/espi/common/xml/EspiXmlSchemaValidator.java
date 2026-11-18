@@ -35,8 +35,8 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
+import java.io.StringReader;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -111,21 +111,33 @@ public final class EspiXmlSchemaValidator {
 		return Holder.INSTANCE;
 	}
 
+	/**
+	 * Validates already-decoded text. It is read as characters, so an {@code encoding} in the XML
+	 * declaration is ignored (the text has no bytes to decode).
+	 */
 	public Result validate(String xml) {
-		return validate(xml.getBytes(StandardCharsets.UTF_8));
+		return validate(new StreamSource(new StringReader(xml)));
 	}
 
 	/** Validates the raw bytes as received, so the XML declaration's encoding is honoured. */
 	public Result validate(byte[] xml) {
+		return validate(new StreamSource(new ByteArrayInputStream(xml)));
+	}
+
+	private Result validate(StreamSource source) {
 		List<Issue> issues = new ArrayList<>();
 		Validator validator = schema.newValidator();
 		try {
 			validator.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
 			validator.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
 			validator.setErrorHandler(new CollectingErrorHandler(issues));
-			validator.validate(new StreamSource(new ByteArrayInputStream(xml)));
+			validator.validate(source);
 		} catch (SAXParseException ex) {
-			// Already recorded by the error handler (a fatal error stops the parse).
+			// Normally already recorded by fatalError; record it if the parser threw it without calling the
+			// handler, so a document that never finished parsing is never reported as valid.
+			if (issues.stream().noneMatch(issue -> issue.severity() == Severity.FATAL)) {
+				issues.add(new Issue(Severity.FATAL, ex.getLineNumber(), ex.getColumnNumber(), ex.getMessage()));
+			}
 		} catch (SAXException | IOException ex) {
 			issues.add(new Issue(Severity.FATAL, -1, -1, ex.getMessage()));
 		}

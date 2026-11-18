@@ -27,11 +27,13 @@ import org.greenbuttonalliance.espi.common.dto.atom.LinkDto;
 import org.greenbuttonalliance.espi.common.dto.atom.UsageAtomEntryDto;
 import org.greenbuttonalliance.espi.common.dto.customer.CustomerDto;
 import org.greenbuttonalliance.espi.common.dto.usage.UsagePointDto;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -100,7 +102,7 @@ class AtomContentAndSchemaValidationTest {
 	@DisplayName("a usage entry writes its resource inside atom:content, and the feed validates against the schemas")
 	void usage_entry_wraps_the_resource_in_content() throws Exception {
 		AtomFeedDto feed = new AtomFeedDto("urn:uuid:f69c8759-2ef5-5f18-876c-c19f67a26d67", "UsagePoint Feed",
-				TIME, TIME, List.of(new LinkDto("self", BASE + "/UsagePoint", "espi-feed/UsagePoint")),
+				TIME, List.of(new LinkDto("self", BASE + "/UsagePoint", "espi-feed/UsagePoint")),
 				List.of(usagePointEntry()));
 
 		String xml = marshal(feed, AtomFeedDto.class, UsageAtomEntryDto.class);
@@ -171,11 +173,25 @@ class AtomContentAndSchemaValidationTest {
 
 		EspiXmlSchemaValidator.Result result = EspiXmlSchemaValidator.instance().validate(invalid);
 
-		assertThat(result.valid()).isFalse();
-		assertThat(result.issues())
+		assertThat(result)
+				.returns(false, EspiXmlSchemaValidator.Result::valid)
+				.extracting(EspiXmlSchemaValidator.Result::issues, InstanceOfAssertFactories.list(EspiXmlSchemaValidator.Issue.class))
 				.isNotEmpty()
 				.allSatisfy(issue -> assertThat(issue.line()).isEqualTo(14))
 				.anySatisfy(issue -> assertThat(issue.message()).contains("ServiceCategory"));
+	}
+
+	@Test
+	@DisplayName("text is validated as characters, whatever encoding its declaration names; bytes use that encoding")
+	void declared_encoding() {
+		String latin1 = CERTIFIED_STYLE_FEED
+				.replace("encoding=\"UTF-8\"", "encoding=\"ISO-8859-1\"")
+				.replace("<title>Green Button Usage Feed</title>", "<title>Données d'énergie</title>");
+
+		assertThat(List.of(
+						EspiXmlSchemaValidator.instance().validate(latin1),
+						EspiXmlSchemaValidator.instance().validate(latin1.getBytes(StandardCharsets.ISO_8859_1))))
+				.allSatisfy(result -> assertThat(result.issues()).isEmpty());
 	}
 
 	@Test

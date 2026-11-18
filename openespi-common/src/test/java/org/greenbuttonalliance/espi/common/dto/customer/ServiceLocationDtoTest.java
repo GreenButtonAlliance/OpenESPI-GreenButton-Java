@@ -71,7 +71,7 @@ class ServiceLocationDtoTest {
         );
 
         AtomFeedDto feed = new AtomFeedDto(
-            "urn:uuid:feed-id", "ServiceLocation Feed", now, now, null,
+            "urn:uuid:feed-id", "ServiceLocation Feed", now, null,
             List.of(entry)
         );
 
@@ -115,7 +115,7 @@ class ServiceLocationDtoTest {
         );
 
         AtomFeedDto feed = new AtomFeedDto(
-            "urn:uuid:feed-id", "Test Feed", now, now, null,
+            "urn:uuid:feed-id", "Test Feed", now, null,
             List.of(entry)
         );
 
@@ -177,7 +177,7 @@ class ServiceLocationDtoTest {
         );
 
         AtomFeedDto feed = new AtomFeedDto(
-            "urn:uuid:feed-id", "Test Feed", now, now, null,
+            "urn:uuid:feed-id", "Test Feed", now, null,
             List.of(entry)
         );
 
@@ -213,7 +213,7 @@ class ServiceLocationDtoTest {
         );
 
         AtomFeedDto feed = new AtomFeedDto(
-            "urn:uuid:feed-id", "Test Feed", now, now, null,
+            "urn:uuid:feed-id", "Test Feed", now, null,
             List.of(entry)
         );
 
@@ -246,7 +246,7 @@ class ServiceLocationDtoTest {
         );
 
         AtomFeedDto feed = new AtomFeedDto(
-            "urn:uuid:feed-id", "Test Feed", now, now, null,
+            "urn:uuid:feed-id", "Test Feed", now, null,
             List.of(entry)
         );
 
@@ -274,7 +274,7 @@ class ServiceLocationDtoTest {
         );
 
         AtomFeedDto feed = new AtomFeedDto(
-            "urn:uuid:feed-id", "Test Feed", now, now, null,
+            "urn:uuid:feed-id", "Test Feed", now, null,
             List.of(entry)
         );
 

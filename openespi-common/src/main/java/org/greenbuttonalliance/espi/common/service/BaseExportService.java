@@ -280,7 +280,6 @@ public abstract class BaseExportService {
         AtomFeedDto feed = new AtomFeedDto();
         feed.setId("urn:uuid:" + ID_GENERATOR.generateEspiId(feedHref));
         feed.setTitle(title);
-        feed.setPublished(now);
         feed.setUpdated(now);
         // atom.xsd requires a type on every link: an empty feed takes the resource from its href (#197).
         feed.setLinks(List.of(new LinkDto("self", feedHref,

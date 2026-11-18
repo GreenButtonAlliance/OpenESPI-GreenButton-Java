@@ -310,8 +310,7 @@ public class DtoExportServiceImpl implements DtoExportService {
         return new AtomFeedDto(
             UUID.randomUUID().toString(),  // id
             title,                         // title
-            now,                          // published
-            now,                          // updated
+            now,                          // updated (a feed has no published)
             null,                         // links
             entries                       // entries
         );

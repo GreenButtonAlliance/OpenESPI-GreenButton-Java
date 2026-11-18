@@ -19,7 +19,12 @@
 
 package org.greenbuttonalliance.espi.common.dto.atom;
 
-import jakarta.xml.bind.annotation.*;
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.XmlElementRef;
+import jakarta.xml.bind.annotation.XmlRootElement;
+import jakarta.xml.bind.annotation.XmlType;
 import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import lombok.AllArgsConstructor;
 import org.greenbuttonalliance.espi.common.utils.OffsetDateTimeAdapter;
@@ -62,12 +67,8 @@ public class AtomFeedDto {
     @XmlElement(name = "title")
     private String title;
 
-    /**
-     * Not written: an Atom feed has no {@code published} element (RFC 4287 4.1.1; atom.xsd's feedType
-     * rejects it, and certified ESPI feeds have none). Only entries carry {@code published} (#197).
-     */
-    @XmlTransient
-    private OffsetDateTime published;
+    // No published field: an Atom feed has no published element (RFC 4287 4.1.1; atom.xsd's feedType rejects
+    // it, and certified ESPI feeds have none). Only entries carry published (#197).
 
     // Without the adapter JAXB cannot map OffsetDateTime and writes an empty element (#247).
     @XmlElement(name = "updated")
@@ -89,7 +90,7 @@ public class AtomFeedDto {
      * Constructor for basic feed data.
      */
     public AtomFeedDto(String id, String title) {
-        this(id, title, OffsetDateTime.now(), OffsetDateTime.now(), null, null);
+        this(id, title, OffsetDateTime.now(), null, null);
     }
 
     /**

@@ -71,7 +71,7 @@ class ServiceSupplierDtoTest {
         );
 
         AtomFeedDto feed = new AtomFeedDto(
-            "urn:uuid:feed-id", "ServiceSupplier Feed", now, now, null,
+            "urn:uuid:feed-id", "ServiceSupplier Feed", now, null,
             List.of(entry)
         );
 
@@ -116,7 +116,7 @@ class ServiceSupplierDtoTest {
         );
 
         AtomFeedDto feed = new AtomFeedDto(
-            "urn:uuid:feed-id", "Test Feed", now, now, null,
+            "urn:uuid:feed-id", "Test Feed", now, null,
             List.of(entry)
         );
 
@@ -152,7 +152,7 @@ class ServiceSupplierDtoTest {
         );
 
         AtomFeedDto feed = new AtomFeedDto(
-            "urn:uuid:feed-id", "Test Feed", now, now, null,
+            "urn:uuid:feed-id", "Test Feed", now, null,
             List.of(entry)
         );
 
@@ -205,7 +205,7 @@ class ServiceSupplierDtoTest {
         );
 
         AtomFeedDto feed = new AtomFeedDto(
-            "urn:uuid:feed-id", "Test Feed", now, now, null,
+            "urn:uuid:feed-id", "Test Feed", now, null,
             List.of(entry)
         );
 
@@ -234,7 +234,7 @@ class ServiceSupplierDtoTest {
         );
 
         AtomFeedDto feed = new AtomFeedDto(
-            "urn:uuid:feed-id", "Test Feed", now, now, null,
+            "urn:uuid:feed-id", "Test Feed", now, null,
             List.of(entry)
         );
 
@@ -266,7 +266,7 @@ class ServiceSupplierDtoTest {
         );
 
         AtomFeedDto feed = new AtomFeedDto(
-            "urn:uuid:feed-id", "Test Feed", now, now, null,
+            "urn:uuid:feed-id", "Test Feed", now, null,
             List.of(entry)
         );
 
@@ -300,7 +300,7 @@ class ServiceSupplierDtoTest {
         );
 
         AtomFeedDto feed = new AtomFeedDto(
-            "urn:uuid:feed-id", "Test Feed", now, now, null,
+            "urn:uuid:feed-id", "Test Feed", now, null,
             List.of(entry)
         );
 
@@ -353,7 +353,7 @@ class ServiceSupplierDtoTest {
             );
 
             AtomFeedDto feed = new AtomFeedDto(
-                "urn:uuid:feed-id", "Test Feed", now, now, null,
+                "urn:uuid:feed-id", "Test Feed", now, null,
                 List.of(entry)
             );
 

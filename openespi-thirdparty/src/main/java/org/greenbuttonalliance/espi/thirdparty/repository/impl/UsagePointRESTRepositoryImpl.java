@@ -28,6 +28,8 @@ import org.greenbuttonalliance.espi.common.service.AuthorizationService;
 import org.greenbuttonalliance.espi.common.service.RetailCustomerService;
 // UsagePointService removed in migration
 import org.greenbuttonalliance.espi.thirdparty.repository.UsagePointRESTRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
@@ -46,10 +48,12 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Repository
 public class UsagePointRESTRepositoryImpl implements UsagePointRESTRepository {
+
+	private static final Logger log = LoggerFactory.getLogger(UsagePointRESTRepositoryImpl.class);
+	private static final String URN_UUID = "urn:uuid:";
 
 	@Autowired
 	private AuthorizationService authorizationService;
@@ -128,11 +132,47 @@ public class UsagePointRESTRepositoryImpl implements UsagePointRESTRepository {
 		if (feedDto == null || feedDto.getEntries() == null) {
 			return new ArrayList<>();
 		}
-		return feedDto.getEntries().stream()
-				.map(AtomEntryDto::getResource)
-				.filter(UsagePointDto.class::isInstance)
-				.map(dto -> usagePointMapper.toEntity((UsagePointDto) dto))
-				.collect(Collectors.toList());
+		List<UsagePointEntity> usagePoints = new ArrayList<>();
+		int skipped = 0;
+		for (AtomEntryDto entry : feedDto.getEntries()) {
+			if (entry.getResource() instanceof UsagePointDto dto) {
+				usagePoints.add(toEntity(entry, dto));
+			} else {
+				skipped++;
+			}
+		}
+		if (skipped > 0) {
+			// Counts only: a feed may carry customer PII, so its content is never logged.
+			log.warn("{} of {} feed entries from {} are not UsagePoints (another resource, or no atom:content)",
+					skipped, feedDto.getEntries().size(), authorization.getResourceURI());
+		}
+		return usagePoints;
+	}
+
+	/**
+	 * The mapper copies only the espi.xsd UsagePoint fields; the resource's id is the entry's
+	 * {@code atom:id} ({@code urn:uuid:...}), so it is set here.
+	 */
+	private UsagePointEntity toEntity(AtomEntryDto entry, UsagePointDto dto) {
+		UsagePointEntity entity = usagePointMapper.toEntity(dto);
+		entity.setId(entryUuid(entry.getId()));
+		return entity;
+	}
+
+	static UUID entryUuid(String atomId) {
+		if (atomId == null) {
+			return null;
+		}
+		String value = atomId.strip();
+		if (value.regionMatches(true, 0, URN_UUID, 0, URN_UUID.length())) {
+			value = value.substring(URN_UUID.length());
+		}
+		try {
+			return UUID.fromString(value);
+		} catch (IllegalArgumentException ex) {
+			log.warn("Feed entry id is not a urn:uuid; the UsagePoint has no id");
+			return null;
+		}
 	}
 
 	@Override
@@ -141,7 +181,8 @@ public class UsagePointRESTRepositoryImpl implements UsagePointRESTRepository {
 		List<UsagePointEntity> usagePoints = findAllByRetailCustomerId(retailCustomerId);
 
 		for (UsagePointEntity usagePoint : usagePoints) {
-			if (usagePoint.getHashedId().equalsIgnoreCase(usagePointHashedId)) {
+			// An entry whose atom:id is not a urn:uuid gives a UsagePoint with no id.
+			if (usagePoint.getHashedId() != null && usagePoint.getHashedId().equalsIgnoreCase(usagePointHashedId)) {
 				return usagePoint;
 			}
 		}

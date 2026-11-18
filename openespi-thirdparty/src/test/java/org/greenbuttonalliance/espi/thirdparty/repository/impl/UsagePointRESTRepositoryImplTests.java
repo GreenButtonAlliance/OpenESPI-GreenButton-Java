@@ -108,9 +108,9 @@ class UsagePointRESTRepositoryImplTests {
 		authorization.setResourceURI(RESOURCE_URI);
 		authorization.setAccessToken("customer-token");
 		when(authorizationService.findAllByRetailCustomerId(any(Long.class))).thenReturn(List.of(authorization));
+		// Like the real UsagePointMapper: only espi.xsd fields, no id (the id comes from the entry's atom:id).
 		when(usagePointMapper.toEntity(any(UsagePointDto.class))).thenAnswer(invocation -> {
 			UsagePointEntity entity = new UsagePointEntity();
-			entity.setId(USAGE_POINT_ID);
 			entity.setStatus(((UsagePointDto) invocation.getArgument(0)).getStatus());
 			return entity;
 		});
@@ -139,7 +139,27 @@ class UsagePointRESTRepositoryImplTests {
 		assertThat(requested.get()).isEqualTo(RESOURCE_URI);
 		assertThat(authorizationHeader.get()).isEqualTo("Bearer customer-token");
 		assertThat(usagePoints).singleElement()
-				.satisfies(usagePoint -> assertThat(usagePoint.getStatus()).isEqualTo((short) 1));
+				.extracting(UsagePointEntity::getId, UsagePointEntity::getStatus)
+				.containsExactly(USAGE_POINT_ID, (short) 1);
+	}
+
+	@Test
+	@DisplayName("the entry id gives the UsagePoint id: urn:uuid prefix in any case, or none; anything else is no id")
+	void entry_uuid() {
+		assertThat(List.of("urn:uuid:" + USAGE_POINT_ID, " URN:UUID:" + USAGE_POINT_ID + " ", USAGE_POINT_ID.toString()))
+				.map(UsagePointRESTRepositoryImpl::entryUuid)
+				.containsOnly(USAGE_POINT_ID);
+		assertThat(java.util.Arrays.asList(null, "urn:uuid:not-a-uuid", "tag:example,2026:1"))
+				.map(UsagePointRESTRepositoryImpl::entryUuid)
+				.containsOnlyNulls();
+	}
+
+	@Test
+	@DisplayName("an entry id that is not a urn:uuid gives a UsagePoint with no id, and findByHashedId answers null")
+	void entry_without_uuid() throws Exception {
+		dataCustodianAnswers(FEED.replace("urn:uuid:" + USAGE_POINT_ID, "tag:example,2026:1"));
+
+		assertThat(repository.findByHashedId(1L, USAGE_POINT_ID.toString())).isNull();
 	}
 
 	@Test
