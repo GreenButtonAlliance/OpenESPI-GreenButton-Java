@@ -255,35 +255,74 @@ public abstract class BaseExportService {
     public <E extends IdentifiedObject> AtomFeedDto buildFeed(String feedHref, String title, List<E> entities,
                                                               Function<? super E, ?> toContent) {
         Objects.requireNonNull(feedHref, "feedHref");
-        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS);
-
-        List<AtomEntryDto> entries = new ArrayList<>(entities.size());
+        List<FeedEntry> entries = new ArrayList<>(entities.size());
         String resource = null;
         for (E entity : entities) {
             Object content = toContent.apply(entity);
-            String entryResource = resourceName(content);
-            resource = resource == null ? entryResource : resource;
+            resource = resource == null ? resourceName(content) : resource;
+            entries.add(new FeedEntry(entity, content,
+                    href(entity.getSelfLink(), feedHref + "/" + entity.getId()),
+                    href(entity.getUpLink(), feedHref), List.of()));
+        }
+        // An empty feed has no entry to name its resource, so the href's last segment is used (#197).
+        return buildFeedOf(feedHref, resource != null ? resource : lastPathSegment(feedHref), title, entries);
+    }
 
-            String selfHref = href(entity.getSelfLink(), feedHref + "/" + entity.getId());
-            String upHref = href(entity.getUpLink(), feedHref);
-            List<LinkDto> links = List.of(
-                    new LinkDto("self", selfHref, "espi-entry/" + entryResource),
-                    new LinkDto("up", upHref, "espi-feed/" + entryResource));
+    /**
+     * One entry of a feed that may mix resource types (e.g. {@code Batch/Subscription}, #279): the
+     * resource, the DTO carried in its {@code <atom:content>}, its {@code self} and {@code up} hrefs, and
+     * any {@code related} links (with their {@code espi-feed/...} or {@code espi-entry/...} types).
+     */
+    public record FeedEntry(IdentifiedObject entity, Object content, String selfHref, String upHref,
+                            List<LinkDto> related) {
+
+        public FeedEntry {
+            Objects.requireNonNull(entity, "entity");
+            Objects.requireNonNull(content, "content");
+            Objects.requireNonNull(selfHref, "selfHref");
+            Objects.requireNonNull(upHref, "upHref");
+            related = related == null ? List.of() : List.copyOf(related);
+        }
+    }
+
+    /**
+     * Builds an Atom feed from prepared entries, which may be of different resource types, in the order
+     * given. Entries are written as described for {@link #buildFeed(String, String, List, Function)}, with
+     * the given hrefs, and each entry's {@code related} links after {@code self} and {@code up}.
+     *
+     * @param feedHref     absolute URL of the feed (its self link, and the source of its UUID v5 id)
+     * @param feedResource the resource named in the feed's self link type ({@code espi-feed/<feedResource>}),
+     *                     given explicitly so an empty feed is typed correctly whatever its href ends in
+     * @param title        feed title
+     * @param feedEntries  the entries, in feed order; may be empty
+     */
+    public AtomFeedDto buildFeedOf(String feedHref, String feedResource, String title, List<FeedEntry> feedEntries) {
+        Objects.requireNonNull(feedHref, "feedHref");
+        Objects.requireNonNull(feedResource, "feedResource");
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS);
+
+        List<AtomEntryDto> entries = new ArrayList<>(feedEntries.size());
+        for (FeedEntry feedEntry : feedEntries) {
+            IdentifiedObject entity = feedEntry.entity();
+            String entryResource = resourceName(feedEntry.content());
+            List<LinkDto> links = new ArrayList<>(2 + feedEntry.related().size());
+            links.add(new LinkDto("self", feedEntry.selfHref(), "espi-entry/" + entryResource));
+            links.add(new LinkDto("up", feedEntry.upHref(), "espi-feed/" + entryResource));
+            links.addAll(feedEntry.related());
             String entryTitle = entity.getDescription() != null && !entity.getDescription().isBlank()
                     ? entity.getDescription() : entryResource;
             entries.add(newEntry("urn:uuid:" + entity.getId(), entryTitle,
                     utc(entity.getPublished(), entity.getCreated(), now),
                     utc(entity.getUpdated(), entity.getCreated(), now),
-                    links, content));
+                    List.copyOf(links), feedEntry.content()));
         }
 
         AtomFeedDto feed = new AtomFeedDto();
         feed.setId("urn:uuid:" + ID_GENERATOR.generateEspiId(feedHref));
         feed.setTitle(title);
         feed.setUpdated(now);
-        // atom.xsd requires a type on every link: an empty feed takes the resource from its href (#197).
-        feed.setLinks(List.of(new LinkDto("self", feedHref,
-                "espi-feed/" + (resource != null ? resource : lastPathSegment(feedHref)))));
+        // atom.xsd requires a type on every link.
+        feed.setLinks(List.of(new LinkDto("self", feedHref, "espi-feed/" + feedResource)));
         feed.setEntries(entries);
         return feed;
     }

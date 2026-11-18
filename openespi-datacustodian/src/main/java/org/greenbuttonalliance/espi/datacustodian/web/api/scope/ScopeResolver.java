@@ -19,13 +19,18 @@
 package org.greenbuttonalliance.espi.datacustodian.web.api.scope;
 
 import org.greenbuttonalliance.espi.common.repositories.usage.SubscriptionRepository;
+import org.greenbuttonalliance.espi.common.scope.EspiScope;
 import org.greenbuttonalliance.espi.common.uri.EspiBatchUri;
+import org.greenbuttonalliance.espi.datacustodian.config.EspiScopeOpaqueTokenIntrospector;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -108,6 +113,70 @@ public class ScopeResolver {
             return ResourceScope.denied();
         }
         return ResourceScope.of(usagePointIds, retailCustomerIds);
+    }
+
+    /**
+     * Whether the caller may read {@code Batch/Subscription/{subscriptionId}} (#279): the DataCustodian
+     * admin, or a customer access token whose introspected {@code resourceURI} names exactly this
+     * subscription. A Third Party's client access token ({@code FB=34_35}) never may, whatever its URIs: it
+     * is for Authorization and Bulk. Unknown and foreign subscriptions are answered alike, so the caller
+     * learns nothing about subscriptions it does not hold.
+     */
+    public boolean canReadSubscription(Authentication authentication, UUID subscriptionId) {
+        if (subscriptionId == null || authentication == null || !authentication.isAuthenticated()) {
+            return false;
+        }
+        if (hasAdminAuthority(authentication)) {
+            return true;
+        }
+        if (hasAuthority(authentication, EspiScopeOpaqueTokenIntrospector.CLIENT_ACCESS_TOKEN)
+                || !(authentication.getPrincipal() instanceof OAuth2AuthenticatedPrincipal principal)) {
+            return false;
+        }
+        String resourceUri = stringAttribute(principal, "resourceURI");
+        return resourceUri != null && EspiBatchUri.subscriptionId(resourceUri)
+                .flatMap(ScopeResolver::parseUuid)
+                .filter(subscriptionId::equals)
+                .isPresent();
+    }
+
+    /**
+     * The token's ESPI scope (the {@code FB=...} scope string, with its {@code HistoryLength} and other
+     * terms), or empty for the admin, a token without one, or a scope that does not parse.
+     */
+    public Optional<EspiScope> espiScope(Authentication authentication) {
+        if (authentication == null || !(authentication.getPrincipal() instanceof OAuth2AuthenticatedPrincipal principal)) {
+            return Optional.empty();
+        }
+        Object scope = principal.getAttribute("scope");
+        Collection<?> scopes = scope instanceof Collection<?> collection ? collection
+                : scope instanceof String s ? List.of(s.trim().split("\\s+")) : List.of();
+        for (Object value : scopes) {
+            String text = value == null ? "" : value.toString().trim();
+            if (text.regionMatches(true, 0, "FB=", 0, 3)
+                    && !EspiScopeOpaqueTokenIntrospector.CLIENT_ACCESS_TOKEN_SCOPE.equals(text)) {
+                try {
+                    return Optional.of(EspiScope.parse(text));
+                } catch (IllegalArgumentException ex) {
+                    return Optional.empty();
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    /** Whether the caller holds the DataCustodian admin authority. */
+    public boolean isAdmin(Authentication authentication) {
+        return authentication != null && hasAdminAuthority(authentication);
+    }
+
+    private static boolean hasAuthority(Authentication authentication, String name) {
+        for (GrantedAuthority authority : authentication.getAuthorities()) {
+            if (name.equals(authority.getAuthority())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean hasAdminAuthority(Authentication authentication) {

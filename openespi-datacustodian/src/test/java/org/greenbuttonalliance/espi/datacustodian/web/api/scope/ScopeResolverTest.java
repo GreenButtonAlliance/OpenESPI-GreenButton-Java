@@ -134,4 +134,43 @@ class ScopeResolverTest {
 
         assertThat(scope.isDenied()).isTrue();
     }
+
+    @Test
+    @DisplayName("canReadSubscription: the admin, or a customer token for exactly that subscription (#279)")
+    void canReadSubscription() {
+        UUID mine = UUID.fromString("11111111-2222-5333-8444-555555555555");
+        UUID other = UUID.fromString("11111111-2222-5333-8444-666666666666");
+        Authentication customer = auth(Map.of("resourceURI", EspiBatchUri.batchSubscription(BASE, mine)), "FB_4");
+        Authentication clientToken = auth(Map.of("resourceURI", EspiBatchUri.batchSubscription(BASE, mine)),
+                "ESPI_CLIENT_ACCESS_TOKEN", "FB_4");
+        Authentication bulk = auth(Map.of("resourceURI", EspiBatchUri.batchBulk(BASE, "BULK_1")), "FB_4");
+        Authentication admin = auth(Map.of("active", true), "SCOPE_DataCustodian_Admin_Access");
+
+        assertThat(List.of(resolver.canReadSubscription(customer, mine), resolver.canReadSubscription(admin, other)))
+                .containsOnly(true);
+        assertThat(List.of(
+                resolver.canReadSubscription(customer, other),
+                resolver.canReadSubscription(clientToken, mine),
+                resolver.canReadSubscription(bulk, mine),
+                resolver.canReadSubscription(null, mine),
+                resolver.canReadSubscription(customer, null)))
+                .containsOnly(false);
+        verifyNoInteractions(subscriptionRepository);
+    }
+
+    @Test
+    @DisplayName("espiScope: the FB scope among the token's scopes, with its HistoryLength; none for FB=34_35 alone")
+    void espiScope() {
+        assertThat(resolver.espiScope(auth(Map.of("scope", List.of("openid", "FB=4_5_16;HistoryLength=86400")))))
+                .hasValueSatisfying(scope -> assertThat(scope)
+                        .returns(86_400, org.greenbuttonalliance.espi.common.scope.EspiScope::historyLength)
+                        .returns(true, s -> s.containsFunctionBlock(16)));
+        assertThat(resolver.espiScope(auth(Map.of("scope", "FB=4_5 openid")))).isPresent();
+        assertThat(List.of(
+                resolver.espiScope(auth(Map.of("scope", List.of("FB=34_35")))),
+                resolver.espiScope(auth(Map.of("scope", List.of("FB=4_x")))),
+                resolver.espiScope(auth(Map.of("active", true))),
+                resolver.espiScope(null)))
+                .allSatisfy(result -> assertThat(result).isEmpty());
+    }
 }

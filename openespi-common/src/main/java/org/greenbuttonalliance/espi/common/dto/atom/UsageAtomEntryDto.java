@@ -109,7 +109,8 @@ public class UsageAtomEntryDto extends AtomEntryDto {
             @XmlElement(name = "ReadingType", type = ReadingTypeDto.class, namespace = "http://naesb.org/espi"),
             @XmlElement(name = "ElectricPowerQualitySummary", type = ElectricPowerQualitySummaryDto.class, namespace = "http://naesb.org/espi"),
             @XmlElement(name = "UsageSummary", type = UsageSummaryDto.class, namespace = "http://naesb.org/espi"),
-            @XmlElement(name = "TimeConfiguration", type = TimeConfigurationDto.class, namespace = "http://naesb.org/espi"),
+            // espi.xsd: <xs:element name="LocalTimeParameters" type="TimeConfiguration"/> (#279)
+            @XmlElement(name = "LocalTimeParameters", type = TimeConfigurationDto.class, namespace = "http://naesb.org/espi"),
             @XmlElement(name = "ApplicationInformation", type = ApplicationInformationDto.class, namespace = "http://naesb.org/espi"),
             @XmlElement(name = "Authorization", type = AuthorizationDto.class, namespace = "http://naesb.org/espi"),
             @XmlElement(name = "Subscription", type = SubscriptionDto.class, namespace = "http://naesb.org/espi"),

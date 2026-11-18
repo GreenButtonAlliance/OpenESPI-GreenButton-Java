@@ -34,11 +34,17 @@ import java.time.ZoneOffset;
  *
  * Represents a time interval with start and duration.
  * Used in various Green Button resources for time-based data.
+ * <p>
+ * espi.xsd's {@code DateTimeInterval}: {@code espi:duration} then {@code espi:start}, both in the espi namespace
+ * (#279). This package has no {@code @XmlSchema}, so without the explicit namespaces they were written
+ * unqualified, and in the wrong order, failing XSD validation. The customer domain uses
+ * {@code CustomerDateTimeIntervalDto} (cust namespace). The fields stay declared {@code start, duration}, so
+ * the all-args constructor keeps its {@code (start, duration)} order.
  */
-@XmlRootElement(name = "DateTimeInterval")
+@XmlRootElement(name = "DateTimeInterval", namespace = "http://naesb.org/espi")
 @XmlAccessorType(XmlAccessType.FIELD)
-@XmlType(name = "DateTimeInterval", propOrder = {
-    "start", "duration"
+@XmlType(name = "DateTimeInterval", namespace = "http://naesb.org/espi", propOrder = {
+    "duration", "start"
 })
 @Getter
 @Setter
@@ -46,10 +52,10 @@ import java.time.ZoneOffset;
 @AllArgsConstructor
 public class DateTimeIntervalDto {
 
-    @XmlElement(name = "start")
+    @XmlElement(name = "start", namespace = "http://naesb.org/espi")
     private Long start;
 
-    @XmlElement(name = "duration")
+    @XmlElement(name = "duration", namespace = "http://naesb.org/espi")
     private Long duration;
 
     /**

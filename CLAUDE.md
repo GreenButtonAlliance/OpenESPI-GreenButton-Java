@@ -129,7 +129,7 @@ Note: ServiceSupplier has an entity, DTO, and mapper but no repository or servic
 
 ### REST API Structure
 REST controllers are in `openespi-datacustodian/src/main/java/org/greenbuttonalliance/espi/datacustodian/web/`:
-- **web/api/** - ESPI RESTful API endpoints. GET-only (feed + entry) for ApplicationInformation, Authorization, Customer, CustomerAccount, UsagePoint, MeterReading, ReadingType, IntervalBlock, UsageSummary, ElectricPowerQualitySummary. `web/api/scope/` holds `ScopeResolver`, `ResourceScope`, `EspiQueryOptions` (not yet wired into controllers).
+- **web/api/** - ESPI RESTful API endpoints. GET-only (feed + entry) for ApplicationInformation, Authorization, Customer, CustomerAccount, UsagePoint, MeterReading, ReadingType, IntervalBlock, UsageSummary, ElectricPowerQualitySummary, plus `Batch/Subscription/{id}` (#279: `BatchSubscriptionController` + `SubscriptionFeedAssembler`, one feed of the subscription's usage data; access via `ScopeResolver.canReadSubscription`). `web/api/scope/` holds `ScopeResolver`, `ResourceScope`, `EspiQueryOptions` (`ResourceScope`/`EspiQueryOptions` not yet wired into the per-resource controllers).
 - **web/custodian/** - Data custodian admin portal (home, BatchList notification send, settings)
 - **web/customer/** - Retail customer portal; most classes here are original legacy code with `@Controller` commented out
 - **web/authorize/** - Customer authorization (per-FB consent) screen delegated from the AS
@@ -137,7 +137,7 @@ REST controllers are in `openespi-datacustodian/src/main/java/org/greenbuttonall
 
 Current state (see GitHub epic #119 "CANONICAL BUILD PLAN" for the roadmap):
 - All write endpoints (POST/PUT/DELETE) were deliberately removed in #166 and are deferred.
-- Not yet implemented: `Batch/Subscription`, `Batch/Bulk`, `Batch/RetailCustomer`, `Subscription/{id}`, RetailCustomer-scoped URIs, LocalTimeParameters, ReadServiceStatus, and the CustomerAgreement/ServiceSupplier/ServiceLocation/Meter/EndDevice/Statement/ProgramIdMappings endpoints.
+- Not yet implemented: `Batch/Bulk`, `Batch/RetailCustomer`, `Subscription/{id}`, RetailCustomer-scoped URIs, LocalTimeParameters, ReadServiceStatus, and the CustomerAgreement/ServiceSupplier/ServiceLocation/Meter/EndDevice/Statement/ProgramIdMappings endpoints.
 - Known defect: Subscription-scoped GETs currently ignore `subscriptionId` and return all records.
 - The ten per-resource controllers duplicate find/map/marshal logic; the E1 resource engine (#187, branch `feature/187-e1-resource-engine-usagepoint-triad`, not yet merged) replaces them with one generic controller driven by `EspiResource` + `ResourceFbPolicy` (added in `openespi-common/.../common/scope/` on that branch, alongside the existing `FunctionBlock`).
 
@@ -358,7 +358,6 @@ Still in progress (logic migration from the original OpenESPI code):
 The source of truth for status and roadmap is GitHub epic #119 ("CANONICAL BUILD PLAN") and its sub-issues. The root `PHASE_*.md`, `MULTI_PHASE_SCHEMA_COMPLIANCE_PLAN.md`, `ISSUE_101_*.md`, `openespi-common/Phase_A-Flyway_Migration_Inventory.md`, `openespi-common/PROFILE_MIGRATION_SUMMARY.md`, `openespi-datacustodian/controll-update-status.md`, and `openespi-authserver/MIGRATION_ROADMAP.md` are historical and stale.
 
 Known rule violations / defects to be aware of:
-- `domain/common/DateTimeInterval` carries `@XmlType` despite being an `@Embeddable` (violates the JAXB rule above; collides with `DateTimeIntervalDto`)
 - `MeterMapper` ignores meter multipliers (silently dropped on export/import)
 - Five orphaned `*_related_links` tables are still created in the vendor V2 scripts
 

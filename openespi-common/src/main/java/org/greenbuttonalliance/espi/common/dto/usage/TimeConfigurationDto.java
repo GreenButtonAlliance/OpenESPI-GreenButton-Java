@@ -36,10 +36,14 @@ import lombok.Setter;
  * Complies with NAESB ESPI 4.0 XSD specification.
  *
  * Field order strictly matches espi.xsd TimeConfiguration element sequence.
+ * <p>
+ * The element is {@code espi:LocalTimeParameters}: espi.xsd declares
+ * {@code <xs:element name="LocalTimeParameters" type="TimeConfiguration"/>} and has no global
+ * {@code TimeConfiguration} element, so {@code <espi:TimeConfiguration>} fails XSD validation (#279).
  *
  * @see <a href="https://www.naesb.org/ESPI_Standards.asp">NAESB ESPI 4.0</a>
  */
-@XmlRootElement(name = "TimeConfiguration", namespace = "http://naesb.org/espi")
+@XmlRootElement(name = "LocalTimeParameters", namespace = "http://naesb.org/espi")
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "TimeConfiguration", namespace = "http://naesb.org/espi", propOrder = {
     "dstEndRule",

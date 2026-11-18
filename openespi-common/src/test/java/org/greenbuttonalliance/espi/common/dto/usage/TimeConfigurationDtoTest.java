@@ -72,13 +72,12 @@ class TimeConfigurationDtoTest {
         String xml = writer.toString();
 
         // Verify XML structure
-        assertThat(xml).contains("TimeConfiguration");
-        assertThat(xml).contains("http://naesb.org/espi");
+        // espi.xsd's element for a TimeConfiguration is LocalTimeParameters (#279).
         // Note: mRID/uuid is handled by Atom wrapper, not the ESPI resource itself
-        assertThat(xml).contains("tzOffset"); // Element should be present
-        assertThat(xml).contains("-28800"); // Timezone value
-        assertThat(xml).contains("dstOffset");
-        assertThat(xml).contains("3600");
+        assertThat(xml)
+                .contains("<espi:LocalTimeParameters", "http://naesb.org/espi")
+                .contains("tzOffset", "-28800", "dstOffset", "3600")
+                .doesNotContain("<espi:TimeConfiguration");
     }
 
     @Test
@@ -125,12 +124,9 @@ class TimeConfigurationDtoTest {
         String xml = writer.toString();
 
         // Verify XML structure
-        assertThat(xml).contains("TimeConfiguration");
-        assertThat(xml).contains("tzOffset"); // Element should be present
-        assertThat(xml).contains("7200"); // Value should be present
-        assertThat(xml).doesNotContain("dstOffset");
-        assertThat(xml).doesNotContain("dstStartRule");
-        assertThat(xml).doesNotContain("dstEndRule");
+        assertThat(xml)
+                .contains("LocalTimeParameters", "tzOffset", "7200")
+                .doesNotContain("dstOffset", "dstStartRule", "dstEndRule");
 
         // Unmarshal back using JAXB
         TimeConfigurationDto roundTrip = (TimeConfigurationDto) unmarshaller.unmarshal(new StringReader(xml));
@@ -154,8 +150,7 @@ class TimeConfigurationDtoTest {
         String xml = writer.toString();
 
         // Should still contain basic structure
-        assertThat(xml).contains("TimeConfiguration");
-        assertThat(xml).contains("http://naesb.org/espi");
+        assertThat(xml).contains("LocalTimeParameters", "http://naesb.org/espi");
 
         // Unmarshal back using JAXB
         TimeConfigurationDto roundTrip = (TimeConfigurationDto) unmarshaller.unmarshal(new StringReader(xml));
