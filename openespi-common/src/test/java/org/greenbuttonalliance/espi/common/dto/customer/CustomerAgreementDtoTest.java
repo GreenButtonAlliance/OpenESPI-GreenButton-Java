@@ -67,7 +67,7 @@ class CustomerAgreementDtoTest {
         );
 
         AtomFeedDto feed = new AtomFeedDto(
-            "urn:uuid:feed-id", "Customer Agreement Feed", now, now, null,
+            "urn:uuid:feed-id", "Customer Agreement Feed", now, null,
             List.of(entry)
         );
 
@@ -143,7 +143,7 @@ class CustomerAgreementDtoTest {
         );
 
         AtomFeedDto feed = new AtomFeedDto(
-            "urn:uuid:feed-id", "Test Feed", now, now, null,
+            "urn:uuid:feed-id", "Test Feed", now, null,
             List.of(entry)
         );
 
@@ -206,7 +206,7 @@ class CustomerAgreementDtoTest {
         );
 
         AtomFeedDto feed = new AtomFeedDto(
-            "urn:uuid:feed-id", "Test Feed", now, now, null,
+            "urn:uuid:feed-id", "Test Feed", now, null,
             List.of(entry)
         );
 
@@ -264,7 +264,7 @@ class CustomerAgreementDtoTest {
         );
 
         AtomFeedDto feed = new AtomFeedDto(
-            "urn:uuid:feed-id", "Test Feed", now, now, null,
+            "urn:uuid:feed-id", "Test Feed", now, null,
             List.of(entry)
         );
 

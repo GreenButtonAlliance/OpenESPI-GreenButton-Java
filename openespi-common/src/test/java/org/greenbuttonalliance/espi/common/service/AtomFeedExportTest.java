@@ -23,6 +23,7 @@ import org.greenbuttonalliance.espi.common.dto.customer.CustomerDto;
 import org.greenbuttonalliance.espi.common.dto.usage.UsagePointDto;
 import org.greenbuttonalliance.espi.common.service.impl.CustomerExportService;
 import org.greenbuttonalliance.espi.common.service.impl.UsageExportService;
+import org.greenbuttonalliance.espi.common.xml.EspiXmlSchemaValidator;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -81,9 +82,15 @@ class AtomFeedExportTest {
                 .contains("rel=\"up\" href=\"" + FEED + "\" type=\"espi-feed/UsagePoint\"")
                 .contains("<atom:published>2026-01-02T03:04:05Z</atom:published>")
                 .contains("<espi:UsagePoint")
-                .doesNotContain("xsi:type", "<atom:published/>", "<atom:updated/>");
+                .doesNotContain("xsi:type", "<atom:published/>", "<atom:updated/>")
+                // #197: each resource inside atom:content; a feed has no published of its own (RFC 4287).
+                .containsPattern("<atom:content>\\s*<espi:UsagePoint")
+                .doesNotContainPattern("<atom:feed[^>]*>\\s*<atom:id>[^<]*</atom:id>\\s*<atom:title>[^<]*</atom:title>\\s*<atom:published>");
         assertThat(feedId).matches("urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}");
         assertThat(count(xml, "<atom:entry")).isEqualTo(2);
+        assertThat(count(xml, "<atom:content>")).isEqualTo(2);
+        EspiXmlSchemaValidator.Result validation = EspiXmlSchemaValidator.instance().validate(xml);
+        assertThat(validation.valid()).as(String.join("\n", EspiXmlSchemaValidator.describe(validation))).isTrue();
     }
 
     @Test
@@ -92,9 +99,11 @@ class AtomFeedExportTest {
         String xml = export(usage, List.of());
 
         assertThat(xml)
-                .contains("<atom:feed", "rel=\"self\" href=\"" + FEED + "\"")
+                .contains("<atom:feed", "rel=\"self\" href=\"" + FEED + "\" type=\"espi-feed/UsagePoint\"")
                 .containsPattern("<atom:updated>\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z</atom:updated>")
                 .doesNotContain("<atom:entry");
+        EspiXmlSchemaValidator.Result validation = EspiXmlSchemaValidator.instance().validate(xml);
+        assertThat(validation.valid()).as(String.join("\n", EspiXmlSchemaValidator.describe(validation))).isTrue();
     }
 
     @Test
@@ -113,7 +122,10 @@ class AtomFeedExportTest {
                 .contains("<atom:feed", "xmlns:cust=\"http://naesb.org/espi/customer\"", "<cust:Customer")
                 .contains("href=\"https://dc.example/DataCustodian/espi/1_1/resource/Customer/" + entity.getId()
                         + "\" type=\"espi-entry/Customer\"")
-                .doesNotContain("xsi:type", "xmlns:espi=", "href=\"self\"");
+                .doesNotContain("xsi:type", "xmlns:espi=", "href=\"self\"")
+                .containsPattern("<atom:content>\\s*<cust:Customer");
+        EspiXmlSchemaValidator.Result validation = EspiXmlSchemaValidator.instance().validate(xml);
+        assertThat(validation.valid()).as(String.join("\n", EspiXmlSchemaValidator.describe(validation))).isTrue();
     }
 
     @Test
@@ -125,11 +137,10 @@ class AtomFeedExportTest {
         List<String> links = java.util.regex.Pattern.compile("<atom:link\\b[^>]*/>").matcher(xml)
                 .results().map(java.util.regex.MatchResult::group).toList();
 
-        // 2 feeds' self links + 1 entry's self and up links
+        // 2 feeds' self links + 1 entry's self and up links; atom.xsd requires type on every link (#197)
         assertThat(links).hasSize(4)
                 .allSatisfy(link -> assertThat(link)
-                        .matches("<atom:link rel=\"[^\"]+\" href=\"[^\"]+\"( type=\"[^\"]+\")?/>"));
-        assertThat(links).filteredOn(link -> link.contains("type=")).hasSize(3);
+                        .matches("<atom:link rel=\"[^\"]+\" href=\"[^\"]+\" type=\"[^\"]+\"/>"));
     }
 
     @Test

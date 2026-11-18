@@ -66,7 +66,7 @@ class CustomerAccountDtoTest {
         );
 
         AtomFeedDto feed = new AtomFeedDto(
-            "urn:uuid:feed-id", "Customer Account Feed", now, now, null,
+            "urn:uuid:feed-id", "Customer Account Feed", now, null,
             List.of(entry)
         );
 
@@ -131,7 +131,7 @@ class CustomerAccountDtoTest {
         );
 
         AtomFeedDto feed = new AtomFeedDto(
-            "urn:uuid:feed-id", "Test Feed", now, now, null,
+            "urn:uuid:feed-id", "Test Feed", now, null,
             List.of(entry)
         );
 
@@ -186,7 +186,7 @@ class CustomerAccountDtoTest {
         );
 
         AtomFeedDto feed = new AtomFeedDto(
-            "urn:uuid:feed-id", "Test Feed", now, now, null,
+            "urn:uuid:feed-id", "Test Feed", now, null,
             List.of(entry)
         );
 

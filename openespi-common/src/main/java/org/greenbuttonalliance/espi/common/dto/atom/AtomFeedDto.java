@@ -19,7 +19,12 @@
 
 package org.greenbuttonalliance.espi.common.dto.atom;
 
-import jakarta.xml.bind.annotation.*;
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.XmlElementRef;
+import jakarta.xml.bind.annotation.XmlRootElement;
+import jakarta.xml.bind.annotation.XmlType;
 import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import lombok.AllArgsConstructor;
 import org.greenbuttonalliance.espi.common.utils.OffsetDateTimeAdapter;
@@ -39,11 +44,16 @@ import java.util.List;
  * NOTE: @XmlSeeAlso was removed to prevent namespace pollution. Domain-specific
  * export services (UsageExportService, CustomerExportService) explicitly register
  * needed classes in JAXBContext to ensure only 2 namespaces are declared.
+ * <p>
+ * ESPI profile of RFC 4287 (see {@code docs/ESPI_ATOM_PROFILE.md}): a feed has <strong>no
+ * {@code atom:author}</strong>, on purpose. RFC 4287 4.1.1 requires one, but it would tie the data to a
+ * specific utility (privacy), and espi.xsd and certified feeds have none. Do not add it. A feed also has
+ * no {@code atom:published} (RFC 4287 defines none for a feed; atom.xsd rejects it).
  */
 @XmlRootElement(name = "feed", namespace = "http://www.w3.org/2005/Atom")
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "AtomFeed", namespace = "http://www.w3.org/2005/Atom", propOrder = {
-    "id", "title", "published", "updated", "links", "entries"
+    "id", "title", "updated", "links", "entries"
 })
 @Getter
 @Setter
@@ -57,11 +67,10 @@ public class AtomFeedDto {
     @XmlElement(name = "title")
     private String title;
 
-    // Without the adapter JAXB cannot map OffsetDateTime and writes an empty element (#247).
-    @XmlElement(name = "published")
-    @XmlJavaTypeAdapter(OffsetDateTimeAdapter.class)
-    private OffsetDateTime published;
+    // No published field: an Atom feed has no published element (RFC 4287 4.1.1; atom.xsd's feedType rejects
+    // it, and certified ESPI feeds have none). Only entries carry published (#197).
 
+    // Without the adapter JAXB cannot map OffsetDateTime and writes an empty element (#247).
     @XmlElement(name = "updated")
     @XmlJavaTypeAdapter(OffsetDateTimeAdapter.class)
     private OffsetDateTime updated;
@@ -81,7 +90,7 @@ public class AtomFeedDto {
      * Constructor for basic feed data.
      */
     public AtomFeedDto(String id, String title) {
-        this(id, title, OffsetDateTime.now(), OffsetDateTime.now(), null, null);
+        this(id, title, OffsetDateTime.now(), null, null);
     }
 
     /**

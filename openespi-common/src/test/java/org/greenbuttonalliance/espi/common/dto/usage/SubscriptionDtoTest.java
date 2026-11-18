@@ -22,6 +22,7 @@ package org.greenbuttonalliance.espi.common.dto.usage;
 import org.greenbuttonalliance.espi.common.dto.atom.UsageAtomEntryDto;
 import org.greenbuttonalliance.espi.common.dto.atom.AtomFeedDto;
 import org.greenbuttonalliance.espi.common.dto.atom.LinkDto;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -185,11 +186,13 @@ class SubscriptionDtoTest {
 
         AtomFeedDto feed = dto.toAtomFeed();
 
-        assertThat(feed.getId()).isEqualTo("urn:uuid:" + TEST_SUBSCRIPTION_ID);
-        assertThat(feed.getTitle()).isEqualTo("Green Button Energy Feed");
-        assertThat(feed.getPublished()).isEqualTo(now);
-        assertThat(feed.getUpdated()).isEqualTo(now);
-        assertThat(feed.getLinks()).hasSize(1);
+        // A feed has no published (#197): only id, title, updated and links.
+        assertThat(feed)
+                .returns("urn:uuid:" + TEST_SUBSCRIPTION_ID, AtomFeedDto::getId)
+                .returns("Green Button Energy Feed", AtomFeedDto::getTitle)
+                .returns(now, AtomFeedDto::getUpdated)
+                .extracting(AtomFeedDto::getLinks, InstanceOfAssertFactories.LIST)
+                .hasSize(1);
     }
 
     @Test

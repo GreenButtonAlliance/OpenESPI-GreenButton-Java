@@ -235,7 +235,8 @@ public class SubscriptionDto {
         String id = "urn:uuid:" + subscriptionId;
         String title = schemaType == SchemaType.CUSTOMER ? CUSTOMER_FEED_TITLE : ENERGY_FEED_TITLE;
 
-        return new AtomFeedDto(id, title, published, updated, links, entries);
+        // A feed has no published of its own (RFC 4287 4.1.1, atom.xsd; #197).
+        return new AtomFeedDto(id, title, updated, links, entries);
     }
 
     // Getters for testing
