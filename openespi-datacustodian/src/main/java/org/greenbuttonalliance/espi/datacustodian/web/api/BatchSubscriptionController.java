@@ -32,6 +32,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -62,6 +63,8 @@ import java.util.regex.Pattern;
 @RequestMapping("/espi/1_1/resource")
 @Tag(name = "Batch", description = "ESPI Batch resource endpoints")
 @SecurityRequirement(name = "oauth2")
+// open-in-view is off: the Reader's subscription is loaded and its lazy UsagePoints read in this one transaction (#290)
+@Transactional(readOnly = true)
 public class BatchSubscriptionController {
 
 	private static final String BATCH_SUBSCRIPTION = "/Batch/Subscription/";
