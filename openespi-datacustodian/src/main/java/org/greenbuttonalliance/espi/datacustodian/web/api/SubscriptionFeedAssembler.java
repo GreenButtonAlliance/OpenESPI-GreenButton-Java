@@ -64,8 +64,8 @@ import java.util.function.Function;
  * subscription. The caller has already checked who may read it ({@code ScopeResolver#canReadSubscription}).
  *
  * <p>UsagePoints: those the customer selected whose {@code ServiceCategory} a granted commodity Function Block
- * covers (FB_5 to FB_9 electricity, FB_10 gas, FB_11 water); a token with interval metering (FB_4) and no
- * such FB gets none. Temperature (FB_29) is not yet defined (#283).</p>
+ * covers (FB_5 to FB_9 electricity, FB_10 gas, FB_11 water; the URL rule requires one of them with FB_4).
+ * Temperature (FB_29) is not yet defined (#283).</p>
  *
  * <p>Entries, in the order of certified feeds, for each of those UsagePoints (UsagePoints and MeterReadings
  * by id, time-bounded resources by interval start):</p>

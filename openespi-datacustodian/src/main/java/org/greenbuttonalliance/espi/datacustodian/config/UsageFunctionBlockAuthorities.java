@@ -53,6 +53,16 @@ public final class UsageFunctionBlockAuthorities {
 			.map(fb -> "FB_" + fb.getId())
 			.toList();
 
+	/**
+	 * The commodity FBs that cover a UsagePoint service category (FB_5 to FB_9 electricity, FB_10 gas, FB_11
+	 * water): one is needed with {@link #INTERVAL_METERING} for {@code Batch/Subscription}. FB_29 (temperature,
+	 * no service kind yet: #283) is not one of them.
+	 */
+	public static final List<String> SERVICE_COMMODITY = Stream.of(FunctionBlock.values())
+			.filter(fb -> fb.getCategory() == FunctionBlockCategory.COMMODITY && fb.getServiceKind().isPresent())
+			.map(fb -> "FB_" + fb.getId())
+			.toList();
+
 	private UsageFunctionBlockAuthorities() {
 	}
 
@@ -68,7 +78,7 @@ public final class UsageFunctionBlockAuthorities {
 		}
 		for (GrantedAuthority granted : authentication.getAuthorities()) {
 			String name = granted.getAuthority();
-			if (name == null || !name.startsWith("FB_") || !COMMODITY.contains(name)) {
+			if (name == null || !SERVICE_COMMODITY.contains(name)) {
 				continue;
 			}
 			FunctionBlock.serviceKindOf(Integer.parseInt(name.substring(3)))

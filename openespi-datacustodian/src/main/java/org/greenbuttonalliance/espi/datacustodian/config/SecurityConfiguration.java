@@ -192,10 +192,12 @@ public class SecurityConfiguration {
                     "/espi/1_1/resource/RetailCustomer/*/UsagePoint/*/ElectricPowerQualitySummary/**")
                     .access(powerQuality)
 
-                // --- Batch/Subscription (#279): FB_4, or admin. The feed holds only the UsagePoints whose
-                // service category a granted commodity FB covers, so FB_4 alone is an empty feed, not a 403. ---
+                // --- Batch/Subscription (#279): FB_4 + an electricity, gas or water FB (FB_5-FB_11), or admin.
+                // The feed holds only the UsagePoints whose service category a granted FB covers. ---
                 .requestMatchers(HttpMethod.GET, "/espi/1_1/resource/Batch/Subscription/*")
-                    .access(AuthorizationManagers.anyOf(admin, fb4))
+                    .access(AuthorizationManagers.anyOf(admin, AuthorizationManagers.allOf(fb4,
+                            AuthorityAuthorizationManager.hasAnyAuthority(
+                                    UsageFunctionBlockAuthorities.SERVICE_COMMODITY.toArray(String[]::new)))))
 
                 // --- Usage data (GET, read-only) : FB_4 + commodity, or admin ---
                 .requestMatchers(HttpMethod.GET,

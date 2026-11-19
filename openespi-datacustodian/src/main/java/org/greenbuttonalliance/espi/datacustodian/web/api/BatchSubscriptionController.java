@@ -55,9 +55,9 @@ import java.util.UUID;
  *
  * <p>Access ({@link ScopeResolver#canReadSubscription}): the DataCustodian admin, or a customer access
  * token for exactly this subscription. Anything else gets 403, whether or not the subscription exists. The
- * URL rule in {@code SecurityConfiguration} requires interval metering (FB_4) first. The token's commodity
- * Function Blocks decide which UsagePoints the feed holds (by service category; none with FB_4 alone), and its
- * summary Function Blocks which summaries ({@link UsageFunctionBlockAuthorities}).</p>
+ * URL rule in {@code SecurityConfiguration} requires interval metering (FB_4) and an electricity, gas or water
+ * Function Block (FB_5 to FB_11) first. Those commodity Function Blocks decide which UsagePoints the feed holds
+ * (by service category), and the summary Function Blocks which summaries ({@link UsageFunctionBlockAuthorities}).</p>
  */
 @RestController
 @RequestMapping("/espi/1_1/resource")

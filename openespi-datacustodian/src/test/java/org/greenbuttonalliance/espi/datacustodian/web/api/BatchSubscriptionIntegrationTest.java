@@ -266,7 +266,7 @@ class BatchSubscriptionIntegrationTest {
 	}
 
 	@Test
-	@DisplayName("UsagePoints by commodity FB: FB_5 electricity, FB_10 gas, FB_11 water; FB_4 alone is an empty feed")
+	@DisplayName("UsagePoints by commodity FB: FB_5 electricity, FB_10 gas, FB_11 water; FB_4 needs one of FB_5-FB_11")
 	void usage_points_need_their_commodity_function_block() throws Exception {
 		List<UsagePointEntity> usagePoints = new ArrayList<>();
 		for (UsagePointEntity usagePoint : List.of(
@@ -280,19 +280,20 @@ class BatchSubscriptionIntegrationTest {
 		String electricity = fetch(MIXED_SUBSCRIPTION, token(MIXED_SUBSCRIPTION, "FB=1_3_4_5", "FB_4", "FB_5"));
 		String gasAndWater = fetch(MIXED_SUBSCRIPTION,
 				token(MIXED_SUBSCRIPTION, "FB=1_3_4_10_11", "FB_4", "FB_10", "FB_11"));
-		String intervalOnly = fetch(MIXED_SUBSCRIPTION, token(MIXED_SUBSCRIPTION, "FB=1_3_4", "FB_4"));
 
 		assertThat(electricity).contains(ELECTRIC_POINT.toString())
 				.doesNotContain(GAS_POINT.toString(), WATER_POINT.toString());
 		assertThat(gasAndWater).contains(GAS_POINT.toString(), WATER_POINT.toString())
 				.doesNotContain(ELECTRIC_POINT.toString());
-		assertThat(intervalOnly)
-				.contains("href=\"" + BASE + "/Batch/Subscription/" + MIXED_SUBSCRIPTION + "\" type=\"espi-feed/Subscription\"")
-				.doesNotContain("<atom:entry");
-		assertValid(intervalOnly);
-		mockMvc.perform(get(BASE + "/Batch/Subscription/" + MIXED_SUBSCRIPTION)
-						.with(token(MIXED_SUBSCRIPTION, "FB=1_3_5", "FB_5")))
-				.andExpect(status().isForbidden());
+		assertValid(gasAndWater);
+		// FB_4 alone, FB_4 with only temperature (FB_29, #283), and a commodity FB without FB_4 are refused.
+		for (RequestPostProcessor refused : List.of(
+				token(MIXED_SUBSCRIPTION, "FB=1_3_4", "FB_4"),
+				token(MIXED_SUBSCRIPTION, "FB=1_3_4_29", "FB_4", "FB_29"),
+				token(MIXED_SUBSCRIPTION, "FB=1_3_5", "FB_5"))) {
+			mockMvc.perform(get(BASE + "/Batch/Subscription/" + MIXED_SUBSCRIPTION).with(refused))
+					.andExpect(status().isForbidden());
+		}
 		assertThat(fetch(MIXED_SUBSCRIPTION, admin()))
 				.contains(ELECTRIC_POINT.toString(), GAS_POINT.toString(), WATER_POINT.toString());
 	}
