@@ -384,6 +384,9 @@ class BatchSubscriptionIntegrationTest {
 				.andExpect(status().isForbidden());
 		mockMvc.perform(get(BASE + "/Batch/Subscription/" + UUID.randomUUID()).with(tokenA))
 				.andExpect(status().isForbidden());
+		// Access is checked before the query parameters: still 403, not 400.
+		mockMvc.perform(get(BASE + "/Batch/Subscription/" + SUBSCRIPTION_B).param("published-min", "bad").with(tokenA))
+				.andExpect(status().isForbidden());
 	}
 
 	@Test

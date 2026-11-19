@@ -111,11 +111,12 @@ public class BatchSubscriptionController {
 			@RequestParam(name = "updated-max", required = false) String updatedMax,
 			Authentication authentication) {
 
-		Range range = new Range(utc("published-min", publishedMin), utc("published-max", publishedMax),
-				utc("updated-min", updatedMin), utc("updated-max", updatedMax));
+		// Access first: a caller without rights to the subscription gets 403 whatever its query parameters.
 		if (!scopeResolver.canReadSubscription(authentication, subscriptionId)) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN);
 		}
+		Range range = new Range(utc("published-min", publishedMin), utc("published-max", publishedMax),
+				utc("updated-min", updatedMin), utc("updated-max", updatedMax));
 		if (reversed(range.publishedMin(), range.publishedMax()) || reversed(range.updatedMin(), range.updatedMax())) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A -min query parameter is after its -max");
 		}
