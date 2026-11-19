@@ -238,12 +238,18 @@ class BatchSubscriptionIntegrationTest {
 	}
 
 	@Test
-	@DisplayName("a query parameter that is not an xs:dateTime is a 400")
+	@DisplayName("a query timestamp that is not UTC ending in Z is a 400")
 	void malformed_query_parameter_is_bad_request() throws Exception {
-		mockMvc.perform(get(BASE + "/Batch/Subscription/" + SUBSCRIPTION_A)
-						.param("published-min", "yesterday")
-						.with(customer(SUBSCRIPTION_A, "FB=1_3_4_5")))
-				.andExpect(status().isBadRequest());
+		// A non-epoch timestamp must be UTC and end with Z, with nothing after it.
+		for (String value : List.of("yesterday", "2026-11-01T00:00:00", "2026-11-01T00:00:00+00:00",
+				"2026-11-01T00:00:00-05:00", "2026-11-01T00:00:00Z ", "2026-11-01", "1761955200")) {
+			mockMvc.perform(get(BASE + "/Batch/Subscription/" + SUBSCRIPTION_A)
+							.param("published-min", value)
+							.with(customer(SUBSCRIPTION_A, "FB=1_3_4_5")))
+					.andExpect(status().isBadRequest());
+		}
+		fetch(SUBSCRIPTION_A, customer(SUBSCRIPTION_A, "FB=1_3_4_5"), "published-min", "2026-11-01T00:00:00Z");
+		fetch(SUBSCRIPTION_A, customer(SUBSCRIPTION_A, "FB=1_3_4_5"), "published-min", "2026-11-01T00:00:00.5Z");
 	}
 
 	@Test

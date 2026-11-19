@@ -30,8 +30,6 @@ import org.greenbuttonalliance.espi.datacustodian.config.UsageFunctionBlockAutho
 import org.greenbuttonalliance.espi.datacustodian.web.api.SubscriptionFeedAssembler.Grants;
 import org.greenbuttonalliance.espi.datacustodian.web.api.SubscriptionFeedAssembler.Range;
 import org.greenbuttonalliance.espi.datacustodian.web.api.scope.ScopeResolver;
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.format.annotation.DateTimeFormat.ISO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -46,8 +44,9 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.io.ByteArrayOutputStream;
 import java.time.Instant;
-import java.time.OffsetDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 /**
  * {@code GET /espi/1_1/resource/Batch/Subscription/{subscriptionId}}: the {@code resourceURI} of a customer
@@ -66,6 +65,10 @@ import java.util.UUID;
 public class BatchSubscriptionController {
 
 	private static final String BATCH_SUBSCRIPTION = "/Batch/Subscription/";
+
+	/** {@code YYYY-MM-DDThh:mm:ss[.fraction]Z}: UTC, ending with Z and nothing after it. */
+	private static final Pattern UTC_TIMESTAMP =
+			Pattern.compile("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,9})?Z");
 
 	private final ScopeResolver scopeResolver;
 	private final SubscriptionFeedAssembler assembler;
@@ -88,7 +91,7 @@ public class BatchSubscriptionController {
 			responses = {
 					@ApiResponse(responseCode = "200", description = "The subscription's feed"),
 					@ApiResponse(responseCode = "400",
-							description = "A query parameter is not an xs:dateTime, or a -min is after its -max"),
+							description = "A query parameter is not a UTC timestamp ending in Z, or a -min is after its -max"),
 					@ApiResponse(responseCode = "401", description = "Unauthorized"),
 					@ApiResponse(responseCode = "403", description = "Not this token's subscription"),
 					@ApiResponse(responseCode = "404", description = "No such subscription (DataCustodian admin only)")
@@ -97,28 +100,25 @@ public class BatchSubscriptionController {
 	public ResponseEntity<byte[]> getSubscription(
 			@Parameter(description = "The subscription id from the token's resourceURI", required = true)
 			@PathVariable UUID subscriptionId,
-			@Parameter(description = "Return data whose interval ends after this time (xs:dateTime)."
-					+ " Without published-min and published-max: the last 24 hours")
-			@RequestParam(name = "published-min", required = false) @DateTimeFormat(iso = ISO.DATE_TIME)
-			OffsetDateTime publishedMin,
-			@Parameter(description = "Return data whose interval starts at or before this time (xs:dateTime)")
-			@RequestParam(name = "published-max", required = false) @DateTimeFormat(iso = ISO.DATE_TIME)
-			OffsetDateTime publishedMax,
-			@Parameter(description = "Return data whose atom:updated is at or after this time (xs:dateTime)")
-			@RequestParam(name = "updated-min", required = false) @DateTimeFormat(iso = ISO.DATE_TIME)
-			OffsetDateTime updatedMin,
-			@Parameter(description = "Return data whose atom:updated is at or before this time (xs:dateTime)")
-			@RequestParam(name = "updated-max", required = false) @DateTimeFormat(iso = ISO.DATE_TIME)
-			OffsetDateTime updatedMax,
+			@Parameter(description = "Return data whose interval ends after this UTC time (e.g. 2026-11-01T00:00:00Z)."
+					+ " With none of the four range parameters: the last 24 hours")
+			@RequestParam(name = "published-min", required = false) String publishedMin,
+			@Parameter(description = "Return data whose interval starts at or before this UTC time (…Z)")
+			@RequestParam(name = "published-max", required = false) String publishedMax,
+			@Parameter(description = "Return data whose atom:updated is at or after this UTC time (…Z)")
+			@RequestParam(name = "updated-min", required = false) String updatedMin,
+			@Parameter(description = "Return data whose atom:updated is at or before this UTC time (…Z)")
+			@RequestParam(name = "updated-max", required = false) String updatedMax,
 			Authentication authentication) {
 
+		Range range = new Range(utc("published-min", publishedMin), utc("published-max", publishedMax),
+				utc("updated-min", updatedMin), utc("updated-max", updatedMax));
 		if (!scopeResolver.canReadSubscription(authentication, subscriptionId)) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN);
 		}
-		if (reversed(publishedMin, publishedMax) || reversed(updatedMin, updatedMax)) {
+		if (reversed(range.publishedMin(), range.publishedMax()) || reversed(range.updatedMin(), range.updatedMax())) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A -min query parameter is after its -max");
 		}
-		Range range = new Range(instant(publishedMin), instant(publishedMax), instant(updatedMin), instant(updatedMax));
 		// The self link (and so the feed's UUID v5 id) keeps the query: a different range is a different feed.
 		String feedHref = ServletUriComponentsBuilder.fromCurrentRequest().toUriString();
 		String resourceBase = feedHref.substring(0, feedHref.indexOf(BATCH_SUBSCRIPTION));
@@ -153,11 +153,27 @@ public class BatchSubscriptionController {
 				historyLength);
 	}
 
-	private static boolean reversed(OffsetDateTime min, OffsetDateTime max) {
+	private static boolean reversed(Instant min, Instant max) {
 		return min != null && max != null && min.isAfter(max);
 	}
 
-	private static Instant instant(OffsetDateTime time) {
-		return time == null ? null : time.toInstant();
+	/**
+	 * A query timestamp: a GBA timestamp that is not epoch seconds is UTC and ends with {@code Z}, with nothing
+	 * after it ({@code 2026-11-01T00:00:00Z}, optionally with fractional seconds). A value without {@code Z}, or
+	 * with an offset such as {@code +00:00}, is a 400.
+	 */
+	private static Instant utc(String name, String value) {
+		if (value == null) {
+			return null;
+		}
+		if (!UTC_TIMESTAMP.matcher(value).matches()) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+					name + " must be a UTC timestamp ending in Z, e.g. 2026-11-01T00:00:00Z");
+		}
+		try {
+			return Instant.parse(value);
+		} catch (DateTimeParseException ex) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, name + " is not a valid timestamp");
+		}
 	}
 }
