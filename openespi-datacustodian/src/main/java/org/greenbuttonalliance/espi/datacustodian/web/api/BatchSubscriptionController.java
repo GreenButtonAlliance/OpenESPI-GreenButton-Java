@@ -87,7 +87,8 @@ public class BatchSubscriptionController {
 					+ " IntervalBlocks, summaries and LocalTimeParameters, as granted by the token's scope",
 			responses = {
 					@ApiResponse(responseCode = "200", description = "The subscription's feed"),
-					@ApiResponse(responseCode = "400", description = "A query parameter is not an xs:dateTime"),
+					@ApiResponse(responseCode = "400",
+							description = "A query parameter is not an xs:dateTime, or a -min is after its -max"),
 					@ApiResponse(responseCode = "401", description = "Unauthorized"),
 					@ApiResponse(responseCode = "403", description = "Not this token's subscription"),
 					@ApiResponse(responseCode = "404", description = "No such subscription (DataCustodian admin only)")
@@ -114,6 +115,9 @@ public class BatchSubscriptionController {
 		if (!scopeResolver.canReadSubscription(authentication, subscriptionId)) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN);
 		}
+		if (reversed(publishedMin, publishedMax) || reversed(updatedMin, updatedMax)) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A -min query parameter is after its -max");
+		}
 		Range range = new Range(instant(publishedMin), instant(publishedMax), instant(updatedMin), instant(updatedMax));
 		String feedHref = ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString();
 		String resourceBase = feedHref.substring(0, feedHref.indexOf(BATCH_SUBSCRIPTION));
@@ -135,17 +139,21 @@ public class BatchSubscriptionController {
 		if (scopeResolver.isAdmin(authentication)) {
 			return Grants.all();
 		}
-		Long historyLength;
+		Integer historyLength;
 		try {
-			historyLength = scopeResolver.historyLengthSeconds(authentication).orElse(null);
+			historyLength = scopeResolver.historyLengthMonths(authentication).orElse(null);
 		} catch (IllegalArgumentException ex) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Unreadable ESPI scope");
 		}
 		return new Grants(
-				UsageFunctionBlockAuthorities.serviceCategories(authentication),
+				UsageFunctionBlockAuthorities.serviceKinds(authentication),
 				UsageFunctionBlockAuthorities.hasAny(authentication, UsageFunctionBlockAuthorities.USAGE_SUMMARY),
 				UsageFunctionBlockAuthorities.hasAny(authentication, UsageFunctionBlockAuthorities.POWER_QUALITY),
 				historyLength);
+	}
+
+	private static boolean reversed(OffsetDateTime min, OffsetDateTime max) {
+		return min != null && max != null && min.isAfter(max);
 	}
 
 	private static Instant instant(OffsetDateTime time) {

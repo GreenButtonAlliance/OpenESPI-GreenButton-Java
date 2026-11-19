@@ -160,7 +160,7 @@ public class ScopeResolver {
         for (Object value : scopes) {
             String text = value == null ? "" : value.toString().trim();
             if (text.regionMatches(true, 0, "FB=", 0, 3)
-                    && !EspiScopeOpaqueTokenIntrospector.CLIENT_ACCESS_TOKEN_SCOPE.equals(text)) {
+                    && !EspiScopeOpaqueTokenIntrospector.CLIENT_ACCESS_TOKEN_SCOPE.equalsIgnoreCase(text)) {
                 parsed.add(EspiScope.parse(text));
             }
         }
@@ -168,17 +168,18 @@ public class ScopeResolver {
     }
 
     /**
-     * The token's {@code HistoryLength} in seconds: the shortest among its FB scopes, or empty if none states
-     * one.
+     * The {@code HistoryLength} of the token's usage-data scopes, in months: the shortest among its FB scopes
+     * that grant interval metering (FB_4), or empty if none states one. A customer-data scope (e.g.
+     * {@code FB=51_53_54;HistoryLength=...}) does not limit usage data.
      *
      * @throws IllegalArgumentException if an FB scope does not parse (see {@link #espiScopes})
      */
-    public Optional<Long> historyLengthSeconds(Authentication authentication) {
+    public Optional<Integer> historyLengthMonths(Authentication authentication) {
         return espiScopes(authentication).stream()
+                .filter(scope -> scope.containsFunctionBlock(4))
                 .map(EspiScope::historyLength)
                 .filter(Objects::nonNull)
-                .map(Integer::longValue)
-                .min(Long::compare);
+                .min(Integer::compare);
     }
 
     /** Whether the caller holds the DataCustodian admin authority. */

@@ -16,6 +16,10 @@
 
 package org.greenbuttonalliance.espi.common.domain.usage.enums;
 
+import org.greenbuttonalliance.espi.common.domain.common.ServiceCategory;
+
+import java.util.Optional;
+
 import jakarta.xml.bind.annotation.XmlEnum;
 import jakarta.xml.bind.annotation.XmlEnumValue;
 import jakarta.xml.bind.annotation.XmlType;
@@ -117,5 +121,24 @@ public enum ServiceKind {
 			}
 		}
 		throw new IllegalArgumentException("Invalid ServiceKind value: " + value);
+	}
+
+	/**
+	 * The ServiceKind of a UsagePoint's {@link ServiceCategory}, matched by espi.xsd code (both enums carry the
+	 * ServiceKind codes 0-9; their constant names differ, e.g. TV_LICENSE / TV_LICENCE). The one mapping used by
+	 * the consent screen and the Batch/Subscription feed.
+	 *
+	 * @return the kind, or empty for null or a code with no ServiceKind
+	 */
+	public static Optional<ServiceKind> of(ServiceCategory category) {
+		if (category == null || category.getValue() == null) {
+			return Optional.empty();
+		}
+		for (ServiceKind kind : values()) {
+			if (kind.value == category.getValue()) {
+				return Optional.of(kind);
+			}
+		}
+		return Optional.empty();
 	}
 }

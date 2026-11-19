@@ -20,7 +20,7 @@
 package org.greenbuttonalliance.espi.datacustodian.web.api;
 
 import org.greenbuttonalliance.espi.common.domain.common.DateTimeInterval;
-import org.greenbuttonalliance.espi.common.domain.common.ServiceCategory;
+import org.greenbuttonalliance.espi.common.domain.usage.enums.ServiceKind;
 import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
 import org.greenbuttonalliance.espi.common.domain.usage.ElectricPowerQualitySummaryEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.IntervalBlockEntity;
@@ -51,7 +51,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -88,9 +87,10 @@ import java.util.function.Function;
  *       recent UsageSummary and its most recent ElectricPowerQualitySummary (summary intervals rarely line up
  *       with a 24-hour window);</li>
  *   <li>{@code updated-min}/{@code updated-max} select by {@code atom:updated};</li>
- *   <li>{@code HistoryLength} (REQ.21: "the amount of historical information available from the Data
- *       Custodian in seconds") is a ceiling, not a selection: nothing that ended before now minus that length
- *       is returned, whatever the range asks for.</li>
+ *   <li>{@code HistoryLength}, in months (the GBA reading, as in the Authorization Server's
+ *       {@code HistoryLength=13}; REQ.21's definition text says seconds, see the HistoryLength issue), is a
+ *       ceiling, not a selection: nothing that ended before now minus that many calendar months (UTC) is
+ *       returned, whatever the range asks for.</li>
  * </ul>
  * <p>A resource without an interval is kept: there is nothing to measure it against. {@code BlockDuration}
  * describes the blocks and selects nothing.</p>
@@ -102,19 +102,21 @@ public class SubscriptionFeedAssembler {
 	static final long DEFAULT_WINDOW_SECONDS = 24 * 60 * 60L;
 
 	/**
-	 * What the token grants, beyond reading the subscription at all: the UsagePoint service categories its
-	 * commodity Function Blocks cover, the summaries, and the HistoryLength ceiling.
+	 * What the token grants, beyond reading the subscription at all: the UsagePoint service kinds its
+	 * commodity Function Blocks cover, the summaries, and the HistoryLength ceiling in months.
+	 *
+	 * @param serviceKinds null for every UsagePoint (the admin)
 	 */
-	public record Grants(Set<ServiceCategory> serviceCategories, boolean usageSummaries,
-						 boolean powerQualitySummaries, Long historyLengthSeconds) {
-
-		public Grants {
-			serviceCategories = serviceCategories == null || serviceCategories.isEmpty()
-					? Set.of() : Set.copyOf(serviceCategories);
-		}
+	public record Grants(Set<ServiceKind> serviceKinds, boolean usageSummaries,
+						 boolean powerQualitySummaries, Integer historyLengthMonths) {
 
 		public static Grants all() {
-			return new Grants(EnumSet.allOf(ServiceCategory.class), true, true, null);
+			return new Grants(null, true, true, null);
+		}
+
+		boolean covers(UsagePointEntity usagePoint) {
+			return serviceKinds == null
+					|| ServiceKind.of(usagePoint.getServiceCategory()).map(serviceKinds::contains).orElse(false);
 		}
 	}
 
@@ -182,8 +184,7 @@ public class SubscriptionFeedAssembler {
 		List<FeedEntry> entries = new ArrayList<>();
 
 		List<UsagePointEntity> usagePoints = sorted(subscription.getUsagePoints(), BY_ID).stream()
-				.filter(usagePoint -> usagePoint.getServiceCategory() != null
-						&& grants.serviceCategories().contains(usagePoint.getServiceCategory()))
+				.filter(grants::covers)
 				.toList();
 		for (UsagePointEntity usagePoint : usagePoints) {
 			String usagePointFeed = subscriptionHref + "/UsagePoint";
@@ -274,14 +275,15 @@ public class SubscriptionFeedAssembler {
 
 	/**
 	 * Which time-bounded resources a request gets, in epoch seconds. {@code from}/{@code to} bound the overlap
-	 * (null = open); {@code ceiling} is now minus {@code HistoryLength} (null = no limit).
+	 * (null = open); {@code ceiling} is now minus {@code HistoryLength} months (null = no limit).
 	 */
 	private record Selection(Long from, Long to, Long ceiling, Long updatedMin, Long updatedMax,
 							 boolean defaultWindow) {
 
 		static Selection of(Range range, Grants grants, Instant now) {
 			long nowSeconds = now.getEpochSecond();
-			Long ceiling = grants.historyLengthSeconds() == null ? null : nowSeconds - grants.historyLengthSeconds();
+			Long ceiling = grants.historyLengthMonths() == null ? null
+					: now.atOffset(ZoneOffset.UTC).minusMonths(grants.historyLengthMonths()).toEpochSecond();
 			boolean defaultWindow = range.publishedMin() == null && range.publishedMax() == null;
 			Long from = defaultWindow ? Long.valueOf(nowSeconds - DEFAULT_WINDOW_SECONDS) : seconds(range.publishedMin());
 			return new Selection(from, defaultWindow ? null : seconds(range.publishedMax()), ceiling,

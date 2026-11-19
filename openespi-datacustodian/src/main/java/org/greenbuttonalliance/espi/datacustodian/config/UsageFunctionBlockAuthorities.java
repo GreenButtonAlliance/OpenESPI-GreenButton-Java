@@ -19,7 +19,7 @@
 
 package org.greenbuttonalliance.espi.datacustodian.config;
 
-import org.greenbuttonalliance.espi.common.domain.common.ServiceCategory;
+import org.greenbuttonalliance.espi.common.domain.usage.enums.ServiceKind;
 import org.greenbuttonalliance.espi.common.scope.FunctionBlock;
 import org.greenbuttonalliance.espi.common.scope.FunctionBlockCategory;
 import org.springframework.security.core.Authentication;
@@ -67,27 +67,23 @@ public final class UsageFunctionBlockAuthorities {
 	}
 
 	/**
-	 * The UsagePoint service categories the token's commodity Function Blocks grant, from each FB's service
-	 * kind: FB_5 to FB_9 grant ELECTRICITY, FB_10 GAS, FB_11 WATER. A commodity FB without a service kind
-	 * (FB_29, temperature: #283) grants no category. Interval metering (FB_4) alone grants none.
+	 * The UsagePoint service kinds the token's commodity Function Blocks grant, from each FB's service kind:
+	 * FB_5 to FB_9 grant ELECTRICITY, FB_10 GAS, FB_11 WATER. A commodity FB without a service kind (FB_29,
+	 * temperature: #283) grants none, nor does interval metering (FB_4) alone. A UsagePoint's kind is
+	 * {@link ServiceKind#of}, the mapping the consent screen uses.
 	 */
-	public static Set<ServiceCategory> serviceCategories(Authentication authentication) {
-		Set<ServiceCategory> categories = EnumSet.noneOf(ServiceCategory.class);
+	public static Set<ServiceKind> serviceKinds(Authentication authentication) {
+		Set<ServiceKind> kinds = EnumSet.noneOf(ServiceKind.class);
 		if (authentication == null) {
-			return categories;
+			return kinds;
 		}
 		for (GrantedAuthority granted : authentication.getAuthorities()) {
 			String name = granted.getAuthority();
-			if (name == null || !SERVICE_COMMODITY.contains(name)) {
-				continue;
+			if (name != null && SERVICE_COMMODITY.contains(name)) {
+				FunctionBlock.serviceKindOf(Integer.parseInt(name.substring(3))).ifPresent(kinds::add);
 			}
-			FunctionBlock.serviceKindOf(Integer.parseInt(name.substring(3)))
-					.flatMap(kind -> Stream.of(ServiceCategory.values())
-							.filter(category -> category.name().equals(kind.name()))
-							.findFirst())
-					.ifPresent(categories::add);
 		}
-		return categories;
+		return kinds;
 	}
 
 	/** Whether the authentication holds at least one of the authorities. */

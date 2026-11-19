@@ -161,22 +161,24 @@ class ScopeResolverTest {
     }
 
     @Test
-    @DisplayName("espiScopes: every FB scope but FB=34_35; HistoryLength is the shortest stated; a bad FB scope throws")
+    @DisplayName("espiScopes: every FB scope but FB=34_35 (any case); HistoryLength (months) is the shortest usage scope's; a bad FB scope throws")
     void espiScopes() {
-        Authentication twoScopes = auth(Map.of("scope",
-                List.of("openid", "FB=4_5_16;HistoryLength=86400", "FB=4_5;HistoryLength=3600", "FB=34_35")));
+        Authentication scopes = auth(Map.of("scope", List.of("openid", "FB=4_5_16;HistoryLength=13",
+                "FB=4_5;HistoryLength=7", "FB=51_53_54;HistoryLength=1", "fb=34_35")));
 
-        assertThat(resolver.espiScopes(twoScopes))
+        assertThat(resolver.espiScopes(scopes))
                 .extracting(EspiScope::historyLength)
-                .containsExactly(86_400, 3_600);
-        assertThat(resolver.historyLengthSeconds(twoScopes)).contains(3_600L);
-        assertThat(resolver.historyLengthSeconds(auth(Map.of("scope", "FB=4_5 openid")))).isEmpty();
+                .containsExactly(13, 7, 1);
+        // The customer-data scope's HistoryLength=1 does not limit usage data.
+        assertThat(resolver.historyLengthMonths(scopes)).contains(7);
+        assertThat(resolver.historyLengthMonths(auth(Map.of("scope", "FB=4_5 openid")))).isEmpty();
         assertThat(List.of(
                 resolver.espiScopes(auth(Map.of("scope", List.of("FB=34_35")))),
+                resolver.espiScopes(auth(Map.of("scope", List.of("fb=34_35")))),
                 resolver.espiScopes(auth(Map.of("active", true))),
                 resolver.espiScopes(null)))
                 .allSatisfy(result -> assertThat(result).isEmpty());
-        assertThatThrownBy(() -> resolver.historyLengthSeconds(auth(Map.of("scope", List.of("FB=4_5", "FB=4_x")))))
+        assertThatThrownBy(() -> resolver.historyLengthMonths(auth(Map.of("scope", List.of("FB=4_5", "FB=4_x")))))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 }

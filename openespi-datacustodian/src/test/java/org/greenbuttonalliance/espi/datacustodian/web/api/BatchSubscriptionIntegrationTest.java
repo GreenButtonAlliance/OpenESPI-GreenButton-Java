@@ -107,6 +107,9 @@ class BatchSubscriptionIntegrationTest {
 	private static final UUID ELECTRIC_POINT = UUID.fromString("48c2a019-5598-5e16-b0f9-49e4ff27f505");
 	private static final UUID GAS_POINT = UUID.fromString("48c2a019-5598-5e16-b0f9-49e4ff27f506");
 	private static final UUID WATER_POINT = UUID.fromString("48c2a019-5598-5e16-b0f9-49e4ff27f507");
+	private static final UUID LATEST_SUBSCRIPTION = UUID.fromString("3c9d0e6b-6a56-5f11-9a3e-0d1c3b1c2a06");
+	private static final UUID LATEST_POINT = UUID.fromString("48c2a019-5598-5e16-b0f9-49e4ff27f508");
+	private static final UUID LATEST_QUALITY = UUID.fromString("9d7d04f4-bc3e-5088-93d3-504f6b7c8d03");
 
 	/** When the fixtures were made, in epoch seconds. */
 	private long now;
@@ -239,29 +242,59 @@ class BatchSubscriptionIntegrationTest {
 	}
 
 	@Test
-	@DisplayName("HistoryLength is a ceiling: nothing that ended before now minus it, whatever the range asks for")
+	@DisplayName("HistoryLength (months) is a ceiling: nothing that ended before now minus it, whatever the range asks for")
 	void history_length_is_a_ceiling() throws Exception {
-		String wide = fetch(SUBSCRIPTION_A,
-				customer(SUBSCRIPTION_A, "FB=1_3_4_5_16_17;HistoryLength=" + (7 * DAY), "FB_16", "FB_17"),
+		String oneMonth = fetch(SUBSCRIPTION_A,
+				customer(SUBSCRIPTION_A, "FB=1_3_4_5_16_17;HistoryLength=1", "FB_16", "FB_17"),
 				"published-min", ago(100 * DAY));
-		// By default the latest power quality summary is added, but not past the ceiling: it ended 5 days ago.
-		String latest = fetch(SUBSCRIPTION_A,
-				customer(SUBSCRIPTION_A, "FB=1_3_4_5_16_17;HistoryLength=" + (2 * DAY), "FB_16", "FB_17"));
+		String threeMonths = fetch(SUBSCRIPTION_A,
+				customer(SUBSCRIPTION_A, "FB=1_3_4_5_16_17;HistoryLength=3", "FB_16", "FB_17"),
+				"published-min", ago(100 * DAY));
 
-		assertThat(wide)
+		// The old block ended 39 days ago, the old summaries 60 days ago.
+		assertThat(oneMonth)
 				.contains(RECENT_BLOCK.toString(), USAGE_SUMMARY_A.toString(), QUALITY_SUMMARY_A.toString())
 				.doesNotContain(OLD_BLOCK.toString(), OLD_USAGE_SUMMARY.toString(), OLD_QUALITY_SUMMARY.toString());
-		assertThat(latest)
-				.contains(RECENT_BLOCK.toString(), USAGE_SUMMARY_A.toString())
-				.doesNotContain(QUALITY_SUMMARY_A.toString(), OLD_QUALITY_SUMMARY.toString());
-		assertValid(wide);
+		assertThat(threeMonths)
+				.contains(OLD_BLOCK.toString(), OLD_USAGE_SUMMARY.toString(), OLD_QUALITY_SUMMARY.toString());
+		assertValid(oneMonth);
+	}
+
+	@Test
+	@DisplayName("by default the latest summary is added, but never past the HistoryLength ceiling")
+	void latest_summary_respects_the_ceiling() throws Exception {
+		UsagePointEntity usagePoint = usagePoint(LATEST_POINT, ServiceCategory.ELECTRICITY);
+		usagePoint.getElectricPowerQualitySummaries().add(qualitySummary(LATEST_QUALITY, usagePoint, now - 90 * DAY));
+		subscriptionRepository.saveAndFlush(
+				subscription(LATEST_SUBSCRIPTION, List.of(usagePointRepository.save(usagePoint))));
+
+		// Its only power quality summary ended 60 days ago.
+		String oneMonth = fetch(LATEST_SUBSCRIPTION,
+				customer(LATEST_SUBSCRIPTION, "FB=1_3_4_5_17;HistoryLength=1", "FB_17"));
+		String threeMonths = fetch(LATEST_SUBSCRIPTION,
+				customer(LATEST_SUBSCRIPTION, "FB=1_3_4_5_17;HistoryLength=3", "FB_17"));
+
+		assertThat(oneMonth).contains(LATEST_POINT.toString()).doesNotContain(LATEST_QUALITY.toString());
+		assertThat(threeMonths).contains(LATEST_QUALITY.toString());
+	}
+
+	@Test
+	@DisplayName("a -min after its -max is a 400")
+	void reversed_range_is_bad_request() throws Exception {
+		for (String[] range : List.of(new String[]{"published-min", ago(DAY), "published-max", ago(2 * DAY)},
+				new String[]{"updated-min", ago(DAY), "updated-max", ago(2 * DAY)})) {
+			mockMvc.perform(get(BASE + "/Batch/Subscription/" + SUBSCRIPTION_A)
+							.param(range[0], range[1]).param(range[2], range[3])
+							.with(customer(SUBSCRIPTION_A, "FB=1_3_4_5")))
+					.andExpect(status().isBadRequest());
+		}
 	}
 
 	@Test
 	@DisplayName("an FB scope that does not parse is refused, not read as 'no HistoryLength'")
 	void unreadable_scope_is_refused() throws Exception {
 		mockMvc.perform(get(BASE + "/Batch/Subscription/" + SUBSCRIPTION_A)
-						.with(customer(SUBSCRIPTION_A, "FB=4_x;HistoryLength=86400")))
+						.with(customer(SUBSCRIPTION_A, "FB=4_x;HistoryLength=13")))
 				.andExpect(status().isForbidden());
 	}
 
@@ -446,7 +479,7 @@ class BatchSubscriptionIntegrationTest {
 		return subscription;
 	}
 
-	/** One UsagePoint with every child kind; one IntervalBlock from yesterday, one from 30 days ago; one
+	/** One UsagePoint with every child kind; one IntervalBlock from yesterday, one from 40 days ago; one
 	 *  UsageSummary ending now and one ElectricPowerQualitySummary ending 5 days ago, and one of each ending
 	 *  60 days ago. Each collection gets its newer item first, so the feed's order comes from sorting. */
 	private static UsagePointEntity usagePointA(long now) {
@@ -473,7 +506,7 @@ class BatchSubscriptionIntegrationTest {
 		meterReading.setUsagePoint(usagePoint);
 		meterReading.setReadingType(readingType);
 		meterReading.getIntervalBlocks().add(block(RECENT_BLOCK, meterReading, now - DAY));
-		meterReading.getIntervalBlocks().add(block(OLD_BLOCK, meterReading, now - 30 * DAY));
+		meterReading.getIntervalBlocks().add(block(OLD_BLOCK, meterReading, now - 40 * DAY));
 		usagePoint.getMeterReadings().add(meterReading);
 
 		usagePoint.getUsageSummaries().add(usageSummary(USAGE_SUMMARY_A, usagePoint, now - 30 * DAY, now));
