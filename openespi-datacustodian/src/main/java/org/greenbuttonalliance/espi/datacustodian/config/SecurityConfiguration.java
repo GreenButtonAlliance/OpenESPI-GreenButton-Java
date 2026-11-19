@@ -20,7 +20,6 @@
 package org.greenbuttonalliance.espi.datacustodian.config;
 
 import org.greenbuttonalliance.espi.common.scope.FunctionBlock;
-import org.greenbuttonalliance.espi.common.scope.FunctionBlockCategory;
 import org.springframework.boot.security.autoconfigure.web.servlet.PathRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -47,7 +46,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Stream;
 
 /**
  * Security configuration for the OpenESPI Data Custodian Resource Server.
@@ -117,7 +115,7 @@ public class SecurityConfiguration {
         // LocalTimeParameters, Batch). ESPI: base FB_4 (Interval Metering) AND at least one
         // commodity FB (electricity/gas/water/temperature) — or DataCustodian admin.
         AuthorizationManager<RequestAuthorizationContext> fb4 =
-                AuthorityAuthorizationManager.hasAuthority("FB_4");
+                AuthorityAuthorizationManager.hasAuthority(UsageFunctionBlockAuthorities.INTERVAL_METERING);
         AuthorizationManager<RequestAuthorizationContext> commodity =
                 AuthorityAuthorizationManager.hasAnyAuthority(commodityAuthorities());
         AuthorizationManager<RequestAuthorizationContext> usageData =
@@ -125,10 +123,11 @@ public class SecurityConfiguration {
 
         // Usage summaries (data-shape FBs) and power-quality summary (FB_17).
         AuthorizationManager<RequestAuthorizationContext> usageSummary =
-                AuthorizationManagers.anyOf(admin,
-                        AuthorityAuthorizationManager.hasAnyAuthority("FB_15", "FB_16", "FB_27", "FB_28"));
+                AuthorizationManagers.anyOf(admin, AuthorityAuthorizationManager.hasAnyAuthority(
+                        UsageFunctionBlockAuthorities.USAGE_SUMMARY.toArray(String[]::new)));
         AuthorizationManager<RequestAuthorizationContext> powerQuality =
-                AuthorizationManagers.anyOf(admin, AuthorityAuthorizationManager.hasAuthority("FB_17"));
+                AuthorizationManagers.anyOf(admin, AuthorityAuthorizationManager.hasAnyAuthority(
+                        UsageFunctionBlockAuthorities.POWER_QUALITY.toArray(String[]::new)));
 
         // Customer / PII resources — least-privilege per the ESPI Customer-PII catalog: the base
         // Connect-My-Data customer FB (FB_53) AND the resource-specific FB, or admin. FB→resource
@@ -192,6 +191,13 @@ public class SecurityConfiguration {
                     "/espi/1_1/resource/Subscription/*/UsagePoint/*/ElectricPowerQualitySummary/**",
                     "/espi/1_1/resource/RetailCustomer/*/UsagePoint/*/ElectricPowerQualitySummary/**")
                     .access(powerQuality)
+
+                // --- Batch/Subscription (#279): FB_4 + an electricity, gas or water FB (FB_5-FB_11), or admin.
+                // The feed holds only the UsagePoints whose service category a granted FB covers. ---
+                .requestMatchers(HttpMethod.GET, "/espi/1_1/resource/Batch/Subscription/**")
+                    .access(AuthorizationManagers.anyOf(admin, AuthorizationManagers.allOf(fb4,
+                            AuthorityAuthorizationManager.hasAnyAuthority(
+                                    UsageFunctionBlockAuthorities.SERVICE_COMMODITY.toArray(String[]::new)))))
 
                 // --- Usage data (GET, read-only) : FB_4 + commodity, or admin ---
                 .requestMatchers(HttpMethod.GET,
@@ -290,10 +296,7 @@ public class SecurityConfiguration {
      * drifts from the spec.
      */
     private static String[] commodityAuthorities() {
-        return Stream.of(FunctionBlock.values())
-                .filter(fb -> fb.getCategory() == FunctionBlockCategory.COMMODITY)
-                .map(fb -> "FB_" + fb.getId())
-                .toArray(String[]::new);
+        return UsageFunctionBlockAuthorities.COMMODITY.toArray(String[]::new);
     }
 
     /**

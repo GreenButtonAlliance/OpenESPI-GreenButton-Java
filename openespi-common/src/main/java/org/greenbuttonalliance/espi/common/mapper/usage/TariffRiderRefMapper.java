@@ -94,11 +94,13 @@ public interface TariffRiderRefMapper {
      * Wraps the list in the TariffRiderRefsDto container.
      *
      * @param entities the list of tariff rider ref entities
-     * @return the wrapper DTO containing tariff rider refs, or null if input is null
+     * @return the wrapper DTO containing tariff rider refs, or null if there are none: espi.xsd's
+     *         {@code TariffRiderRefs} needs at least one {@code tariffRiderRef}, so an empty wrapper is
+     *         invalid, while the element itself is optional (#279)
      */
     @Named("entityListToTariffRiderRefsDto")
     default TariffRiderRefsDto entityListToTariffRiderRefsDto(List<TariffRiderRefEntity> entities) {
-        if (entities == null) {
+        if (entities == null || entities.isEmpty()) {
             return null;
         }
         return new TariffRiderRefsDto(toDtoList(entities));

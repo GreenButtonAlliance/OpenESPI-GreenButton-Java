@@ -22,6 +22,7 @@ package org.greenbuttonalliance.espi.common.utils;
 import jakarta.xml.bind.annotation.adapters.XmlAdapter;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 
 /**
@@ -51,17 +52,18 @@ public class OffsetDateTimeAdapter extends XmlAdapter<String, OffsetDateTime> {
     }
 
     /**
-     * Marshal from OffsetDateTime to XML string.
+     * Marshal from OffsetDateTime to XML string, always in UTC: a GBA timestamp that is not epoch seconds
+     * ends with {@code Z} and nothing after it (e.g. {@code 2026-11-19T15:00:00Z}), never {@code +hh:mm}.
      * Handles null values gracefully.
      *
      * @param value OffsetDateTime instance
-     * @return ISO-8601 formatted string, or null if input is null
+     * @return ISO-8601 UTC string ending in {@code Z}, or null if input is null
      */
     @Override
     public String marshal(OffsetDateTime value) {
         if (value == null) {
             return null;
         }
-        return value.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+        return value.withOffsetSameInstant(ZoneOffset.UTC).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
     }
 }

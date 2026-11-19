@@ -19,6 +19,7 @@
 package org.greenbuttonalliance.espi.datacustodian.web.api.scope;
 
 import org.greenbuttonalliance.espi.common.repositories.usage.SubscriptionRepository;
+import org.greenbuttonalliance.espi.common.scope.EspiScope;
 import org.greenbuttonalliance.espi.common.uri.EspiBatchUri;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -133,5 +135,53 @@ class ScopeResolverTest {
                 Map.of("resourceURI", EspiBatchUri.batchSubscription(BASE, subscriptionId)), "FB_4"));
 
         assertThat(scope.isDenied()).isTrue();
+    }
+
+    @Test
+    @DisplayName("canReadSubscription: the admin, or a customer token for exactly that subscription (#279)")
+    void canReadSubscription() {
+        UUID mine = UUID.fromString("11111111-2222-5333-8444-555555555555");
+        UUID other = UUID.fromString("11111111-2222-5333-8444-666666666666");
+        Authentication customer = auth(Map.of("resourceURI", EspiBatchUri.batchSubscription(BASE, mine)), "FB_4");
+        Authentication clientToken = auth(Map.of("resourceURI", EspiBatchUri.batchSubscription(BASE, mine)),
+                "ESPI_CLIENT_ACCESS_TOKEN", "FB_4");
+        Authentication bulk = auth(Map.of("resourceURI", EspiBatchUri.batchBulk(BASE, "BULK_1")), "FB_4");
+        Authentication admin = auth(Map.of("active", true), "SCOPE_DataCustodian_Admin_Access");
+
+        assertThat(List.of(resolver.canReadSubscription(customer, mine), resolver.canReadSubscription(admin, other)))
+                .containsOnly(true);
+        assertThat(List.of(
+                resolver.canReadSubscription(customer, other),
+                resolver.canReadSubscription(clientToken, mine),
+                resolver.canReadSubscription(bulk, mine),
+                resolver.canReadSubscription(null, mine),
+                resolver.canReadSubscription(customer, null)))
+                .containsOnly(false);
+        verifyNoInteractions(subscriptionRepository);
+    }
+
+    @Test
+    @DisplayName("espiScopes: every FB scope but FB=34_35 (any case); HistoryLength (seconds) is the shortest usage scope's; a bad FB scope throws")
+    void espiScopes() {
+        Authentication scopes = auth(Map.of("scope", List.of("openid", "FB=4_5_16;HistoryLength=63072000",
+                "FB=4_5;HistoryLength=31536000", "FB=51_53_54;HistoryLength=86400", "fb=34_35")));
+
+        assertThat(resolver.espiScopes(scopes))
+                .extracting(EspiScope::historyLength)
+                .containsExactly(63_072_000, 31_536_000, 86_400);
+        // The customer-data scope's HistoryLength does not limit usage data...
+        assertThat(resolver.historyLengthSeconds(scopes)).contains(31_536_000L);
+        // ...but a summary-only scope without FB_4 does.
+        assertThat(resolver.historyLengthSeconds(auth(Map.of("scope",
+                List.of("FB=4_5;HistoryLength=63072000", "FB=16_17;HistoryLength=86400"))))).contains(86_400L);
+        assertThat(resolver.historyLengthSeconds(auth(Map.of("scope", "FB=4_5 openid")))).isEmpty();
+        assertThat(List.of(
+                resolver.espiScopes(auth(Map.of("scope", List.of("FB=34_35")))),
+                resolver.espiScopes(auth(Map.of("scope", List.of("fb=34_35")))),
+                resolver.espiScopes(auth(Map.of("active", true))),
+                resolver.espiScopes(null)))
+                .allSatisfy(result -> assertThat(result).isEmpty());
+        assertThatThrownBy(() -> resolver.historyLengthSeconds(auth(Map.of("scope", List.of("FB=4_5", "FB=4_x")))))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 }

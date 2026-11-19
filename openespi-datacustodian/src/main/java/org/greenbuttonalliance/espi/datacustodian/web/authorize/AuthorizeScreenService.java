@@ -314,13 +314,7 @@ public class AuthorizeScreenService {
 	}
 
 	private static ServiceKind toServiceKind(ServiceCategory category) {
-		if (category == null) return null;
-		try {
-			return ServiceKind.valueOf(category.name());
-		}
-		catch (IllegalArgumentException e) {
-			return null;
-		}
+		return ServiceKind.of(category).orElse(null);
 	}
 
 	private static List<ServiceKind> sortedKinds(Set<ServiceKind> kinds) {

@@ -21,7 +21,7 @@ package org.greenbuttonalliance.espi.common.dto.customer;
 
 import org.greenbuttonalliance.espi.common.dto.atom.AtomFeedDto;
 import org.greenbuttonalliance.espi.common.dto.atom.CustomerAtomEntryDto;
-import org.greenbuttonalliance.espi.common.dto.common.DateTimeIntervalDto;
+import org.greenbuttonalliance.espi.common.dto.customer.CustomerDateTimeIntervalDto;
 import org.greenbuttonalliance.espi.common.service.impl.DtoExportServiceImpl;
 import org.greenbuttonalliance.espi.common.dto.customer.ElectronicAddressDto;
 import org.junit.jupiter.api.BeforeEach;
@@ -250,7 +250,7 @@ class CustomerAgreementDtoTest {
             "Title",
             null, null, null,
             now,
-            new DateTimeIntervalDto(now.toEpochSecond(), 3600L),
+            new CustomerDateTimeIntervalDto(now.toEpochSecond(), 3600L),
             "LOAD_MGMT",
             false,
             null,
@@ -314,7 +314,7 @@ class CustomerAgreementDtoTest {
         );
 
         OffsetDateTime validityStart = OffsetDateTime.of(2025, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
-        DateTimeIntervalDto validityInterval = new DateTimeIntervalDto(
+        CustomerDateTimeIntervalDto validityInterval = new CustomerDateTimeIntervalDto(
             validityStart.toEpochSecond(),
             31536000L // 1 year in seconds
         );

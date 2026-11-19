@@ -24,7 +24,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.greenbuttonalliance.espi.common.dto.common.DateTimeIntervalDto;
 
 import java.io.Serializable;
 import java.time.OffsetDateTime;
@@ -140,7 +139,7 @@ public class CustomerAgreementDto {
      * Date and time interval this agreement is valid (from going into effect to termination).
      */
     @XmlElement(name = "validityInterval", namespace = "http://naesb.org/espi/customer")
-    private DateTimeIntervalDto validityInterval;
+    private CustomerDateTimeIntervalDto validityInterval;
 
     // ==================== CustomerAgreement fields (customer.xsd lines 159-209) ====================
 

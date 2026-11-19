@@ -19,13 +19,21 @@
 package org.greenbuttonalliance.espi.datacustodian.web.api.scope;
 
 import org.greenbuttonalliance.espi.common.repositories.usage.SubscriptionRepository;
+import org.greenbuttonalliance.espi.common.scope.EspiScope;
 import org.greenbuttonalliance.espi.common.uri.EspiBatchUri;
+import org.greenbuttonalliance.espi.datacustodian.config.EspiScopeOpaqueTokenIntrospector;
+import org.greenbuttonalliance.espi.datacustodian.config.UsageFunctionBlockAuthorities;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -110,13 +118,91 @@ public class ScopeResolver {
         return ResourceScope.of(usagePointIds, retailCustomerIds);
     }
 
-    private boolean hasAdminAuthority(Authentication authentication) {
+    /**
+     * Whether the caller may read {@code Batch/Subscription/{subscriptionId}} (#279): the DataCustodian
+     * admin, or a customer access token whose introspected {@code resourceURI} names exactly this
+     * subscription. A Third Party's client access token ({@code FB=34_35}) never may, whatever its URIs: it
+     * is for Authorization and Bulk. Unknown and foreign subscriptions are answered alike, so the caller
+     * learns nothing about subscriptions it does not hold.
+     */
+    public boolean canReadSubscription(Authentication authentication, UUID subscriptionId) {
+        if (subscriptionId == null || authentication == null || !authentication.isAuthenticated()) {
+            return false;
+        }
+        if (hasAdminAuthority(authentication)) {
+            return true;
+        }
+        if (hasAuthority(authentication, EspiScopeOpaqueTokenIntrospector.CLIENT_ACCESS_TOKEN)
+                || !(authentication.getPrincipal() instanceof OAuth2AuthenticatedPrincipal principal)) {
+            return false;
+        }
+        String resourceUri = stringAttribute(principal, "resourceURI");
+        return resourceUri != null && EspiBatchUri.subscriptionId(resourceUri)
+                .flatMap(ScopeResolver::parseUuid)
+                .filter(subscriptionId::equals)
+                .isPresent();
+    }
+
+    /**
+     * Every ESPI scope of the token (each {@code FB=...} scope string, with its {@code HistoryLength} and other
+     * terms), except the client access token's {@code FB=34_35}; empty for a token without one.
+     *
+     * @throws IllegalArgumentException if an FB scope does not parse: the caller must refuse the request rather
+     *                                  than read it as "no limits" (fail closed)
+     */
+    public List<EspiScope> espiScopes(Authentication authentication) {
+        if (authentication == null || !(authentication.getPrincipal() instanceof OAuth2AuthenticatedPrincipal principal)) {
+            return List.of();
+        }
+        Object scope = principal.getAttribute("scope");
+        Collection<?> scopes = scope instanceof Collection<?> collection ? collection
+                : scope instanceof String s ? List.of(s.trim().split("\\s+")) : List.of();
+        List<EspiScope> parsed = new ArrayList<>();
+        for (Object value : scopes) {
+            String text = value == null ? "" : value.toString().trim();
+            if (text.regionMatches(true, 0, "FB=", 0, 3)
+                    && !EspiScopeOpaqueTokenIntrospector.CLIENT_ACCESS_TOKEN_SCOPE.equalsIgnoreCase(text)) {
+                parsed.add(EspiScope.parse(text));
+            }
+        }
+        return parsed;
+    }
+
+    /**
+     * The {@code HistoryLength} of the token's usage-data scopes, in seconds (REQ.21.6.1.2.1: "The amount of
+     * historical information available from the Data Custodian in seconds"): the shortest among its FB scopes
+     * that grant any usage-data Function Block (interval metering, a commodity, a usage summary or power
+     * quality), or empty if none states one. Only a scope with no usage-data FB, such as a customer-data scope
+     * ({@code FB=51_53_54;HistoryLength=...}), is left out: it does not limit usage data.
+     *
+     * @throws IllegalArgumentException if an FB scope does not parse (see {@link #espiScopes})
+     */
+    public Optional<Long> historyLengthSeconds(Authentication authentication) {
+        return espiScopes(authentication).stream()
+                .filter(scope -> scope.functionBlocks().stream()
+                        .anyMatch(fb -> UsageFunctionBlockAuthorities.USAGE_DATA.contains("FB_" + fb)))
+                .map(EspiScope::historyLength)
+                .filter(Objects::nonNull)
+                .map(Integer::longValue)
+                .min(Long::compare);
+    }
+
+    /** Whether the caller holds the DataCustodian admin authority. */
+    public boolean isAdmin(Authentication authentication) {
+        return authentication != null && hasAdminAuthority(authentication);
+    }
+
+    private static boolean hasAuthority(Authentication authentication, String name) {
         for (GrantedAuthority authority : authentication.getAuthorities()) {
-            if (ADMIN_AUTHORITY.equals(authority.getAuthority())) {
+            if (name.equals(authority.getAuthority())) {
                 return true;
             }
         }
         return false;
+    }
+
+    private static boolean hasAdminAuthority(Authentication authentication) {
+        return hasAuthority(authentication, ADMIN_AUTHORITY);
     }
 
     private static String stringAttribute(OAuth2AuthenticatedPrincipal principal, String name) {
