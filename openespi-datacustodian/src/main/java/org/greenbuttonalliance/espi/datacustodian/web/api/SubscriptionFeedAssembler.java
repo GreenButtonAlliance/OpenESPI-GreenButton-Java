@@ -20,6 +20,7 @@
 package org.greenbuttonalliance.espi.datacustodian.web.api;
 
 import org.greenbuttonalliance.espi.common.domain.common.DateTimeInterval;
+import org.greenbuttonalliance.espi.common.domain.common.ServiceCategory;
 import org.greenbuttonalliance.espi.common.domain.common.IdentifiedObject;
 import org.greenbuttonalliance.espi.common.domain.usage.ElectricPowerQualitySummaryEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.IntervalBlockEntity;
@@ -50,6 +51,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -61,8 +63,12 @@ import java.util.function.Function;
  * Builds {@code Batch/Subscription/{subscriptionId}} (#279): one Atom feed with the energy usage data of a
  * subscription. The caller has already checked who may read it ({@code ScopeResolver#canReadSubscription}).
  *
- * <p>Entries, in the order of certified feeds, for each UsagePoint the customer selected (UsagePoints and
- * MeterReadings by id, time-bounded resources by interval start):</p>
+ * <p>UsagePoints: those the customer selected whose {@code ServiceCategory} a granted commodity Function Block
+ * covers (FB_5 to FB_9 electricity, FB_10 gas, FB_11 water); a token with interval metering (FB_4) and no
+ * such FB gets none. Temperature (FB_29) is not yet defined (#283).</p>
+ *
+ * <p>Entries, in the order of certified feeds, for each of those UsagePoints (UsagePoints and MeterReadings
+ * by id, time-bounded resources by interval start):</p>
  * <ol>
  *   <li>the UsagePoint;</li>
  *   <li>each MeterReading, its ReadingType (once in the feed, even if shared) and its IntervalBlocks;</li>
@@ -95,11 +101,20 @@ public class SubscriptionFeedAssembler {
 	/** The default range when the request has neither {@code published-min} nor {@code published-max}. */
 	static final long DEFAULT_WINDOW_SECONDS = 24 * 60 * 60L;
 
-	/** What the token grants, beyond reading the subscription at all. */
-	public record Grants(boolean usageSummaries, boolean powerQualitySummaries, Long historyLengthSeconds) {
+	/**
+	 * What the token grants, beyond reading the subscription at all: the UsagePoint service categories its
+	 * commodity Function Blocks cover, the summaries, and the HistoryLength ceiling.
+	 */
+	public record Grants(Set<ServiceCategory> serviceCategories, boolean usageSummaries,
+						 boolean powerQualitySummaries, Long historyLengthSeconds) {
+
+		public Grants {
+			serviceCategories = serviceCategories == null || serviceCategories.isEmpty()
+					? Set.of() : Set.copyOf(serviceCategories);
+		}
 
 		public static Grants all() {
-			return new Grants(true, true, null);
+			return new Grants(EnumSet.allOf(ServiceCategory.class), true, true, null);
 		}
 	}
 
@@ -166,7 +181,11 @@ public class SubscriptionFeedAssembler {
 		Set<UUID> localTimesInFeed = new HashSet<>();
 		List<FeedEntry> entries = new ArrayList<>();
 
-		for (UsagePointEntity usagePoint : sorted(subscription.getUsagePoints(), BY_ID)) {
+		List<UsagePointEntity> usagePoints = sorted(subscription.getUsagePoints(), BY_ID).stream()
+				.filter(usagePoint -> usagePoint.getServiceCategory() != null
+						&& grants.serviceCategories().contains(usagePoint.getServiceCategory()))
+				.toList();
+		for (UsagePointEntity usagePoint : usagePoints) {
 			String usagePointFeed = subscriptionHref + "/UsagePoint";
 			String usagePointHref = usagePointFeed + "/" + usagePoint.getId();
 			List<UsageSummaryEntity> summaries = !grants.usageSummaries() ? List.of()

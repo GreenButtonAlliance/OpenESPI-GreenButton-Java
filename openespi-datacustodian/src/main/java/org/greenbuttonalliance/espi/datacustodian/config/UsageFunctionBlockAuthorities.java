@@ -19,12 +19,15 @@
 
 package org.greenbuttonalliance.espi.datacustodian.config;
 
+import org.greenbuttonalliance.espi.common.domain.common.ServiceCategory;
 import org.greenbuttonalliance.espi.common.scope.FunctionBlock;
 import org.greenbuttonalliance.espi.common.scope.FunctionBlockCategory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -51,6 +54,30 @@ public final class UsageFunctionBlockAuthorities {
 			.toList();
 
 	private UsageFunctionBlockAuthorities() {
+	}
+
+	/**
+	 * The UsagePoint service categories the token's commodity Function Blocks grant, from each FB's service
+	 * kind: FB_5 to FB_9 grant ELECTRICITY, FB_10 GAS, FB_11 WATER. A commodity FB without a service kind
+	 * (FB_29, temperature: #283) grants no category. Interval metering (FB_4) alone grants none.
+	 */
+	public static Set<ServiceCategory> serviceCategories(Authentication authentication) {
+		Set<ServiceCategory> categories = EnumSet.noneOf(ServiceCategory.class);
+		if (authentication == null) {
+			return categories;
+		}
+		for (GrantedAuthority granted : authentication.getAuthorities()) {
+			String name = granted.getAuthority();
+			if (name == null || !name.startsWith("FB_") || !COMMODITY.contains(name)) {
+				continue;
+			}
+			FunctionBlock.serviceKindOf(Integer.parseInt(name.substring(3)))
+					.flatMap(kind -> Stream.of(ServiceCategory.values())
+							.filter(category -> category.name().equals(kind.name()))
+							.findFirst())
+					.ifPresent(categories::add);
+		}
+		return categories;
 	}
 
 	/** Whether the authentication holds at least one of the authorities. */

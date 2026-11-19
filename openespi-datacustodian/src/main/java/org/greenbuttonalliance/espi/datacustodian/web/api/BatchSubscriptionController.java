@@ -55,9 +55,9 @@ import java.util.UUID;
  *
  * <p>Access ({@link ScopeResolver#canReadSubscription}): the DataCustodian admin, or a customer access
  * token for exactly this subscription. Anything else gets 403, whether or not the subscription exists. The
- * URL rule in {@code SecurityConfiguration} requires interval metering and a commodity Function Block first,
- * and the token's Function Blocks decide which summaries the feed holds
- * ({@link UsageFunctionBlockAuthorities}).</p>
+ * URL rule in {@code SecurityConfiguration} requires interval metering (FB_4) first. The token's commodity
+ * Function Blocks decide which UsagePoints the feed holds (by service category; none with FB_4 alone), and its
+ * summary Function Blocks which summaries ({@link UsageFunctionBlockAuthorities}).</p>
  */
 @RestController
 @RequestMapping("/espi/1_1/resource")
@@ -142,6 +142,7 @@ public class BatchSubscriptionController {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Unreadable ESPI scope");
 		}
 		return new Grants(
+				UsageFunctionBlockAuthorities.serviceCategories(authentication),
 				UsageFunctionBlockAuthorities.hasAny(authentication, UsageFunctionBlockAuthorities.USAGE_SUMMARY),
 				UsageFunctionBlockAuthorities.hasAny(authentication, UsageFunctionBlockAuthorities.POWER_QUALITY),
 				historyLength);

@@ -103,6 +103,10 @@ class BatchSubscriptionIntegrationTest {
 	private static final UUID SHARED_POINT_1 = UUID.fromString("48c2a019-5598-5e16-b0f9-49e4ff27f503");
 	private static final UUID SHARED_POINT_2 = UUID.fromString("48c2a019-5598-5e16-b0f9-49e4ff27f504");
 	private static final UUID SHARED_LOCAL_TIME = UUID.fromString("ae8e1505-cd4f-5199-a4e4-61507c8d9e02");
+	private static final UUID MIXED_SUBSCRIPTION = UUID.fromString("3c9d0e6b-6a56-5f11-9a3e-0d1c3b1c2a05");
+	private static final UUID ELECTRIC_POINT = UUID.fromString("48c2a019-5598-5e16-b0f9-49e4ff27f505");
+	private static final UUID GAS_POINT = UUID.fromString("48c2a019-5598-5e16-b0f9-49e4ff27f506");
+	private static final UUID WATER_POINT = UUID.fromString("48c2a019-5598-5e16-b0f9-49e4ff27f507");
 
 	/** When the fixtures were made, in epoch seconds. */
 	private long now;
@@ -262,14 +266,44 @@ class BatchSubscriptionIntegrationTest {
 	}
 
 	@Test
+	@DisplayName("UsagePoints by commodity FB: FB_5 electricity, FB_10 gas, FB_11 water; FB_4 alone is an empty feed")
+	void usage_points_need_their_commodity_function_block() throws Exception {
+		List<UsagePointEntity> usagePoints = new ArrayList<>();
+		for (UsagePointEntity usagePoint : List.of(
+				usagePoint(ELECTRIC_POINT, ServiceCategory.ELECTRICITY),
+				usagePoint(GAS_POINT, ServiceCategory.GAS),
+				usagePoint(WATER_POINT, ServiceCategory.WATER))) {
+			usagePoints.add(usagePointRepository.save(usagePoint));
+		}
+		subscriptionRepository.saveAndFlush(subscription(MIXED_SUBSCRIPTION, usagePoints));
+
+		String electricity = fetch(MIXED_SUBSCRIPTION, token(MIXED_SUBSCRIPTION, "FB=1_3_4_5", "FB_4", "FB_5"));
+		String gasAndWater = fetch(MIXED_SUBSCRIPTION,
+				token(MIXED_SUBSCRIPTION, "FB=1_3_4_10_11", "FB_4", "FB_10", "FB_11"));
+		String intervalOnly = fetch(MIXED_SUBSCRIPTION, token(MIXED_SUBSCRIPTION, "FB=1_3_4", "FB_4"));
+
+		assertThat(electricity).contains(ELECTRIC_POINT.toString())
+				.doesNotContain(GAS_POINT.toString(), WATER_POINT.toString());
+		assertThat(gasAndWater).contains(GAS_POINT.toString(), WATER_POINT.toString())
+				.doesNotContain(ELECTRIC_POINT.toString());
+		assertThat(intervalOnly)
+				.contains("href=\"" + BASE + "/Batch/Subscription/" + MIXED_SUBSCRIPTION + "\" type=\"espi-feed/Subscription\"")
+				.doesNotContain("<atom:entry");
+		assertValid(intervalOnly);
+		mockMvc.perform(get(BASE + "/Batch/Subscription/" + MIXED_SUBSCRIPTION)
+						.with(token(MIXED_SUBSCRIPTION, "FB=1_3_5", "FB_5")))
+				.andExpect(status().isForbidden());
+		assertThat(fetch(MIXED_SUBSCRIPTION, admin()))
+				.contains(ELECTRIC_POINT.toString(), GAS_POINT.toString(), WATER_POINT.toString());
+	}
+
+	@Test
 	@DisplayName("a LocalTimeParameters shared by two UsagePoints is one entry, linked from both")
 	void shared_local_time_parameters_is_one_entry() throws Exception {
 		TimeConfigurationEntity shared = localTime(SHARED_LOCAL_TIME);
 		List<UsagePointEntity> usagePoints = new ArrayList<>();
 		for (UUID id : List.of(SHARED_POINT_1, SHARED_POINT_2)) {
-			UsagePointEntity usagePoint = new UsagePointEntity();
-			usagePoint.setId(id);
-			usagePoint.setServiceCategory(ServiceCategory.ELECTRICITY);
+			UsagePointEntity usagePoint = usagePoint(id, ServiceCategory.ELECTRICITY);
 			usagePoint.setLocalTimeParameters(shared);
 			usagePoints.add(usagePointRepository.save(usagePoint));
 		}
@@ -366,6 +400,11 @@ class BatchSubscriptionIntegrationTest {
 	private static RequestPostProcessor customer(UUID subscriptionId, String scope, String... extraFbs) {
 		String[] fbs = Arrays.copyOf(ENERGY_FBS, ENERGY_FBS.length + extraFbs.length);
 		System.arraycopy(extraFbs, 0, fbs, ENERGY_FBS.length, extraFbs.length);
+		return token(subscriptionId, scope, fbs);
+	}
+
+	/** A customer access token for the subscription with exactly these FB authorities. */
+	private static RequestPostProcessor token(UUID subscriptionId, String scope, String... fbs) {
 		return opaqueToken()
 				.attributes(attributes -> {
 					attributes.put("resourceURI", BASE + "/Batch/Subscription/" + subscriptionId);
@@ -440,6 +479,13 @@ class BatchSubscriptionIntegrationTest {
 		usagePoint.getUsageSummaries().add(usageSummary(OLD_USAGE_SUMMARY, usagePoint, now - 90 * DAY, now));
 		usagePoint.getElectricPowerQualitySummaries().add(qualitySummary(QUALITY_SUMMARY_A, usagePoint, now - 35 * DAY));
 		usagePoint.getElectricPowerQualitySummaries().add(qualitySummary(OLD_QUALITY_SUMMARY, usagePoint, now - 90 * DAY));
+		return usagePoint;
+	}
+
+	private static UsagePointEntity usagePoint(UUID id, ServiceCategory serviceCategory) {
+		UsagePointEntity usagePoint = new UsagePointEntity();
+		usagePoint.setId(id);
+		usagePoint.setServiceCategory(serviceCategory);
 		return usagePoint;
 	}
 
