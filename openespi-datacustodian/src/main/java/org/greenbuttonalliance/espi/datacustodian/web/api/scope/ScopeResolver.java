@@ -50,7 +50,8 @@ import java.util.UUID;
  *       back-end/admin grant over a defined set; treated as unfiltered for the sandbox).</li>
  *   <li>Token {@code resourceURI} = {@code …/Batch/Subscription/{id}} → the subscription's granted
  *       UsagePoint ids (energy scope), parsed via {@link EspiBatchUri} and loaded from the DC's own
- *       store ({@link SubscriptionRepository#findUsagePointIdsBySubscriptionId}).</li>
+ *       store ({@link SubscriptionRepository#findUsagePointIdsBySubscriptionId}). Read by
+ *       {@link #subscriptionId}, so never for a Third Party client access token ({@code FB=34_35}).</li>
  *   <li>Token {@code customerResourceURI} = {@code …/Batch/RetailCustomer/{id}} → the granted
  *       RetailCustomer id (PII scope; {@code Long} correlation key).</li>
  *   <li>Otherwise → {@link ResourceScope#denied()} (sees nothing).</li>
@@ -95,14 +96,10 @@ public class ScopeResolver {
             return ResourceScope.unfiltered();
         }
 
+        // The same subscription as canReadSubscription: none for a Third Party client access token.
         Set<UUID> usagePointIds = new LinkedHashSet<>();
-        if (resourceUri != null) {
-            EspiBatchUri.subscriptionId(resourceUri)
-                    .flatMap(ScopeResolver::parseUuid)
-                    .ifPresent(subscriptionId ->
-                            usagePointIds.addAll(subscriptionRepository
-                                    .findUsagePointIdsBySubscriptionId(subscriptionId)));
-        }
+        subscriptionId(authentication).ifPresent(subscriptionId ->
+                usagePointIds.addAll(subscriptionRepository.findUsagePointIdsBySubscriptionId(subscriptionId)));
 
         Set<Long> retailCustomerIds = new LinkedHashSet<>();
         String customerResourceUri = stringAttribute(principal, "customerResourceURI");

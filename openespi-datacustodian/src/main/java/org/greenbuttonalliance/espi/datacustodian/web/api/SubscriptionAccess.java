@@ -54,11 +54,12 @@ import java.util.function.Function;
  *   <li>403 unless {@link ScopeResolver#canReadSubscription}: the DataCustodian admin, or a customer access
  *       token whose {@code resourceURI} names this subscription. A foreign subscription and an unknown one are
  *       answered alike.</li>
- *   <li>404 unless the path chain holds: the UsagePoint is in the subscription and its service category is
- *       covered by one of the token's commodity Function Blocks; the MeterReading or summary belongs to that
- *       UsagePoint; the IntervalBlock to that MeterReading. IntervalBlocks and summaries must also be within the
- *       token's HistoryLength (their interval ends after now minus HistoryLength seconds), as in
- *       {@code Batch/Subscription}.</li>
+ *   <li>404 unless the path chain holds: the UsagePoint is in the subscription; the MeterReading or summary
+ *       belongs to that UsagePoint; the IntervalBlock to that MeterReading. For UsagePoints, MeterReadings and
+ *       IntervalBlocks the UsagePoint's service category must also be covered by one of the token's commodity
+ *       Function Blocks; the summary paths need only the summary Function Blocks their URL rule requires.
+ *       IntervalBlocks and summaries must be within the token's HistoryLength (their interval ends after now
+ *       minus HistoryLength seconds), as in {@code Batch/Subscription}, and are sorted by interval start.</li>
  *   <li>The root collections and entries ({@code /UsagePoint}, {@code /IntervalBlock/{id}}, ...) hold every
  *       customer's data: DataCustodian admin only ({@link #requireAdmin}), until #187 serves them scoped.</li>
  * </ul>
@@ -109,34 +110,34 @@ public class SubscriptionAccess {
 		}
 	}
 
-	/** The subscription's UsagePoints the token may read, by id. */
+	/** The subscription's UsagePoints the token's commodity Function Blocks cover, by id. */
 	public List<UsagePointEntity> usagePoints(Authentication authentication, UUID subscriptionId) {
-		Grants grants = grants(authentication);
-		return subscription(authentication, subscriptionId).getUsagePoints().stream()
-				.filter(grants::covers)
-				.sorted(BY_ID)
-				.toList();
+		return covered(subscription(authentication, subscriptionId), grants(authentication));
 	}
 
-	/** One of the subscription's UsagePoints the token may read. */
+	/** One of the subscription's UsagePoints the token's commodity Function Blocks cover. */
 	public UsagePointEntity usagePoint(Authentication authentication, UUID subscriptionId, UUID usagePointId) {
-		return usagePoints(authentication, subscriptionId).stream()
-				.filter(usagePoint -> usagePoint.getId().equals(usagePointId))
-				.findFirst()
-				.orElseThrow(SubscriptionAccess::notFound);
+		return child(usagePoints(authentication, subscriptionId), usagePointId);
 	}
 
-	/** One of the UsagePoint's MeterReadings. */
+	/** The MeterReadings of one of the subscription's covered UsagePoints, by id. */
+	public List<MeterReadingEntity> meterReadings(Authentication authentication, UUID subscriptionId,
+												  UUID usagePointId) {
+		return byId(usagePoint(authentication, subscriptionId, usagePointId).getMeterReadings());
+	}
+
+	/** One of the MeterReadings of one of the subscription's covered UsagePoints. */
 	public MeterReadingEntity meterReading(Authentication authentication, UUID subscriptionId, UUID usagePointId,
 										   UUID meterReadingId) {
-		return child(usagePoint(authentication, subscriptionId, usagePointId).getMeterReadings(), meterReadingId);
+		return child(meterReadings(authentication, subscriptionId, usagePointId), meterReadingId);
 	}
 
-	/** The MeterReading's IntervalBlocks within the token's HistoryLength, by id. */
+	/** The MeterReading's IntervalBlocks within the token's HistoryLength, by interval start. */
 	public List<IntervalBlockEntity> intervalBlocks(Authentication authentication, UUID subscriptionId,
 													UUID usagePointId, UUID meterReadingId) {
-		return withinHistory(authentication,
-				meterReading(authentication, subscriptionId, usagePointId, meterReadingId).getIntervalBlocks(),
+		Grants grants = grants(authentication);
+		UsagePointEntity usagePoint = child(covered(subscription(authentication, subscriptionId), grants), usagePointId);
+		return withinHistory(grants, child(usagePoint.getMeterReadings(), meterReadingId).getIntervalBlocks(),
 				IntervalBlockEntity::getInterval);
 	}
 
@@ -146,11 +147,15 @@ public class SubscriptionAccess {
 		return child(intervalBlocks(authentication, subscriptionId, usagePointId, meterReadingId), intervalBlockId);
 	}
 
-	/** The UsagePoint's UsageSummaries whose billing period is within the token's HistoryLength, by id. */
+	/**
+	 * The UsagePoint's UsageSummaries whose billing period is within the token's HistoryLength, by interval start.
+	 * The UsagePoint need only be in the token's subscription: the summary Function Blocks the URL rule requires
+	 * grant summaries without a commodity Function Block ({@link #subscribedUsagePoint}).
+	 */
 	public List<UsageSummaryEntity> usageSummaries(Authentication authentication, UUID subscriptionId,
 												   UUID usagePointId) {
-		return withinHistory(authentication,
-				usagePoint(authentication, subscriptionId, usagePointId).getUsageSummaries(),
+		return withinHistory(grants(authentication),
+				subscribedUsagePoint(authentication, subscriptionId, usagePointId).getUsageSummaries(),
 				UsageSummaryEntity::getBillingPeriod);
 	}
 
@@ -160,11 +165,14 @@ public class SubscriptionAccess {
 		return child(usageSummaries(authentication, subscriptionId, usagePointId), usageSummaryId);
 	}
 
-	/** The UsagePoint's ElectricPowerQualitySummaries whose interval is within the token's HistoryLength, by id. */
+	/**
+	 * The UsagePoint's ElectricPowerQualitySummaries whose interval is within the token's HistoryLength, by interval
+	 * start. As for UsageSummaries, the UsagePoint need only be in the token's subscription.
+	 */
 	public List<ElectricPowerQualitySummaryEntity> qualitySummaries(Authentication authentication,
 																	UUID subscriptionId, UUID usagePointId) {
-		return withinHistory(authentication,
-				usagePoint(authentication, subscriptionId, usagePointId).getElectricPowerQualitySummaries(),
+		return withinHistory(grants(authentication),
+				subscribedUsagePoint(authentication, subscriptionId, usagePointId).getElectricPowerQualitySummaries(),
 				ElectricPowerQualitySummaryEntity::getSummaryInterval);
 	}
 
@@ -176,8 +184,8 @@ public class SubscriptionAccess {
 
 	/**
 	 * Whether the caller may read {@code /ReadingType/{readingTypeId}}, the root URL that {@code Batch/Subscription}
-	 * links to: the admin, or a customer token whose subscription has a readable UsagePoint with a MeterReading of
-	 * that ReadingType.
+	 * links to: the admin, or a customer token whose subscription has a covered UsagePoint (the same rule as
+	 * {@link #usagePoints}) with a MeterReading of that ReadingType.
 	 */
 	public boolean canReadReadingType(Authentication authentication, UUID readingTypeId) {
 		if (scopeResolver.isAdmin(authentication)) {
@@ -185,14 +193,10 @@ public class SubscriptionAccess {
 		}
 		return scopeResolver.subscriptionId(authentication)
 				.flatMap(subscriptionRepository::findById)
-				.map(subscription -> {
-					Grants grants = grants(authentication);
-					return subscription.getUsagePoints().stream()
-							.filter(grants::covers)
-							.flatMap(usagePoint -> usagePoint.getMeterReadings().stream())
-							.anyMatch(meterReading -> meterReading.getReadingType() != null
-									&& readingTypeId.equals(meterReading.getReadingType().getId()));
-				})
+				.map(subscription -> covered(subscription, grants(authentication)).stream()
+						.flatMap(usagePoint -> usagePoint.getMeterReadings().stream())
+						.anyMatch(meterReading -> meterReading.getReadingType() != null
+								&& readingTypeId.equals(meterReading.getReadingType().getId())))
 				.orElse(false);
 	}
 
@@ -214,6 +218,23 @@ public class SubscriptionAccess {
 		return subscriptionRepository.findById(subscriptionId).orElseThrow(SubscriptionAccess::notFound);
 	}
 
+	/** The subscription's UsagePoints that the grants' commodity Function Blocks cover, by id. */
+	private static List<UsagePointEntity> covered(SubscriptionEntity subscription, Grants grants) {
+		return subscription.getUsagePoints().stream()
+				.filter(grants::covers)
+				.sorted(BY_ID)
+				.toList();
+	}
+
+	/**
+	 * One of the subscription's UsagePoints, whatever its commodity: for the summary paths. Still only the token's
+	 * own subscription (403 otherwise) and only a UsagePoint in it (404 otherwise), so only the customer's data.
+	 */
+	private UsagePointEntity subscribedUsagePoint(Authentication authentication, UUID subscriptionId,
+												  UUID usagePointId) {
+		return child(subscription(authentication, subscriptionId).getUsagePoints(), usagePointId);
+	}
+
 	private static <T extends IdentifiedObject> T child(List<T> children, UUID id) {
 		return children.stream()
 				.filter(child -> child.getId().equals(id))
@@ -221,17 +242,24 @@ public class SubscriptionAccess {
 				.orElseThrow(SubscriptionAccess::notFound);
 	}
 
+	private static <T extends IdentifiedObject> List<T> byId(List<T> items) {
+		return items.stream().sorted(BY_ID).toList();
+	}
+
 	/**
-	 * The items whose interval ends after now minus the token's HistoryLength ({@link Grants#withinHistory}, the
-	 * {@code Batch/Subscription} ceiling), by id. Older data is answered as missing (404 for an entry).
+	 * The items whose interval ends after now minus the grants' HistoryLength ({@link Grants#withinHistory}, the
+	 * {@code Batch/Subscription} ceiling), sorted as {@code Batch/Subscription} sorts them: by interval start (no
+	 * interval first), then id. Older data is answered as missing (404 for an entry).
 	 */
-	private <T extends IdentifiedObject> List<T> withinHistory(Authentication authentication, List<T> items,
+	private <T extends IdentifiedObject> List<T> withinHistory(Grants grants, List<T> items,
 															   Function<T, DateTimeInterval> interval) {
-		Grants grants = grants(authentication);
 		Instant now = clock.instant();
+		Comparator<T> byStart = Comparator.comparing(
+				item -> interval.apply(item) == null ? null : interval.apply(item).getStart(),
+				Comparator.nullsFirst(Comparator.<Long>naturalOrder()));
 		return items.stream()
 				.filter(item -> grants.withinHistory(interval.apply(item), now))
-				.sorted(BY_ID)
+				.sorted(byStart.thenComparing(IdentifiedObject::getId))
 				.toList();
 	}
 

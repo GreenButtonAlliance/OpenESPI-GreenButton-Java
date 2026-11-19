@@ -36,6 +36,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -53,12 +54,15 @@ import java.util.UUID;
  * Supported endpoints:
  * - GET /espi/1_1/resource/MeterReading - List all meter readings
  * - GET /espi/1_1/resource/MeterReading/{meterReadingId} - Get specific meter reading
+ * - GET /espi/1_1/resource/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/MeterReading[/{meterReadingId}]
  */
 @RestController
 @RequestMapping("/espi/1_1/resource")
 @Tag(name = "Meter Readings", description = "ESPI Meter Reading resource endpoints")
 @SecurityRequirement(name = "oauth2")
 @RequiredArgsConstructor
+// open-in-view is off: SubscriptionAccess reads the subscription's lazy UsagePoints in this session (#286)
+@Transactional(readOnly = true)
 public class MeterReadingController {
     
     private final MeterReadingRepository meterReadingRepository;
@@ -123,6 +127,71 @@ public class MeterReadingController {
         MeterReadingDto dto = meterReadingRepository.findById(meterReadingId)
             .map(meterReadingMapper::toDto)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Meter Reading not found for id: " + meterReadingId));
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        meterReadingExportService.exportDto(dto, out);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_XML)
+                .body(out.toByteArray());
+    }
+
+    /**
+     * Get the Meter Readings of a Usage Point in a Subscription, the feed {@code Batch/Subscription} links to: 403
+     * unless the token's subscription, 404 unless the UsagePoint is in it and covered by a commodity FB (#286).
+     */
+    @GetMapping(value = "/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/MeterReading", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    @Operation(
+        summary = "Get Meter Readings for a Subscription's Usage Point",
+        description = "Retrieve the Meter Readings of a Usage Point within the token's subscription",
+        responses = {
+            @ApiResponse(responseCode = "200", description = "Meter Readings retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "Usage Point not found in the subscription"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "403", description = "Not this token's subscription")
+        }
+    )
+    public ResponseEntity<byte[]> getSubscriptionMeterReadings(
+            @Parameter(description = "Unique identifier of the Subscription", required = true)
+            @PathVariable UUID subscriptionId,
+            @Parameter(description = "Unique identifier of the Usage Point", required = true)
+            @PathVariable UUID usagePointId,
+            Authentication authentication) {
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        meterReadingExportService.exportFeed(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString(),
+                "MeterReading Feed", subscriptionAccess.meterReadings(authentication, subscriptionId, usagePointId),
+                meterReadingMapper::toDto, out);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_XML)
+                .body(out.toByteArray());
+    }
+
+    /**
+     * Get one Meter Reading of a Usage Point in a Subscription, the entry {@code Batch/Subscription} links to: 403
+     * unless the token's subscription, 404 unless the chain holds (#286).
+     */
+    @GetMapping(value = "/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/MeterReading/{meterReadingId}", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    @Operation(
+        summary = "Get a Meter Reading for a Subscription's Usage Point",
+        description = "Retrieve one Meter Reading of a Usage Point within the token's subscription",
+        responses = {
+            @ApiResponse(responseCode = "200", description = "Meter Reading retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "Meter Reading or Usage Point not found in the subscription"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "403", description = "Not this token's subscription")
+        }
+    )
+    public ResponseEntity<byte[]> getSubscriptionMeterReading(
+            @Parameter(description = "Unique identifier of the Subscription", required = true)
+            @PathVariable UUID subscriptionId,
+            @Parameter(description = "Unique identifier of the Usage Point", required = true)
+            @PathVariable UUID usagePointId,
+            @Parameter(description = "Unique identifier of the Meter Reading", required = true)
+            @PathVariable UUID meterReadingId,
+            Authentication authentication) {
+
+        MeterReadingDto dto = meterReadingMapper.toDto(
+                subscriptionAccess.meterReading(authentication, subscriptionId, usagePointId, meterReadingId));
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         meterReadingExportService.exportDto(dto, out);

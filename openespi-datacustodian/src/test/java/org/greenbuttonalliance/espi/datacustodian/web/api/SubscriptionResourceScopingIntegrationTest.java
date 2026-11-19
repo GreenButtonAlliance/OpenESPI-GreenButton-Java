@@ -165,6 +165,56 @@ class SubscriptionResourceScopingIntegrationTest {
 	}
 
 	@Test
+	@DisplayName("the MeterReading feed and entry Batch/Subscription links to: the token's own only")
+	void meter_readings_follow_the_subscription() throws Exception {
+		RequestPostProcessor token = customerA();
+
+		assertThat(read(UP_A + "/MeterReading", token))
+				.contains(METER_READING_A.toString())
+				.doesNotContain(METER_READING_B.toString());
+		assertThat(read(MR_A, token)).contains("<espi:MeterReading");
+		expect(UP_B + "/MeterReading", token, 403);
+		expect(MR_B, token, 403);
+		expect(UP_A + "/MeterReading/" + METER_READING_B, token, 404);
+		expect("/Subscription/" + SUBSCRIPTION_A + "/UsagePoint/" + GAS_POINT_A + "/MeterReading", token, 404);
+	}
+
+	@Test
+	@DisplayName("a token with summary FBs only reads its own subscription's summaries, and nothing else")
+	void summary_only_token_reads_only_its_own_summaries() throws Exception {
+		RequestPostProcessor token = token(SUBSCRIPTION_A, "FB_16", "FB_17");
+
+		assertThat(read(UP_A + "/UsageSummary", token))
+				.contains(SUMMARY_A.toString())
+				.doesNotContain(SUMMARY_B.toString());
+		assertThat(read(UP_A + "/UsageSummary/" + SUMMARY_A, token)).contains("<espi:UsageSummary");
+		assertThat(read(UP_A + "/ElectricPowerQualitySummary", token))
+				.contains(QUALITY_A.toString())
+				.doesNotContain(QUALITY_B.toString());
+		assertThat(read(UP_A + "/ElectricPowerQualitySummary/" + QUALITY_A, token))
+				.contains("<espi:ElectricPowerQualitySummary");
+
+		expect(UP_B + "/UsageSummary", token, 403);
+		expect(UP_B + "/ElectricPowerQualitySummary/" + QUALITY_B, token, 403);
+		expect("/Subscription/" + SUBSCRIPTION_A + "/UsagePoint/" + USAGE_POINT_B + "/UsageSummary", token, 404);
+		expect(UP_A + "/UsageSummary/" + SUMMARY_B, token, 404);
+		// No interval metering + commodity: the usage-data URL rule refuses the UsagePoint and its readings.
+		expect(UP_A, token, 403);
+		expect(MR_A + "/IntervalBlock", token, 403);
+	}
+
+	@Test
+	@DisplayName("IntervalBlock and summary feeds are in interval-start order, as in Batch/Subscription")
+	void feeds_are_chronological() throws Exception {
+		String blocks = read(MR_A + "/IntervalBlock", customerA());
+		String summaries = read(UP_A + "/UsageSummary", customerA());
+
+		assertThat(blocks.indexOf(OLD_BLOCK_A.toString())).isNotNegative().isLessThan(blocks.indexOf(BLOCK_A.toString()));
+		assertThat(summaries.indexOf(OLD_SUMMARY_A.toString())).isNotNegative()
+				.isLessThan(summaries.indexOf(SUMMARY_A.toString()));
+	}
+
+	@Test
 	@DisplayName("HistoryLength limits the IntervalBlocks and summaries: older ones are left out of feeds and 404 as entries")
 	void history_length_is_a_ceiling() throws Exception {
 		RequestPostProcessor yearToken = customerA();
