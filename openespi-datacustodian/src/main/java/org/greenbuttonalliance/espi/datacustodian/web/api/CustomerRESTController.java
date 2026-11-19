@@ -27,6 +27,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerEntity;
 import org.greenbuttonalliance.espi.common.dto.customer.CustomerDto;
 import org.greenbuttonalliance.espi.common.mapper.customer.CustomerMapper;
 import org.greenbuttonalliance.espi.common.repositories.customer.CustomerRepository;
@@ -116,12 +117,14 @@ public class CustomerRESTController {
             Authentication authentication) {
 
         subscriptionAccess.requireAdmin(authentication);
-        CustomerDto dto = customerRepository.findById(customerId)
-                .map(customerMapper::toDto)
+        CustomerEntity customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer not found"));
 
+        // The same Atom entry, with the same links, as in the /Customer feed
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        customerExportService.exportDto(dto, out);
+        customerExportService.exportDto(customerExportService.buildEntry(UsageEntries.resourceBase(
+                ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString()) + "/Customer", customer,
+                customerMapper::toDto), out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
                 .body(out.toByteArray());

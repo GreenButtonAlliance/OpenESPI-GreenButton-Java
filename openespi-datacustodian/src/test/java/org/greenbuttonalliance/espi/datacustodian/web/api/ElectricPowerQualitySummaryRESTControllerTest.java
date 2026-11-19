@@ -140,16 +140,13 @@ public class ElectricPowerQualitySummaryRESTControllerTest extends AbstractContr
     }
 
     @Nested
-    @DisplayName("Subscription scoped GET tests")
-    class SubscriptionTests {
+    @DisplayName("GET /espi/1_1/resource/RetailCustomer/{retailCustomerId}/UsagePoint/{usagePointId}/ElectricPowerQualitySummary")
+    class RetailCustomerTests {
         @Test
         @WithMockUser(authorities = "FB_17")
-        @DisplayName("a token that does not hold the subscription gets 403 for its collection (#286)")
-        void foreignSubscriptionCollectionIsRefused() throws Exception {
-            UUID subId = UUID.randomUUID();
-            UUID upId = UUID.randomUUID();
-
-            mockMvc.perform(get("/espi/1_1/resource/Subscription/" + subId + "/UsagePoint/" + upId + "/ElectricPowerQualitySummary")
+        @DisplayName("a token with no subscription gets 403 (#286)")
+        void tokenWithoutSubscriptionIsRefused() throws Exception {
+            mockMvc.perform(get("/espi/1_1/resource/RetailCustomer/1/UsagePoint/" + UUID.randomUUID() + "/ElectricPowerQualitySummary")
                             .accept(MediaType.APPLICATION_XML))
                     .andExpect(status().isForbidden())
                     .andExpect(refusedByRowScope());
@@ -157,18 +154,10 @@ public class ElectricPowerQualitySummaryRESTControllerTest extends AbstractContr
 
         @Test
         @WithMockUser(authorities = "FB_17")
-        @DisplayName("a token that does not hold the subscription gets 403 for a summary that exists (#286)")
-        void foreignSubscriptionResourceIsRefused() throws Exception {
-            UUID subId = UUID.randomUUID();
-            UUID upId = UUID.randomUUID();
-            UUID id = UUID.randomUUID();
-            when(electricPowerQualitySummaryRepository.findById(id))
-                    .thenReturn(Optional.of(new ElectricPowerQualitySummaryEntity()));
-
-            mockMvc.perform(get("/espi/1_1/resource/Subscription/" + subId + "/UsagePoint/" + upId + "/ElectricPowerQualitySummary/" + id)
-                            .accept(MediaType.APPLICATION_XML))
-                    .andExpect(status().isForbidden())
-                    .andExpect(refusedByRowScope());
+        @DisplayName("no summary is served under /Subscription/{id}/...: a Subscription is per grant, so the href would not be repeatable (#290)")
+        void noSubscriptionScopedSummaries() throws Exception {
+            mockMvc.perform(get("/espi/1_1/resource/Subscription/" + UUID.randomUUID() + "/UsagePoint/" + UUID.randomUUID() + "/ElectricPowerQualitySummary"))
+                    .andExpect(status().isNotFound());
         }
     }
 }

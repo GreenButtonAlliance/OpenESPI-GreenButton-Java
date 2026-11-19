@@ -27,6 +27,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerAccountEntity;
 import org.greenbuttonalliance.espi.common.dto.customer.CustomerAccountDto;
 import org.greenbuttonalliance.espi.common.mapper.customer.CustomerAccountMapper;
 import org.greenbuttonalliance.espi.common.repositories.customer.CustomerAccountRepository;
@@ -119,12 +120,14 @@ public class CustomerAccountRESTController {
             Authentication authentication) {
 
         subscriptionAccess.requireAdmin(authentication);
-        CustomerAccountDto dto = customerAccountRepository.findById(customerAccountId)
-                .map(customerAccountMapper::toDto)
+        CustomerAccountEntity customerAccount = customerAccountRepository.findById(customerAccountId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CustomerAccount not found for id: " + customerAccountId));
 
+        // The same Atom entry, with the same links, as in the /CustomerAccount feed
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        customerAccountExportService.exportDto(dto, out);
+        customerAccountExportService.exportDto(customerAccountExportService.buildEntry(UsageEntries.resourceBase(
+                ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString()) + "/CustomerAccount", customerAccount,
+                customerAccountMapper::toDto), out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
                 .body(out.toByteArray());

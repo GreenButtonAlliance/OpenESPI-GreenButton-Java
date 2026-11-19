@@ -27,18 +27,21 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.greenbuttonalliance.espi.common.domain.usage.MeterReadingEntity;
 import org.greenbuttonalliance.espi.common.dto.usage.MeterReadingDto;
-import org.greenbuttonalliance.espi.common.mapper.usage.MeterReadingMapper;
 import org.greenbuttonalliance.espi.common.repositories.usage.MeterReadingRepository;
 import org.greenbuttonalliance.espi.common.service.impl.MeterReadingExportService;
+import org.greenbuttonalliance.espi.datacustodian.web.api.SubscriptionAccess.Reader;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.io.ByteArrayOutputStream;
@@ -46,76 +49,64 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Modern REST Controller for ESPI Meter Reading resources.
- * <p>
- * This controller implements the NAESB ESPI 1.0 REST API for Meter Readings,
- * using modern Spring Boot 3.5 patterns with DTOs and MapStruct mappers.
- * <p>
- * Supported endpoints:
- * - GET /espi/1_1/resource/MeterReading - List all meter readings
- * - GET /espi/1_1/resource/MeterReading/{meterReadingId} - Get specific meter reading
- * - GET /espi/1_1/resource/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/MeterReading[/{meterReadingId}]
+ * ESPI MeterReading resources (#286):
+ * <ul>
+ *   <li>{@code GET /espi/1_1/resource/MeterReading}: the MeterReadings the token may read (the admin: all, paged by
+ *       the non-ESPI {@code limit}/{@code offset});</li>
+ *   <li>{@code GET /espi/1_1/resource/MeterReading/{meterReadingId}}: one of them, else 404;</li>
+ *   <li>{@code GET /espi/1_1/resource/RetailCustomer/{retailCustomerId}/UsagePoint/{usagePointId}/MeterReading}: a
+ *       UsagePoint's MeterReadings, the collection a UsagePoint entry links to.</li>
+ * </ul>
+ * Which rows, and the entries' links, are {@link SubscriptionAccess} and {@link UsageEntries}.
  */
 @RestController
 @RequestMapping("/espi/1_1/resource")
 @Tag(name = "Meter Readings", description = "ESPI Meter Reading resource endpoints")
 @SecurityRequirement(name = "oauth2")
 @RequiredArgsConstructor
-// open-in-view is off: SubscriptionAccess reads the subscription's lazy UsagePoints in this session (#286)
+// open-in-view is off: the entries read lazy collections in this session (#286)
 @Transactional(readOnly = true)
 public class MeterReadingController {
-    
+
     private final MeterReadingRepository meterReadingRepository;
-    private final MeterReadingMapper meterReadingMapper;
     private final MeterReadingExportService meterReadingExportService;
     private final SubscriptionAccess subscriptionAccess;
+    private final UsageEntries usageEntries;
 
-    /**
-     * Get all Meter Readings (root collection).
-     * Requires DataCustodian admin access or appropriate read scope.
-     */
     @GetMapping(value = "/MeterReading", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @Operation(
-        summary = "Get all Meter Readings",
-        description = "Retrieve all Meter Readings accessible to the authenticated client",
+        summary = "Get Meter Readings",
+        description = "The Meter Readings the token may read: its subscription's, or every one for the DataCustodian admin",
         responses = {
             @ApiResponse(responseCode = "200", description = "Meter Readings retrieved successfully",
                 content = @Content(schema = @Schema(implementation = MeterReadingDto.class))),
             @ApiResponse(responseCode = "401", description = "Unauthorized"),
-            @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
+            @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope, or no subscription")
         }
     )
     public ResponseEntity<byte[]> getAllMeterReadings(
-            @Parameter(description = "Maximum number of results to return", example = "50")
+            @Parameter(description = "DataCustodian admin only: page size (not ESPI)", example = "50")
             @RequestParam(defaultValue = "50") int limit,
-            @Parameter(description = "Offset for pagination", example = "0")
+            @Parameter(description = "DataCustodian admin only: page number (not ESPI)", example = "0")
             @RequestParam(defaultValue = "0") int offset,
             Authentication authentication) {
 
-        // Root collection and entries hold every customer's data: DataCustodian admin only (#286)
-        subscriptionAccess.requireAdmin(authentication);
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        meterReadingExportService.exportFeed(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString(),
-                "MeterReading Feed", meterReadingRepository.findAll(PageRequest.of(offset, limit)).getContent(),
-                meterReadingMapper::toDto, out);
-        return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_XML)
-                .body(out.toByteArray());
+        Reader reader = subscriptionAccess.reader(authentication);
+        return feed(reader, reader.admin()
+                ? meterReadingRepository.findAll(PageRequest.of(offset, limit)).getContent()
+                : reader.meterReadings());
     }
 
-    /**
-     * Get specific Meter Reading by ID (root resource).
-     */
     @GetMapping(value = "/MeterReading/{meterReadingId}", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @Operation(
         summary = "Get Meter Reading by ID",
-        description = "Retrieve a specific Meter Reading by its unique identifier",
+        description = "One Meter Reading the token may read, with the same Atom links as in its feeds",
         responses = {
             @ApiResponse(responseCode = "200", description = "Meter Reading retrieved successfully",
                 content = @Content(schema = @Schema(implementation = MeterReadingDto.class))),
-            @ApiResponse(responseCode = "404", description = "Meter Reading not found"),
+            @ApiResponse(responseCode = "404", description = "No such Meter Reading the token may read"),
             @ApiResponse(responseCode = "401", description = "Unauthorized"),
-            @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
+            @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope, or no subscription")
         }
     )
     public ResponseEntity<byte[]> getMeterReading(
@@ -123,80 +114,44 @@ public class MeterReadingController {
             @PathVariable UUID meterReadingId,
             Authentication authentication) {
 
-        subscriptionAccess.requireAdmin(authentication);
-        MeterReadingDto dto = meterReadingRepository.findById(meterReadingId)
-            .map(meterReadingMapper::toDto)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Meter Reading not found for id: " + meterReadingId));
-
+        Reader reader = subscriptionAccess.reader(authentication);
+        String base = UsageEntries.resourceBase(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString());
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        meterReadingExportService.exportDto(dto, out);
-        return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_XML)
-                .body(out.toByteArray());
+        meterReadingExportService.exportDto(meterReadingExportService.buildEntry(
+                usageEntries.meterReading(reader, base, reader.meterReading(meterReadingId))), out);
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_XML).body(out.toByteArray());
     }
 
-    /**
-     * Get the Meter Readings of a Usage Point in a Subscription, the feed {@code Batch/Subscription} links to: 403
-     * unless the token's subscription, 404 unless the UsagePoint is in it and covered by a commodity FB (#286).
-     */
-    @GetMapping(value = "/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/MeterReading", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    @GetMapping(value = "/RetailCustomer/{retailCustomerId}/UsagePoint/{usagePointId}/MeterReading", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @Operation(
-        summary = "Get Meter Readings for a Subscription's Usage Point",
-        description = "Retrieve the Meter Readings of a Usage Point within the token's subscription",
+        summary = "Get a Usage Point's Meter Readings",
+        description = "The Meter Readings of one of the retail customer's Usage Points (RetailCustomer XPath collection)",
         responses = {
             @ApiResponse(responseCode = "200", description = "Meter Readings retrieved successfully"),
-            @ApiResponse(responseCode = "404", description = "Usage Point not found in the subscription"),
+            @ApiResponse(responseCode = "404", description = "No such Usage Point of that retail customer the token may read"),
             @ApiResponse(responseCode = "401", description = "Unauthorized"),
-            @ApiResponse(responseCode = "403", description = "Not this token's subscription")
+            @ApiResponse(responseCode = "403", description = "Not the token's retail customer")
         }
     )
-    public ResponseEntity<byte[]> getSubscriptionMeterReadings(
-            @Parameter(description = "Unique identifier of the Subscription", required = true)
-            @PathVariable UUID subscriptionId,
+    public ResponseEntity<byte[]> getUsagePointMeterReadings(
+            @Parameter(description = "Identifier of the Retail Customer", required = true)
+            @PathVariable Long retailCustomerId,
             @Parameter(description = "Unique identifier of the Usage Point", required = true)
             @PathVariable UUID usagePointId,
             Authentication authentication) {
 
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        meterReadingExportService.exportFeed(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString(),
-                "MeterReading Feed", subscriptionAccess.meterReadings(authentication, subscriptionId, usagePointId),
-                meterReadingMapper::toDto, out);
-        return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_XML)
-                .body(out.toByteArray());
+        Reader reader = subscriptionAccess.reader(authentication);
+        return feed(reader, reader.meterReadingsOf(reader.usagePoint(retailCustomerId, usagePointId, false)));
     }
 
-    /**
-     * Get one Meter Reading of a Usage Point in a Subscription, the entry {@code Batch/Subscription} links to: 403
-     * unless the token's subscription, 404 unless the chain holds (#286).
-     */
-    @GetMapping(value = "/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/MeterReading/{meterReadingId}", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
-    @Operation(
-        summary = "Get a Meter Reading for a Subscription's Usage Point",
-        description = "Retrieve one Meter Reading of a Usage Point within the token's subscription",
-        responses = {
-            @ApiResponse(responseCode = "200", description = "Meter Reading retrieved successfully"),
-            @ApiResponse(responseCode = "404", description = "Meter Reading or Usage Point not found in the subscription"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized"),
-            @ApiResponse(responseCode = "403", description = "Not this token's subscription")
-        }
-    )
-    public ResponseEntity<byte[]> getSubscriptionMeterReading(
-            @Parameter(description = "Unique identifier of the Subscription", required = true)
-            @PathVariable UUID subscriptionId,
-            @Parameter(description = "Unique identifier of the Usage Point", required = true)
-            @PathVariable UUID usagePointId,
-            @Parameter(description = "Unique identifier of the Meter Reading", required = true)
-            @PathVariable UUID meterReadingId,
-            Authentication authentication) {
-
-        MeterReadingDto dto = meterReadingMapper.toDto(
-                subscriptionAccess.meterReading(authentication, subscriptionId, usagePointId, meterReadingId));
-
+    private ResponseEntity<byte[]> feed(Reader reader, List<MeterReadingEntity> meterReadings) {
+        String feedHref = ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString();
+        String base = UsageEntries.resourceBase(feedHref);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        meterReadingExportService.exportDto(dto, out);
-        return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_XML)
-                .body(out.toByteArray());
+        meterReadingExportService.exportDto(meterReadingExportService.buildFeedOf(feedHref, "MeterReading",
+                "MeterReading Feed",
+                meterReadings.stream().map(meterReading -> usageEntries.meterReading(reader, base, meterReading)).toList()),
+                out);
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_XML).body(out.toByteArray());
     }
 }

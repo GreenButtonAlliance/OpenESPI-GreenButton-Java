@@ -31,17 +31,10 @@ import org.greenbuttonalliance.espi.common.domain.usage.TimeConfigurationEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.UsageSummaryEntity;
 import org.greenbuttonalliance.espi.common.dto.atom.AtomFeedDto;
-import org.greenbuttonalliance.espi.common.dto.atom.LinkDto;
-import org.greenbuttonalliance.espi.common.mapper.usage.ElectricPowerQualitySummaryMapper;
-import org.greenbuttonalliance.espi.common.mapper.usage.IntervalBlockMapper;
-import org.greenbuttonalliance.espi.common.mapper.usage.MeterReadingMapper;
-import org.greenbuttonalliance.espi.common.mapper.usage.ReadingTypeMapper;
-import org.greenbuttonalliance.espi.common.mapper.usage.TimeConfigurationMapper;
-import org.greenbuttonalliance.espi.common.mapper.usage.UsagePointMapper;
-import org.greenbuttonalliance.espi.common.mapper.usage.UsageSummaryMapper;
 import org.greenbuttonalliance.espi.common.repositories.usage.SubscriptionRepository;
 import org.greenbuttonalliance.espi.common.service.BaseExportService.FeedEntry;
 import org.greenbuttonalliance.espi.common.service.impl.UsageExportService;
+import org.greenbuttonalliance.espi.datacustodian.web.api.SubscriptionAccess.Reader;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -75,8 +68,9 @@ import java.util.function.Function;
  *   <li>its LocalTimeParameters (once in the feed, even if shared).</li>
  * </ol>
  *
- * <p>Hrefs are subscription-scoped ({@code .../Subscription/{id}/UsagePoint/{id}/...}); ReadingType and
- * LocalTimeParameters are root resources. Each entry has {@code self} and {@code up}, plus {@code related}
+ * <p>Hrefs are ROOT form ({@code UsagePoint/{id}}, {@code MeterReading/{id}}, ...), never through the
+ * Subscription, whose id changes with every grant; each entry is the one {@link UsageEntries} builds for the root
+ * feeds. Each entry has {@code self} and {@code up}, plus {@code related}
  * links to the resources it refers to that are in the feed.</p>
  *
  * <p>Which IntervalBlocks, UsageSummaries and ElectricPowerQualitySummaries are returned (the "time-bounded"
@@ -144,33 +138,14 @@ public class SubscriptionFeedAssembler {
 
 	private final SubscriptionRepository subscriptionRepository;
 	private final UsageExportService usageExportService;
-	private final UsagePointMapper usagePointMapper;
-	private final MeterReadingMapper meterReadingMapper;
-	private final ReadingTypeMapper readingTypeMapper;
-	private final IntervalBlockMapper intervalBlockMapper;
-	private final UsageSummaryMapper usageSummaryMapper;
-	private final ElectricPowerQualitySummaryMapper powerQualitySummaryMapper;
-	private final TimeConfigurationMapper timeConfigurationMapper;
+	private final UsageEntries usageEntries;
 	private final Clock clock = Clock.systemUTC();
 
 	public SubscriptionFeedAssembler(SubscriptionRepository subscriptionRepository,
-									 UsageExportService usageExportService,
-									 UsagePointMapper usagePointMapper,
-									 MeterReadingMapper meterReadingMapper,
-									 ReadingTypeMapper readingTypeMapper,
-									 IntervalBlockMapper intervalBlockMapper,
-									 UsageSummaryMapper usageSummaryMapper,
-									 ElectricPowerQualitySummaryMapper powerQualitySummaryMapper,
-									 TimeConfigurationMapper timeConfigurationMapper) {
+									 UsageExportService usageExportService, UsageEntries usageEntries) {
 		this.subscriptionRepository = subscriptionRepository;
 		this.usageExportService = usageExportService;
-		this.usagePointMapper = usagePointMapper;
-		this.meterReadingMapper = meterReadingMapper;
-		this.readingTypeMapper = readingTypeMapper;
-		this.intervalBlockMapper = intervalBlockMapper;
-		this.usageSummaryMapper = usageSummaryMapper;
-		this.powerQualitySummaryMapper = powerQualitySummaryMapper;
-		this.timeConfigurationMapper = timeConfigurationMapper;
+		this.usageEntries = usageEntries;
 	}
 
 	/**
@@ -180,17 +155,20 @@ public class SubscriptionFeedAssembler {
 	 * @param feedHref     the request's absolute URL (the feed's self link)
 	 */
 	@Transactional(readOnly = true)
-	public Optional<AtomFeedDto> build(UUID subscriptionId, String resourceBase, String feedHref, Grants grants,
+	public Optional<AtomFeedDto> build(UUID subscriptionId, String resourceBase, String feedHref, Reader reader,
 									   Range range) {
 		return subscriptionRepository.findById(subscriptionId)
 				.map(subscription -> usageExportService.buildFeedOf(feedHref, "Subscription",
-						"Green Button Subscription Feed",
-						entries(subscription, resourceBase, grants, Selection.of(range, grants, clock.instant()))));
+						"Green Button Subscription Feed", entries(subscription, resourceBase, reader,
+								Selection.of(range, reader.grants(), clock.instant()))));
 	}
 
-	private List<FeedEntry> entries(SubscriptionEntity subscription, String resourceBase, Grants grants,
-									Selection selection) {
-		String subscriptionHref = resourceBase + "/Subscription/" + subscription.getId();
+	/**
+	 * The feed's entries, each the same entry (and links) as in the root feeds ({@link UsageEntries}). The range
+	 * selects which time-bounded entries the feed carries; the links name what the token may read.
+	 */
+	private List<FeedEntry> entries(SubscriptionEntity subscription, String base, Reader reader, Selection selection) {
+		Grants grants = reader.grants();
 		Set<UUID> readingTypesInFeed = new HashSet<>();
 		Set<UUID> localTimesInFeed = new HashSet<>();
 		List<FeedEntry> entries = new ArrayList<>();
@@ -199,8 +177,6 @@ public class SubscriptionFeedAssembler {
 				.filter(grants::covers)
 				.toList();
 		for (UsagePointEntity usagePoint : usagePoints) {
-			String usagePointFeed = subscriptionHref + "/UsagePoint";
-			String usagePointHref = usagePointFeed + "/" + usagePoint.getId();
 			List<UsageSummaryEntity> summaries = !grants.usageSummaries() ? List.of()
 					: selection.summaries(usagePoint.getUsageSummaries(), UsageSummaryEntity::getBillingPeriod);
 			List<ElectricPowerQualitySummaryEntity> qualitySummaries = !grants.powerQualitySummaries() ? List.of()
@@ -208,81 +184,32 @@ public class SubscriptionFeedAssembler {
 							ElectricPowerQualitySummaryEntity::getSummaryInterval);
 			TimeConfigurationEntity localTime = usagePoint.getLocalTimeParameters();
 
-			List<LinkDto> usagePointRelated = new ArrayList<>();
-			if (!usagePoint.getMeterReadings().isEmpty()) {
-				usagePointRelated.add(related(usagePointHref + "/MeterReading", "espi-feed/MeterReading"));
-			}
-			if (!summaries.isEmpty()) {
-				usagePointRelated.add(related(usagePointHref + "/UsageSummary", "espi-feed/UsageSummary"));
-			}
-			if (!qualitySummaries.isEmpty()) {
-				usagePointRelated.add(related(usagePointHref + "/ElectricPowerQualitySummary",
-						"espi-feed/ElectricPowerQualitySummary"));
-			}
-			if (localTime != null) {
-				usagePointRelated.add(related(resourceBase + "/LocalTimeParameters/" + localTime.getId(),
-						"espi-entry/LocalTimeParameters"));
-			}
-			entries.add(new FeedEntry(usagePoint, usagePointMapper.toDto(usagePoint), usagePointHref,
-					usagePointFeed, usagePointRelated));
-
+			entries.add(usageEntries.usagePoint(reader, base, usagePoint));
 			for (MeterReadingEntity meterReading : sorted(usagePoint.getMeterReadings(), BY_ID)) {
-				addMeterReading(entries, meterReading, usagePointHref, resourceBase, selection, readingTypesInFeed);
+				entries.add(usageEntries.meterReading(reader, base, meterReading));
+				ReadingTypeEntity readingType = meterReading.getReadingType();
+				if (readingType != null && readingTypesInFeed.add(readingType.getId())) {
+					entries.add(usageEntries.readingType(reader, base, readingType));
+				}
+				for (IntervalBlockEntity block : selection.blocks(meterReading.getIntervalBlocks())) {
+					entries.add(usageEntries.intervalBlock(base, block));
+				}
 			}
-			for (UsageSummaryEntity summary : summaries) {
-				String feed = usagePointHref + "/UsageSummary";
-				entries.add(new FeedEntry(summary, usageSummaryMapper.toDto(summary), feed + "/" + summary.getId(),
-						feed, List.of()));
-			}
-			for (ElectricPowerQualitySummaryEntity summary : qualitySummaries) {
-				String feed = usagePointHref + "/ElectricPowerQualitySummary";
-				entries.add(new FeedEntry(summary, powerQualitySummaryMapper.toDto(summary),
-						feed + "/" + summary.getId(), feed, List.of()));
-			}
+			summaries.forEach(summary -> entries.add(usageEntries.usageSummary(base, summary)));
+			qualitySummaries.forEach(summary -> entries.add(usageEntries.qualitySummary(base, summary)));
 			if (localTime != null && localTimesInFeed.add(localTime.getId())) {
-				String feed = resourceBase + "/LocalTimeParameters";
-				entries.add(new FeedEntry(localTime, timeConfigurationMapper.toDto(localTime),
-						feed + "/" + localTime.getId(), feed, List.of()));
+				// Related to every UsagePoint of the feed that uses it
+				entries.add(usageEntries.localTimeParameters(base, localTime, usagePoints.stream()
+						.filter(other -> other.getLocalTimeParameters() != null
+								&& localTime.getId().equals(other.getLocalTimeParameters().getId()))
+						.toList()));
 			}
 		}
 		return entries;
 	}
 
-	private void addMeterReading(List<FeedEntry> entries, MeterReadingEntity meterReading, String usagePointHref,
-								 String resourceBase, Selection selection, Set<UUID> readingTypesInFeed) {
-		String meterReadingFeed = usagePointHref + "/MeterReading";
-		String meterReadingHref = meterReadingFeed + "/" + meterReading.getId();
-		ReadingTypeEntity readingType = meterReading.getReadingType();
-		List<IntervalBlockEntity> blocks = selection.blocks(meterReading.getIntervalBlocks());
-
-		List<LinkDto> meterReadingRelated = new ArrayList<>();
-		if (readingType != null) {
-			meterReadingRelated.add(related(resourceBase + "/ReadingType/" + readingType.getId(), "espi-entry/ReadingType"));
-		}
-		if (!blocks.isEmpty()) {
-			meterReadingRelated.add(related(meterReadingHref + "/IntervalBlock", "espi-feed/IntervalBlock"));
-		}
-		entries.add(new FeedEntry(meterReading, meterReadingMapper.toDto(meterReading), meterReadingHref,
-				meterReadingFeed, meterReadingRelated));
-
-		if (readingType != null && readingTypesInFeed.add(readingType.getId())) {
-			String feed = resourceBase + "/ReadingType";
-			entries.add(new FeedEntry(readingType, readingTypeMapper.toDto(readingType),
-					feed + "/" + readingType.getId(), feed, List.of()));
-		}
-		for (IntervalBlockEntity block : blocks) {
-			String feed = meterReadingHref + "/IntervalBlock";
-			entries.add(new FeedEntry(block, intervalBlockMapper.toDto(block), feed + "/" + block.getId(), feed,
-					List.of()));
-		}
-	}
-
 	private static <T> List<T> sorted(List<T> items, Comparator<? super T> order) {
 		return items == null ? List.of() : items.stream().sorted(order).toList();
-	}
-
-	private static LinkDto related(String href, String type) {
-		return new LinkDto("related", href, type);
 	}
 
 	/**

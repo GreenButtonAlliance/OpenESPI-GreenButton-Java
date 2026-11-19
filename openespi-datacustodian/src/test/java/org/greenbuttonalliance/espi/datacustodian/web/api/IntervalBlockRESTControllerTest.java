@@ -130,20 +130,18 @@ public class IntervalBlockRESTControllerTest extends AbstractControllerMockTest 
     }
 
     @Nested
-    @DisplayName("GET /espi/1_1/resource/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/MeterReading/{meterReadingId}/IntervalBlock")
-    class GetSubscriptionIntervalBlocks {
+    @DisplayName("GET /espi/1_1/resource/RetailCustomer/{retailCustomerId}/UsagePoint/{usagePointId}/MeterReading/{meterReadingId}/IntervalBlock")
+    class GetMeterReadingIntervalBlocks {
 
         @Test
         @WithMockUser(authorities = {"FB_4", "FB_5"})
-        @DisplayName("a token that does not hold the subscription gets 403, even if the MeterReading has blocks (#286)")
-        void foreignSubscriptionCollectionIsRefused() throws Exception {
-            UUID subId = UUID.randomUUID();
-            UUID upId = UUID.randomUUID();
+        @DisplayName("a token with no subscription gets 403, even if the MeterReading has blocks (#286)")
+        void tokenWithoutSubscriptionIsRefused() throws Exception {
             UUID mrId = UUID.randomUUID();
             when(intervalBlockRepository.findAllByMeterReadingId(mrId))
                     .thenReturn(List.of(new IntervalBlockEntity()));
 
-            mockMvc.perform(get("/espi/1_1/resource/Subscription/" + subId + "/UsagePoint/" + upId + "/MeterReading/" + mrId + "/IntervalBlock")
+            mockMvc.perform(get("/espi/1_1/resource/RetailCustomer/1/UsagePoint/" + UUID.randomUUID() + "/MeterReading/" + mrId + "/IntervalBlock")
                             .accept(MediaType.APPLICATION_XML))
                     .andExpect(status().isForbidden())
                     .andExpect(refusedByRowScope());
@@ -153,32 +151,17 @@ public class IntervalBlockRESTControllerTest extends AbstractControllerMockTest 
         @WithMockUser(authorities = "SCOPE_Wrong_Authority")
         @DisplayName("Should return 403 Forbidden for user without proper authority")
         void shouldReturn403ForWrongAuthority() throws Exception {
-            UUID subId = UUID.randomUUID();
-            UUID upId = UUID.randomUUID();
-            UUID mrId = UUID.randomUUID();
-            mockMvc.perform(get("/espi/1_1/resource/Subscription/" + subId + "/UsagePoint/" + upId + "/MeterReading/" + mrId + "/IntervalBlock"))
+            mockMvc.perform(get("/espi/1_1/resource/RetailCustomer/1/UsagePoint/" + UUID.randomUUID() + "/MeterReading/" + UUID.randomUUID() + "/IntervalBlock"))
                     .andExpect(status().isForbidden());
         }
     }
 
-    @Nested
-    @DisplayName("GET /espi/1_1/resource/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/MeterReading/{meterReadingId}/IntervalBlock/{intervalBlockId}")
-    class GetSubscriptionIntervalBlock {
-
-        @Test
-        @WithMockUser(authorities = {"FB_4", "FB_5"})
-        @DisplayName("a token that does not hold the subscription gets 403 for a block that exists (#286)")
-        void foreignSubscriptionResourceIsRefused() throws Exception {
-            UUID subId = UUID.randomUUID();
-            UUID upId = UUID.randomUUID();
-            UUID mrId = UUID.randomUUID();
-            UUID ibId = UUID.randomUUID();
-            when(intervalBlockRepository.findById(ibId)).thenReturn(Optional.of(new IntervalBlockEntity()));
-
-            mockMvc.perform(get("/espi/1_1/resource/Subscription/" + subId + "/UsagePoint/" + upId + "/MeterReading/" + mrId + "/IntervalBlock/" + ibId)
-                            .accept(MediaType.APPLICATION_XML))
-                    .andExpect(status().isForbidden())
-                    .andExpect(refusedByRowScope());
-        }
+    @Test
+    @WithMockUser(authorities = {"FB_4", "FB_5"})
+    @DisplayName("no resource is served under /Subscription/{id}/...: a Subscription is per grant, so the href would not be repeatable (#290)")
+    void noSubscriptionScopedIntervalBlocks() throws Exception {
+        mockMvc.perform(get("/espi/1_1/resource/Subscription/" + UUID.randomUUID() + "/UsagePoint/" + UUID.randomUUID()
+                        + "/MeterReading/" + UUID.randomUUID() + "/IntervalBlock"))
+                .andExpect(status().isNotFound());
     }
 }

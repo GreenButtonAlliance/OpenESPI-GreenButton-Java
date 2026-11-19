@@ -37,4 +37,7 @@ public interface MeterReadingRepository extends JpaRepository<MeterReadingEntity
 	@Query("SELECT m.id FROM MeterReadingEntity m WHERE m.usagePoint.id = :usagePointId")
 	List<UUID> findAllIdsByUsagePointId(@Param("usagePointId") UUID usagePointId);
 
+	/** The MeterReadings of a ReadingType: a ReadingType entry's reverse {@code related} links. */
+	List<MeterReadingEntity> findAllByReadingTypeId(UUID readingTypeId);
+
 }

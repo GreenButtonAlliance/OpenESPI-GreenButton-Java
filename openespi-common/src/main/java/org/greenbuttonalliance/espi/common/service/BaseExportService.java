@@ -258,11 +258,9 @@ public abstract class BaseExportService {
         List<FeedEntry> entries = new ArrayList<>(entities.size());
         String resource = null;
         for (E entity : entities) {
-            Object content = toContent.apply(entity);
-            resource = resource == null ? resourceName(content) : resource;
-            entries.add(new FeedEntry(entity, content,
-                    href(entity.getSelfLink(), feedHref + "/" + entity.getId()),
-                    href(entity.getUpLink(), feedHref), List.of()));
+            FeedEntry entry = feedEntry(feedHref, entity, toContent);
+            resource = resource == null ? resourceName(entry.content()) : resource;
+            entries.add(entry);
         }
         // An empty feed has no entry to name its resource, so the href's last segment is used (#197).
         return buildFeedOf(feedHref, resource != null ? resource : lastPathSegment(feedHref), title, entries);
@@ -303,18 +301,7 @@ public abstract class BaseExportService {
 
         List<AtomEntryDto> entries = new ArrayList<>(feedEntries.size());
         for (FeedEntry feedEntry : feedEntries) {
-            IdentifiedObject entity = feedEntry.entity();
-            String entryResource = resourceName(feedEntry.content());
-            List<LinkDto> links = new ArrayList<>(2 + feedEntry.related().size());
-            links.add(new LinkDto("self", feedEntry.selfHref(), "espi-entry/" + entryResource));
-            links.add(new LinkDto("up", feedEntry.upHref(), "espi-feed/" + entryResource));
-            links.addAll(feedEntry.related());
-            String entryTitle = entity.getDescription() != null && !entity.getDescription().isBlank()
-                    ? entity.getDescription() : entryResource;
-            entries.add(newEntry("urn:uuid:" + entity.getId(), entryTitle,
-                    utc(entity.getPublished(), entity.getCreated(), now),
-                    utc(entity.getUpdated(), entity.getCreated(), now),
-                    List.copyOf(links), feedEntry.content()));
+            entries.add(buildEntry(feedEntry, now));
         }
 
         AtomFeedDto feed = new AtomFeedDto();
@@ -322,9 +309,60 @@ public abstract class BaseExportService {
         feed.setTitle(title);
         feed.setUpdated(now);
         // atom.xsd requires a type on every link.
-        feed.setLinks(List.of(new LinkDto("self", feedHref, "espi-feed/" + feedResource)));
+        feed.setLinks(List.of(new LinkDto("self", feedHref, linkTypePrefix() + "-feed/" + feedResource)));
         feed.setEntries(entries);
         return feed;
+    }
+
+    /**
+     * Builds one Atom {@code <entry>} for a resource read on its own, with the same id, title, dates and
+     * {@code self}, {@code up} and {@code related} links it has in a feed
+     * ({@link #buildFeedOf(String, String, String, List)}).
+     */
+    public AtomEntryDto buildEntry(FeedEntry feedEntry) {
+        return buildEntry(feedEntry, OffsetDateTime.now(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+    }
+
+    /**
+     * Builds the Atom {@code <entry>} of one resource of the feed at {@code feedHref}, read on its own at
+     * {@code feedHref/{id}}: the same entry, with the same {@code self} and {@code up} links, as
+     * {@link #buildFeed(String, String, List, Function)} writes for it.
+     */
+    public <E extends IdentifiedObject> AtomEntryDto buildEntry(String feedHref, E entity,
+                                                                Function<? super E, ?> toContent) {
+        return buildEntry(feedEntry(Objects.requireNonNull(feedHref, "feedHref"), entity, toContent));
+    }
+
+    /** A resource's entry in the feed at {@code feedHref}: stored self/up links if absolute, else derived. */
+    private static <E extends IdentifiedObject> FeedEntry feedEntry(String feedHref, E entity,
+                                                                    Function<? super E, ?> toContent) {
+        return new FeedEntry(entity, toContent.apply(entity),
+                href(entity.getSelfLink(), feedHref + "/" + entity.getId()),
+                href(entity.getUpLink(), feedHref), List.of());
+    }
+
+    private AtomEntryDto buildEntry(FeedEntry feedEntry, OffsetDateTime now) {
+        IdentifiedObject entity = feedEntry.entity();
+        String entryResource = resourceName(feedEntry.content());
+        List<LinkDto> links = new ArrayList<>(2 + feedEntry.related().size());
+        links.add(new LinkDto("self", feedEntry.selfHref(), linkTypePrefix() + "-entry/" + entryResource));
+        links.add(new LinkDto("up", feedEntry.upHref(), linkTypePrefix() + "-feed/" + entryResource));
+        links.addAll(feedEntry.related());
+        String entryTitle = entity.getDescription() != null && !entity.getDescription().isBlank()
+                ? entity.getDescription() : entryResource;
+        return newEntry("urn:uuid:" + entity.getId(), entryTitle,
+                utc(entity.getPublished(), entity.getCreated(), now),
+                utc(entity.getUpdated(), entity.getCreated(), now),
+                List.copyOf(links), feedEntry.content());
+    }
+
+    /**
+     * The prefix of the {@code self} and {@code up} link types this exporter writes ({@code <prefix>-entry/<Resource>},
+     * {@code <prefix>-feed/<Resource>}): {@code espi} for usage resources; customer-domain exporters override it with
+     * {@code cust}, the GBA CMD model's and certified data's type for customer resources ({@code cust-entry/Customer}).
+     */
+    protected String linkTypePrefix() {
+        return "espi";
     }
 
     /**

@@ -19,6 +19,7 @@ package org.greenbuttonalliance.espi.common.service;
 import org.greenbuttonalliance.espi.common.domain.common.LinkType;
 import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
+import org.greenbuttonalliance.espi.common.dto.atom.LinkDto;
 import org.greenbuttonalliance.espi.common.dto.customer.CustomerDto;
 import org.greenbuttonalliance.espi.common.dto.usage.UsagePointDto;
 import org.greenbuttonalliance.espi.common.service.impl.CustomerExportService;
@@ -121,8 +122,11 @@ class AtomFeedExportTest {
         assertThat(xml)
                 .contains("<atom:feed", "xmlns:cust=\"http://naesb.org/espi/customer\"", "<cust:Customer")
                 .contains("href=\"https://dc.example/DataCustodian/espi/1_1/resource/Customer/" + entity.getId()
-                        + "\" type=\"espi-entry/Customer\"")
-                .doesNotContain("xsi:type", "xmlns:espi=", "href=\"self\"")
+                        + "\" type=\"cust-entry/Customer\"")
+                // The GBA CMD model's link types for customer resources (#290)
+                .contains("rel=\"self\" href=\"https://dc.example/DataCustodian/espi/1_1/resource/Customer\" type=\"cust-feed/Customer\"",
+                        "rel=\"up\" href=\"https://dc.example/DataCustodian/espi/1_1/resource/Customer\" type=\"cust-feed/Customer\"")
+                .doesNotContain("xsi:type", "xmlns:espi=", "href=\"self\"", "espi-entry/", "espi-feed/")
                 .containsPattern("<atom:content>\\s*<cust:Customer");
         EspiXmlSchemaValidator.Result validation = EspiXmlSchemaValidator.instance().validate(xml);
         assertThat(validation.valid()).as(String.join("\n", EspiXmlSchemaValidator.describe(validation))).isTrue();
@@ -141,6 +145,67 @@ class AtomFeedExportTest {
         assertThat(links).hasSize(4)
                 .allSatisfy(link -> assertThat(link)
                         .matches("<atom:link rel=\"[^\"]+\" href=\"[^\"]+\" type=\"[^\"]+\"/>"));
+    }
+
+    @Test
+    @DisplayName("buildEntry: a resource read on its own is the same Atom entry, with the same links, as in its feed")
+    void singleEntryMatchesItsFeedEntry() {
+        UsagePointEntity entity = usagePoint(UUID.fromString("48c2a019-5598-5e16-b0f9-49e4ff27f5fb"), "Meter");
+        BaseExportService.FeedEntry feedEntry = new BaseExportService.FeedEntry(entity, new UsagePointDto(),
+                FEED + "/" + entity.getId(), FEED,
+                List.of(new LinkDto("related", FEED + "/" + entity.getId() + "/MeterReading", "espi-feed/MeterReading")));
+
+        ByteArrayOutputStream entryOut = new ByteArrayOutputStream();
+        usage.exportDto(usage.buildEntry(feedEntry), entryOut);
+        ByteArrayOutputStream feedOut = new ByteArrayOutputStream();
+        usage.exportDto(usage.buildFeedOf(FEED, "UsagePoint", "UsagePoint Feed", List.of(feedEntry)), feedOut);
+        String entry = entryOut.toString(StandardCharsets.UTF_8);
+        String feed = feedOut.toString(StandardCharsets.UTF_8);
+
+        List<String> entryLinks = java.util.regex.Pattern.compile("<atom:link\\b[^>]*/>").matcher(entry)
+                .results().map(java.util.regex.MatchResult::group).toList();
+        assertThat(entryLinks)
+                .containsExactly(
+                        "<atom:link rel=\"self\" href=\"" + FEED + "/" + entity.getId() + "\" type=\"espi-entry/UsagePoint\"/>",
+                        "<atom:link rel=\"up\" href=\"" + FEED + "\" type=\"espi-feed/UsagePoint\"/>",
+                        "<atom:link rel=\"related\" href=\"" + FEED + "/" + entity.getId()
+                                + "/MeterReading\" type=\"espi-feed/MeterReading\"/>")
+                .allSatisfy(link -> assertThat(feed).contains(link));
+        assertThat(entry)
+                .contains("<atom:entry", "<atom:id>urn:uuid:" + entity.getId() + "</atom:id>", "<atom:title>Meter</atom:title>")
+                .containsPattern("<atom:content>\\s*<espi:UsagePoint")
+                .doesNotContain("<atom:feed");
+        EspiXmlSchemaValidator.Result validation = EspiXmlSchemaValidator.instance().validate(entry);
+        assertThat(validation.valid()).as(String.join("\n", EspiXmlSchemaValidator.describe(validation))).isTrue();
+    }
+
+    @Test
+    @DisplayName("buildEntry(feedHref, ...): a root resource on its own has the self and up links buildFeed gives it, customer entries too")
+    void rootEntryMatchesBuildFeed() {
+        String customers = "https://dc.example/DataCustodian/espi/1_1/resource/Customer";
+        CustomerEntity entity = new CustomerEntity();
+        entity.setId(UUID.fromString("7c0e7a6e-3b1d-5a3c-8f43-6d1f2a9b4c11"));
+
+        ByteArrayOutputStream entryOut = new ByteArrayOutputStream();
+        customer.exportDto(customer.buildEntry(customers, entity, e -> new CustomerDto()), entryOut);
+        ByteArrayOutputStream feedOut = new ByteArrayOutputStream();
+        customer.exportFeed(customers, "Customer", List.of(entity), e -> new CustomerDto(), feedOut);
+        String entry = entryOut.toString(StandardCharsets.UTF_8);
+        String feed = feedOut.toString(StandardCharsets.UTF_8);
+
+        List<String> entryLinks = java.util.regex.Pattern.compile("<atom:link\\b[^>]*/>").matcher(entry)
+                .results().map(java.util.regex.MatchResult::group).toList();
+        assertThat(entryLinks)
+                .hasSize(2)
+                .allSatisfy(link -> assertThat(feed).contains(link))
+                .anySatisfy(link -> assertThat(link).contains("rel=\"self\" href=\"" + customers + "/" + entity.getId() + "\""))
+                .anySatisfy(link -> assertThat(link).contains("rel=\"up\" href=\"" + customers + "\""));
+        assertThat(entry)
+                .contains("<atom:entry", "xmlns:cust=\"http://naesb.org/espi/customer\"", "<atom:id>urn:uuid:" + entity.getId())
+                .containsPattern("<atom:content>\\s*<cust:Customer")
+                .doesNotContain("<atom:feed");
+        EspiXmlSchemaValidator.Result validation = EspiXmlSchemaValidator.instance().validate(entry);
+        assertThat(validation.valid()).as(String.join("\n", EspiXmlSchemaValidator.describe(validation))).isTrue();
     }
 
     @Test

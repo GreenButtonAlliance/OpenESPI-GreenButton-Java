@@ -54,7 +54,9 @@ import java.util.regex.Pattern;
  * token for exactly this subscription. Anything else gets 403, whether or not the subscription exists. The
  * URL rule in {@code SecurityConfiguration} requires interval metering (FB_4) and an electricity, gas or water
  * Function Block (FB_5 to FB_11) first. Those commodity Function Blocks decide which UsagePoints the feed holds
- * (by service category), and the summary Function Blocks which summaries ({@link SubscriptionAccess#grants}).</p>
+ * (by service category), and the summary Function Blocks which summaries ({@link SubscriptionAccess#grants}).
+ * Its entries are the same as in the root feeds, with ROOT-form links ({@link UsageEntries}): a resource is never
+ * addressed through the Subscription, whose id changes with every grant.</p>
  */
 @RestController
 @RequestMapping("/espi/1_1/resource")
@@ -124,7 +126,7 @@ public class BatchSubscriptionController {
 		String feedHref = ServletUriComponentsBuilder.fromCurrentRequest().toUriString();
 		String resourceBase = feedHref.substring(0, feedHref.indexOf(BATCH_SUBSCRIPTION));
 		AtomFeedDto feed = assembler.build(subscriptionId, resourceBase, feedHref,
-						subscriptionAccess.grants(authentication), range)
+						subscriptionAccess.reader(authentication), range)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
 		ByteArrayOutputStream out = new ByteArrayOutputStream();

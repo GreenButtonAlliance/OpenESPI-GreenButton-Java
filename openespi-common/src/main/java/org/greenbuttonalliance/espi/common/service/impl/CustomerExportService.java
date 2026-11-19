@@ -116,4 +116,10 @@ public class CustomerExportService extends BaseExportService {
                                     List<LinkDto> links, Object content) {
         return new CustomerAtomEntryDto(id, title, published, updated, links, content);
     }
+
+    /** Customer resources' link types are {@code cust-entry/...} and {@code cust-feed/...}. */
+    @Override
+    protected String linkTypePrefix() {
+        return "cust";
+    }
 }

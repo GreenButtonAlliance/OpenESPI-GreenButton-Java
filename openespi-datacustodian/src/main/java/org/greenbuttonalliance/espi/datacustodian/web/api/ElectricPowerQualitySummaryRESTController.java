@@ -17,7 +17,6 @@
  *
  */
 
-
 package org.greenbuttonalliance.espi.datacustodian.web.api;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -28,18 +27,21 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.greenbuttonalliance.espi.common.domain.usage.ElectricPowerQualitySummaryEntity;
 import org.greenbuttonalliance.espi.common.dto.usage.ElectricPowerQualitySummaryDto;
-import org.greenbuttonalliance.espi.common.mapper.usage.ElectricPowerQualitySummaryMapper;
 import org.greenbuttonalliance.espi.common.repositories.usage.ElectricPowerQualitySummaryRepository;
 import org.greenbuttonalliance.espi.common.service.impl.ElectricPowerQualitySummaryExportService;
+import org.greenbuttonalliance.espi.datacustodian.web.api.SubscriptionAccess.Reader;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.io.ByteArrayOutputStream;
@@ -47,164 +49,108 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Modern REST Controller for ESPI ElectricPowerQualitySummary resources.
- * <p>
- * This controller implements the NAESB ESPI 1.0 REST API for Electric Power Quality Summaries,
- * using modern Spring Boot 3.5 patterns with DTOs and MapStruct mappers.
- * <p>
- * Supported endpoints:
- * - GET /espi/1_1/resource/ElectricPowerQualitySummary - List all power quality summaries
- * - GET /espi/1_1/resource/ElectricPowerQualitySummary/{electricPowerQualitySummaryId} - Get specific summary
- * - GET /espi/1_1/resource/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/ElectricPowerQualitySummary - List subscription summaries
- * - GET /espi/1_1/resource/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/ElectricPowerQualitySummary/{electricPowerQualitySummaryId} - Get subscription summary
+ * ESPI ElectricPowerQualitySummary resources (#286):
+ * <ul>
+ *   <li>{@code GET /espi/1_1/resource/ElectricPowerQualitySummary}: the summaries the token may read, within its
+ *       HistoryLength (the admin: all, paged by the non-ESPI {@code limit}/{@code offset});</li>
+ *   <li>{@code GET /espi/1_1/resource/ElectricPowerQualitySummary/{id}}: one of them, else 404;</li>
+ *   <li>{@code GET /espi/1_1/resource/RetailCustomer/{retailCustomerId}/UsagePoint/{usagePointId}/ElectricPowerQualitySummary}:
+ *       a UsagePoint's summaries, the collection a UsagePoint entry links to.</li>
+ * </ul>
+ * Which rows, and the entries' links, are {@link SubscriptionAccess} and {@link UsageEntries}.
  */
 @RestController
 @RequestMapping("/espi/1_1/resource")
-@Tag(name = "Electric Power Quality Summary", description = "Power Quality Measurement Data Management API")
+@Tag(name = "Electric Power Quality Summaries", description = "ESPI Electric Power Quality Summary resource endpoints")
 @SecurityRequirement(name = "oauth2")
 @RequiredArgsConstructor
-// open-in-view is off: SubscriptionAccess reads the subscription's lazy UsagePoints in this session (#286)
+// open-in-view is off: the entries read lazy collections in this session (#286)
 @Transactional(readOnly = true)
 public class ElectricPowerQualitySummaryRESTController {
 
     private final ElectricPowerQualitySummaryRepository electricPowerQualitySummaryRepository;
-    private final ElectricPowerQualitySummaryMapper electricPowerQualitySummaryMapper;
     private final ElectricPowerQualitySummaryExportService electricPowerQualitySummaryExportService;
     private final SubscriptionAccess subscriptionAccess;
+    private final UsageEntries usageEntries;
 
-    /**
-     * Get all Electric Power Quality Summaries (root collection): every customer's, so DataCustodian admin only
-     * (#286).
-     */
     @GetMapping(value = "/ElectricPowerQualitySummary", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @Operation(
-        summary = "Get ElectricPowerQualitySummary Collection",
-        description = "Retrieves all authorized ElectricPowerQualitySummary resources.",
+        summary = "Get Electric Power Quality Summaries",
+        description = "The summaries the token may read: its subscription's within its HistoryLength, or every one for the DataCustodian admin",
         responses = {
             @ApiResponse(responseCode = "200", description = "Summaries retrieved successfully",
                 content = @Content(schema = @Schema(implementation = ElectricPowerQualitySummaryDto.class))),
             @ApiResponse(responseCode = "401", description = "Unauthorized"),
-            @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
+            @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope, or no subscription")
         }
     )
-    public ResponseEntity<byte[]> getElectricPowerQualitySummaryCollection(
-            @Parameter(description = "Maximum number of results to return", example = "50")
+    public ResponseEntity<byte[]> getAllElectricPowerQualitySummaries(
+            @Parameter(description = "DataCustodian admin only: page size (not ESPI)", example = "50")
             @RequestParam(defaultValue = "50") int limit,
-            @Parameter(description = "Offset for pagination", example = "0")
+            @Parameter(description = "DataCustodian admin only: page number (not ESPI)", example = "0")
             @RequestParam(defaultValue = "0") int offset,
             Authentication authentication) {
 
-        subscriptionAccess.requireAdmin(authentication);
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        electricPowerQualitySummaryExportService.exportFeed(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString(),
-                "ElectricPowerQualitySummary Feed",
-                electricPowerQualitySummaryRepository.findAll(PageRequest.of(offset, limit)).getContent(),
-                electricPowerQualitySummaryMapper::toDto, out);
-        return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_XML)
-                .body(out.toByteArray());
+        Reader reader = subscriptionAccess.reader(authentication);
+        return feed(reader.admin()
+                ? electricPowerQualitySummaryRepository.findAll(PageRequest.of(offset, limit)).getContent()
+                : reader.qualitySummaries());
     }
 
-    /**
-     * Get specific Electric Power Quality Summary by ID (root resource): DataCustodian admin only (#286).
-     */
     @GetMapping(value = "/ElectricPowerQualitySummary/{electricPowerQualitySummaryId}", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @Operation(
-        summary = "Get ElectricPowerQualitySummary by ID",
-        description = "Retrieves a specific ElectricPowerQualitySummary resource by its unique identifier.",
+        summary = "Get Electric Power Quality Summary by ID",
+        description = "One summary the token may read, with the same Atom links as in its feeds",
         responses = {
             @ApiResponse(responseCode = "200", description = "Summary retrieved successfully",
                 content = @Content(schema = @Schema(implementation = ElectricPowerQualitySummaryDto.class))),
-            @ApiResponse(responseCode = "404", description = "Summary not found"),
+            @ApiResponse(responseCode = "404", description = "No such summary the token may read"),
             @ApiResponse(responseCode = "401", description = "Unauthorized"),
-            @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
+            @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope, or no subscription")
         }
     )
     public ResponseEntity<byte[]> getElectricPowerQualitySummary(
-            @Parameter(description = "Unique identifier of the ElectricPowerQualitySummary", required = true)
+            @Parameter(description = "Unique identifier of the Electric Power Quality Summary", required = true)
             @PathVariable UUID electricPowerQualitySummaryId,
             Authentication authentication) {
 
-        subscriptionAccess.requireAdmin(authentication);
-        ElectricPowerQualitySummaryDto dto = electricPowerQualitySummaryRepository.findById(electricPowerQualitySummaryId)
-                .map(electricPowerQualitySummaryMapper::toDto)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ElectricPowerQualitySummary not found for id: " + electricPowerQualitySummaryId));
-
+        Reader reader = subscriptionAccess.reader(authentication);
+        String base = UsageEntries.resourceBase(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString());
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        electricPowerQualitySummaryExportService.exportDto(dto, out);
-        return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_XML)
-                .body(out.toByteArray());
+        electricPowerQualitySummaryExportService.exportDto(electricPowerQualitySummaryExportService.buildEntry(
+                usageEntries.qualitySummary(base, reader.qualitySummary(electricPowerQualitySummaryId))), out);
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_XML).body(out.toByteArray());
     }
 
-    /**
-     * Get Electric Power Quality Summaries for a specific Subscription and Usage Point: 403 unless the token's
-     * subscription, 404 unless the UsagePoint is in it (#286).
-     */
-    @GetMapping(value = "/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/ElectricPowerQualitySummary", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    @GetMapping(value = "/RetailCustomer/{retailCustomerId}/UsagePoint/{usagePointId}/ElectricPowerQualitySummary", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @Operation(
-        summary = "Get ElectricPowerQualitySummaries by Subscription Context",
-        description = "Retrieves all ElectricPowerQualitySummary resources associated with a specific subscription and usage point.",
+        summary = "Get a Usage Point's Electric Power Quality Summaries",
+        description = "The summaries of one of the retail customer's Usage Points within the token's HistoryLength (RetailCustomer XPath collection)",
         responses = {
             @ApiResponse(responseCode = "200", description = "Summaries retrieved successfully"),
-            @ApiResponse(responseCode = "404", description = "Subscription or Usage Point not found"),
+            @ApiResponse(responseCode = "404", description = "No such Usage Point of that retail customer whose summaries the token may read"),
             @ApiResponse(responseCode = "401", description = "Unauthorized"),
-            @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
+            @ApiResponse(responseCode = "403", description = "Not the token's retail customer")
         }
     )
-    public ResponseEntity<byte[]> getSubscriptionElectricPowerQualitySummaries(
-            @Parameter(description = "Unique identifier of the subscription", required = true)
-            @PathVariable UUID subscriptionId,
-            @Parameter(description = "Unique identifier of the usage point", required = true)
+    public ResponseEntity<byte[]> getUsagePointElectricPowerQualitySummaries(
+            @Parameter(description = "Identifier of the Retail Customer", required = true)
+            @PathVariable Long retailCustomerId,
+            @Parameter(description = "Unique identifier of the Usage Point", required = true)
             @PathVariable UUID usagePointId,
-            @Parameter(description = "Maximum number of results to return", example = "50")
-            @RequestParam(defaultValue = "50") int limit,
-            @Parameter(description = "Offset for pagination", example = "0")
-            @RequestParam(defaultValue = "0") int offset,
             Authentication authentication) {
 
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        electricPowerQualitySummaryExportService.exportFeed(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString(),
-                "ElectricPowerQualitySummary Feed",
-                SubscriptionAccess.page(
-                        subscriptionAccess.qualitySummaries(authentication, subscriptionId, usagePointId), offset, limit),
-                electricPowerQualitySummaryMapper::toDto, out);
-        return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_XML)
-                .body(out.toByteArray());
+        Reader reader = subscriptionAccess.reader(authentication);
+        return feed(reader.qualitySummariesOf(reader.usagePoint(retailCustomerId, usagePointId, true)));
     }
 
-    /**
-     * Get specific Electric Power Quality Summary for a Subscription and Usage Point.
-     * Requires appropriate read scope.
-     */
-    @GetMapping(value = "/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/ElectricPowerQualitySummary/{electricPowerQualitySummaryId}", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
-    @Operation(
-        summary = "Get Subscription ElectricPowerQualitySummary by ID",
-        description = "Retrieves a specific ElectricPowerQualitySummary resource within a subscription context.",
-        responses = {
-            @ApiResponse(responseCode = "200", description = "Summary retrieved successfully"),
-            @ApiResponse(responseCode = "404", description = "Summary, Subscription or Usage Point not found"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized"),
-            @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
-        }
-    )
-    public ResponseEntity<byte[]> getSubscriptionElectricPowerQualitySummary(
-            @Parameter(description = "Unique identifier of the subscription", required = true)
-            @PathVariable UUID subscriptionId,
-            @Parameter(description = "Unique identifier of the usage point", required = true)
-            @PathVariable UUID usagePointId,
-            @Parameter(description = "Unique identifier of the ElectricPowerQualitySummary", required = true)
-            @PathVariable UUID electricPowerQualitySummaryId,
-            Authentication authentication) {
-
-        ElectricPowerQualitySummaryDto dto = electricPowerQualitySummaryMapper.toDto(subscriptionAccess.qualitySummary(
-                authentication, subscriptionId, usagePointId, electricPowerQualitySummaryId));
-
+    private ResponseEntity<byte[]> feed(List<ElectricPowerQualitySummaryEntity> summaries) {
+        String feedHref = ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString();
+        String base = UsageEntries.resourceBase(feedHref);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        electricPowerQualitySummaryExportService.exportDto(dto, out);
-        return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_XML)
-                .body(out.toByteArray());
+        electricPowerQualitySummaryExportService.exportDto(electricPowerQualitySummaryExportService.buildFeedOf(
+                feedHref, "ElectricPowerQualitySummary", "ElectricPowerQualitySummary Feed",
+                summaries.stream().map(summary -> usageEntries.qualitySummary(base, summary)).toList()), out);
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_XML).body(out.toByteArray());
     }
 }

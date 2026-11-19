@@ -27,18 +27,21 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.greenbuttonalliance.espi.common.domain.usage.UsageSummaryEntity;
 import org.greenbuttonalliance.espi.common.dto.usage.UsageSummaryDto;
-import org.greenbuttonalliance.espi.common.mapper.usage.UsageSummaryMapper;
 import org.greenbuttonalliance.espi.common.repositories.usage.UsageSummaryRepository;
 import org.greenbuttonalliance.espi.common.service.impl.UsageSummaryExportService;
+import org.greenbuttonalliance.espi.datacustodian.web.api.SubscriptionAccess.Reader;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.io.ByteArrayOutputStream;
@@ -46,73 +49,64 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Modern REST Controller for ESPI Usage Summary resources.
- * <p>
- * This controller implements the NAESB ESPI 1.0 REST API for Usage Summaries,
- * replacing the legacy Spring MVC controller with modern Spring Boot 3.5 patterns.
- * <p>
- * UsageSummary represents aggregated utility usage data over specific time periods,
- * including totals for consumption, production, and billing determinant values.
+ * ESPI UsageSummary resources (#286):
+ * <ul>
+ *   <li>{@code GET /espi/1_1/resource/UsageSummary}: the UsageSummaries the token may read, within its HistoryLength
+ *       (the admin: all, paged by the non-ESPI {@code limit}/{@code offset});</li>
+ *   <li>{@code GET /espi/1_1/resource/UsageSummary/{usageSummaryId}}: one of them, else 404;</li>
+ *   <li>{@code GET /espi/1_1/resource/RetailCustomer/{retailCustomerId}/UsagePoint/{usagePointId}/UsageSummary}: a
+ *       UsagePoint's UsageSummaries, the collection a UsagePoint entry links to.</li>
+ * </ul>
+ * Which rows, and the entries' links, are {@link SubscriptionAccess} and {@link UsageEntries}.
  */
 @RestController
 @RequestMapping("/espi/1_1/resource")
-@Tag(name = "Usage Summary", description = "Multi-Commodity Usage Summary Data Management API")
+@Tag(name = "Usage Summaries", description = "ESPI Usage Summary resource endpoints")
 @SecurityRequirement(name = "oauth2")
 @RequiredArgsConstructor
-// open-in-view is off: map and marshal inside one read-only session, or the lazy
-// costAdditionalDetailLastPeriod fails (#253)
+// open-in-view is off: the entries read lazy collections in this session (#286)
 @Transactional(readOnly = true)
 public class UsageSummaryRESTController {
 
     private final UsageSummaryRepository usageSummaryRepository;
-    private final UsageSummaryMapper usageSummaryMapper;
     private final UsageSummaryExportService usageSummaryExportService;
     private final SubscriptionAccess subscriptionAccess;
+    private final UsageEntries usageEntries;
 
-    /**
-     * Get all Usage Summaries (root collection): every customer's, so DataCustodian admin only (#286).
-     */
     @GetMapping(value = "/UsageSummary", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @Operation(
-        summary = "Get all Usage Summaries",
-        description = "Retrieve all Usage Summaries accessible to the authenticated client",
+        summary = "Get Usage Summaries",
+        description = "The Usage Summaries the token may read: its subscription's within its HistoryLength, or every one for the DataCustodian admin",
         responses = {
             @ApiResponse(responseCode = "200", description = "Usage Summaries retrieved successfully",
                 content = @Content(schema = @Schema(implementation = UsageSummaryDto.class))),
             @ApiResponse(responseCode = "401", description = "Unauthorized"),
-            @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
+            @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope, or no subscription")
         }
     )
-    public ResponseEntity<byte[]> getUsageSummaryCollection(
-            @Parameter(description = "Maximum number of results to return", example = "50")
+    public ResponseEntity<byte[]> getAllUsageSummaries(
+            @Parameter(description = "DataCustodian admin only: page size (not ESPI)", example = "50")
             @RequestParam(defaultValue = "50") int limit,
-            @Parameter(description = "Offset for pagination", example = "0")
+            @Parameter(description = "DataCustodian admin only: page number (not ESPI)", example = "0")
             @RequestParam(defaultValue = "0") int offset,
             Authentication authentication) {
 
-        subscriptionAccess.requireAdmin(authentication);
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        usageSummaryExportService.exportFeed(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString(),
-                "UsageSummary Feed", usageSummaryRepository.findAll(PageRequest.of(offset, limit)).getContent(),
-                usageSummaryMapper::toDto, out);
-        return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_XML)
-                .body(out.toByteArray());
+        Reader reader = subscriptionAccess.reader(authentication);
+        return feed(reader.admin()
+                ? usageSummaryRepository.findAll(PageRequest.of(offset, limit)).getContent()
+                : reader.usageSummaries());
     }
 
-    /**
-     * Get specific Usage Summary by ID (root resource): DataCustodian admin only (#286).
-     */
     @GetMapping(value = "/UsageSummary/{usageSummaryId}", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @Operation(
         summary = "Get Usage Summary by ID",
-        description = "Retrieve a specific Usage Summary by its unique identifier",
+        description = "One Usage Summary the token may read, with the same Atom links as in its feeds",
         responses = {
             @ApiResponse(responseCode = "200", description = "Usage Summary retrieved successfully",
                 content = @Content(schema = @Schema(implementation = UsageSummaryDto.class))),
-            @ApiResponse(responseCode = "404", description = "Usage Summary not found"),
+            @ApiResponse(responseCode = "404", description = "No such Usage Summary the token may read"),
             @ApiResponse(responseCode = "401", description = "Unauthorized"),
-            @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope")
+            @ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope, or no subscription")
         }
     )
     public ResponseEntity<byte[]> getUsageSummary(
@@ -120,80 +114,43 @@ public class UsageSummaryRESTController {
             @PathVariable UUID usageSummaryId,
             Authentication authentication) {
 
-        subscriptionAccess.requireAdmin(authentication);
-        UsageSummaryDto dto = usageSummaryRepository.findById(usageSummaryId)
-            .map(usageSummaryMapper::toDto)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usage Summary not found for id: " + usageSummaryId));
-
+        Reader reader = subscriptionAccess.reader(authentication);
+        String base = UsageEntries.resourceBase(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString());
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        usageSummaryExportService.exportDto(dto, out);
-        return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_XML)
-                .body(out.toByteArray());
+        usageSummaryExportService.exportDto(usageSummaryExportService.buildEntry(
+                usageEntries.usageSummary(base, reader.usageSummary(usageSummaryId))), out);
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_XML).body(out.toByteArray());
     }
 
-    /**
-     * Get Usage Summaries for a specific Subscription and Usage Point: 403 unless the token's subscription, 404
-     * unless the UsagePoint is in it (#286).
-     */
-    @GetMapping(value = "/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/UsageSummary", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    @GetMapping(value = "/RetailCustomer/{retailCustomerId}/UsagePoint/{usagePointId}/UsageSummary", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @Operation(
-        summary = "Get Usage Summaries by Subscription context",
-        description = "Retrieve all Usage Summaries associated with a specific subscription and usage point",
+        summary = "Get a Usage Point's Usage Summaries",
+        description = "The Usage Summaries of one of the retail customer's Usage Points within the token's HistoryLength (RetailCustomer XPath collection)",
         responses = {
             @ApiResponse(responseCode = "200", description = "Usage Summaries retrieved successfully"),
-            @ApiResponse(responseCode = "404", description = "Subscription or Usage Point not found")
+            @ApiResponse(responseCode = "404", description = "No such Usage Point of that retail customer whose summaries the token may read"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "403", description = "Not the token's retail customer")
         }
     )
-    public ResponseEntity<byte[]> getSubscriptionUsageSummaries(
-            @Parameter(description = "Unique identifier of the Subscription", required = true)
-            @PathVariable UUID subscriptionId,
+    public ResponseEntity<byte[]> getUsagePointUsageSummaries(
+            @Parameter(description = "Identifier of the Retail Customer", required = true)
+            @PathVariable Long retailCustomerId,
             @Parameter(description = "Unique identifier of the Usage Point", required = true)
             @PathVariable UUID usagePointId,
-            @Parameter(description = "Maximum number of results to return", example = "50")
-            @RequestParam(defaultValue = "50") int limit,
-            @Parameter(description = "Offset for pagination", example = "0")
-            @RequestParam(defaultValue = "0") int offset,
             Authentication authentication) {
 
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        usageSummaryExportService.exportFeed(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString(),
-                "UsageSummary Feed", SubscriptionAccess.page(
-                        subscriptionAccess.usageSummaries(authentication, subscriptionId, usagePointId), offset, limit),
-                usageSummaryMapper::toDto, out);
-        return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_XML)
-                .body(out.toByteArray());
+        Reader reader = subscriptionAccess.reader(authentication);
+        return feed(reader.usageSummariesOf(reader.usagePoint(retailCustomerId, usagePointId, true)));
     }
 
-    /**
-     * Get specific Usage Summary for a Subscription and Usage Point.
-     */
-    @GetMapping(value = "/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/UsageSummary/{usageSummaryId}", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
-    @Operation(
-        summary = "Get specific Usage Summary by Subscription context",
-        description = "Retrieve a specific Usage Summary associated with a subscription and usage point",
-        responses = {
-            @ApiResponse(responseCode = "200", description = "Usage Summary retrieved successfully"),
-            @ApiResponse(responseCode = "404", description = "Usage Summary, Subscription, or Usage Point not found")
-        }
-    )
-    public ResponseEntity<byte[]> getSubscriptionUsageSummary(
-            @Parameter(description = "Unique identifier of the Subscription", required = true)
-            @PathVariable UUID subscriptionId,
-            @Parameter(description = "Unique identifier of the Usage Point", required = true)
-            @PathVariable UUID usagePointId,
-            @Parameter(description = "Unique identifier of the Usage Summary", required = true)
-            @PathVariable UUID usageSummaryId,
-            Authentication authentication) {
-
-        UsageSummaryDto dto = usageSummaryMapper.toDto(
-                subscriptionAccess.usageSummary(authentication, subscriptionId, usagePointId, usageSummaryId));
-
+    private ResponseEntity<byte[]> feed(List<UsageSummaryEntity> summaries) {
+        String feedHref = ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString();
+        String base = UsageEntries.resourceBase(feedHref);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        usageSummaryExportService.exportDto(dto, out);
-        return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_XML)
-                .body(out.toByteArray());
+        usageSummaryExportService.exportDto(usageSummaryExportService.buildFeedOf(feedHref, "UsageSummary",
+                "UsageSummary Feed", summaries.stream().map(summary -> usageEntries.usageSummary(base, summary)).toList()),
+                out);
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_XML).body(out.toByteArray());
     }
 }
