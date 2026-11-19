@@ -31,6 +31,7 @@ import org.greenbuttonalliance.espi.common.domain.usage.MeterReadingEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.ReadingTypeEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.SubscriptionEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.TimeConfigurationEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 import org.greenbuttonalliance.espi.common.domain.usage.UsageSummaryEntity;
 import org.greenbuttonalliance.espi.common.repositories.usage.ApplicationInformationRepository;
@@ -107,6 +108,7 @@ class SubscriptionResourceScopingIntegrationTest {
 	private static final UUID QUALITY_A = UUID.fromString("b47f8091-a2b3-54c5-a0d1-5c6d7e8f9001");
 	private static final UUID QUALITY_B = UUID.fromString("b47f8091-a2b3-54c5-a0d1-5c6d7e8f9002");
 	private static final UUID OLD_QUALITY_A = UUID.fromString("b47f8091-a2b3-54c5-a0d1-5c6d7e8f9003");
+	private static final UUID LOCAL_TIME_A = UUID.fromString("c5809102-b3c4-55d6-b1e2-6d7e8f90a101");
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -140,6 +142,7 @@ class SubscriptionResourceScopingIntegrationTest {
 		meterReadingA.getIntervalBlocks().add(block(OLD_BLOCK_A, meterReadingA, now - 40 * DAY));
 		usagePointA.getUsageSummaries().add(usageSummary(OLD_SUMMARY_A, usagePointA, now - 90 * DAY, now));
 		usagePointA.getElectricPowerQualitySummaries().add(qualitySummary(OLD_QUALITY_A, usagePointA, now - 90 * DAY));
+		usagePointA.setLocalTimeParameters(localTime(LOCAL_TIME_A));
 		usagePointA = usagePointRepository.save(usagePointA);
 		UsagePointEntity gasPointA = bareUsagePoint(GAS_POINT_A, ServiceCategory.GAS);
 		gasPointA.getUsageSummaries().add(usageSummary(GAS_SUMMARY_A, gasPointA, now - 30 * DAY, now));
@@ -267,26 +270,37 @@ class SubscriptionResourceScopingIntegrationTest {
 		String upXPath = "/RetailCustomer/" + retailCustomerA + "/UsagePoint/" + USAGE_POINT_A;
 		String mrXPath = upXPath + "/MeterReading/" + METER_READING_A;
 
-		assertLinks("UsagePoint", USAGE_POINT_A, customerA(), List.of(),
-				feed(upXPath + "/MeterReading", "MeterReading"), entry("MeterReading", METER_READING_A),
-				feed(upXPath + "/UsageSummary", "UsageSummary"),
-				entry("UsageSummary", OLD_SUMMARY_A), entry("UsageSummary", SUMMARY_A),
-				feed(upXPath + "/ElectricPowerQualitySummary", "ElectricPowerQualitySummary"),
-				entry("ElectricPowerQualitySummary", OLD_QUALITY_A), entry("ElectricPowerQualitySummary", QUALITY_A));
-		assertLinks("MeterReading", METER_READING_A, customerA(), List.of(upXPath + "/MeterReading"),
-				entry("ReadingType", READING_TYPE_A), entry("UsagePoint", USAGE_POINT_A),
-				feed(mrXPath + "/IntervalBlock", "IntervalBlock"),
-				entry("IntervalBlock", OLD_BLOCK_A), entry("IntervalBlock", BLOCK_A));
-		assertLinks("IntervalBlock", BLOCK_A, customerA(), List.of(mrXPath + "/IntervalBlock"),
-				entry("MeterReading", METER_READING_A));
-		assertLinks("UsageSummary", SUMMARY_A, customerA(), List.of(upXPath + "/UsageSummary"),
-				entry("UsagePoint", USAGE_POINT_A));
-		assertLinks("ElectricPowerQualitySummary", QUALITY_A, customerA(),
-				List.of(upXPath + "/ElectricPowerQualitySummary"), entry("UsagePoint", USAGE_POINT_A));
-		assertLinks("ReadingType", READING_TYPE_A, customerA(), List.of(), entry("MeterReading", METER_READING_A));
+		// The customer token and the admin get the same entries, with the same hrefs (REQ.21.6.1.1.6).
+		for (RequestPostProcessor reader : List.of(customerA(), admin())) {
+			assertLinks("UsagePoint", USAGE_POINT_A, reader, List.of(),
+					entry("LocalTimeParameters", LOCAL_TIME_A),
+					feed(upXPath + "/MeterReading", "MeterReading"), entry("MeterReading", METER_READING_A),
+					feed(upXPath + "/UsageSummary", "UsageSummary"),
+					entry("UsageSummary", OLD_SUMMARY_A), entry("UsageSummary", SUMMARY_A),
+					feed(upXPath + "/ElectricPowerQualitySummary", "ElectricPowerQualitySummary"),
+					entry("ElectricPowerQualitySummary", OLD_QUALITY_A), entry("ElectricPowerQualitySummary", QUALITY_A));
+			assertLinks("MeterReading", METER_READING_A, reader, List.of(upXPath + "/MeterReading"),
+					entry("ReadingType", READING_TYPE_A), entry("UsagePoint", USAGE_POINT_A),
+					feed(mrXPath + "/IntervalBlock", "IntervalBlock"),
+					entry("IntervalBlock", OLD_BLOCK_A), entry("IntervalBlock", BLOCK_A));
+			assertLinks("IntervalBlock", BLOCK_A, reader, List.of(mrXPath + "/IntervalBlock"),
+					entry("MeterReading", METER_READING_A));
+			assertLinks("UsageSummary", SUMMARY_A, reader, List.of(upXPath + "/UsageSummary"),
+					entry("UsagePoint", USAGE_POINT_A));
+			assertLinks("ElectricPowerQualitySummary", QUALITY_A, reader,
+					List.of(upXPath + "/ElectricPowerQualitySummary"), entry("UsagePoint", USAGE_POINT_A));
+			// For the admin, the MeterReadings come from MeterReadingRepository.findAllByReadingTypeId.
+			assertLinks("ReadingType", READING_TYPE_A, reader, List.of(), entry("MeterReading", METER_READING_A));
+		}
 		// No summary Function Blocks: no links to summaries the token could not read.
 		assertLinks("UsagePoint", USAGE_POINT_A, token(SUBSCRIPTION_A, "FB_4", "FB_5"), List.of(),
+				entry("LocalTimeParameters", LOCAL_TIME_A),
 				feed(upXPath + "/MeterReading", "MeterReading"), entry("MeterReading", METER_READING_A));
+		// The other customer's entries name their own RetailCustomer, for the admin as for that customer.
+		String upB = "/RetailCustomer/" + retailCustomerB + "/UsagePoint/" + USAGE_POINT_B;
+		assertThat(List.of(links(read("/UsagePoint/" + USAGE_POINT_B, admin())),
+				links(read("/UsagePoint/" + USAGE_POINT_B, token(SUBSCRIPTION_B, "FB_4", "FB_5")))))
+				.allSatisfy(links -> assertThat(links).contains(feed(upB + "/MeterReading", "MeterReading")));
 	}
 
 	@Test
@@ -364,7 +378,8 @@ class SubscriptionResourceScopingIntegrationTest {
 		String entry = read("/" + resource + "/" + id, token);
 		List<List<String>> found = new ArrayList<>();
 		found.add(links(entry));
-		found.add(links(entryOf(read("/" + resource, token), id)));
+		// limit: the admin's root feed is paged (a customer token's is not); one page holds every test row.
+		found.add(links(entryOf(read("/" + resource + "?limit=10000", token), id)));
 		for (String xpathFeed : xpathFeeds) {
 			found.add(links(entryOf(read(xpathFeed, token), id)));
 		}
@@ -505,6 +520,17 @@ class SubscriptionResourceScopingIntegrationTest {
 		usagePoint.getUsageSummaries().add(usageSummary(summaryId, usagePoint, now - 30 * DAY, now));
 		usagePoint.getElectricPowerQualitySummaries().add(qualitySummary(qualityId, usagePoint, now - 30 * DAY));
 		return usagePoint;
+	}
+
+	/** Eastern time, with US daylight saving rules. */
+	private static TimeConfigurationEntity localTime(UUID id) {
+		TimeConfigurationEntity localTime = new TimeConfigurationEntity();
+		localTime.setId(id);
+		localTime.setTzOffset(-18_000L);
+		localTime.setDstOffset(3_600L);
+		localTime.setDstStartRule(new byte[]{0x36, 0x0E, 0x20, 0x00});
+		localTime.setDstEndRule(new byte[]{(byte) 0xB4, 0x0E, 0x20, 0x00});
+		return localTime;
 	}
 
 	/** A 30-day power quality summary starting at {@code start}. */

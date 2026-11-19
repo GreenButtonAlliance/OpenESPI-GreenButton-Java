@@ -222,13 +222,11 @@ public class SubscriptionAccess {
 		}
 
 		/**
-		 * The RetailCustomer id of a readable UsagePoint, for its RetailCustomer XPath collections: the token's own
-		 * customer, or for the admin the UsagePoint's; null if it has none.
+		 * The RetailCustomer id of a UsagePoint, for its RetailCustomer XPath collections: always the UsagePoint's
+		 * own customer, whoever reads it, so its hrefs are the same for every reader (REQ.21.6.1.1.6); null if it
+		 * has none.
 		 */
 		public Long retailCustomerIdOf(UsagePointEntity usagePoint) {
-			if (!admin()) {
-				return subscription.getRetailCustomer() == null ? null : subscription.getRetailCustomer().getId();
-			}
 			return usagePoint.getRetailCustomer() == null ? null : usagePoint.getRetailCustomer().getId();
 		}
 
@@ -316,8 +314,8 @@ public class SubscriptionAccess {
 
 		/**
 		 * The UsagePoint of {@code RetailCustomer/{retailCustomerId}/UsagePoint/{usagePointId}/...}: 403 unless the
-		 * token's own retail customer (the admin: any), 404 unless the UsagePoint is that customer's and readable
-		 * ({@code forSummaries}: its summaries readable).
+		 * token's own retail customer (the admin: any), 404 unless the UsagePoint is that customer's own
+		 * ({@link #retailCustomerIdOf}) and readable ({@code forSummaries}: its summaries readable).
 		 */
 		public UsagePointEntity usagePoint(Long retailCustomerId, UUID usagePointId, boolean forSummaries) {
 			if (!admin() && (subscription.getRetailCustomer() == null

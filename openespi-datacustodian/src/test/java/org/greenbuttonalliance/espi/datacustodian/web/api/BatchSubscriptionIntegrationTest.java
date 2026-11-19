@@ -514,8 +514,13 @@ class BatchSubscriptionIntegrationTest {
 		authorization.setAccessToken("token-" + id);
 		authorization.setStatus(AuthorizationEntity.STATUS_ACTIVE);
 
+		customer = retailCustomerRepository.save(customer);
+		// The customer's UsagePoints are theirs: their RetailCustomer XPath links name this customer.
+		for (UsagePointEntity usagePoint : usagePoints) {
+			usagePoint.setRetailCustomer(customer);
+		}
 		SubscriptionEntity subscription = new SubscriptionEntity(id);
-		subscription.setRetailCustomer(retailCustomerRepository.save(customer));
+		subscription.setRetailCustomer(customer);
 		subscription.setApplicationInformation(applicationInformationRepository.save(application));
 		subscription.setAuthorization(authorizationRepository.save(authorization));
 		subscription.setUsagePoints(usagePoints);
