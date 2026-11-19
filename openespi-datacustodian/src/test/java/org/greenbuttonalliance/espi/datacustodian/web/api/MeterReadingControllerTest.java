@@ -74,15 +74,12 @@ public class MeterReadingControllerTest extends AbstractControllerMockTest {
 
         @Test
         @WithMockUser(authorities = {"FB_4", "FB_5"})
-        @DisplayName("Should return 200 OK for FB_15 scope")
-        void shouldReturn200ForFB15() throws Exception {
-            when(meterReadingRepository.findAll(any(Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of()));
-
+        @DisplayName("FB_4 + FB_5 pass the URL rule, but the root collection is admin only (#286)")
+        void fbTokenIsRefusedOnRootCollection() throws Exception {
             mockMvc.perform(get("/espi/1_1/resource/MeterReading")
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(status().isOk())
-                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
+                    .andExpect(status().isForbidden())
+                    .andExpect(refusedByRowScope());
         }
 
         @Test

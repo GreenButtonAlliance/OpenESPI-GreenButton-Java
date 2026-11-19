@@ -73,15 +73,12 @@ public class UsageSummaryRESTControllerTest extends AbstractControllerMockTest {
 
         @Test
         @WithMockUser(authorities = "FB_15")
-        @DisplayName("Should return 200 OK for FB_15 scope")
-        void shouldReturn200ForFB15() throws Exception {
-            when(usageSummaryRepository.findAll(any(Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of()));
-
+        @DisplayName("FB_15 passes the URL rule, but the root collection is admin only (#286)")
+        void fbTokenIsRefusedOnRootCollection() throws Exception {
             mockMvc.perform(get("/espi/1_1/resource/UsageSummary")
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(status().isOk())
-                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
+                    .andExpect(status().isForbidden())
+                    .andExpect(refusedByRowScope());
         }
     }
 
@@ -124,35 +121,30 @@ public class UsageSummaryRESTControllerTest extends AbstractControllerMockTest {
 
         @Test
         @WithMockUser(authorities = "FB_15")
-        @DisplayName("GET /Subscription/{subscriptionId}/UsagePoint/{usagePointId}/UsageSummary should return 200 OK")
-        void shouldReturn200ForSubscriptionCollection() throws Exception {
+        @DisplayName("GET /Subscription/{subscriptionId}/UsagePoint/{usagePointId}/UsageSummary: 403 for a token that does not hold the subscription (#286)")
+        void foreignSubscriptionCollectionIsRefused() throws Exception {
             UUID subId = UUID.randomUUID();
             UUID upId = UUID.randomUUID();
 
-            when(usageSummaryRepository.findAll(any(Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of()));
-
             mockMvc.perform(get("/espi/1_1/resource/Subscription/" + subId + "/UsagePoint/" + upId + "/UsageSummary")
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(status().isOk());
+                    .andExpect(status().isForbidden())
+                    .andExpect(refusedByRowScope());
         }
 
         @Test
         @WithMockUser(authorities = "FB_15")
-        @DisplayName("GET /Subscription/{subscriptionId}/UsagePoint/{usagePointId}/UsageSummary/{usageSummaryId} should return 200 OK")
-        void shouldReturn200ForSubscriptionResource() throws Exception {
+        @DisplayName("GET /Subscription/{subscriptionId}/UsagePoint/{usagePointId}/UsageSummary/{usageSummaryId}: 403 for a token that does not hold the subscription, even if the summary exists (#286)")
+        void foreignSubscriptionResourceIsRefused() throws Exception {
             UUID subId = UUID.randomUUID();
             UUID upId = UUID.randomUUID();
             UUID usId = UUID.randomUUID();
-            UsageSummaryEntity entity = new UsageSummaryEntity();
-            UsageSummaryDto dto = new UsageSummaryDto();
-
-            when(usageSummaryRepository.findById(usId)).thenReturn(Optional.of(entity));
-            when(usageSummaryMapper.toDto(entity)).thenReturn(dto);
+            when(usageSummaryRepository.findById(usId)).thenReturn(Optional.of(new UsageSummaryEntity()));
 
             mockMvc.perform(get("/espi/1_1/resource/Subscription/" + subId + "/UsagePoint/" + upId + "/UsageSummary/" + usId)
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(status().isOk());
+                    .andExpect(status().isForbidden())
+                    .andExpect(refusedByRowScope());
         }
     }
 }

@@ -36,6 +36,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -57,15 +58,17 @@ import java.util.UUID;
 @Tag(name = "Reading Type", description = "ESPI Reading Type resource endpoints")
 @SecurityRequirement(name = "oauth2")
 @RequiredArgsConstructor
+// open-in-view is off: SubscriptionAccess reads the subscription's lazy UsagePoints in this session (#286)
+@Transactional(readOnly = true)
 public class ReadingTypeRESTController {
 
     private final ReadingTypeRepository readingTypeRepository;
     private final ReadingTypeMapper readingTypeMapper;
     private final ReadingTypeExportService readingTypeExportService;
+    private final SubscriptionAccess subscriptionAccess;
 
     /**
-     * Get all Reading Types (root collection).
-     * Requires DataCustodian admin access or appropriate read scope.
+     * Get all Reading Types (root collection): DataCustodian admin only (#286).
      */
     @GetMapping(value = "/ReadingType", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @Operation(
@@ -85,6 +88,7 @@ public class ReadingTypeRESTController {
             @RequestParam(defaultValue = "0") int offset,
             Authentication authentication) {
 
+        subscriptionAccess.requireAdmin(authentication);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         readingTypeExportService.exportFeed(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString(),
                 "ReadingType Feed", readingTypeRepository.findAll(PageRequest.of(offset, limit)).getContent(),
@@ -95,7 +99,9 @@ public class ReadingTypeRESTController {
     }
 
     /**
-     * Get specific Reading Type by ID (root resource).
+     * Get specific Reading Type by ID (root resource), the URL {@code Batch/Subscription} links to: the
+     * DataCustodian admin, or a customer token whose subscription uses this ReadingType (#286). Anything else gets
+     * 404, so a token learns nothing about other customers' ReadingTypes.
      */
     @GetMapping(value = "/ReadingType/{readingTypeId}", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @Operation(
@@ -115,6 +121,7 @@ public class ReadingTypeRESTController {
             Authentication authentication) {
 
         ReadingTypeDto dto = readingTypeRepository.findById(readingTypeId)
+            .filter(readingType -> subscriptionAccess.canReadReadingType(authentication, readingTypeId))
             .map(readingTypeMapper::toDto)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Reading Type not found for id: " + readingTypeId));
 

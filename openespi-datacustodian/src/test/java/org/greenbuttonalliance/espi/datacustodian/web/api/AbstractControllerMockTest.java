@@ -36,8 +36,13 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultMatcher;
+import org.springframework.web.server.ResponseStatusException;
 import tools.jackson.databind.ObjectMapper;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Created by jt, Spring Framework Guru.
@@ -145,4 +150,15 @@ public class AbstractControllerMockTest {
 
     @MockitoBean
     public CustomerService customerService;
+
+    /**
+     * 403 from the controller's row-level check (#286), not from the URL rule: the token's Function Blocks let it
+     * reach the endpoint, but it is not the admin (root collections and entries) or does not hold the path's
+     * subscription.
+     */
+    public static ResultMatcher refusedByRowScope() {
+        return result -> assertThat(result.getResolvedException())
+                .isInstanceOfSatisfying(ResponseStatusException.class,
+                        ex -> assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
+    }
 }

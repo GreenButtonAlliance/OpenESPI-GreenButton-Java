@@ -26,6 +26,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 import org.greenbuttonalliance.espi.common.dto.usage.UsagePointDto;
 import org.greenbuttonalliance.espi.common.mapper.usage.UsagePointMapper;
 import org.greenbuttonalliance.espi.common.repositories.usage.UsagePointRepository;
@@ -35,6 +36,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -59,20 +61,24 @@ import java.util.UUID;
 @RequestMapping("/espi/1_1/resource")
 @Tag(name = "Usage Points", description = "ESPI Usage Point resource endpoints")
 @SecurityRequirement(name = "oauth2")
+// open-in-view is off: SubscriptionAccess reads the subscription's lazy UsagePoints in this session (#286)
+@Transactional(readOnly = true)
 public class UsagePointController {
 
     private final UsagePointRepository usagePointRepository;
     private final UsagePointMapper usagePointMapper;
     private final UsageExportService usageExportService;
+    private final SubscriptionAccess subscriptionAccess;
 
-    public UsagePointController(UsagePointRepository usagePointRepository, UsagePointMapper usagePointMapper, UsageExportService usageExportService) {
+    public UsagePointController(UsagePointRepository usagePointRepository, UsagePointMapper usagePointMapper,
+                                UsageExportService usageExportService, SubscriptionAccess subscriptionAccess) {
         this.usagePointRepository = usagePointRepository;
         this.usagePointMapper = usagePointMapper;
         this.usageExportService = usageExportService;
+        this.subscriptionAccess = subscriptionAccess;
     }
     /**
-     * Get all Usage Points (root collection).
-     * Requires DataCustodian admin access or appropriate read scope.
+     * Get all Usage Points (root collection): every customer's, so DataCustodian admin only (#286).
      */
     //@GetMapping(value = "/UsagePoint", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @Operation(
@@ -87,8 +93,10 @@ public class UsagePointController {
     )
     @GetMapping(value = "/UsagePoint", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
     public ResponseEntity<byte[]> getAllUsagePoints(@RequestParam(defaultValue = "50") int limit,
-                                                    @RequestParam(defaultValue = "0") int offset) {
+                                                    @RequestParam(defaultValue = "0") int offset,
+                                                    Authentication authentication) {
 
+        subscriptionAccess.requireAdmin(authentication);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         usageExportService.exportFeed(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString(),
                 "UsagePoint Feed", usagePointRepository.findAll(PageRequest.of(offset, limit)).getContent(),
@@ -114,7 +122,7 @@ public class UsagePointController {
 //    }
 
     /**
-     * Get specific Usage Point by ID (root resource).
+     * Get specific Usage Point by ID (root resource): DataCustodian admin only (#286).
      */
     @GetMapping(value = "/UsagePoint/{usagePointId}", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @Operation(
@@ -130,8 +138,10 @@ public class UsagePointController {
     )
     public ResponseEntity<byte[]> getUsagePoint(
             @Parameter(description = "Unique identifier of the Usage Point", required = true)
-            @PathVariable UUID usagePointId) {
+            @PathVariable UUID usagePointId,
+            Authentication authentication) {
 
+        subscriptionAccess.requireAdmin(authentication);
         UsagePointDto dto =  usagePointRepository.findById(usagePointId)
                 .map(usagePointMapper::toDto).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usage Point not found for id: " + usagePointId));
 
@@ -163,14 +173,14 @@ public class UsagePointController {
             @Parameter(description = "Maximum number of results to return", example = "50")
             @RequestParam(defaultValue = "50") int limit,
             @Parameter(description = "Offset for pagination", example = "0")
-            @RequestParam(defaultValue = "0") int offset) {
+            @RequestParam(defaultValue = "0") int offset,
+            Authentication authentication) {
 
-        // TODO: Implement subscription-based filtering when subscription relationship is available
-        // For now, return all usage points with pagination as a temporary solution
+        List<UsagePointEntity> usagePoints = SubscriptionAccess.page(
+                subscriptionAccess.usagePoints(authentication, subscriptionId), offset, limit);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         usageExportService.exportFeed(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString(),
-                "UsagePoint Feed", usagePointRepository.findAll(PageRequest.of(offset, limit)).getContent(),
-                usagePointMapper::toDto, out);
+                "UsagePoint Feed", usagePoints, usagePointMapper::toDto, out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
                 .body(out.toByteArray());
@@ -198,10 +208,8 @@ public class UsagePointController {
             @PathVariable UUID usagePointId,
             Authentication authentication) {
 
-        // TODO: Implement subscription-based validation when subscription relationship is available
-        // For now, just return the usage point if it exists
-        UsagePointDto dto =  usagePointRepository.findById(usagePointId)
-                .map(usagePointMapper::toDto).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usage Point not found for id: " + usagePointId));
+        UsagePointDto dto = usagePointMapper.toDto(
+                subscriptionAccess.usagePoint(authentication, subscriptionId, usagePointId));
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         usageExportService.exportDto(dto, out);

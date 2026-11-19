@@ -72,15 +72,12 @@ public class IntervalBlockRESTControllerTest extends AbstractControllerMockTest 
 
         @Test
         @WithMockUser(authorities = {"FB_4", "FB_5"})
-        @DisplayName("Should return 200 OK for FB_15 scope")
-        void shouldReturn200ForFB15() throws Exception {
-            when(intervalBlockRepository.findAll(any(Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of()));
-
+        @DisplayName("FB_4 + FB_5 pass the URL rule, but the root collection is admin only (#286)")
+        void fbTokenIsRefusedOnRootCollection() throws Exception {
             mockMvc.perform(get("/espi/1_1/resource/IntervalBlock")
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(status().isOk())
-                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
+                    .andExpect(status().isForbidden())
+                    .andExpect(refusedByRowScope());
         }
 
         @Test
@@ -138,23 +135,18 @@ public class IntervalBlockRESTControllerTest extends AbstractControllerMockTest 
 
         @Test
         @WithMockUser(authorities = {"FB_4", "FB_5"})
-        @DisplayName("Should return 200 OK with list of interval blocks")
-        void shouldReturn200() throws Exception {
+        @DisplayName("a token that does not hold the subscription gets 403, even if the MeterReading has blocks (#286)")
+        void foreignSubscriptionCollectionIsRefused() throws Exception {
             UUID subId = UUID.randomUUID();
             UUID upId = UUID.randomUUID();
             UUID mrId = UUID.randomUUID();
-            IntervalBlockEntity entity = new IntervalBlockEntity();
-            IntervalBlockDto dto = new IntervalBlockDto();
-
             when(intervalBlockRepository.findAllByMeterReadingId(mrId))
-                    .thenReturn(List.of(entity));
-            when(intervalBlockMapper.toDto(any(IntervalBlockEntity.class)))
-                    .thenReturn(dto);
+                    .thenReturn(List.of(new IntervalBlockEntity()));
 
             mockMvc.perform(get("/espi/1_1/resource/Subscription/" + subId + "/UsagePoint/" + upId + "/MeterReading/" + mrId + "/IntervalBlock")
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(status().isOk())
-                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
+                    .andExpect(status().isForbidden())
+                    .andExpect(refusedByRowScope());
         }
 
         @Test
@@ -175,22 +167,18 @@ public class IntervalBlockRESTControllerTest extends AbstractControllerMockTest 
 
         @Test
         @WithMockUser(authorities = {"FB_4", "FB_5"})
-        @DisplayName("Should return 200 OK when interval block exists")
-        void shouldReturn200WhenExists() throws Exception {
+        @DisplayName("a token that does not hold the subscription gets 403 for a block that exists (#286)")
+        void foreignSubscriptionResourceIsRefused() throws Exception {
             UUID subId = UUID.randomUUID();
             UUID upId = UUID.randomUUID();
             UUID mrId = UUID.randomUUID();
             UUID ibId = UUID.randomUUID();
-            IntervalBlockEntity entity = new IntervalBlockEntity();
-            IntervalBlockDto dto = new IntervalBlockDto();
-
-            when(intervalBlockRepository.findById(ibId)).thenReturn(Optional.of(entity));
-            when(intervalBlockMapper.toDto(entity)).thenReturn(dto);
+            when(intervalBlockRepository.findById(ibId)).thenReturn(Optional.of(new IntervalBlockEntity()));
 
             mockMvc.perform(get("/espi/1_1/resource/Subscription/" + subId + "/UsagePoint/" + upId + "/MeterReading/" + mrId + "/IntervalBlock/" + ibId)
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(status().isOk())
-                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
+                    .andExpect(status().isForbidden())
+                    .andExpect(refusedByRowScope());
         }
     }
 }

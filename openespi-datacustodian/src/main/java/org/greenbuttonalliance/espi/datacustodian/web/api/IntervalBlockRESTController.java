@@ -63,9 +63,10 @@ public class IntervalBlockRESTController {
     private final IntervalBlockRepository intervalBlockRepository;
     private final IntervalBlockMapper intervalBlockMapper;
     private final IntervalBlockExportService intervalBlockExportService;
+    private final SubscriptionAccess subscriptionAccess;
 
     /**
-     * Get all Interval Blocks (root collection).
+     * Get all Interval Blocks (root collection): every customer's, so DataCustodian admin only (#286).
      */
     @GetMapping(value = "/IntervalBlock", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @Operation(
@@ -85,6 +86,7 @@ public class IntervalBlockRESTController {
             @RequestParam(defaultValue = "0") int offset,
             Authentication authentication) {
 
+        subscriptionAccess.requireAdmin(authentication);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         intervalBlockExportService.exportFeed(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString(),
                 "IntervalBlock Feed", intervalBlockRepository.findAll(PageRequest.of(offset, limit)).getContent(),
@@ -95,7 +97,7 @@ public class IntervalBlockRESTController {
     }
 
     /**
-     * Get specific Interval Block by ID (root resource).
+     * Get specific Interval Block by ID (root resource): DataCustodian admin only (#286).
      */
     @GetMapping(value = "/IntervalBlock/{intervalBlockId}", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @Operation(
@@ -114,6 +116,7 @@ public class IntervalBlockRESTController {
             @PathVariable UUID intervalBlockId,
             Authentication authentication) {
 
+        subscriptionAccess.requireAdmin(authentication);
         IntervalBlockDto dto = intervalBlockRepository.findById(intervalBlockId)
             .map(intervalBlockMapper::toDto)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Interval Block not found for id: " + intervalBlockId));
@@ -126,7 +129,8 @@ public class IntervalBlockRESTController {
     }
 
     /**
-     * Get Interval Blocks for a specific Meter Reading.
+     * Get Interval Blocks for a specific Meter Reading: 403 unless the token's subscription, 404 unless the
+     * UsagePoint is in it and the MeterReading belongs to the UsagePoint (#286).
      */
     @GetMapping(value = "/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/MeterReading/{meterReadingId}/IntervalBlock", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @Operation(
@@ -149,10 +153,10 @@ public class IntervalBlockRESTController {
             @PathVariable UUID meterReadingId,
             Authentication authentication) {
 
-        // Use the specialized repository method for hierarchical access
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         intervalBlockExportService.exportFeed(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString(),
-                "IntervalBlock Feed", intervalBlockRepository.findAllByMeterReadingId(meterReadingId),
+                "IntervalBlock Feed",
+                subscriptionAccess.intervalBlocks(authentication, subscriptionId, usagePointId, meterReadingId),
                 intervalBlockMapper::toDto, out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
@@ -185,11 +189,8 @@ public class IntervalBlockRESTController {
             @PathVariable UUID intervalBlockId,
             Authentication authentication) {
 
-        IntervalBlockDto dto = intervalBlockRepository.findById(intervalBlockId)
-            .map(intervalBlockMapper::toDto)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Interval Block not found for id: " + intervalBlockId));
-
-        // TODO: Validate relationship between intervalBlock and meterReading/usagePoint/subscription
+        IntervalBlockDto dto = intervalBlockMapper.toDto(subscriptionAccess.intervalBlock(
+                authentication, subscriptionId, usagePointId, meterReadingId, intervalBlockId));
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         intervalBlockExportService.exportDto(dto, out);

@@ -64,6 +64,7 @@ public class MeterReadingController {
     private final MeterReadingRepository meterReadingRepository;
     private final MeterReadingMapper meterReadingMapper;
     private final MeterReadingExportService meterReadingExportService;
+    private final SubscriptionAccess subscriptionAccess;
 
     /**
      * Get all Meter Readings (root collection).
@@ -87,6 +88,8 @@ public class MeterReadingController {
             @RequestParam(defaultValue = "0") int offset,
             Authentication authentication) {
 
+        // Root collection and entries hold every customer's data: DataCustodian admin only (#286)
+        subscriptionAccess.requireAdmin(authentication);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         meterReadingExportService.exportFeed(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString(),
                 "MeterReading Feed", meterReadingRepository.findAll(PageRequest.of(offset, limit)).getContent(),
@@ -116,6 +119,7 @@ public class MeterReadingController {
             @PathVariable UUID meterReadingId,
             Authentication authentication) {
 
+        subscriptionAccess.requireAdmin(authentication);
         MeterReadingDto dto = meterReadingRepository.findById(meterReadingId)
             .map(meterReadingMapper::toDto)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Meter Reading not found for id: " + meterReadingId));

@@ -120,6 +120,16 @@ public class SubscriptionFeedAssembler {
 			return serviceKinds == null
 					|| ServiceKind.of(usagePoint.getServiceCategory()).map(serviceKinds::contains).orElse(false);
 		}
+
+		/**
+		 * Whether a time-bounded resource is within HistoryLength: its interval ends after {@code now} minus
+		 * HistoryLength seconds. Always true without a HistoryLength, or for a resource with no interval start.
+		 * The same rule as this feed's ceiling, for the per-resource GETs (#286).
+		 */
+		boolean withinHistory(DateTimeInterval interval, Instant now) {
+			return historyLengthSeconds == null
+					|| Selection.endsAfter(interval, now.getEpochSecond() - historyLengthSeconds);
+		}
 	}
 
 	/** The request's ESPI query parameters (REQ.21.6.2.8); each may be null. */

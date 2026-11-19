@@ -67,10 +67,10 @@ public class UsageSummaryRESTController {
     private final UsageSummaryRepository usageSummaryRepository;
     private final UsageSummaryMapper usageSummaryMapper;
     private final UsageSummaryExportService usageSummaryExportService;
+    private final SubscriptionAccess subscriptionAccess;
 
     /**
-     * Get all Usage Summaries (root collection).
-     * Requires DataCustodian admin access or appropriate read scope.
+     * Get all Usage Summaries (root collection): every customer's, so DataCustodian admin only (#286).
      */
     @GetMapping(value = "/UsageSummary", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @Operation(
@@ -90,6 +90,7 @@ public class UsageSummaryRESTController {
             @RequestParam(defaultValue = "0") int offset,
             Authentication authentication) {
 
+        subscriptionAccess.requireAdmin(authentication);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         usageSummaryExportService.exportFeed(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString(),
                 "UsageSummary Feed", usageSummaryRepository.findAll(PageRequest.of(offset, limit)).getContent(),
@@ -100,7 +101,7 @@ public class UsageSummaryRESTController {
     }
 
     /**
-     * Get specific Usage Summary by ID (root resource).
+     * Get specific Usage Summary by ID (root resource): DataCustodian admin only (#286).
      */
     @GetMapping(value = "/UsageSummary/{usageSummaryId}", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @Operation(
@@ -119,6 +120,7 @@ public class UsageSummaryRESTController {
             @PathVariable UUID usageSummaryId,
             Authentication authentication) {
 
+        subscriptionAccess.requireAdmin(authentication);
         UsageSummaryDto dto = usageSummaryRepository.findById(usageSummaryId)
             .map(usageSummaryMapper::toDto)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usage Summary not found for id: " + usageSummaryId));
@@ -131,7 +133,8 @@ public class UsageSummaryRESTController {
     }
 
     /**
-     * Get Usage Summaries for a specific Subscription and Usage Point.
+     * Get Usage Summaries for a specific Subscription and Usage Point: 403 unless the token's subscription, 404
+     * unless the UsagePoint is in it (#286).
      */
     @GetMapping(value = "/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/UsageSummary", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @Operation(
@@ -153,10 +156,10 @@ public class UsageSummaryRESTController {
             @RequestParam(defaultValue = "0") int offset,
             Authentication authentication) {
 
-        // TODO: Implement subscription and usage point based filtering when relationships are available
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         usageSummaryExportService.exportFeed(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString(),
-                "UsageSummary Feed", usageSummaryRepository.findAll(PageRequest.of(offset, limit)).getContent(),
+                "UsageSummary Feed", SubscriptionAccess.page(
+                        subscriptionAccess.usageSummaries(authentication, subscriptionId, usagePointId), offset, limit),
                 usageSummaryMapper::toDto, out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
@@ -184,9 +187,8 @@ public class UsageSummaryRESTController {
             @PathVariable UUID usageSummaryId,
             Authentication authentication) {
 
-        UsageSummaryDto dto = usageSummaryRepository.findById(usageSummaryId)
-            .map(usageSummaryMapper::toDto)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usage Summary not found for id: " + usageSummaryId));
+        UsageSummaryDto dto = usageSummaryMapper.toDto(
+                subscriptionAccess.usageSummary(authentication, subscriptionId, usagePointId, usageSummaryId));
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         usageSummaryExportService.exportDto(dto, out);

@@ -36,6 +36,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -61,15 +63,18 @@ import java.util.UUID;
 @Tag(name = "Electric Power Quality Summary", description = "Power Quality Measurement Data Management API")
 @SecurityRequirement(name = "oauth2")
 @RequiredArgsConstructor
+// open-in-view is off: SubscriptionAccess reads the subscription's lazy UsagePoints in this session (#286)
+@Transactional(readOnly = true)
 public class ElectricPowerQualitySummaryRESTController {
 
     private final ElectricPowerQualitySummaryRepository electricPowerQualitySummaryRepository;
     private final ElectricPowerQualitySummaryMapper electricPowerQualitySummaryMapper;
     private final ElectricPowerQualitySummaryExportService electricPowerQualitySummaryExportService;
+    private final SubscriptionAccess subscriptionAccess;
 
     /**
-     * Get all Electric Power Quality Summaries (root collection).
-     * Requires DataCustodian admin access or appropriate read scope.
+     * Get all Electric Power Quality Summaries (root collection): every customer's, so DataCustodian admin only
+     * (#286).
      */
     @GetMapping(value = "/ElectricPowerQualitySummary", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @Operation(
@@ -86,8 +91,10 @@ public class ElectricPowerQualitySummaryRESTController {
             @Parameter(description = "Maximum number of results to return", example = "50")
             @RequestParam(defaultValue = "50") int limit,
             @Parameter(description = "Offset for pagination", example = "0")
-            @RequestParam(defaultValue = "0") int offset) {
+            @RequestParam(defaultValue = "0") int offset,
+            Authentication authentication) {
 
+        subscriptionAccess.requireAdmin(authentication);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         electricPowerQualitySummaryExportService.exportFeed(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString(),
                 "ElectricPowerQualitySummary Feed",
@@ -99,8 +106,7 @@ public class ElectricPowerQualitySummaryRESTController {
     }
 
     /**
-     * Get specific Electric Power Quality Summary by ID (root resource).
-     * Requires DataCustodian admin access or appropriate read scope.
+     * Get specific Electric Power Quality Summary by ID (root resource): DataCustodian admin only (#286).
      */
     @GetMapping(value = "/ElectricPowerQualitySummary/{electricPowerQualitySummaryId}", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @Operation(
@@ -116,8 +122,10 @@ public class ElectricPowerQualitySummaryRESTController {
     )
     public ResponseEntity<byte[]> getElectricPowerQualitySummary(
             @Parameter(description = "Unique identifier of the ElectricPowerQualitySummary", required = true)
-            @PathVariable UUID electricPowerQualitySummaryId) {
+            @PathVariable UUID electricPowerQualitySummaryId,
+            Authentication authentication) {
 
+        subscriptionAccess.requireAdmin(authentication);
         ElectricPowerQualitySummaryDto dto = electricPowerQualitySummaryRepository.findById(electricPowerQualitySummaryId)
                 .map(electricPowerQualitySummaryMapper::toDto)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ElectricPowerQualitySummary not found for id: " + electricPowerQualitySummaryId));
@@ -130,8 +138,8 @@ public class ElectricPowerQualitySummaryRESTController {
     }
 
     /**
-     * Get Electric Power Quality Summaries for a specific Subscription and Usage Point.
-     * Requires appropriate read scope.
+     * Get Electric Power Quality Summaries for a specific Subscription and Usage Point: 403 unless the token's
+     * subscription, 404 unless the UsagePoint is in it (#286).
      */
     @GetMapping(value = "/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/ElectricPowerQualitySummary", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @Operation(
@@ -152,14 +160,14 @@ public class ElectricPowerQualitySummaryRESTController {
             @Parameter(description = "Maximum number of results to return", example = "50")
             @RequestParam(defaultValue = "50") int limit,
             @Parameter(description = "Offset for pagination", example = "0")
-            @RequestParam(defaultValue = "0") int offset) {
+            @RequestParam(defaultValue = "0") int offset,
+            Authentication authentication) {
 
-        // TODO: Implement subscription-based filtering when subscription relationship is available
-        // For now, return all summaries with pagination as a temporary solution
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         electricPowerQualitySummaryExportService.exportFeed(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString(),
                 "ElectricPowerQualitySummary Feed",
-                electricPowerQualitySummaryRepository.findAll(PageRequest.of(offset, limit)).getContent(),
+                SubscriptionAccess.page(
+                        subscriptionAccess.qualitySummaries(authentication, subscriptionId, usagePointId), offset, limit),
                 electricPowerQualitySummaryMapper::toDto, out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
@@ -187,13 +195,11 @@ public class ElectricPowerQualitySummaryRESTController {
             @Parameter(description = "Unique identifier of the usage point", required = true)
             @PathVariable UUID usagePointId,
             @Parameter(description = "Unique identifier of the ElectricPowerQualitySummary", required = true)
-            @PathVariable UUID electricPowerQualitySummaryId) {
+            @PathVariable UUID electricPowerQualitySummaryId,
+            Authentication authentication) {
 
-        // TODO: Implement subscription-based validation when subscription relationship is available
-        // For now, return the summary if it exists
-        ElectricPowerQualitySummaryDto dto = electricPowerQualitySummaryRepository.findById(electricPowerQualitySummaryId)
-                .map(electricPowerQualitySummaryMapper::toDto)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ElectricPowerQualitySummary not found for id: " + electricPowerQualitySummaryId));
+        ElectricPowerQualitySummaryDto dto = electricPowerQualitySummaryMapper.toDto(subscriptionAccess.qualitySummary(
+                authentication, subscriptionId, usagePointId, electricPowerQualitySummaryId));
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         electricPowerQualitySummaryExportService.exportDto(dto, out);

@@ -132,15 +132,23 @@ public class ScopeResolver {
         if (hasAdminAuthority(authentication)) {
             return true;
         }
-        if (hasAuthority(authentication, EspiScopeOpaqueTokenIntrospector.CLIENT_ACCESS_TOKEN)
+        return subscriptionId(authentication).filter(subscriptionId::equals).isPresent();
+    }
+
+    /**
+     * The subscription a customer access token is for, from its introspected {@code resourceURI}
+     * ({@code …/Batch/Subscription/{id}}); empty for any other token, including a Third Party's client access
+     * token ({@code FB=34_35}) whatever its URIs.
+     */
+    public Optional<UUID> subscriptionId(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()
+                || hasAuthority(authentication, EspiScopeOpaqueTokenIntrospector.CLIENT_ACCESS_TOKEN)
                 || !(authentication.getPrincipal() instanceof OAuth2AuthenticatedPrincipal principal)) {
-            return false;
+            return Optional.empty();
         }
         String resourceUri = stringAttribute(principal, "resourceURI");
-        return resourceUri != null && EspiBatchUri.subscriptionId(resourceUri)
-                .flatMap(ScopeResolver::parseUuid)
-                .filter(subscriptionId::equals)
-                .isPresent();
+        return resourceUri == null ? Optional.empty()
+                : EspiBatchUri.subscriptionId(resourceUri).flatMap(ScopeResolver::parseUuid);
     }
 
     /**

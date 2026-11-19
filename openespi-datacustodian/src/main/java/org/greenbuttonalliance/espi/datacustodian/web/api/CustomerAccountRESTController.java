@@ -35,6 +35,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -64,9 +65,10 @@ public class CustomerAccountRESTController {
     private final CustomerAccountRepository customerAccountRepository;
     private final CustomerAccountMapper customerAccountMapper;
     private final CustomerAccountExportService customerAccountExportService;
+    private final SubscriptionAccess subscriptionAccess;
 
     /**
-     * Get all Customer Accounts (root collection).
+     * Get all Customer Accounts (root collection): every customer's PII, so DataCustodian admin only (#286).
      */
     @GetMapping(value = "/CustomerAccount", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @Operation(
@@ -83,8 +85,10 @@ public class CustomerAccountRESTController {
             @Parameter(description = "Maximum number of results to return", example = "50")
             @RequestParam(defaultValue = "50") int limit,
             @Parameter(description = "Offset for pagination", example = "0")
-            @RequestParam(defaultValue = "0") int offset) {
+            @RequestParam(defaultValue = "0") int offset,
+            Authentication authentication) {
 
+        subscriptionAccess.requireAdmin(authentication);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         customerAccountExportService.exportFeed(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString(),
                 "CustomerAccount Feed", customerAccountRepository.findAll(PageRequest.of(offset, limit)).getContent(),
@@ -111,8 +115,10 @@ public class CustomerAccountRESTController {
     )
     public ResponseEntity<byte[]> getCustomerAccount(
             @Parameter(description = "Unique identifier of the CustomerAccount", required = true)
-            @PathVariable UUID customerAccountId) {
+            @PathVariable UUID customerAccountId,
+            Authentication authentication) {
 
+        subscriptionAccess.requireAdmin(authentication);
         CustomerAccountDto dto = customerAccountRepository.findById(customerAccountId)
                 .map(customerAccountMapper::toDto)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CustomerAccount not found for id: " + customerAccountId));
