@@ -72,15 +72,12 @@ public class IntervalBlockRESTControllerTest extends AbstractControllerMockTest 
 
         @Test
         @WithMockUser(authorities = {"FB_4", "FB_5"})
-        @DisplayName("Should return 200 OK for FB_15 scope")
-        void shouldReturn200ForFB15() throws Exception {
-            when(intervalBlockRepository.findAll(any(Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of()));
-
+        @DisplayName("FB_4 + FB_5 pass the URL rule, but the root collection is admin only (#286)")
+        void fbTokenIsRefusedOnRootCollection() throws Exception {
             mockMvc.perform(get("/espi/1_1/resource/IntervalBlock")
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(status().isOk())
-                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
+                    .andExpect(status().isForbidden())
+                    .andExpect(refusedByRowScope());
         }
 
         @Test
@@ -133,64 +130,38 @@ public class IntervalBlockRESTControllerTest extends AbstractControllerMockTest 
     }
 
     @Nested
-    @DisplayName("GET /espi/1_1/resource/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/MeterReading/{meterReadingId}/IntervalBlock")
-    class GetSubscriptionIntervalBlocks {
+    @DisplayName("GET /espi/1_1/resource/RetailCustomer/{retailCustomerId}/UsagePoint/{usagePointId}/MeterReading/{meterReadingId}/IntervalBlock")
+    class GetMeterReadingIntervalBlocks {
 
         @Test
         @WithMockUser(authorities = {"FB_4", "FB_5"})
-        @DisplayName("Should return 200 OK with list of interval blocks")
-        void shouldReturn200() throws Exception {
-            UUID subId = UUID.randomUUID();
-            UUID upId = UUID.randomUUID();
+        @DisplayName("a token with no subscription gets 403, even if the MeterReading has blocks (#286)")
+        void tokenWithoutSubscriptionIsRefused() throws Exception {
             UUID mrId = UUID.randomUUID();
-            IntervalBlockEntity entity = new IntervalBlockEntity();
-            IntervalBlockDto dto = new IntervalBlockDto();
-
             when(intervalBlockRepository.findAllByMeterReadingId(mrId))
-                    .thenReturn(List.of(entity));
-            when(intervalBlockMapper.toDto(any(IntervalBlockEntity.class)))
-                    .thenReturn(dto);
+                    .thenReturn(List.of(new IntervalBlockEntity()));
 
-            mockMvc.perform(get("/espi/1_1/resource/Subscription/" + subId + "/UsagePoint/" + upId + "/MeterReading/" + mrId + "/IntervalBlock")
+            mockMvc.perform(get("/espi/1_1/resource/RetailCustomer/1/UsagePoint/" + UUID.randomUUID() + "/MeterReading/" + mrId + "/IntervalBlock")
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(status().isOk())
-                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
+                    .andExpect(status().isForbidden())
+                    .andExpect(refusedByRowScope());
         }
 
         @Test
         @WithMockUser(authorities = "SCOPE_Wrong_Authority")
         @DisplayName("Should return 403 Forbidden for user without proper authority")
         void shouldReturn403ForWrongAuthority() throws Exception {
-            UUID subId = UUID.randomUUID();
-            UUID upId = UUID.randomUUID();
-            UUID mrId = UUID.randomUUID();
-            mockMvc.perform(get("/espi/1_1/resource/Subscription/" + subId + "/UsagePoint/" + upId + "/MeterReading/" + mrId + "/IntervalBlock"))
+            mockMvc.perform(get("/espi/1_1/resource/RetailCustomer/1/UsagePoint/" + UUID.randomUUID() + "/MeterReading/" + UUID.randomUUID() + "/IntervalBlock"))
                     .andExpect(status().isForbidden());
         }
     }
 
-    @Nested
-    @DisplayName("GET /espi/1_1/resource/Subscription/{subscriptionId}/UsagePoint/{usagePointId}/MeterReading/{meterReadingId}/IntervalBlock/{intervalBlockId}")
-    class GetSubscriptionIntervalBlock {
-
-        @Test
-        @WithMockUser(authorities = {"FB_4", "FB_5"})
-        @DisplayName("Should return 200 OK when interval block exists")
-        void shouldReturn200WhenExists() throws Exception {
-            UUID subId = UUID.randomUUID();
-            UUID upId = UUID.randomUUID();
-            UUID mrId = UUID.randomUUID();
-            UUID ibId = UUID.randomUUID();
-            IntervalBlockEntity entity = new IntervalBlockEntity();
-            IntervalBlockDto dto = new IntervalBlockDto();
-
-            when(intervalBlockRepository.findById(ibId)).thenReturn(Optional.of(entity));
-            when(intervalBlockMapper.toDto(entity)).thenReturn(dto);
-
-            mockMvc.perform(get("/espi/1_1/resource/Subscription/" + subId + "/UsagePoint/" + upId + "/MeterReading/" + mrId + "/IntervalBlock/" + ibId)
-                            .accept(MediaType.APPLICATION_XML))
-                    .andExpect(status().isOk())
-                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
-        }
+    @Test
+    @WithMockUser(authorities = {"FB_4", "FB_5"})
+    @DisplayName("no resource is served under /Subscription/{id}/...: a Subscription is per grant, so the href would not be repeatable (#290)")
+    void noSubscriptionScopedIntervalBlocks() throws Exception {
+        mockMvc.perform(get("/espi/1_1/resource/Subscription/" + UUID.randomUUID() + "/UsagePoint/" + UUID.randomUUID()
+                        + "/MeterReading/" + UUID.randomUUID() + "/IntervalBlock"))
+                .andExpect(status().isNotFound());
     }
 }

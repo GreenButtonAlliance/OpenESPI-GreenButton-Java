@@ -74,15 +74,12 @@ public class ElectricPowerQualitySummaryRESTControllerTest extends AbstractContr
 
         @Test
         @WithMockUser(authorities = "FB_17")
-        @DisplayName("Should return 200 OK for FB_15 scope")
-        void shouldReturn200ForFB15() throws Exception {
-            when(electricPowerQualitySummaryRepository.findAll(any(Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of()));
-
+        @DisplayName("FB_17 passes the URL rule, but the root collection is admin only (#286)")
+        void fbTokenIsRefusedOnRootCollection() throws Exception {
             mockMvc.perform(get("/espi/1_1/resource/ElectricPowerQualitySummary")
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(status().isOk())
-                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
+                    .andExpect(status().isForbidden())
+                    .andExpect(refusedByRowScope());
         }
 
         @Test
@@ -143,41 +140,24 @@ public class ElectricPowerQualitySummaryRESTControllerTest extends AbstractContr
     }
 
     @Nested
-    @DisplayName("Subscription scoped GET tests")
-    class SubscriptionTests {
+    @DisplayName("GET /espi/1_1/resource/RetailCustomer/{retailCustomerId}/UsagePoint/{usagePointId}/ElectricPowerQualitySummary")
+    class RetailCustomerTests {
         @Test
         @WithMockUser(authorities = "FB_17")
-        @DisplayName("Should return 200 OK for subscription collection")
-        void shouldReturn200ForSubscriptionCollection() throws Exception {
-            UUID subId = UUID.randomUUID();
-            UUID upId = UUID.randomUUID();
-
-            when(electricPowerQualitySummaryRepository.findAll(any(Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of()));
-
-            mockMvc.perform(get("/espi/1_1/resource/Subscription/" + subId + "/UsagePoint/" + upId + "/ElectricPowerQualitySummary")
+        @DisplayName("a token with no subscription gets 403 (#286)")
+        void tokenWithoutSubscriptionIsRefused() throws Exception {
+            mockMvc.perform(get("/espi/1_1/resource/RetailCustomer/1/UsagePoint/" + UUID.randomUUID() + "/ElectricPowerQualitySummary")
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(status().isOk())
-                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
+                    .andExpect(status().isForbidden())
+                    .andExpect(refusedByRowScope());
         }
 
         @Test
         @WithMockUser(authorities = "FB_17")
-        @DisplayName("Should return 200 OK for subscription resource")
-        void shouldReturn200ForSubscriptionResource() throws Exception {
-            UUID subId = UUID.randomUUID();
-            UUID upId = UUID.randomUUID();
-            UUID id = UUID.randomUUID();
-            ElectricPowerQualitySummaryEntity entity = new ElectricPowerQualitySummaryEntity();
-            ElectricPowerQualitySummaryDto dto = new ElectricPowerQualitySummaryDto();
-
-            when(electricPowerQualitySummaryRepository.findById(id)).thenReturn(Optional.of(entity));
-            when(electricPowerQualitySummaryMapper.toDto(entity)).thenReturn(dto);
-
-            mockMvc.perform(get("/espi/1_1/resource/Subscription/" + subId + "/UsagePoint/" + upId + "/ElectricPowerQualitySummary/" + id)
-                            .accept(MediaType.APPLICATION_XML))
-                    .andExpect(status().isOk())
-                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
+        @DisplayName("no summary is served under /Subscription/{id}/...: a Subscription is per grant, so the href would not be repeatable (#290)")
+        void noSubscriptionScopedSummaries() throws Exception {
+            mockMvc.perform(get("/espi/1_1/resource/Subscription/" + UUID.randomUUID() + "/UsagePoint/" + UUID.randomUUID() + "/ElectricPowerQualitySummary"))
+                    .andExpect(status().isNotFound());
         }
     }
 }

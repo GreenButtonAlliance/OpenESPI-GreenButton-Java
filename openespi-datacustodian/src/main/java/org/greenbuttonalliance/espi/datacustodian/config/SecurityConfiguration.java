@@ -173,14 +173,13 @@ public class SecurityConfiguration {
                     .access(adminOrClientAccessToken)
 
                 // --- Usage summaries (GET) : data-shape FBs, or admin. The summary/PQ leaf rules
-                //     (including Subscription-/RetailCustomer-scoped XPath forms) MUST precede the
-                //     broad usage-data rule, so a summary reached via /Subscription/.../UsageSummary is
-                //     gated by its own FB rather than FB_4+commodity. ---
+                //     (including the RetailCustomer XPath forms) MUST precede the broad usage-data rule,
+                //     so a summary reached via /RetailCustomer/.../UsageSummary is gated by its own FB
+                //     rather than FB_4+commodity. No resource is served under /Subscription/{id}/...: a
+                //     Subscription is per grant, so such an href would not be repeatable (#290). ---
                 .requestMatchers(HttpMethod.GET,
                     "/espi/1_1/resource/UsageSummary/**",
                     "/espi/1_1/resource/ElectricPowerUsageSummary/**",
-                    "/espi/1_1/resource/Subscription/*/UsagePoint/*/UsageSummary/**",
-                    "/espi/1_1/resource/Subscription/*/UsagePoint/*/ElectricPowerUsageSummary/**",
                     "/espi/1_1/resource/RetailCustomer/*/UsagePoint/*/UsageSummary/**",
                     "/espi/1_1/resource/RetailCustomer/*/UsagePoint/*/ElectricPowerUsageSummary/**")
                     .access(usageSummary)
@@ -188,7 +187,6 @@ public class SecurityConfiguration {
                 // --- Power-quality summary (GET) : FB_17, or admin ---
                 .requestMatchers(HttpMethod.GET,
                     "/espi/1_1/resource/ElectricPowerQualitySummary/**",
-                    "/espi/1_1/resource/Subscription/*/UsagePoint/*/ElectricPowerQualitySummary/**",
                     "/espi/1_1/resource/RetailCustomer/*/UsagePoint/*/ElectricPowerQualitySummary/**")
                     .access(powerQuality)
 
@@ -209,7 +207,6 @@ public class SecurityConfiguration {
                     "/espi/1_1/resource/LocalTimeParameter/**",
                     "/espi/1_1/resource/LocalTimeParameters/**",
                     "/espi/1_1/resource/Batch/**",
-                    "/espi/1_1/resource/Subscription/**",
                     "/espi/1_1/resource/RetailCustomer/*/UsagePoint/**")
                     .access(usageData)
 

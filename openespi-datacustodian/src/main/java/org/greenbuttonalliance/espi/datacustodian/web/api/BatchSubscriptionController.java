@@ -26,14 +26,13 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.greenbuttonalliance.espi.common.dto.atom.AtomFeedDto;
 import org.greenbuttonalliance.espi.common.service.impl.UsageExportService;
-import org.greenbuttonalliance.espi.datacustodian.config.UsageFunctionBlockAuthorities;
-import org.greenbuttonalliance.espi.datacustodian.web.api.SubscriptionFeedAssembler.Grants;
 import org.greenbuttonalliance.espi.datacustodian.web.api.SubscriptionFeedAssembler.Range;
 import org.greenbuttonalliance.espi.datacustodian.web.api.scope.ScopeResolver;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -56,12 +55,16 @@ import java.util.regex.Pattern;
  * token for exactly this subscription. Anything else gets 403, whether or not the subscription exists. The
  * URL rule in {@code SecurityConfiguration} requires interval metering (FB_4) and an electricity, gas or water
  * Function Block (FB_5 to FB_11) first. Those commodity Function Blocks decide which UsagePoints the feed holds
- * (by service category), and the summary Function Blocks which summaries ({@link UsageFunctionBlockAuthorities}).</p>
+ * (by service category), and the summary Function Blocks which summaries ({@link SubscriptionAccess#grants}).
+ * Its entries are the same as in the root feeds, with ROOT-form links ({@link UsageEntries}): a resource is never
+ * addressed through the Subscription, whose id changes with every grant.</p>
  */
 @RestController
 @RequestMapping("/espi/1_1/resource")
 @Tag(name = "Batch", description = "ESPI Batch resource endpoints")
 @SecurityRequirement(name = "oauth2")
+// open-in-view is off: the Reader's subscription is loaded and its lazy UsagePoints read in this one transaction (#290)
+@Transactional(readOnly = true)
 public class BatchSubscriptionController {
 
 	private static final String BATCH_SUBSCRIPTION = "/Batch/Subscription/";
@@ -71,12 +74,14 @@ public class BatchSubscriptionController {
 			Pattern.compile("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,9})?Z");
 
 	private final ScopeResolver scopeResolver;
+	private final SubscriptionAccess subscriptionAccess;
 	private final SubscriptionFeedAssembler assembler;
 	private final UsageExportService usageExportService;
 
-	public BatchSubscriptionController(ScopeResolver scopeResolver, SubscriptionFeedAssembler assembler,
-									   UsageExportService usageExportService) {
+	public BatchSubscriptionController(ScopeResolver scopeResolver, SubscriptionAccess subscriptionAccess,
+									   SubscriptionFeedAssembler assembler, UsageExportService usageExportService) {
 		this.scopeResolver = scopeResolver;
+		this.subscriptionAccess = subscriptionAccess;
 		this.assembler = assembler;
 		this.usageExportService = usageExportService;
 	}
@@ -123,7 +128,8 @@ public class BatchSubscriptionController {
 		// The self link (and so the feed's UUID v5 id) keeps the query: a different range is a different feed.
 		String feedHref = ServletUriComponentsBuilder.fromCurrentRequest().toUriString();
 		String resourceBase = feedHref.substring(0, feedHref.indexOf(BATCH_SUBSCRIPTION));
-		AtomFeedDto feed = assembler.build(subscriptionId, resourceBase, feedHref, grants(authentication), range)
+		AtomFeedDto feed = assembler.build(subscriptionId, resourceBase, feedHref,
+						subscriptionAccess.reader(authentication), range)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -131,27 +137,6 @@ public class BatchSubscriptionController {
 		return ResponseEntity.ok()
 				.contentType(MediaType.APPLICATION_ATOM_XML)
 				.body(out.toByteArray());
-	}
-
-	/**
-	 * The admin sees everything; a customer token sees what its Function Blocks grant, no further back than its
-	 * HistoryLength. An FB scope that does not parse is refused (403) rather than read as "no limit".
-	 */
-	private Grants grants(Authentication authentication) {
-		if (scopeResolver.isAdmin(authentication)) {
-			return Grants.all();
-		}
-		Long historyLength;
-		try {
-			historyLength = scopeResolver.historyLengthSeconds(authentication).orElse(null);
-		} catch (IllegalArgumentException ex) {
-			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Unreadable ESPI scope");
-		}
-		return new Grants(
-				UsageFunctionBlockAuthorities.serviceKinds(authentication),
-				UsageFunctionBlockAuthorities.hasAny(authentication, UsageFunctionBlockAuthorities.USAGE_SUMMARY),
-				UsageFunctionBlockAuthorities.hasAny(authentication, UsageFunctionBlockAuthorities.POWER_QUALITY),
-				historyLength);
 	}
 
 	private static boolean reversed(Instant min, Instant max) {

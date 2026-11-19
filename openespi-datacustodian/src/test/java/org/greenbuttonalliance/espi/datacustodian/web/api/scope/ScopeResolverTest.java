@@ -105,6 +105,19 @@ class ScopeResolverTest {
     }
 
     @Test
+    @DisplayName("a Third Party client access token gets no subscription's UsagePoints, whatever its resourceURI")
+    void clientAccessTokenResolvesNoSubscription() {
+        UUID subscriptionId = UUID.fromString("11111111-2222-5333-8444-555555555555");
+
+        ResourceScope scope = resolver.resolve(auth(
+                Map.of("resourceURI", EspiBatchUri.batchSubscription(BASE, subscriptionId)),
+                "ESPI_CLIENT_ACCESS_TOKEN", "FB_4"));
+
+        assertThat(scope.isDenied()).isTrue();
+        verifyNoInteractions(subscriptionRepository);
+    }
+
+    @Test
     @DisplayName("customerResourceURI → that RetailCustomer id (PII, Long key)")
     void customerResourceUriResolvesRetailCustomer() {
         ResourceScope scope = resolver.resolve(auth(

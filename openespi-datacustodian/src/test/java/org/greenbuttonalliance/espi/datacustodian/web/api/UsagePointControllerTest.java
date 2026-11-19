@@ -82,15 +82,12 @@ public class UsagePointControllerTest extends AbstractControllerMockTest {
 
         @Test
         @WithMockUser(authorities = {"FB_4", "FB_5"})
-        @DisplayName("Should return 200 OK for FB_15 scope")
-        void shouldReturn200ForFB15() throws Exception {
-            when(usagePointRepository.findAll(any(Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of()));
-
+        @DisplayName("FB_4 + FB_5 pass the URL rule, but the root collection is admin only (#286)")
+        void fbTokenIsRefusedOnRootCollection() throws Exception {
             mockMvc.perform(get("/espi/1_1/resource/UsagePoint")
                             .accept(MediaType.APPLICATION_XML))
-                    .andExpect(status().isOk())
-                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
+                    .andExpect(status().isForbidden())
+                    .andExpect(refusedByRowScope());
         }
 
         @Test
@@ -142,84 +139,13 @@ public class UsagePointControllerTest extends AbstractControllerMockTest {
         }
     }
 
-    @Nested
-    @DisplayName("GET /espi/1_1/resource/Subscription/{subscriptionId}/UsagePoint")
-    class GetSubscriptionUsagePoints {
-
-        @org.junit.jupiter.api.BeforeEach
-        void setUp() {
-            when(usagePointRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of()));
-        }
-
-        @Test
-        @DisplayName("Should return 401 Unauthorized when not authenticated")
-        void shouldReturn401WhenNotAuthenticated() throws Exception {
-            mockMvc.perform(get("/espi/1_1/resource/Subscription/" + UUID.randomUUID() + "/UsagePoint"))
-                    .andExpect(status().isUnauthorized());
-        }
-
-        @Test
-        @WithMockUser(authorities = {"FB_4", "FB_5"})
-        @DisplayName("Should return 200 OK for FB_15 scope")
-        void shouldReturn200ForFB15() throws Exception {
-            when(usagePointRepository.findAll(any(Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of()));
-
-            mockMvc.perform(get("/espi/1_1/resource/Subscription/" + UUID.randomUUID() + "/UsagePoint")
-                            .accept(MediaType.APPLICATION_XML))
-                    .andExpect(status().isOk())
-                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
-        }
-
-        @Test
-        @WithMockUser(authorities = "SCOPE_Wrong_Authority")
-        @DisplayName("Should return 403 Forbidden for user without proper authority")
-        void shouldReturn403ForWrongAuthority() throws Exception {
-            mockMvc.perform(get("/espi/1_1/resource/Subscription/" + UUID.randomUUID() + "/UsagePoint"))
-                    .andExpect(status().isForbidden());
-        }
-    }
-
-    @Nested
-    @DisplayName("GET /espi/1_1/resource/Subscription/{subscriptionId}/UsagePoint/{usagePointId}")
-    class GetSubscriptionUsagePoint {
-
-        @Test
-        @DisplayName("Should return 401 Unauthorized when not authenticated")
-        void shouldReturn401WhenNotAuthenticated() throws Exception {
-            mockMvc.perform(get("/espi/1_1/resource/Subscription/" + UUID.randomUUID() + "/UsagePoint/" + UUID.randomUUID()))
-                    .andExpect(status().isUnauthorized());
-        }
-
-        @Test
-        @WithMockUser(authorities = {"FB_4", "FB_5"})
-        @DisplayName("Should return 200 OK when usage point exists and user has scope")
-        void shouldReturn200WhenExists() throws Exception {
-            UUID subId = UUID.randomUUID();
-            UUID upId = UUID.randomUUID();
-            UsagePointEntity entity = new UsagePointEntity();
-            UsagePointDto dto = new UsagePointDto();
-
-            when(usagePointRepository.findById(upId)).thenReturn(Optional.of(entity));
-            when(usagePointMapper.toDto(entity)).thenReturn(dto);
-
-            mockMvc.perform(get("/espi/1_1/resource/Subscription/" + subId + "/UsagePoint/" + upId)
-                            .accept(MediaType.APPLICATION_XML))
-                    .andExpect(status().isOk())
-                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
-        }
-
-        @Test
-        @WithMockUser(authorities = {"FB_4", "FB_5"})
-        @DisplayName("Should return 404 Not Found when usage point does not exist")
-        void shouldReturn404WhenNotExists() throws Exception {
-            UUID subId = UUID.randomUUID();
-            UUID upId = UUID.randomUUID();
-            when(usagePointRepository.findById(upId)).thenReturn(Optional.empty());
-
-            mockMvc.perform(get("/espi/1_1/resource/Subscription/" + subId + "/UsagePoint/" + upId))
-                    .andExpect(status().isNotFound());
-        }
+    @Test
+    @WithMockUser(authorities = {"FB_4", "FB_5"})
+    @DisplayName("no resource is served under /Subscription/{id}/...: a Subscription is per grant, so the href would not be repeatable (#290)")
+    void noSubscriptionScopedUsagePoints() throws Exception {
+        mockMvc.perform(get("/espi/1_1/resource/Subscription/" + UUID.randomUUID() + "/UsagePoint"))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/espi/1_1/resource/Subscription/" + UUID.randomUUID() + "/UsagePoint/" + UUID.randomUUID()))
+                .andExpect(status().isNotFound());
     }
 }

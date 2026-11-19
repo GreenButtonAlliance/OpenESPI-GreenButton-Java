@@ -91,14 +91,11 @@ public class CustomerRESTControllerTest extends AbstractControllerMockTest {
 
         @Test
         @WithMockUser(authorities = {"FB_53", "FB_54"})
-        @DisplayName("FB_53 base + FB_54 (Customer) -> 200 OK")
-        void baseAndCustomerFbReturns200() throws Exception {
-            when(customerRepository.findAll(any(Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of(new CustomerEntity())));
-            when(customerMapper.toDto(any(CustomerEntity.class))).thenReturn(new CustomerDto());
-
+        @DisplayName("FB_53 base + FB_54 (Customer) pass the URL rule; the root collection is admin only (#286)")
+        void baseAndCustomerFbPassTheUrlRule() throws Exception {
             mockMvc.perform(get("/espi/1_1/resource/Customer").accept(MediaType.APPLICATION_XML))
-                    .andExpect(status().isOk());
+                    .andExpect(status().isForbidden())
+                    .andExpect(refusedByRowScope());
         }
 
         @Test

@@ -151,27 +151,36 @@ class BatchSubscriptionIntegrationTest {
 	@DisplayName("without query parameters: the last 24 hours, plus the latest summaries, in certified order, as valid ESPI XML")
 	void customer_token_gets_its_subscription() throws Exception {
 		String xml = fetch(SUBSCRIPTION_A, customer(SUBSCRIPTION_A, "FB=1_3_4_5_16_17", "FB_16", "FB_17"));
-		String subscription = BASE + "/Subscription/" + SUBSCRIPTION_A;
-		String usagePoint = subscription + "/UsagePoint/" + USAGE_POINT_A;
-		String meterReading = usagePoint + "/MeterReading/" + METER_READING_A;
+		// ROOT-form hrefs: never through the Subscription, whose id changes with every grant (#290).
+		String usagePoint = BASE + "/UsagePoint/" + USAGE_POINT_A;
+		String meterReading = BASE + "/MeterReading/" + METER_READING_A;
 
 		assertThat(xml)
 				.contains("rel=\"self\" href=\"" + BASE + "/Batch/Subscription/" + SUBSCRIPTION_A
 						+ "\" type=\"espi-feed/Subscription\"")
-				.contains("href=\"" + usagePoint + "\" type=\"espi-entry/UsagePoint\"",
-						"rel=\"up\" href=\"" + subscription + "/UsagePoint\" type=\"espi-feed/UsagePoint\"",
-						"rel=\"related\" href=\"" + usagePoint + "/MeterReading\" type=\"espi-feed/MeterReading\"",
+				.contains("rel=\"self\" href=\"" + usagePoint + "\" type=\"espi-entry/UsagePoint\"",
+						"rel=\"up\" href=\"" + BASE + "/UsagePoint\" type=\"espi-feed/UsagePoint\"",
+						"/UsagePoint/" + USAGE_POINT_A + "/MeterReading\" type=\"espi-feed/MeterReading\"",
+						"rel=\"related\" href=\"" + meterReading + "\" type=\"espi-entry/MeterReading\"",
 						"rel=\"related\" href=\"" + BASE + "/LocalTimeParameters/" + LOCAL_TIME_A
 								+ "\" type=\"espi-entry/LocalTimeParameters\"")
-				.contains("href=\"" + meterReading + "\" type=\"espi-entry/MeterReading\"",
+				.contains("rel=\"self\" href=\"" + meterReading + "\" type=\"espi-entry/MeterReading\"",
 						"rel=\"related\" href=\"" + BASE + "/ReadingType/" + READING_TYPE_A
 								+ "\" type=\"espi-entry/ReadingType\"",
-						"href=\"" + meterReading + "/IntervalBlock/" + RECENT_BLOCK + "\" type=\"espi-entry/IntervalBlock\"",
-						"href=\"" + usagePoint + "/UsageSummary/" + USAGE_SUMMARY_A + "\"",
-						"href=\"" + usagePoint + "/ElectricPowerQualitySummary/" + QUALITY_SUMMARY_A + "\"",
+						"rel=\"self\" href=\"" + BASE + "/IntervalBlock/" + RECENT_BLOCK + "\" type=\"espi-entry/IntervalBlock\"",
+						"rel=\"self\" href=\"" + BASE + "/UsageSummary/" + USAGE_SUMMARY_A + "\"",
+						"rel=\"self\" href=\"" + BASE + "/ElectricPowerQualitySummary/" + QUALITY_SUMMARY_A + "\"",
 						"<espi:LocalTimeParameters>")
-				.doesNotContain(USAGE_POINT_B.toString(), "<atom:published/>", "xsi:type", OLD_BLOCK.toString(),
-						OLD_USAGE_SUMMARY.toString(), OLD_QUALITY_SUMMARY.toString());
+				// A summary's up is its collection; its required reverse link is to the UsagePoint.
+				.contains("rel=\"up\" href=\"" + BASE + "/UsageSummary\" type=\"espi-feed/UsageSummary\"",
+						"rel=\"up\" href=\"" + BASE + "/ElectricPowerQualitySummary\""
+								+ " type=\"espi-feed/ElectricPowerQualitySummary\"",
+						"rel=\"related\" href=\"" + usagePoint + "\" type=\"espi-entry/UsagePoint\"")
+				.doesNotContain(USAGE_POINT_B.toString(), "<atom:published/>", "xsi:type", "/Subscription/" + SUBSCRIPTION_A + "/",
+						"espi-entry/Subscription")
+				// The range leaves these entries out (their ids may still be linked as readable children).
+				.doesNotContain("<atom:id>urn:uuid:" + OLD_BLOCK, "<atom:id>urn:uuid:" + OLD_USAGE_SUMMARY,
+						"<atom:id>urn:uuid:" + OLD_QUALITY_SUMMARY);
 		// The UsageSummary's billing period runs to now (overlap); the power quality summary ended 5 days ago and
 		// is there as the UsagePoint's latest.
 		assertThat(entryResources(xml)).containsExactly("UsagePoint", "MeterReading", "ReadingType",
@@ -186,9 +195,10 @@ class BatchSubscriptionIntegrationTest {
 				"published-min", ago(100 * DAY), "published-max", ago(70 * DAY));
 
 		assertThat(xml)
-				.contains(OLD_USAGE_SUMMARY.toString(), OLD_QUALITY_SUMMARY.toString())
-				.doesNotContain(RECENT_BLOCK.toString(), OLD_BLOCK.toString(), USAGE_SUMMARY_A.toString(),
-						QUALITY_SUMMARY_A.toString());
+				.contains("<atom:id>urn:uuid:" + OLD_USAGE_SUMMARY, "<atom:id>urn:uuid:" + OLD_QUALITY_SUMMARY)
+				// The range leaves these entries out (their ids may still be linked as readable children).
+				.doesNotContain("<atom:id>urn:uuid:" + RECENT_BLOCK, "<atom:id>urn:uuid:" + OLD_BLOCK,
+						"<atom:id>urn:uuid:" + USAGE_SUMMARY_A, "<atom:id>urn:uuid:" + QUALITY_SUMMARY_A);
 		assertValid(xml);
 	}
 
@@ -355,7 +365,7 @@ class BatchSubscriptionIntegrationTest {
 	}
 
 	@Test
-	@DisplayName("a LocalTimeParameters shared by two UsagePoints is one entry, linked from both")
+	@DisplayName("a LocalTimeParameters shared by two UsagePoints is one entry, linked from both and related to both")
 	void shared_local_time_parameters_is_one_entry() throws Exception {
 		TimeConfigurationEntity shared = localTime(SHARED_LOCAL_TIME);
 		List<UsagePointEntity> usagePoints = new ArrayList<>();
@@ -372,6 +382,13 @@ class BatchSubscriptionIntegrationTest {
 		assertThat(entryResources(xml)).containsExactly("UsagePoint", "LocalTimeParameters", "UsagePoint");
 		assertThat(Pattern.compile("rel=\"related\" href=\"" + BASE + "/LocalTimeParameters/" + SHARED_LOCAL_TIME)
 				.matcher(xml).results().count()).isEqualTo(2);
+		// The GBA CMD model: a LocalTimeParameters is related to the UsagePoint(s) that use it.
+		String usagePointHref = BASE + "/UsagePoint/";
+		String localTimeEntry = xml.substring(xml.indexOf("<atom:id>urn:uuid:" + SHARED_LOCAL_TIME));
+		assertThat(localTimeEntry.substring(0, localTimeEntry.indexOf("</atom:entry>")))
+				.contains("rel=\"up\" href=\"" + BASE + "/LocalTimeParameters\" type=\"espi-feed/LocalTimeParameters\"",
+						"rel=\"related\" href=\"" + usagePointHref + SHARED_POINT_1 + "\" type=\"espi-entry/UsagePoint\"",
+						"rel=\"related\" href=\"" + usagePointHref + SHARED_POINT_2 + "\" type=\"espi-entry/UsagePoint\"");
 		assertValid(xml);
 	}
 
@@ -497,8 +514,13 @@ class BatchSubscriptionIntegrationTest {
 		authorization.setAccessToken("token-" + id);
 		authorization.setStatus(AuthorizationEntity.STATUS_ACTIVE);
 
+		customer = retailCustomerRepository.save(customer);
+		// The customer's UsagePoints are theirs: their RetailCustomer XPath links name this customer.
+		for (UsagePointEntity usagePoint : usagePoints) {
+			usagePoint.setRetailCustomer(customer);
+		}
 		SubscriptionEntity subscription = new SubscriptionEntity(id);
-		subscription.setRetailCustomer(retailCustomerRepository.save(customer));
+		subscription.setRetailCustomer(customer);
 		subscription.setApplicationInformation(applicationInformationRepository.save(application));
 		subscription.setAuthorization(authorizationRepository.save(authorization));
 		subscription.setUsagePoints(usagePoints);

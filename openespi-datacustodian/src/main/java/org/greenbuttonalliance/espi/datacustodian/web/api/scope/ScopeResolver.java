@@ -50,7 +50,8 @@ import java.util.UUID;
  *       back-end/admin grant over a defined set; treated as unfiltered for the sandbox).</li>
  *   <li>Token {@code resourceURI} = {@code …/Batch/Subscription/{id}} → the subscription's granted
  *       UsagePoint ids (energy scope), parsed via {@link EspiBatchUri} and loaded from the DC's own
- *       store ({@link SubscriptionRepository#findUsagePointIdsBySubscriptionId}).</li>
+ *       store ({@link SubscriptionRepository#findUsagePointIdsBySubscriptionId}). Read by
+ *       {@link #subscriptionId}, so never for a Third Party client access token ({@code FB=34_35}).</li>
  *   <li>Token {@code customerResourceURI} = {@code …/Batch/RetailCustomer/{id}} → the granted
  *       RetailCustomer id (PII scope; {@code Long} correlation key).</li>
  *   <li>Otherwise → {@link ResourceScope#denied()} (sees nothing).</li>
@@ -95,14 +96,10 @@ public class ScopeResolver {
             return ResourceScope.unfiltered();
         }
 
+        // The same subscription as canReadSubscription: none for a Third Party client access token.
         Set<UUID> usagePointIds = new LinkedHashSet<>();
-        if (resourceUri != null) {
-            EspiBatchUri.subscriptionId(resourceUri)
-                    .flatMap(ScopeResolver::parseUuid)
-                    .ifPresent(subscriptionId ->
-                            usagePointIds.addAll(subscriptionRepository
-                                    .findUsagePointIdsBySubscriptionId(subscriptionId)));
-        }
+        subscriptionId(authentication).ifPresent(subscriptionId ->
+                usagePointIds.addAll(subscriptionRepository.findUsagePointIdsBySubscriptionId(subscriptionId)));
 
         Set<Long> retailCustomerIds = new LinkedHashSet<>();
         String customerResourceUri = stringAttribute(principal, "customerResourceURI");
@@ -132,15 +129,23 @@ public class ScopeResolver {
         if (hasAdminAuthority(authentication)) {
             return true;
         }
-        if (hasAuthority(authentication, EspiScopeOpaqueTokenIntrospector.CLIENT_ACCESS_TOKEN)
+        return subscriptionId(authentication).filter(subscriptionId::equals).isPresent();
+    }
+
+    /**
+     * The subscription a customer access token is for, from its introspected {@code resourceURI}
+     * ({@code …/Batch/Subscription/{id}}); empty for any other token, including a Third Party's client access
+     * token ({@code FB=34_35}) whatever its URIs.
+     */
+    public Optional<UUID> subscriptionId(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()
+                || hasAuthority(authentication, EspiScopeOpaqueTokenIntrospector.CLIENT_ACCESS_TOKEN)
                 || !(authentication.getPrincipal() instanceof OAuth2AuthenticatedPrincipal principal)) {
-            return false;
+            return Optional.empty();
         }
         String resourceUri = stringAttribute(principal, "resourceURI");
-        return resourceUri != null && EspiBatchUri.subscriptionId(resourceUri)
-                .flatMap(ScopeResolver::parseUuid)
-                .filter(subscriptionId::equals)
-                .isPresent();
+        return resourceUri == null ? Optional.empty()
+                : EspiBatchUri.subscriptionId(resourceUri).flatMap(ScopeResolver::parseUuid);
     }
 
     /**

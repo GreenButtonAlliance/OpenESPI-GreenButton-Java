@@ -117,8 +117,8 @@ class AtomContentAndSchemaValidationTest {
 	void customer_entry_wraps_the_resource_in_content() throws Exception {
 		CustomerAtomEntryDto entry = new CustomerAtomEntryDto("urn:uuid:a3a0d3c4-7c8e-5a8b-9a39-000000000002",
 				"Customer", TIME, TIME,
-				List.of(new LinkDto("self", BASE + "/RetailCustomer/1/Customer/2", "espi-entry/Customer"),
-						new LinkDto("up", BASE + "/RetailCustomer/1/Customer", "espi-feed/Customer")),
+				List.of(new LinkDto("self", BASE + "/RetailCustomer/1/Customer/2", "cust-entry/Customer"),
+						new LinkDto("up", BASE + "/RetailCustomer/1/Customer", "cust-feed/Customer")),
 				new CustomerDto());
 
 		assertThat(marshal(entry, CustomerAtomEntryDto.class))

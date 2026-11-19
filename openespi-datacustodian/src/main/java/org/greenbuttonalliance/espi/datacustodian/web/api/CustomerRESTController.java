@@ -27,6 +27,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerEntity;
 import org.greenbuttonalliance.espi.common.dto.customer.CustomerDto;
 import org.greenbuttonalliance.espi.common.mapper.customer.CustomerMapper;
 import org.greenbuttonalliance.espi.common.repositories.customer.CustomerRepository;
@@ -35,6 +36,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -61,9 +63,10 @@ public class CustomerRESTController {
     private final CustomerRepository customerRepository;
     private final CustomerMapper customerMapper;
     private final CustomerExportService customerExportService;
+    private final SubscriptionAccess subscriptionAccess;
 
     /**
-     * Get all Customers (root collection).
+     * Get all Customers (root collection): every customer's PII, so DataCustodian admin only (#286).
      */
     @GetMapping(value = "/Customer", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @Operation(
@@ -80,8 +83,10 @@ public class CustomerRESTController {
             @Parameter(description = "Maximum number of results to return", example = "50")
             @RequestParam(defaultValue = "50") int limit,
             @Parameter(description = "Offset for pagination", example = "0")
-            @RequestParam(defaultValue = "0") int offset) {
+            @RequestParam(defaultValue = "0") int offset,
+            Authentication authentication) {
 
+        subscriptionAccess.requireAdmin(authentication);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         customerExportService.exportFeed(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString(),
                 "Customer Feed", customerRepository.findAll(PageRequest.of(offset, limit)).getContent(),
@@ -108,14 +113,18 @@ public class CustomerRESTController {
     )
     public ResponseEntity<byte[]> getCustomer(
             @Parameter(description = "Unique identifier of the Customer", required = true)
-            @PathVariable UUID customerId) {
+            @PathVariable UUID customerId,
+            Authentication authentication) {
 
-        CustomerDto dto = customerRepository.findById(customerId)
-                .map(customerMapper::toDto)
+        subscriptionAccess.requireAdmin(authentication);
+        CustomerEntity customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer not found"));
 
+        // The same Atom entry, with the same links, as in the /Customer feed
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        customerExportService.exportDto(dto, out);
+        customerExportService.exportDto(customerExportService.buildEntry(UsageEntries.resourceBase(
+                ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString()) + "/Customer", customer,
+                customerMapper::toDto), out);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_XML)
                 .body(out.toByteArray());
