@@ -221,6 +221,23 @@ class BatchSubscriptionIntegrationTest {
 	}
 
 	@Test
+	@DisplayName("updated-min alone drops the 24-hour default, and the query is part of the feed's self link")
+	void updated_min_alone_reaches_older_data() throws Exception {
+		// In the URL, as a client sends it (MockMvc's param() would not set the query string).
+		String xml = mockMvc.perform(get(BASE + "/Batch/Subscription/" + SUBSCRIPTION_A
+								+ "?updated-min=2000-01-01T00:00:00Z")
+						.with(customer(SUBSCRIPTION_A, "FB=1_3_4_5_16_17", "FB_16", "FB_17")))
+				.andExpect(status().isOk())
+				.andReturn().getResponse().getContentAsString();
+
+		assertThat(xml)
+				.contains(OLD_BLOCK.toString(), RECENT_BLOCK.toString(), OLD_USAGE_SUMMARY.toString(),
+						OLD_QUALITY_SUMMARY.toString())
+				.contains("href=\"" + BASE + "/Batch/Subscription/" + SUBSCRIPTION_A + "?updated-min=");
+		assertValid(xml);
+	}
+
+	@Test
 	@DisplayName("a query parameter that is not an xs:dateTime is a 400")
 	void malformed_query_parameter_is_bad_request() throws Exception {
 		mockMvc.perform(get(BASE + "/Batch/Subscription/" + SUBSCRIPTION_A)

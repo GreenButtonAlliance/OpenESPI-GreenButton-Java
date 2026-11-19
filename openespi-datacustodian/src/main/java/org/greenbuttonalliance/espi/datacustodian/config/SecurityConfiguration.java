@@ -194,7 +194,7 @@ public class SecurityConfiguration {
 
                 // --- Batch/Subscription (#279): FB_4 + an electricity, gas or water FB (FB_5-FB_11), or admin.
                 // The feed holds only the UsagePoints whose service category a granted FB covers. ---
-                .requestMatchers(HttpMethod.GET, "/espi/1_1/resource/Batch/Subscription/*")
+                .requestMatchers(HttpMethod.GET, "/espi/1_1/resource/Batch/Subscription/**")
                     .access(AuthorizationManagers.anyOf(admin, AuthorizationManagers.allOf(fb4,
                             AuthorityAuthorizationManager.hasAnyAuthority(
                                     UsageFunctionBlockAuthorities.SERVICE_COMMODITY.toArray(String[]::new)))))

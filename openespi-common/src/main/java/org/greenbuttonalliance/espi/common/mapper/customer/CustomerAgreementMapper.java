@@ -23,7 +23,6 @@ import org.greenbuttonalliance.espi.common.domain.customer.entity.CustomerAgreem
 import org.greenbuttonalliance.espi.common.dto.customer.CustomerAgreementDto;
 import org.greenbuttonalliance.espi.common.mapper.BaseMapperUtils;
 import org.greenbuttonalliance.espi.common.mapper.DateTimeMapper;
-import org.greenbuttonalliance.espi.common.mapper.usage.DateTimeIntervalMapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -40,8 +39,7 @@ import org.mapstruct.Mapping;
     DateTimeMapper.class,
     BaseMapperUtils.class,
     ElectronicAddressMapper.class,
-    StatusMapper.class,
-    DateTimeIntervalMapper.class
+    StatusMapper.class
 })
 public interface CustomerAgreementMapper {
 

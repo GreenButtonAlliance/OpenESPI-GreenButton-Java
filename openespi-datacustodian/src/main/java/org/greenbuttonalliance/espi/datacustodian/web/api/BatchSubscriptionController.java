@@ -119,7 +119,8 @@ public class BatchSubscriptionController {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A -min query parameter is after its -max");
 		}
 		Range range = new Range(instant(publishedMin), instant(publishedMax), instant(updatedMin), instant(updatedMax));
-		String feedHref = ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString();
+		// The self link (and so the feed's UUID v5 id) keeps the query: a different range is a different feed.
+		String feedHref = ServletUriComponentsBuilder.fromCurrentRequest().toUriString();
 		String resourceBase = feedHref.substring(0, feedHref.indexOf(BATCH_SUBSCRIPTION));
 		AtomFeedDto feed = assembler.build(subscriptionId, resourceBase, feedHref, grants(authentication), range)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));

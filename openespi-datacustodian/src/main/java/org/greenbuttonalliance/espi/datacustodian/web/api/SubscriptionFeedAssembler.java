@@ -83,10 +83,13 @@ import java.util.function.Function;
  * resources, by their interval, billing period or summary interval, whose end is start + duration):</p>
  * <ul>
  *   <li>{@code published-min}/{@code published-max} select those whose interval overlaps the range;</li>
- *   <li>without either, the default is the last 24 hours, by overlap, plus, for each UsagePoint, its most
+ *   <li>with none of the four range parameters, the default is the last 24 hours, by overlap, plus, for each
+ *       UsagePoint, its most
  *       recent UsageSummary and its most recent ElectricPowerQualitySummary (summary intervals rarely line up
  *       with a 24-hour window);</li>
- *   <li>{@code updated-min}/{@code updated-max} select by {@code atom:updated};</li>
+ *   <li>{@code updated-min}/{@code updated-max} select by {@code atom:updated}; they apply to these
+ *       time-bounded resources only, since the UsagePoints, MeterReadings, ReadingTypes and LocalTimeParameters
+ *       are the parents the selected entries need;</li>
  *   <li>{@code HistoryLength} (REQ.21.6.1.2.1: "The amount of historical information available from the Data
  *       Custodian in seconds") is a ceiling, not a selection: nothing that ended before now minus that many
  *       seconds is returned, whatever the range asks for.</li>
@@ -282,7 +285,10 @@ public class SubscriptionFeedAssembler {
 		static Selection of(Range range, Grants grants, Instant now) {
 			long nowSeconds = now.getEpochSecond();
 			Long ceiling = grants.historyLengthSeconds() == null ? null : nowSeconds - grants.historyLengthSeconds();
-			boolean defaultWindow = range.publishedMin() == null && range.publishedMax() == null;
+			// The 24-hour default only when the request gives no range at all: an updated-min/max poll for
+			// corrections must reach data of any age (still under the HistoryLength ceiling).
+			boolean defaultWindow = range.publishedMin() == null && range.publishedMax() == null
+					&& range.updatedMin() == null && range.updatedMax() == null;
 			Long from = defaultWindow ? Long.valueOf(nowSeconds - DEFAULT_WINDOW_SECONDS) : seconds(range.publishedMin());
 			return new Selection(from, defaultWindow ? null : seconds(range.publishedMax()), ceiling,
 					seconds(range.updatedMin()), seconds(range.updatedMax()), defaultWindow);
