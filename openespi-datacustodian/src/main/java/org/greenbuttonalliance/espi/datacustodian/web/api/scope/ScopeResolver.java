@@ -169,20 +169,22 @@ public class ScopeResolver {
     }
 
     /**
-     * The {@code HistoryLength} of the token's usage-data scopes, in months: the shortest among its FB scopes
+     * The {@code HistoryLength} of the token's usage-data scopes, in seconds (REQ.21.6.1.2.1: "The amount of
+     * historical information available from the Data Custodian in seconds"): the shortest among its FB scopes
      * that grant any usage-data Function Block (interval metering, a commodity, a usage summary or power
      * quality), or empty if none states one. Only a scope with no usage-data FB, such as a customer-data scope
      * ({@code FB=51_53_54;HistoryLength=...}), is left out: it does not limit usage data.
      *
      * @throws IllegalArgumentException if an FB scope does not parse (see {@link #espiScopes})
      */
-    public Optional<Integer> historyLengthMonths(Authentication authentication) {
+    public Optional<Long> historyLengthSeconds(Authentication authentication) {
         return espiScopes(authentication).stream()
                 .filter(scope -> scope.functionBlocks().stream()
                         .anyMatch(fb -> UsageFunctionBlockAuthorities.USAGE_DATA.contains("FB_" + fb)))
                 .map(EspiScope::historyLength)
                 .filter(Objects::nonNull)
-                .min(Integer::compare);
+                .map(Integer::longValue)
+                .min(Long::compare);
     }
 
     /** Whether the caller holds the DataCustodian admin authority. */

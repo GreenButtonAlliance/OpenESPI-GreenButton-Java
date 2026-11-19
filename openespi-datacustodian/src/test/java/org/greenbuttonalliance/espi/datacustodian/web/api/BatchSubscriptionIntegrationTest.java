@@ -242,22 +242,22 @@ class BatchSubscriptionIntegrationTest {
 	}
 
 	@Test
-	@DisplayName("HistoryLength (months) is a ceiling: nothing that ended before now minus it, whatever the range asks for")
+	@DisplayName("HistoryLength (seconds) is a ceiling: nothing that ended before now minus it, whatever the range asks for")
 	void history_length_is_a_ceiling() throws Exception {
-		String oneMonth = fetch(SUBSCRIPTION_A,
-				customer(SUBSCRIPTION_A, "FB=1_3_4_5_16_17;HistoryLength=1", "FB_16", "FB_17"),
+		String thirtyDays = fetch(SUBSCRIPTION_A,
+				customer(SUBSCRIPTION_A, "FB=1_3_4_5_16_17;HistoryLength=" + (30 * DAY), "FB_16", "FB_17"),
 				"published-min", ago(100 * DAY));
-		String threeMonths = fetch(SUBSCRIPTION_A,
-				customer(SUBSCRIPTION_A, "FB=1_3_4_5_16_17;HistoryLength=3", "FB_16", "FB_17"),
+		String oneYear = fetch(SUBSCRIPTION_A,
+				customer(SUBSCRIPTION_A, "FB=1_3_4_5_16_17;HistoryLength=31536000", "FB_16", "FB_17"),
 				"published-min", ago(100 * DAY));
 
 		// The old block ended 39 days ago, the old summaries 60 days ago.
-		assertThat(oneMonth)
+		assertThat(thirtyDays)
 				.contains(RECENT_BLOCK.toString(), USAGE_SUMMARY_A.toString(), QUALITY_SUMMARY_A.toString())
 				.doesNotContain(OLD_BLOCK.toString(), OLD_USAGE_SUMMARY.toString(), OLD_QUALITY_SUMMARY.toString());
-		assertThat(threeMonths)
+		assertThat(oneYear)
 				.contains(OLD_BLOCK.toString(), OLD_USAGE_SUMMARY.toString(), OLD_QUALITY_SUMMARY.toString());
-		assertValid(oneMonth);
+		assertValid(thirtyDays);
 	}
 
 	@Test
@@ -269,13 +269,13 @@ class BatchSubscriptionIntegrationTest {
 				subscription(LATEST_SUBSCRIPTION, List.of(usagePointRepository.save(usagePoint))));
 
 		// Its only power quality summary ended 60 days ago.
-		String oneMonth = fetch(LATEST_SUBSCRIPTION,
-				customer(LATEST_SUBSCRIPTION, "FB=1_3_4_5_17;HistoryLength=1", "FB_17"));
-		String threeMonths = fetch(LATEST_SUBSCRIPTION,
-				customer(LATEST_SUBSCRIPTION, "FB=1_3_4_5_17;HistoryLength=3", "FB_17"));
+		String thirtyDays = fetch(LATEST_SUBSCRIPTION,
+				customer(LATEST_SUBSCRIPTION, "FB=1_3_4_5_17;HistoryLength=" + (30 * DAY), "FB_17"));
+		String oneYear = fetch(LATEST_SUBSCRIPTION,
+				customer(LATEST_SUBSCRIPTION, "FB=1_3_4_5_17;HistoryLength=31536000", "FB_17"));
 
-		assertThat(oneMonth).contains(LATEST_POINT.toString()).doesNotContain(LATEST_QUALITY.toString());
-		assertThat(threeMonths).contains(LATEST_QUALITY.toString());
+		assertThat(thirtyDays).contains(LATEST_POINT.toString()).doesNotContain(LATEST_QUALITY.toString());
+		assertThat(oneYear).contains(LATEST_QUALITY.toString());
 	}
 
 	@Test

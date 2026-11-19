@@ -161,27 +161,27 @@ class ScopeResolverTest {
     }
 
     @Test
-    @DisplayName("espiScopes: every FB scope but FB=34_35 (any case); HistoryLength (months) is the shortest usage scope's; a bad FB scope throws")
+    @DisplayName("espiScopes: every FB scope but FB=34_35 (any case); HistoryLength (seconds) is the shortest usage scope's; a bad FB scope throws")
     void espiScopes() {
-        Authentication scopes = auth(Map.of("scope", List.of("openid", "FB=4_5_16;HistoryLength=13",
-                "FB=4_5;HistoryLength=7", "FB=51_53_54;HistoryLength=1", "fb=34_35")));
+        Authentication scopes = auth(Map.of("scope", List.of("openid", "FB=4_5_16;HistoryLength=63072000",
+                "FB=4_5;HistoryLength=31536000", "FB=51_53_54;HistoryLength=86400", "fb=34_35")));
 
         assertThat(resolver.espiScopes(scopes))
                 .extracting(EspiScope::historyLength)
-                .containsExactly(13, 7, 1);
-        // The customer-data scope's HistoryLength=1 does not limit usage data...
-        assertThat(resolver.historyLengthMonths(scopes)).contains(7);
+                .containsExactly(63_072_000, 31_536_000, 86_400);
+        // The customer-data scope's HistoryLength does not limit usage data...
+        assertThat(resolver.historyLengthSeconds(scopes)).contains(31_536_000L);
         // ...but a summary-only scope without FB_4 does.
-        assertThat(resolver.historyLengthMonths(auth(Map.of("scope",
-                List.of("FB=4_5;HistoryLength=13", "FB=16_17;HistoryLength=1"))))).contains(1);
-        assertThat(resolver.historyLengthMonths(auth(Map.of("scope", "FB=4_5 openid")))).isEmpty();
+        assertThat(resolver.historyLengthSeconds(auth(Map.of("scope",
+                List.of("FB=4_5;HistoryLength=63072000", "FB=16_17;HistoryLength=86400"))))).contains(86_400L);
+        assertThat(resolver.historyLengthSeconds(auth(Map.of("scope", "FB=4_5 openid")))).isEmpty();
         assertThat(List.of(
                 resolver.espiScopes(auth(Map.of("scope", List.of("FB=34_35")))),
                 resolver.espiScopes(auth(Map.of("scope", List.of("fb=34_35")))),
                 resolver.espiScopes(auth(Map.of("active", true))),
                 resolver.espiScopes(null)))
                 .allSatisfy(result -> assertThat(result).isEmpty());
-        assertThatThrownBy(() -> resolver.historyLengthMonths(auth(Map.of("scope", List.of("FB=4_5", "FB=4_x")))))
+        assertThatThrownBy(() -> resolver.historyLengthSeconds(auth(Map.of("scope", List.of("FB=4_5", "FB=4_x")))))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 }

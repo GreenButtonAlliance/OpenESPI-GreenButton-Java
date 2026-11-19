@@ -87,10 +87,9 @@ import java.util.function.Function;
  *       recent UsageSummary and its most recent ElectricPowerQualitySummary (summary intervals rarely line up
  *       with a 24-hour window);</li>
  *   <li>{@code updated-min}/{@code updated-max} select by {@code atom:updated};</li>
- *   <li>{@code HistoryLength}, in months (the GBA reading, as in the Authorization Server's
- *       {@code HistoryLength=13}; REQ.21's definition text says seconds, see the HistoryLength issue), is a
- *       ceiling, not a selection: nothing that ended before now minus that many calendar months (UTC) is
- *       returned, whatever the range asks for.</li>
+ *   <li>{@code HistoryLength} (REQ.21.6.1.2.1: "The amount of historical information available from the Data
+ *       Custodian in seconds") is a ceiling, not a selection: nothing that ended before now minus that many
+ *       seconds is returned, whatever the range asks for.</li>
  * </ul>
  * <p>A resource without an interval is kept: there is nothing to measure it against. {@code BlockDuration}
  * describes the blocks and selects nothing.</p>
@@ -103,12 +102,12 @@ public class SubscriptionFeedAssembler {
 
 	/**
 	 * What the token grants, beyond reading the subscription at all: the UsagePoint service kinds its
-	 * commodity Function Blocks cover, the summaries, and the HistoryLength ceiling in months.
+	 * commodity Function Blocks cover, the summaries, and the HistoryLength ceiling in seconds.
 	 *
 	 * @param serviceKinds null for every UsagePoint (the admin)
 	 */
 	public record Grants(Set<ServiceKind> serviceKinds, boolean usageSummaries,
-						 boolean powerQualitySummaries, Integer historyLengthMonths) {
+						 boolean powerQualitySummaries, Long historyLengthSeconds) {
 
 		public static Grants all() {
 			return new Grants(null, true, true, null);
@@ -275,15 +274,14 @@ public class SubscriptionFeedAssembler {
 
 	/**
 	 * Which time-bounded resources a request gets, in epoch seconds. {@code from}/{@code to} bound the overlap
-	 * (null = open); {@code ceiling} is now minus {@code HistoryLength} months (null = no limit).
+	 * (null = open); {@code ceiling} is now minus {@code HistoryLength} seconds (null = no limit).
 	 */
 	private record Selection(Long from, Long to, Long ceiling, Long updatedMin, Long updatedMax,
 							 boolean defaultWindow) {
 
 		static Selection of(Range range, Grants grants, Instant now) {
 			long nowSeconds = now.getEpochSecond();
-			Long ceiling = grants.historyLengthMonths() == null ? null
-					: now.atOffset(ZoneOffset.UTC).minusMonths(grants.historyLengthMonths()).toEpochSecond();
+			Long ceiling = grants.historyLengthSeconds() == null ? null : nowSeconds - grants.historyLengthSeconds();
 			boolean defaultWindow = range.publishedMin() == null && range.publishedMax() == null;
 			Long from = defaultWindow ? Long.valueOf(nowSeconds - DEFAULT_WINDOW_SECONDS) : seconds(range.publishedMin());
 			return new Selection(from, defaultWindow ? null : seconds(range.publishedMax()), ceiling,

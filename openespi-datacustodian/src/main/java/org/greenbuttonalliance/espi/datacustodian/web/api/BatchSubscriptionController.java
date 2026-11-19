@@ -139,9 +139,9 @@ public class BatchSubscriptionController {
 		if (scopeResolver.isAdmin(authentication)) {
 			return Grants.all();
 		}
-		Integer historyLength;
+		Long historyLength;
 		try {
-			historyLength = scopeResolver.historyLengthMonths(authentication).orElse(null);
+			historyLength = scopeResolver.historyLengthSeconds(authentication).orElse(null);
 		} catch (IllegalArgumentException ex) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Unreadable ESPI scope");
 		}
