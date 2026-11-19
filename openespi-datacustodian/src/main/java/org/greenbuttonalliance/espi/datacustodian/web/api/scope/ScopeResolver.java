@@ -22,6 +22,7 @@ import org.greenbuttonalliance.espi.common.repositories.usage.SubscriptionReposi
 import org.greenbuttonalliance.espi.common.scope.EspiScope;
 import org.greenbuttonalliance.espi.common.uri.EspiBatchUri;
 import org.greenbuttonalliance.espi.datacustodian.config.EspiScopeOpaqueTokenIntrospector;
+import org.greenbuttonalliance.espi.datacustodian.config.UsageFunctionBlockAuthorities;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal;
@@ -169,14 +170,16 @@ public class ScopeResolver {
 
     /**
      * The {@code HistoryLength} of the token's usage-data scopes, in months: the shortest among its FB scopes
-     * that grant interval metering (FB_4), or empty if none states one. A customer-data scope (e.g.
-     * {@code FB=51_53_54;HistoryLength=...}) does not limit usage data.
+     * that grant any usage-data Function Block (interval metering, a commodity, a usage summary or power
+     * quality), or empty if none states one. Only a scope with no usage-data FB, such as a customer-data scope
+     * ({@code FB=51_53_54;HistoryLength=...}), is left out: it does not limit usage data.
      *
      * @throws IllegalArgumentException if an FB scope does not parse (see {@link #espiScopes})
      */
     public Optional<Integer> historyLengthMonths(Authentication authentication) {
         return espiScopes(authentication).stream()
-                .filter(scope -> scope.containsFunctionBlock(4))
+                .filter(scope -> scope.functionBlocks().stream()
+                        .anyMatch(fb -> UsageFunctionBlockAuthorities.USAGE_DATA.contains("FB_" + fb)))
                 .map(EspiScope::historyLength)
                 .filter(Objects::nonNull)
                 .min(Integer::compare);

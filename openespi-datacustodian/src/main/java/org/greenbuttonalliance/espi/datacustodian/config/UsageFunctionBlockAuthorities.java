@@ -63,6 +63,15 @@ public final class UsageFunctionBlockAuthorities {
 			.map(fb -> "FB_" + fb.getId())
 			.toList();
 
+	/**
+	 * Every usage-data FB: interval metering, the commodities, the usage summaries and power quality. A scope
+	 * with any of them is a usage scope whose {@code HistoryLength} limits usage data.
+	 */
+	public static final List<String> USAGE_DATA = Stream.of(
+					List.of(INTERVAL_METERING), COMMODITY, USAGE_SUMMARY, POWER_QUALITY)
+			.flatMap(List::stream)
+			.toList();
+
 	private UsageFunctionBlockAuthorities() {
 	}
 

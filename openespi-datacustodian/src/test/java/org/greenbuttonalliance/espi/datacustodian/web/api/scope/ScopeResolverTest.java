@@ -169,8 +169,11 @@ class ScopeResolverTest {
         assertThat(resolver.espiScopes(scopes))
                 .extracting(EspiScope::historyLength)
                 .containsExactly(13, 7, 1);
-        // The customer-data scope's HistoryLength=1 does not limit usage data.
+        // The customer-data scope's HistoryLength=1 does not limit usage data...
         assertThat(resolver.historyLengthMonths(scopes)).contains(7);
+        // ...but a summary-only scope without FB_4 does.
+        assertThat(resolver.historyLengthMonths(auth(Map.of("scope",
+                List.of("FB=4_5;HistoryLength=13", "FB=16_17;HistoryLength=1"))))).contains(1);
         assertThat(resolver.historyLengthMonths(auth(Map.of("scope", "FB=4_5 openid")))).isEmpty();
         assertThat(List.of(
                 resolver.espiScopes(auth(Map.of("scope", List.of("FB=34_35")))),
