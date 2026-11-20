@@ -136,14 +136,30 @@ abstract class AbstractThirdPartySchemaTest {
 					null, null, 403, "forbidden",
 					new FeedValidation(XmlValidationMode.OFF, null, 0, List.of())));
 
+			// 1 ms after the 403: the timestamp columns keep sub-second precision, so the order is not a tie.
+			SubscriptionFeedFetchEntity newest = feedFetchRepository.save(new SubscriptionFeedFetchEntity(
+					authorizationId, first.plusSeconds(1).plusMillis(1), uri, null, null, 500, "error",
+					new FeedValidation(XmlValidationMode.ENFORCE, Boolean.FALSE, 3, List.of())));
+
 			assertThat(feedFetchRepository.findAllByAuthorizationIdOrderByFetchedAtDesc(authorizationId))
 					.extracting(SubscriptionFeedFetchEntity::getHttpStatus,
 							f -> f.getBody().length(),
 							SubscriptionFeedFetchEntity::getValidationMode,
 							SubscriptionFeedFetchEntity::getSchemaValid)
 					.containsExactly(
+							tuple(500, "error".length(), XmlValidationMode.ENFORCE, Boolean.FALSE),
 							tuple(403, "forbidden".length(), XmlValidationMode.OFF, null),
 							tuple(200, 100_000, XmlValidationMode.REPORT, Boolean.TRUE));
+
+			assertThat(feedFetchRepository.findFirstByAuthorizationIdOrderByFetchedAtDesc(authorizationId))
+					.hasValueSatisfying(f -> assertThat(f)
+							.extracting(SubscriptionFeedFetchEntity::getId, SubscriptionFeedFetchEntity::getFetchedAt,
+									SubscriptionFeedFetchEntity::getErrorCount)
+							.containsExactly(newest.getId(), first.plusSeconds(1).plusMillis(1), 3));
+
+			assertThat(feedFetchRepository.findByIdAndAuthorizationId(newest.getId(), authorizationId))
+					.hasValueSatisfying(f -> assertThat(f.getHttpStatus()).isEqualTo(500));
+			assertThat(feedFetchRepository.findByIdAndAuthorizationId(newest.getId(), UUID.randomUUID())).isEmpty();
 
 			authorizationRepository.deleteById(authorizationId);
 

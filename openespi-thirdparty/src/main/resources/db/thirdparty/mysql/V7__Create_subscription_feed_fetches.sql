@@ -6,10 +6,10 @@ CREATE TABLE subscription_feed_fetches
 (
     id               CHAR(36) PRIMARY KEY,
     authorization_id CHAR(36)      NOT NULL,
-    fetched_at       TIMESTAMP     NOT NULL,
+    fetched_at       TIMESTAMP(6)  NOT NULL,
     resource_uri     VARCHAR(1024) NOT NULL,
-    published_min    TIMESTAMP,
-    published_max    TIMESTAMP,
+    published_min    TIMESTAMP(6),
+    published_max    TIMESTAMP(6),
     http_status      INT           NOT NULL,
     body             LONGTEXT,
     validation_mode  VARCHAR(16)   NOT NULL,
