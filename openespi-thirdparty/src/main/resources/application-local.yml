@@ -26,7 +26,7 @@ spring:
         format_sql: true
 
   flyway:
-    locations: classpath:db/migration,classpath:db/vendor/h2
+    locations: classpath:db/migration,classpath:db/vendor/h2,classpath:db/thirdparty/h2
 
   h2:
     console:

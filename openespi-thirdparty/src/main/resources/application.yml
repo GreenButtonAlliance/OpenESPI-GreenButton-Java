@@ -40,7 +40,7 @@ spring:
     # it), so marking an existing one as "already at V1" is never right. Flyway stops with a clear
     # error instead; drop and recreate such a database once (see the README).
     baseline-on-migrate: false
-    locations: classpath:db/migration,classpath:db/vendor/mysql
+    locations: classpath:db/migration,classpath:db/vendor/mysql,classpath:db/thirdparty/mysql
     table: flyway_schema_history
   
   # Jackson JSON Configuration
