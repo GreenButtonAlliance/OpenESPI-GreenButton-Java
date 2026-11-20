@@ -241,6 +241,22 @@ class AuthorizeScreenServiceTest {
 	}
 
 	@Test
+	void requestedFb17IsOfferedAndApproved() {
+		UUID elec = UUID.randomUUID();
+		String requested = "FB=4_5_15_17;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000";
+		ApplicationInformationEntity app = appWithRegisteredScopes(requested);
+		List<UsagePointEntity> ups = List.of(usagePoint(elec, ServiceCategory.ELECTRICITY));
+		when(usagePointRepository.findAllByRetailCustomerId(42L)).thenReturn(ups);
+
+		AuthorizeScreenViewModel vm = service.buildViewModel(app, requested, 42L, "tok", LOCALE);
+
+		assertThat(vm.commoditySections()).singleElement()
+				.satisfies(sec -> assertThat(sec.usagePoints())
+						.extracting(AuthorizeScreenViewModel.UsagePointChoice::id).containsExactly(elec));
+		assertThat(service.computeApprovedScope(requested, Set.of(elec), Set.of(), ups)).isEqualTo(requested);
+	}
+
+	@Test
 	void computeApprovedScope_PII_only_grant_keeps_only_approved_PII_fbs() {
 		String approved = service.computeApprovedScope(
 				"FB=4_54_55_58",

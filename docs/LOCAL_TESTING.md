@@ -39,7 +39,7 @@ Logs go to `.local-run/<app>.log`. Run the smoke check before testing by hand; i
 
 | client_id | Secret | Grant | Scope | Purpose |
 |---|---|---|---|---|
-| `third_party` | `tp-secret` | authorization_code, refresh_token | ESPI FB scopes (`FB=4_5_15;IntervalDuration=3600;…`) | The TP's customer flow (customer access token) |
+| `third_party` | `tp-secret` | authorization_code, refresh_token | ESPI FB scopes (`FB=4_5_15_17;IntervalDuration=3600;…`) | The TP's customer flow (customer access token) |
 | `third_party` | `tp-secret` | client_credentials | `FB=34_35` | The TP's client access token: the only TP token the ESPI Authorization (and later Bulk) APIs accept |
 | `third_party` | `tp-secret` | client_credentials | `ThirdParty_Admin_Access` | TP actuator |
 | `data_custodian_admin` | `dc-secret` | client_credentials | `DataCustodian_Admin_Access` | DC operator: every ESPI resource, DC actuator |

@@ -265,8 +265,8 @@ public class AuthorizationServerConfig {
      * value of REQ.21.4.2.1.2.1's example. A month count such as {@code 13} would be read as 13 seconds.</p>
      */
     static final List<String> ESPI_THIRD_PARTY_SCOPES = List.of(
-            "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000",
-            "FB=4_5_15;IntervalDuration=900;BlockDuration=monthly;HistoryLength=34128000");
+            "FB=4_5_15_17;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000",
+            "FB=4_5_15_17;IntervalDuration=900;BlockDuration=monthly;HistoryLength=34128000");
 
     private static final String RFC7591_ERROR_URI = "https://datatracker.ietf.org/doc/html/rfc7591#section-3.2.2";
 

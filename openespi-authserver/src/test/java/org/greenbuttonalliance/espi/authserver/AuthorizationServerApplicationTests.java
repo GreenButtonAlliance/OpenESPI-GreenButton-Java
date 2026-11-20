@@ -161,8 +161,8 @@ class AuthorizationServerApplicationTests extends AbstractAuthserverIntegrationT
                 .extracting(RegisteredClient::getScopes)
                 .satisfies(scopes -> assertThat(scopes).contains(
                         "openid", "profile", "FB=34_35", "ThirdParty_Admin_Access",
-                        "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000",
-                        "FB=4_5_15;IntervalDuration=900;BlockDuration=monthly;HistoryLength=34128000"));
+                        "FB=4_5_15_17;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000",
+                        "FB=4_5_15_17;IntervalDuration=900;BlockDuration=monthly;HistoryLength=34128000"));
     }
 
     @Test

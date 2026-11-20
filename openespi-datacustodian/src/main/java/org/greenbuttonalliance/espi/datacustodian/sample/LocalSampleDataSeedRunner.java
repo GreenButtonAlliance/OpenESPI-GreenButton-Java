@@ -307,8 +307,8 @@ public class LocalSampleDataSeedRunner implements CommandLineRunner {
         app.setClientIdIssuedAt(START);
         // HistoryLength is in seconds (REQ.21.6.1.2.1): 34128000 = 395 days, as in REQ.21.4.2.1.2.1's example.
         app.setScope(Set.of(
-                "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000",
-                "FB=4_5_15;IntervalDuration=900;BlockDuration=monthly;HistoryLength=34128000"));
+                "FB=4_5_15_17;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000",
+                "FB=4_5_15_17;IntervalDuration=900;BlockDuration=monthly;HistoryLength=34128000"));
         app.setGrantTypes(Set.of(GrantType.AUTHORIZATION_CODE, GrantType.REFRESH_TOKEN, GrantType.CLIENT_CREDENTIALS));
         app.setResponseTypes(ResponseType.CODE);
         return app;
