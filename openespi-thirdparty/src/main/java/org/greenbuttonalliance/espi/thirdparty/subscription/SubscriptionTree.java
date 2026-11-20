@@ -19,8 +19,12 @@ import java.util.List;
 public record SubscriptionTree(String feedId, String title, OffsetDateTime updated, int entryCount,
 		List<UsagePointNode> usagePoints, List<String> linkingProblems) {
 
-	/** One Atom entry: its id, its own href, its dates and the resource it carries. */
-	public record Entry<T>(String id, String selfHref, OffsetDateTime published, OffsetDateTime updated, T resource) {
+	/**
+	 * One Atom entry: its id, its {@code atom:title} (the resource's description; may be null), its own href,
+	 * its dates and the resource it carries.
+	 */
+	public record Entry<T>(String id, String title, String selfHref, OffsetDateTime published, OffsetDateTime updated,
+			T resource) {
 	}
 
 	/** {@code localTimeParameters} may be null. */

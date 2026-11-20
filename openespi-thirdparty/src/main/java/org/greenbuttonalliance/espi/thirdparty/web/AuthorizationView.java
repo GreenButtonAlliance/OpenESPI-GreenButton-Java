@@ -59,8 +59,11 @@ public record AuthorizationView(String id, String access, String status, boolean
 		return null;
 	}
 
-	/** The status is ACTIVE (token expiry aside: a fetch refreshes an expired access token). */
-	public static boolean isActive(AuthorizationEntity authorization) {
+	/**
+	 * The status is ACTIVE. Unlike {@link AuthorizationEntity#isActive()}, an expired access token does not
+	 * make it false: a fetch refreshes an expired access token.
+	 */
+	public static boolean isStatusActive(AuthorizationEntity authorization) {
 		return AuthorizationEntity.STATUS_ACTIVE.equals(authorization.getStatus());
 	}
 
@@ -76,7 +79,7 @@ public record AuthorizationView(String id, String access, String status, boolean
 		String tokenPrefix = token == null ? null
 				: token.substring(0, Math.min(TOKEN_PREFIX_LENGTH, token.length())) + "…";
 		String id = authorization.getId() == null ? null : authorization.getId().toString();
-		return new AuthorizationView(id, access, authorization.getStatus(), isActive(authorization),
+		return new AuthorizationView(id, access, authorization.getStatus(), isStatusActive(authorization),
 				authorization.getScope(), expires, obtained, tokenPrefix, authorization.getResourceURI(),
 				authorization.getAuthorizationURI(), authorization.getCustomerResourceURI(),
 				authorizeUrl(authorization.getClientRegistrationId()));

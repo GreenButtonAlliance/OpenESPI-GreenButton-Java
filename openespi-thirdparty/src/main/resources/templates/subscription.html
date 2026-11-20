@@ -135,7 +135,7 @@
         <section th:each="node : ${tree.usagePoints}" class="card mb-4"
                  th:with="usagePoint=${node.usagePoint.resource},
                           localTime=${node.localTimeParameters == null ? null : node.localTimeParameters.resource}">
-            <div class="gba-card-header"><h2>UsagePoint</h2></div>
+            <div class="gba-card-header"><h2 th:text="'UsagePoint: ' + ${display.title(node.usagePoint)}">UsagePoint</h2></div>
             <div class="card-body">
                 <dl class="row small">
                     <dt class="col-sm-3">Id</dt>
@@ -160,7 +160,7 @@
                 <!-- MeterReadings -->
                 <div th:each="reading : ${node.meterReadings}" class="border rounded p-3 mb-3"
                      th:with="readingType=${reading.readingType == null ? null : reading.readingType.resource}">
-                    <h3 class="h5">MeterReading</h3>
+                    <h3 class="h5" th:text="'MeterReading: ' + ${display.title(reading.meterReading)}">MeterReading</h3>
                     <p class="small mb-1"><code th:text="${reading.meterReading.id}"></code></p>
                     <p th:if="${readingType == null}" class="small">(no ReadingType)</p>
                     <dl th:if="${readingType != null}" class="row small">
@@ -206,7 +206,7 @@
 
                 <!-- Summaries -->
                 <div th:each="summary : ${node.usageSummaries}" th:with="s=${summary.resource}" class="border rounded p-3 mb-3">
-                    <h3 class="h5">UsageSummary</h3>
+                    <h3 class="h5" th:text="'UsageSummary: ' + ${display.title(summary)}">UsageSummary</h3>
                     <dl class="row small mb-0">
                         <dt class="col-sm-3">Billing period</dt>
                         <dd class="col-sm-9">
@@ -225,7 +225,7 @@
                 </div>
 
                 <div th:each="summary : ${node.powerQualitySummaries}" th:with="q=${summary.resource}" class="border rounded p-3 mb-3">
-                    <h3 class="h5">ElectricPowerQualitySummary</h3>
+                    <h3 class="h5" th:text="'ElectricPowerQualitySummary: ' + ${display.title(summary)}">ElectricPowerQualitySummary</h3>
                     <dl class="row small mb-0">
                         <dt class="col-sm-3">Summary interval</dt>
                         <dd class="col-sm-9">

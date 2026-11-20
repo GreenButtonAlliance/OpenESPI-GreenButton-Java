@@ -48,6 +48,9 @@ class SubscriptionFeedReaderTest {
 
 		UsagePointNode usagePoint = tree.usagePoints().get(0);
 		assertThat(usagePoint)
+				.satisfies(n -> assertThat(n.usagePoint())
+						.returns("Sample residential electric service", SubscriptionTree.Entry::title)
+						.returns("urn:uuid:07171718-b165-522a-b413-11d9eeb1ca43", SubscriptionTree.Entry::id))
 				.satisfies(n -> assertThat(n.localTimeParameters()).isNotNull())
 				.satisfies(n -> assertThat(n.meterReadings()).hasSize(1))
 				.satisfies(n -> assertThat(n.usageSummaries()).singleElement()
@@ -59,6 +62,7 @@ class SubscriptionFeedReaderTest {
 
 		MeterReadingNode meterReading = usagePoint.meterReadings().get(0);
 		assertThat(meterReading)
+				.satisfies(n -> assertThat(n.meterReading().title()).isEqualTo("Hourly electricity consumption"))
 				.satisfies(n -> assertThat(n.readingType()).isNotNull()
 						.satisfies(r -> assertThat(r.resource())
 								.returns("-3", rt -> rt.getPowerOfTenMultiplier())

@@ -55,6 +55,26 @@ class SubscriptionDisplayTest {
 						"UTC-05:00", "UTC+05:30", "-");
 	}
 
+	@Test
+	void anOffsetOutsideTheJavaRangeFallsBackToUtcWithANote() {
+		TimeConfigurationDto broken = new TimeConfigurationDto(999_999L);
+
+		assertThat(new String[] {display.local(START, broken), display.offset(999_999L),
+				display.local(START, new TimeConfigurationDto(Long.MAX_VALUE))})
+				.containsExactly("2026-01-01 05:00 UTC (tzOffset 999999 s is not a valid offset)", "999999 s (not a valid offset)",
+						"2026-01-01 05:00 UTC (tzOffset " + Long.MAX_VALUE + " s is not a valid offset)");
+	}
+
+	@Test
+	void anUnrepresentableTimestampIsShownRaw() {
+		TimeConfigurationDto eastern = new TimeConfigurationDto(-18000L);
+
+		assertThat(new String[] {display.utc(Long.MAX_VALUE), display.local(Long.MIN_VALUE, eastern),
+				display.local(Long.MAX_VALUE, null)})
+				.containsExactly(Long.MAX_VALUE + " (not a representable time)",
+						Long.MIN_VALUE + " (not a representable time)", Long.MAX_VALUE + " (not a representable time)");
+	}
+
 	@ParameterizedTest
 	@CsvSource({"3600, 1 h", "86400, 1 day", "2678400, 31 days", "900, 15 min", "7200, 2 h", "45, 45 s"})
 	void durationInTheLargestWholeUnit(long seconds, String expected) {
@@ -118,6 +138,17 @@ class SubscriptionDisplayTest {
 	@Test
 	void blockWithoutReadingsHasAnEmptyList() {
 		assertThat(display.readings(new IntervalBlockDto())).isEmpty();
+	}
+
+	@Test
+	void titleFallsBackToTheAtomId() {
+		assertThat(new String[] {display.title(entry("Sample residential electric service")), display.title(entry(" ")),
+				display.title(entry(null))})
+				.containsExactly("Sample residential electric service", "urn:uuid:1", "urn:uuid:1");
+	}
+
+	private static SubscriptionTree.Entry<Object> entry(String title) {
+		return new SubscriptionTree.Entry<>("urn:uuid:1", title, "http://dc/UsagePoint/1", null, null, new Object());
 	}
 
 	@Test

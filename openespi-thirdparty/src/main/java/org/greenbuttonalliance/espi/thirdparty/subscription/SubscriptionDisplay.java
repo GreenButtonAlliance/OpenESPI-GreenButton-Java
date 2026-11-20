@@ -37,6 +37,7 @@ import org.greenbuttonalliance.espi.common.scope.EspiScope;
 import org.greenbuttonalliance.espi.common.scope.HistoryPeriod;
 
 import java.math.BigDecimal;
+import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -61,12 +62,19 @@ public class SubscriptionDisplay {
 	/** ESPI amounts (cost, bills) are in hundred-thousandths of the currency (REQ.21 usage.xsd). */
 	private static final int MONEY_SCALE = 5;
 
-	/** {@code 2026-01-01 05:00 UTC}. */
+	/** {@code 2026-01-01 05:00 UTC}; a timestamp outside what Java can represent is shown raw. */
 	public String utc(Long epochSeconds) {
-		return epochSeconds == null ? NONE : TIME.format(Instant.ofEpochSecond(epochSeconds).atOffset(ZoneOffset.UTC)) + " UTC";
+		if (epochSeconds == null) {
+			return NONE;
+		}
+		String time = at(epochSeconds, ZoneOffset.UTC);
+		return time == null ? unrepresentable(epochSeconds) : time + " UTC";
 	}
 
-	/** {@code 2026-01-01 00:00 (UTC-05:00)} at the LocalTimeParameters' standard offset; UTC without one. */
+	/**
+	 * {@code 2026-01-01 00:00 (UTC-05:00)} at the LocalTimeParameters' standard offset; UTC without one, and UTC
+	 * with a note when the feed's {@code tzOffset} is not a valid offset (beyond ±18 h).
+	 */
 	public String local(Long epochSeconds, TimeConfigurationDto localTime) {
 		if (epochSeconds == null) {
 			return NONE;
@@ -74,17 +82,56 @@ public class SubscriptionDisplay {
 		if (localTime == null || localTime.getTzOffset() == null) {
 			return utc(epochSeconds);
 		}
-		ZoneOffset offset = ZoneOffset.ofTotalSeconds(Math.toIntExact(localTime.getTzOffset()));
-		return TIME.format(Instant.ofEpochSecond(epochSeconds).atOffset(offset)) + " (" + offset(localTime.getTzOffset()) + ")";
+		ZoneOffset offset = zoneOffset(localTime.getTzOffset());
+		if (offset == null) {
+			String utc = utc(epochSeconds);
+			return at(epochSeconds, ZoneOffset.UTC) == null ? utc
+					: utc + " (tzOffset " + localTime.getTzOffset() + " s is not a valid offset)";
+		}
+		String time = at(epochSeconds, offset);
+		return time == null ? unrepresentable(epochSeconds) : time + " (" + offset(localTime.getTzOffset()) + ")";
 	}
 
-	/** {@code UTC-05:00} for an offset in seconds. */
+	/** {@code UTC-05:00} for an offset in seconds; one beyond ±18 h is shown raw with a note. */
 	public String offset(Long seconds) {
 		if (seconds == null) {
 			return NONE;
 		}
-		ZoneOffset offset = ZoneOffset.ofTotalSeconds(Math.toIntExact(seconds));
+		ZoneOffset offset = zoneOffset(seconds);
+		if (offset == null) {
+			return seconds + " s (not a valid offset)";
+		}
 		return "UTC" + (offset.getTotalSeconds() == 0 ? "+00:00" : offset.getId());
+	}
+
+	/** The offset, or null when it is not one Java accepts (the feed's value is not trusted). */
+	private static ZoneOffset zoneOffset(long seconds) {
+		try {
+			return ZoneOffset.ofTotalSeconds(Math.toIntExact(seconds));
+		} catch (DateTimeException | ArithmeticException invalid) {
+			return null;
+		}
+	}
+
+	/** The time at the offset, or null when the timestamp is outside the range Java can represent. */
+	private static String at(long epochSeconds, ZoneOffset offset) {
+		try {
+			return TIME.format(Instant.ofEpochSecond(epochSeconds).atOffset(offset));
+		} catch (DateTimeException outOfRange) {
+			return null;
+		}
+	}
+
+	private static String unrepresentable(long epochSeconds) {
+		return epochSeconds + " (not a representable time)";
+	}
+
+	/** The entry's {@code atom:title}, or its {@code atom:id} when the title is blank. */
+	public String title(SubscriptionTree.Entry<?> entry) {
+		if (entry == null) {
+			return NONE;
+		}
+		return entry.title() == null || entry.title().isBlank() ? entry.id() : entry.title();
 	}
 
 	/** A duration in seconds in its largest whole unit: {@code 1 h}, {@code 31 days}, {@code 15 min}. */

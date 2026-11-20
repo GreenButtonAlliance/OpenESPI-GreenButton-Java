@@ -37,6 +37,7 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -44,6 +45,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -276,14 +278,42 @@ class SubscriptionControllerTest {
 
 	@Test
 	void showsTheErrorBodyOfANon200FetchEscapedAndShortened() throws Exception {
-		String body = "<script>alert(1)</script>" + "x".repeat(3000);
+		// 25 + 1965 + 15 = 2005 characters: the excerpt is the first 1999 and an ellipsis, 2000 in all
+		String body = "<script>alert(1)</script>" + "x".repeat(1965) + "abcdefghijklmno";
 		saved(savedFetch(403, body, XmlValidationMode.REPORT, null));
 
 		assertThat(page())
-				.contains("403 Forbidden", "&lt;script&gt;alert(1)&lt;/script&gt;")
-				.doesNotContain("<script>alert(1)</script>")
-				.doesNotContainPattern("x{2000}")
-				.doesNotContain("<details");
+				.contains("403 Forbidden", "&lt;script&gt;alert(1)&lt;/script&gt;", "x".repeat(1965) + "abcdefghi…")
+				.doesNotContain("<script>alert(1)</script>", "abcdefghij", "<details");
+	}
+
+	@Test
+	void showsTheUsagePointAndMeterReadingTitles() throws Exception {
+		saved(savedFetch(200, fixture("feed-with-278-errors.xml"), XmlValidationMode.REPORT, false));
+
+		assertThat(page()).contains("Sample residential electric service", "Hourly electricity consumption",
+				"January 2026 billing period", "January 2026 power quality");
+	}
+
+	@Test
+	void postOnRevokedDoesNotFetch() throws Exception {
+		authorization.revoke();
+
+		mockMvc.perform(post(PAGE + "/fetch").with(alice()).with(csrf()))
+				.andExpect(redirectedUrl(PAGE))
+				.andExpect(flash().attribute("notice", "The Data Custodian authorization has ended. Authorize again."));
+
+		verify(fetchService, never()).fetch(any(), any(), any(), any());
+	}
+
+	@Test
+	void postUnparseableDateFlashesTheDateMessageAndDoesNotFetch() throws Exception {
+		mockMvc.perform(post(PAGE + "/fetch").param("from", "garbage").param("to", "2026-01-31")
+						.with(alice()).with(csrf()))
+				.andExpect(redirectedUrl(PAGE))
+				.andExpect(flash().attribute("notice", "Dates must be in the form YYYY-MM-DD: garbage"));
+
+		verify(fetchService, never()).fetch(any(), any(), any(), any());
 	}
 
 	@Test
@@ -319,13 +349,17 @@ class SubscriptionControllerTest {
 
 	@Test
 	void postInvalidRangeFlashesItsMessage() throws Exception {
-		when(fetchService.fetch(eq(AUTH_ID), any(Authentication.class), any(), any()))
-				.thenReturn(new FetchOutcome.InvalidRange("The start date is after the end date."));
+		LocalDate from = LocalDate.of(2026, 2, 1);
+		LocalDate to = LocalDate.of(2026, 1, 1);
+		// the message FetchRange really gives (the fetch service is mocked here)
+		String inverted = catchThrowable(() -> FetchRange.of(from, to, null, Clock.systemUTC())).getMessage();
+		when(fetchService.fetch(eq(AUTH_ID), any(Authentication.class), eq(from), eq(to)))
+				.thenReturn(new FetchOutcome.InvalidRange(inverted));
 
 		mockMvc.perform(post(PAGE + "/fetch").param("from", "2026-02-01").param("to", "2026-01-01")
 						.with(alice()).with(csrf()))
 				.andExpect(redirectedUrl(PAGE))
-				.andExpect(flash().attribute("notice", "The start date is after the end date."));
+				.andExpect(flash().attribute("notice", "The start date must be on or before the end date."));
 	}
 
 	@Test

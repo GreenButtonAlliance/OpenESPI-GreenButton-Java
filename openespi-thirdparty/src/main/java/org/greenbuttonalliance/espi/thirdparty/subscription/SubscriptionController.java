@@ -23,7 +23,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
 import org.greenbuttonalliance.espi.thirdparty.subscription.SubscriptionFetchService.FetchOutcome;
 import org.greenbuttonalliance.espi.thirdparty.web.AuthorizationView;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
@@ -42,6 +41,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.UUID;
 
@@ -61,6 +61,7 @@ public class SubscriptionController {
 	static final String NOT_AUTHORIZED = "The Data Custodian authorization has ended. Authorize again.";
 	static final String UNREACHABLE = "The Data Custodian could not be reached: ";
 	static final String NO_USAGE_POINTS = "The Data Custodian returned no UsagePoints for this range.";
+	static final String BAD_DATE = "Dates must be in the form YYYY-MM-DD: ";
 
 	private final SubscriptionFetchService fetchService;
 	private final SubscriptionFeedFetchRepository fetches;
@@ -88,13 +89,16 @@ public class SubscriptionController {
 	public String show(@PathVariable UUID authorizationId, @RequestParam(required = false) UUID fetch,
 					   Authentication user, Model model, RedirectAttributes redirect) {
 		AuthorizationEntity authorization = fetchService.ownedAuthorization(authorizationId, user.getName());
-		boolean active = AuthorizationView.isActive(authorization);
+		boolean active = AuthorizationView.isStatusActive(authorization);
 		List<SubscriptionFeedFetchEntity> saved = fetches.findAllByAuthorizationIdOrderByFetchedAtDesc(authorizationId);
 
 		SubscriptionFeedFetchEntity selected;
 		if (fetch != null) {
 			selected = fetches.findByIdAndAuthorizationId(fetch, authorizationId).orElseThrow(FetchNotFoundException::new);
 		} else if (saved.isEmpty()) {
+			// A GET with a side effect, accepted here: it runs only after the ownership check, at most once
+			// (a failure comes back with a notice, which stops a second try), and only refreshes the signed-in
+			// customer's own data from the Data Custodian they authorized.
 			if (active && !model.containsAttribute(NOTICE)) {
 				return redirectAfter(authorizationId, fetchService.fetch(authorizationId, user, null, null), redirect);
 			}
@@ -108,14 +112,32 @@ public class SubscriptionController {
 		return "subscription";
 	}
 
-	/** Fetches the feed again (optionally for the {@code from}/{@code to} dates, UTC, {@code to} inclusive). */
+	/**
+	 * Fetches the feed again (optionally for the {@code from}/{@code to} dates, UTC, {@code to} inclusive; blank
+	 * means the default range). An authorization that has ended, or a date that does not parse, is a notice on
+	 * the page and no request to the Data Custodian.
+	 */
 	@PostMapping("/{authorizationId}/fetch")
-	public String fetch(@PathVariable UUID authorizationId,
-						@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-						@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
-						Authentication user, RedirectAttributes redirect) {
-		fetchService.ownedAuthorization(authorizationId, user.getName());
-		return redirectAfter(authorizationId, fetchService.fetch(authorizationId, user, from, to), redirect);
+	public String fetch(@PathVariable UUID authorizationId, @RequestParam(required = false) String from,
+						@RequestParam(required = false) String to, Authentication user, RedirectAttributes redirect) {
+		AuthorizationEntity authorization = fetchService.ownedAuthorization(authorizationId, user.getName());
+		String page = "redirect:/subscription/" + authorizationId;
+		if (!AuthorizationView.isStatusActive(authorization)) {
+			return withNotice(page, NOT_AUTHORIZED, redirect);
+		}
+		LocalDate fromDate;
+		LocalDate toDate;
+		try {
+			fromDate = date(from);
+			toDate = date(to);
+		} catch (DateTimeParseException e) {
+			return withNotice(page, BAD_DATE + e.getParsedString(), redirect);
+		}
+		return redirectAfter(authorizationId, fetchService.fetch(authorizationId, user, fromDate, toDate), redirect);
+	}
+
+	private static LocalDate date(String text) {
+		return text == null || text.isBlank() ? null : LocalDate.parse(text.strip());
 	}
 
 	/** Not the customer's authorization, or not one of its fetches: a plain 404, naming nothing. */
@@ -152,8 +174,9 @@ public class SubscriptionController {
 		SubscriptionPage.Fetch shown = fetchSummary(selected);
 		String body = selected.getBody() == null ? "" : selected.getBody();
 		if (selected.getHttpStatus() != HttpStatus.OK.value()) {
+			// at most ERROR_BODY_LIMIT characters, the ellipsis included
 			String excerpt = body.length() > SubscriptionPage.ERROR_BODY_LIMIT
-					? body.substring(0, SubscriptionPage.ERROR_BODY_LIMIT) + "…" : body;
+					? body.substring(0, SubscriptionPage.ERROR_BODY_LIMIT - 1) + "…" : body;
 			return new SubscriptionPage(summary, list, shown, excerpt, null, null, null, null);
 		}
 		FeedValidation validation = validator.revalidate(body, selected.getValidationMode());

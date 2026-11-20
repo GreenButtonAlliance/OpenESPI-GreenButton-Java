@@ -159,7 +159,8 @@ public class SubscriptionFeedReader {
 	}
 
 	private static <T> Entry<T> wrap(AtomEntryDto entry, T resource) {
-		return new Entry<>(entry.getId(), selfHref(entry), entry.getPublished(), entry.getUpdated(), resource);
+		return new Entry<>(entry.getId(), entry.getTitle(), selfHref(entry), entry.getPublished(), entry.getUpdated(),
+				resource);
 	}
 
 	/** The hrefs of the entry's {@code rel="related"} links of type {@code espi-entry/<type>}. */
