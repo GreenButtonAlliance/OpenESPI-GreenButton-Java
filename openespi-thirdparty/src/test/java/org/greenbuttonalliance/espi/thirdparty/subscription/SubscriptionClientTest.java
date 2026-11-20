@@ -10,7 +10,13 @@ import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.test.web.client.response.MockRestResponseCreators;
 import org.springframework.web.client.RestClient;
 
+import com.sun.net.httpserver.HttpServer;
+import org.springframework.mock.env.MockEnvironment;
+
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.time.Duration;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 
@@ -146,19 +152,34 @@ class SubscriptionClientTest {
 	}
 
 	@Test
-	void profilesDecideWhetherHttpIsAllowed() {
-		org.springframework.mock.env.MockEnvironment dev = new org.springframework.mock.env.MockEnvironment();
+	void profilesDecideWhetherHttpIsAllowed() throws Exception {
+		MockEnvironment dev = new MockEnvironment();
 		dev.setActiveProfiles("dev-mysql");
-		org.springframework.mock.env.MockEnvironment prod = new org.springframework.mock.env.MockEnvironment();
+		MockEnvironment prod = new MockEnvironment();
 		prod.setActiveProfiles("prod");
-		String http = "http://localhost:8081/DataCustodian";
+		HttpServer plain = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0);
+		plain.createContext("/DataCustodian", exchange -> {
+			byte[] body = "<f/>".getBytes(StandardCharsets.UTF_8);
+			exchange.sendResponseHeaders(200, body.length);
+			exchange.getResponseBody().write(body);
+			exchange.close();
+		});
+		plain.start();
+		try {
+			String base = "http://127.0.0.1:" + plain.getAddress().getPort() + "/DataCustodian";
 
-		SubscriptionClient onDev = new SubscriptionClient(RestClient.builder(), http, 10,
-				java.time.Duration.ofSeconds(1), java.time.Duration.ofSeconds(1), dev);
+			SubscriptionClient onDev = new SubscriptionClient(RestClient.builder(), base, 10, Duration.ofSeconds(5),
+					Duration.ofSeconds(5), dev);
+			SubscriptionClient.Response response = onDev.get(base + "/espi/1_1/resource/Batch/Subscription/abc", "tok", RANGE);
 
-		assertThat(onDev).isNotNull();
-		assertThatThrownBy(() -> new SubscriptionClient(RestClient.builder(), http, 10,
-				java.time.Duration.ofSeconds(1), java.time.Duration.ofSeconds(1), prod))
-				.isInstanceOf(IllegalStateException.class);
+			assertThat(response).extracting(SubscriptionClient.Response::status, r -> new String(r.body(), StandardCharsets.UTF_8))
+					.containsExactly(200, "<f/>");
+			assertThatThrownBy(() -> new SubscriptionClient(RestClient.builder(), base, 10, Duration.ofSeconds(5),
+					Duration.ofSeconds(5), prod))
+					.isInstanceOf(IllegalStateException.class)
+					.hasMessageContaining("espi.datacustodian.base-url");
+		} finally {
+			plain.stop(0);
+		}
 	}
 }

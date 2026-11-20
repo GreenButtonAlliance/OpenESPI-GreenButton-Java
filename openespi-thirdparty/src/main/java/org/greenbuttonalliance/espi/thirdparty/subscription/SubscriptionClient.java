@@ -151,7 +151,9 @@ public class SubscriptionClient {
 		}
 		String basePath = baseUrl.getPath() == null ? "" : baseUrl.getPath().replaceAll("/+$", "");
 		String path = uri.getPath() == null ? "" : uri.getPath();
-		boolean ok = uri.getScheme() != null && (!requireHttps || "https".equalsIgnoreCase(uri.getScheme())) && uri.getScheme().equalsIgnoreCase(baseUrl.getScheme())
+		// Equality with the base URL's scheme is enough for https-only: the constructor has already
+		// refused a non-https base URL when https is required.
+		boolean ok = uri.getScheme() != null && uri.getScheme().equalsIgnoreCase(baseUrl.getScheme())
 				&& uri.getHost() != null && uri.getHost().equalsIgnoreCase(baseUrl.getHost())
 				&& effectivePort(uri) == effectivePort(baseUrl)
 				&& (path.equals(basePath) || path.startsWith(basePath + "/"))
