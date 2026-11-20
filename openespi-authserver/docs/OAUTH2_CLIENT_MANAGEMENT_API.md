@@ -94,8 +94,8 @@ Create a new OAuth2 client with ESPI 4.0 compliance features.
   "scopes": [
     "openid",
     "profile",
-    "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13",
-    "FB=4_5_16;IntervalDuration=900;BlockDuration=daily;HistoryLength=7"
+    "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000",
+    "FB=4_5_16;IntervalDuration=900;BlockDuration=daily;HistoryLength=604800"
   ],
   "require_proof_key": true,
   "require_authorization_consent": true,
@@ -143,7 +143,7 @@ Retrieve detailed information about a specific client.
   "scopes": [
     "openid",
     "profile",
-    "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"
+    "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000"
   ],
   "espi_version": "4.0",
   "security_level": "high",
@@ -175,7 +175,7 @@ Update an existing client's configuration.
   "scopes": [
     "openid",
     "profile",
-    "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"
+    "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000"
   ],
   "security_level": "maximum",
   "rate_limit_per_minute": 500,

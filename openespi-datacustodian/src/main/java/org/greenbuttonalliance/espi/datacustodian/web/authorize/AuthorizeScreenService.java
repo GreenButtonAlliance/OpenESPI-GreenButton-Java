@@ -26,6 +26,7 @@ import org.greenbuttonalliance.espi.common.repositories.usage.ApplicationInforma
 import org.greenbuttonalliance.espi.common.repositories.usage.UsagePointRepository;
 import org.greenbuttonalliance.espi.common.scope.EspiScope;
 import org.greenbuttonalliance.espi.common.scope.FunctionBlock;
+import org.greenbuttonalliance.espi.common.scope.HistoryPeriod;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 
@@ -111,7 +112,22 @@ public class AuthorizeScreenService {
 				commoditySections,
 				piiOptions,
 				implicitBaseLabels,
+				commoditySections.isEmpty() ? null : historyNote(scope, locale),
 				handoffToken);
+	}
+
+	/**
+	 * How far back the energy data goes, for the customer: the scope's {@code HistoryLength}, which
+	 * is in seconds (REQ.21.6.1.2.1), in months, years or days ({@link HistoryPeriod}, #284). No
+	 * {@code HistoryLength} means no limit, as {@code SubscriptionAccess} enforces it.
+	 */
+	private String historyNote(EspiScope scope, Locale locale) {
+		if (scope.historyLength() == null) {
+			return i18n("screen.history.unlimited", locale);
+		}
+		HistoryPeriod period = HistoryPeriod.ofSeconds(scope.historyLength());
+		String key = "screen.history." + period.unit().name().toLowerCase(Locale.ROOT);
+		return messages.getMessage(key, new Object[] {period.amount(), period.days()}, key, locale);
 	}
 
 	/**

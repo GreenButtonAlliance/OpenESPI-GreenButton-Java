@@ -301,7 +301,7 @@ rotates it. When it is unset, the registrar is not seeded and dynamic registrati
            "grant_types": ["authorization_code", "refresh_token"],
            "response_types": ["code"],
            "token_endpoint_auth_method": "client_secret_basic",
-           "scope": "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"
+           "scope": "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000"
          }'
    ```
 
@@ -314,7 +314,7 @@ Requests outside this policy are rejected with `400 invalid_client_metadata`:
 
 | Metadata | Allowed |
 |---|---|
-| `scope` | One or more ESPI Third Party scopes (`FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13`, `FB=4_5_15;IntervalDuration=900;BlockDuration=monthly;HistoryLength=13`) |
+| `scope` | One or more ESPI Third Party scopes (`FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000`, `FB=4_5_15;IntervalDuration=900;BlockDuration=monthly;HistoryLength=34128000`). `HistoryLength` is in seconds (REQ.21.6.1.2.1): 34128000 is 395 days |
 | `grant_types` | `authorization_code`, optionally `refresh_token` |
 | `response_types` | `code` |
 | `token_endpoint_auth_method` | `client_secret_basic` |

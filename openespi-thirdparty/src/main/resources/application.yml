@@ -105,7 +105,8 @@ spring:
             client-secret: ${OAUTH2_CLIENT_SECRET:secret}
             authorization-grant-type: authorization_code
             redirect-uri: "${espi.thirdparty.base-url}/login/oauth2/code/datacustodian-monthly"
-            scope: "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"
+            # HistoryLength is in seconds (REQ.21.6.1.2.1): 34128000 = 395 days, 604800 = 7 days.
+            scope: "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000"
             client-name: Data Custodian (Monthly)
             provider: datacustodian
 
@@ -115,7 +116,7 @@ spring:
             client-secret: ${OAUTH2_CLIENT_SECRET:secret}
             authorization-grant-type: authorization_code
             redirect-uri: "${espi.thirdparty.base-url}/login/oauth2/code/datacustodian-daily"
-            scope: "FB=4_5_15;IntervalDuration=900;BlockDuration=daily;HistoryLength=7"
+            scope: "FB=4_5_15;IntervalDuration=900;BlockDuration=daily;HistoryLength=604800"
             client-name: Data Custodian (Daily)
             provider: datacustodian
 

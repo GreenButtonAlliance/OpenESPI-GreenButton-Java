@@ -37,7 +37,7 @@ import java.util.List;
 final class AuthorizationPurgeFixtures {
 
 	static final String GRANT_TYPE = "authorization_code";
-	static final String SCOPES = "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13";
+	static final String SCOPES = "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000";
 
 	private static final ObjectMapper JSON = new ObjectMapper();
 

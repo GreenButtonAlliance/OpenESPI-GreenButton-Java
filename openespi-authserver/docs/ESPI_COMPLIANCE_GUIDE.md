@@ -87,11 +87,12 @@ FB=x_y_z;IntervalDuration=nnn;BlockDuration=xxx;HistoryLength=nn
 
 #### History Length
 - **Purpose**: Amount of historical data
-- **Units**: Number of periods (based on BlockDuration)
-- **Range**: 1-999
+- **Units**: Seconds (REQ.21.6.1.2.1), whatever the BlockDuration. It is not a count of months, days or periods: `13` means 13 seconds
+- **Range**: A non-negative whole number of seconds
 - **Examples**:
-  - `13` - 13 months of history
-  - `30` - 30 days of history
+  - `34128000` - 395 days (about 13 months) of history
+  - `2592000` - 30 days of history
+- **Shown to the customer**: The consent screens show it in calendar units, for example "13 months (395 days)" (#284)
 
 ### Validation Rules
 
@@ -104,7 +105,7 @@ String ESPI_SCOPE_PATTERN =
 
 #### 2. Parameter Range Validation
 - **IntervalDuration**: Must be between 60 and 86400 seconds
-- **HistoryLength**: Must be between 1 and 999 periods
+- **HistoryLength**: A number of **seconds** (REQ.21.6.1.2.1): the most history the Data Custodian makes available, e.g. `31536000` for 365 days. Not a month or day count: `13` means 13 seconds
 - **FB Version**: Must match supported versions
 
 #### 3. Logical Consistency
@@ -114,14 +115,14 @@ String ESPI_SCOPE_PATTERN =
 ### Example Valid Scopes
 
 ```javascript
-// Standard hourly data with monthly billing, 13 months history
-"FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"
+// Standard hourly data with monthly billing, 395 days (about 13 months) of history
+"FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000"
 
 // 15-minute intervals with daily billing, 30 days history
-"FB=4_5_15;IntervalDuration=900;BlockDuration=daily;HistoryLength=30"
+"FB=4_5_15;IntervalDuration=900;BlockDuration=daily;HistoryLength=2592000"
 
-// Daily data with monthly billing, 24 months history
-"FB=4_5_15;IntervalDuration=86400;BlockDuration=monthly;HistoryLength=24"
+// Daily data with monthly billing, 730 days (about 24 months) of history
+"FB=4_5_15;IntervalDuration=86400;BlockDuration=monthly;HistoryLength=63072000"
 ```
 
 ### Scope Parsing Implementation
@@ -269,7 +270,7 @@ public class CertificateValidationService {
     "thumbprint": "A1B2C3D4E5F6..."
   },
   "espiSpecific": {
-    "scopes": ["FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"],
+    "scopes": ["FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000"],
     "usagePoints": ["up-001", "up-002"],
     "dataRights": ["ENERGY_USAGE_DATA", "HOURLY_INTERVALS"]
   }
@@ -437,15 +438,15 @@ Response:
 @Test
 public void testESPIScopeValidation() {
     // Valid ESPI scope
-    String validScope = "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13";
+    String validScope = "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000";
     assertTrue(scopeValidator.validate(validScope));
     
     // Invalid ESPI scope - bad format
-    String invalidScope = "FB=4_5_15;IntervalDuration=invalid;BlockDuration=monthly;HistoryLength=13";
+    String invalidScope = "FB=4_5_15;IntervalDuration=invalid;BlockDuration=monthly;HistoryLength=34128000";
     assertFalse(scopeValidator.validate(invalidScope));
     
-    // Invalid ESPI scope - out of range
-    String outOfRangeScope = "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=1000";
+    // Invalid ESPI scope - out of range (HistoryLength not a whole number of seconds)
+    String outOfRangeScope = "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=-1";
     assertFalse(scopeValidator.validate(outOfRangeScope));
 }
 ```

@@ -61,7 +61,7 @@ public class TestDataBuilder {
                 .postLogoutRedirectUri("https://customer.example.com/logout")
                 .scope(OidcScopes.OPENID)
                 .scope(OidcScopes.PROFILE)
-                .scope("FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13")
+                .scope("FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000")
                 .clientSettings(ClientSettings.builder()
                         .requireAuthorizationConsent(true)
                         .requireProofKey(false)
@@ -167,9 +167,9 @@ public class TestDataBuilder {
                 .postLogoutRedirectUri("https://gbconnect.example.com/logout")
                 .scope(OidcScopes.OPENID)
                 .scope(OidcScopes.PROFILE)
-                .scope("FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13")
-                .scope("FB=4_5_16;IntervalDuration=900;BlockDuration=daily;HistoryLength=7")
-                .scope("FB=4_5_17;IntervalDuration=86400;BlockDuration=yearly;HistoryLength=1")
+                .scope("FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000")
+                .scope("FB=4_5_16;IntervalDuration=900;BlockDuration=daily;HistoryLength=604800")
+                .scope("FB=4_5_17;IntervalDuration=86400;BlockDuration=yearly;HistoryLength=31536000")
                 .clientSettings(ClientSettings.builder()
                         .requireAuthorizationConsent(true)
                         .requireProofKey(true) // Enable PKCE for mobile clients
@@ -257,9 +257,9 @@ public class TestDataBuilder {
          * Add ESPI-specific scopes for different intervals and history lengths
          */
         public RegisteredClientBuilder withEspiScopes() {
-            return this.scope("FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13")
-                      .scope("FB=4_5_16;IntervalDuration=900;BlockDuration=daily;HistoryLength=7")
-                      .scope("FB=4_5_17;IntervalDuration=86400;BlockDuration=yearly;HistoryLength=1");
+            return this.scope("FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000")
+                      .scope("FB=4_5_16;IntervalDuration=900;BlockDuration=daily;HistoryLength=604800")
+                      .scope("FB=4_5_17;IntervalDuration=86400;BlockDuration=yearly;HistoryLength=31536000");
         }
 
         /**

@@ -80,7 +80,8 @@ IAT=$(curl -s -u espi_registrar:local-registrar-secret -d grant_type=client_cred
 curl -s -H "Authorization: Bearer $IAT" -H 'Content-Type: application/json' $AS/oauth2/register -d '{
   "client_name": "My Third Party", "grant_types": ["authorization_code", "refresh_token"],
   "redirect_uris": ["https://tp.example/callback"],
-  "scope": "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13" }'
+  "scope": "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000" }'
+# HistoryLength is in seconds (REQ.21.6.1.2.1): 34128000 = 395 days. A month count such as 13 means 13 seconds.
 
 # Start the customer flow as the TP does (follow the redirects in a browser)
 open "$TP/oauth2/authorization/datacustodian-monthly"

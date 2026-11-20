@@ -26,6 +26,11 @@
                             <!-- Energy data sections (one per commodity) -->
                             <div th:if="${not #lists.isEmpty(viewModel.commoditySections)}" class="mb-4">
                                 <h5 th:text="#{screen.energy.heading}">Energy data</h5>
+                                <!-- HistoryLength (seconds on the wire) in months/years/days (#284) -->
+                                <p th:if="${viewModel.historyNote != null}" class="small text-muted"
+                                   th:text="${viewModel.historyNote}">
+                                    This application may receive energy data from up to the last 13 months (395 days).
+                                </p>
                                 <div th:each="section : ${viewModel.commoditySections}" class="card mb-3">
                                     <div class="card-header bg-light">
                                         <strong th:text="${section.sectionTitle}">Commodity</strong>

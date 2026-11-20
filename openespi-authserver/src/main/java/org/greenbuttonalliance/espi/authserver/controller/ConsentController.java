@@ -299,7 +299,8 @@ public class ConsentController {
 
     /**
      * Parse ESPI scope description from Green Button scope format
-     * Example: "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"
+     * Example: "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000"
+     * (HistoryLength is in seconds, REQ.21.6.1.2.1).
      */
     private String parseEspiScopeDescription(String scope) {
         Map<String, String> params = Arrays.stream(scope.split(";"))
@@ -321,10 +322,42 @@ public class ConsentController {
         }
         
         if (params.containsKey("HistoryLength")) {
-            description.append(", up to ").append(params.get("HistoryLength")).append(" months of history");
+            description.append(", up to ").append(formatHistoryLength(params.get("HistoryLength")))
+                    .append(" of history");
         }
 
         return description.toString();
+    }
+
+    /**
+     * Format a HistoryLength, which is in seconds (REQ.21.6.1.2.1), in the calendar unit a customer
+     * understands (#284), by the same rule as openespi-common's {@code HistoryPeriod} (the AS does not
+     * depend on openespi-common): seconds under a day; days under 60 days; whole 365-day years; otherwise
+     * months rounded to the nearest average month (365.2425 / 12 days). Months and years also give the
+     * exact day count, since a month has no fixed length. A value that is not a number is shown as seconds.
+     */
+    static String formatHistoryLength(String historyLength) {
+        long seconds;
+        try {
+            seconds = Long.parseLong(historyLength.trim());
+        } catch (NumberFormatException e) {
+            return historyLength + " seconds";
+        }
+        long days = seconds / 86_400;
+        if (days < 1) {
+            return plural(seconds, "second");
+        }
+        if (days < 60) {
+            return plural(days, "day");
+        }
+        if (days % 365 == 0) {
+            return plural(days / 365, "year") + " (" + days + " days)";
+        }
+        return plural(Math.round(days / (365.2425 / 12)), "month") + " (" + days + " days)";
+    }
+
+    private static String plural(long amount, String unit) {
+        return amount + " " + unit + (amount == 1 ? "" : "s");
     }
 
     /**

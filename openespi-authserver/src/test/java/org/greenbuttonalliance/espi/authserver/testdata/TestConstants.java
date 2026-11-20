@@ -54,11 +54,12 @@ public final class TestConstants {
     public static final String TEST_ADMIN_CLIENT_ID = "test-admin-client";
     public static final String TEST_INVALID_CLIENT_ID = "invalid-client";
 
-    // ESPI Scope Constants
-    public static final String ESPI_SCOPE_15_MIN_MONTHLY_13 = "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13";
-    public static final String ESPI_SCOPE_15_MIN_DAILY_7 = "FB=4_5_16;IntervalDuration=900;BlockDuration=daily;HistoryLength=7";
-    public static final String ESPI_SCOPE_DAILY_YEARLY_1 = "FB=4_5_17;IntervalDuration=86400;BlockDuration=yearly;HistoryLength=1";
-    public static final String ESPI_SCOPE_5_MIN_MONTHLY_13 = "FB=4_5_18;IntervalDuration=300;BlockDuration=monthly;HistoryLength=13";
+    // ESPI Scope Constants. HistoryLength is in seconds (REQ.21.6.1.2.1): the _13 constants carry 34128000
+    // (395 days, about 13 months), _7 604800 (7 days) and _1 31536000 (365 days).
+    public static final String ESPI_SCOPE_15_MIN_MONTHLY_13 = "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000";
+    public static final String ESPI_SCOPE_15_MIN_DAILY_7 = "FB=4_5_16;IntervalDuration=900;BlockDuration=daily;HistoryLength=604800";
+    public static final String ESPI_SCOPE_DAILY_YEARLY_1 = "FB=4_5_17;IntervalDuration=86400;BlockDuration=yearly;HistoryLength=31536000";
+    public static final String ESPI_SCOPE_5_MIN_MONTHLY_13 = "FB=4_5_18;IntervalDuration=300;BlockDuration=monthly;HistoryLength=34128000";
 
     // Administrative Scopes
     public static final String DATACUSTODIAN_ADMIN_SCOPE = "DataCustodian_Admin_Access";

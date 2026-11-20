@@ -86,8 +86,8 @@ class SecurityIntegrationTest extends AbstractAuthserverIntegrationTest {
     private static final String TP_CLIENT_ID = "third_party";
     private static final String TP_CLIENT_SECRET = "tp-secret";
 
-    private static final String ESPI_SCOPE_HOURLY = "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13";
-    private static final String ESPI_SCOPE_15_MIN = "FB=4_5_15;IntervalDuration=900;BlockDuration=monthly;HistoryLength=13";
+    private static final String ESPI_SCOPE_HOURLY = "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000";
+    private static final String ESPI_SCOPE_15_MIN = "FB=4_5_15;IntervalDuration=900;BlockDuration=monthly;HistoryLength=34128000";
     private static final String REDIRECT_URI = "https://tp.example/espi/callback";
 
     @Autowired
@@ -269,7 +269,7 @@ class SecurityIntegrationTest extends AbstractAuthserverIntegrationTest {
         void shouldValidateRequestedScopes() throws Exception {
             // Scope the client is not registered for: invalid_scope is returned to the client's redirect URI
             mockMvc.perform(authorize(authCodeClientId, REDIRECT_URI,
-                            "FB=4_5_16;IntervalDuration=900;BlockDuration=monthly;HistoryLength=13"))
+                            "FB=4_5_16;IntervalDuration=900;BlockDuration=monthly;HistoryLength=34128000"))
                     .andExpect(status().isFound())
                     .andExpect(result -> assertThat(result.getResponse().getRedirectedUrl())
                             .startsWith(REDIRECT_URI)

@@ -41,7 +41,7 @@ GET /oauth2/authorize?
   response_type=code&
   client_id=your-client-id&
   redirect_uri=https://yourapp.com/callback&
-  scope=openid%20profile%20FB%3D4_5_15%3BIntervalDuration%3D3600%3BBlockDuration%3Dmonthly%3BHistoryLength%3D13&
+  scope=openid%20profile%20FB%3D4_5_15%3BIntervalDuration%3D3600%3BBlockDuration%3Dmonthly%3BHistoryLength%3D34128000&
   state=random-state-value&
   code_challenge=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk&
   code_challenge_method=S256
@@ -80,7 +80,7 @@ code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk
   "token_type": "Bearer",
   "expires_in": 3600,
   "refresh_token": "def456",
-  "scope": "openid profile FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13",
+  "scope": "openid profile FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000",
   "id_token": "eyJhbGciOiJSUzI1NiIs..."
 }
 ```
@@ -126,7 +126,7 @@ Submit a client registration request with the following information:
     "openid",
     "profile",
     "email",
-    "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"
+    "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000"
   ],
   "authorizationGrantTypes": [
     "authorization_code",
@@ -161,7 +161,7 @@ Content-Type: application/json
 {
   "clientName": "Production Energy App",
   "redirectUris": ["https://app.example.com/callback"],
-  "scopes": ["openid", "profile", "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"],
+  "scopes": ["openid", "profile", "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000"],
   "espiCompliant": true,
   "securityLevel": "HIGH"
 }
@@ -194,29 +194,32 @@ FB=x_y_z;IntervalDuration=nnn;BlockDuration=xxx;HistoryLength=nn
 
 ### Common ESPI Scope Examples
 
+`IntervalDuration` and `HistoryLength` are both in **seconds** (REQ.21.6.1.2.1). `HistoryLength` is the most
+history the Data Custodian makes available; it is not a month or day count (`HistoryLength=13` means 13 seconds).
+
 #### 1. Hourly Data with Monthly Billing
 ```
-FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13
+FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000
 ```
-- **FB=4_5_15**: ESPI 4.0, version 5, release 15
+- **FB=4_5_15**: Function Blocks 4, 5 and 15
 - **IntervalDuration=3600**: 1-hour intervals
 - **BlockDuration=monthly**: Monthly billing periods
-- **HistoryLength=13**: 13 months of history
+- **HistoryLength=34128000**: 395 days (about 13 months) of history
 
 #### 2. 15-minute Data with Daily Billing
 ```
-FB=4_5_15;IntervalDuration=900;BlockDuration=daily;HistoryLength=30
+FB=4_5_15;IntervalDuration=900;BlockDuration=daily;HistoryLength=2592000
 ```
 - **IntervalDuration=900**: 15-minute intervals
 - **BlockDuration=daily**: Daily summaries
-- **HistoryLength=30**: 30 days of history
+- **HistoryLength=2592000**: 30 days of history
 
 #### 3. Daily Data with Monthly Billing
 ```
-FB=4_5_15;IntervalDuration=86400;BlockDuration=monthly;HistoryLength=24
+FB=4_5_15;IntervalDuration=86400;BlockDuration=monthly;HistoryLength=63072000
 ```
 - **IntervalDuration=86400**: Daily intervals (24 hours)
-- **HistoryLength=24**: 24 months of history
+- **HistoryLength=63072000**: 730 days (about 24 months) of history
 
 ### Scope Validation
 
@@ -229,7 +232,7 @@ function validateESPIScope(scope) {
 }
 
 // Example usage
-const scope = "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13";
+const scope = "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000";
 if (validateESPIScope(scope)) {
   console.log("Valid ESPI scope");
 } else {
@@ -246,12 +249,12 @@ const scopes = [
   "openid",
   "profile", 
   "email",
-  "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13",
-  "FB=4_5_15;IntervalDuration=900;BlockDuration=daily;HistoryLength=7"
+  "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000",
+  "FB=4_5_15;IntervalDuration=900;BlockDuration=daily;HistoryLength=604800"
 ];
 
 const scopeString = scopes.join(" ");
-// Result: "openid profile email FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13 FB=4_5_15;IntervalDuration=900;BlockDuration=daily;HistoryLength=7"
+// Result: "openid profile email FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000 FB=4_5_15;IntervalDuration=900;BlockDuration=daily;HistoryLength=604800"
 ```
 
 ## Integration Examples
@@ -281,7 +284,7 @@ const client = new AuthorizationCode(config);
 ```javascript
 const authorizationUri = client.authorizeURL({
   redirect_uri: 'https://yourapp.com/callback',
-  scope: 'openid profile FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13',
+  scope: 'openid profile FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000',
   state: generateRandomState()
 });
 
@@ -351,7 +354,7 @@ public class OAuth2Config {
             .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
             .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
             .redirectUri("{baseUrl}/login/oauth2/code/{registrationId}")
-            .scope("openid", "profile", "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13")
+            .scope("openid", "profile", "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000")
             .authorizationUri("https://authorization.greenbuttonalliance.org/oauth2/authorize")
             .tokenUri("https://authorization.greenbuttonalliance.org/oauth2/token")
             .userInfoUri("https://authorization.greenbuttonalliance.org/userinfo")
@@ -445,7 +448,7 @@ client = ESPIOAuth2Client(
 scopes = [
     'openid',
     'profile',
-    'FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13'
+    'FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000'
 ]
 auth_url, state = client.get_authorization_url(scopes)
 print(f'Please go to {auth_url} and authorize access.')
@@ -493,10 +496,10 @@ curl -X POST https://authorization.greenbuttonalliance.org/oauth2/introspect \
 #### Scope Validation Test
 ```javascript
 const testScopes = [
-  "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13", // Valid
-  "FB=4_5_15;IntervalDuration=900;BlockDuration=daily;HistoryLength=30",    // Valid
-  "FB=4_5_15;IntervalDuration=invalid;BlockDuration=monthly;HistoryLength=13", // Invalid
-  "FB=4_5_15;IntervalDuration=3600;BlockDuration=weekly;HistoryLength=13"     // Invalid (weekly not supported)
+  "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000", // Valid
+  "FB=4_5_15;IntervalDuration=900;BlockDuration=daily;HistoryLength=2592000",    // Valid
+  "FB=4_5_15;IntervalDuration=invalid;BlockDuration=monthly;HistoryLength=34128000", // Invalid
+  "FB=4_5_15;IntervalDuration=3600;BlockDuration=weekly;HistoryLength=34128000"     // Invalid (weekly not supported)
 ];
 
 testScopes.forEach(scope => {
@@ -585,10 +588,10 @@ FB=x_y_z;IntervalDuration=nnn;BlockDuration=xxx;HistoryLength=nn
 **Example Fix**:
 ```javascript
 // Wrong
-const scope = "FB=4.5.15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13";
+const scope = "FB=4.5.15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000";
 
 // Correct
-const scope = "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13";
+const scope = "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000";
 ```
 
 #### 2. TLS Version Issues

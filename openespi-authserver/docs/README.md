@@ -114,7 +114,7 @@ graph TB
   "scopes": [
     "openid",
     "profile", 
-    "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"
+    "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000"
   ],
   "espiCompliant": true
 }
@@ -123,11 +123,12 @@ graph TB
 ### ESPI Scope Examples
 
 ```bash
-# Hourly data, monthly billing, 13 months history
-FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13
+# HistoryLength is in seconds (REQ.21.6.1.2.1), not months or days
+# Hourly data, monthly billing, 395 days (about 13 months) history
+FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000
 
 # 15-minute data, daily billing, 30 days history  
-FB=4_5_15;IntervalDuration=900;BlockDuration=daily;HistoryLength=30
+FB=4_5_15;IntervalDuration=900;BlockDuration=daily;HistoryLength=2592000
 ```
 
 ## 📈 Monitoring and Health Checks

@@ -1,5 +1,6 @@
 -- Default Data and Test Clients for ESPI 4.0 Authorization Server
 -- MySQL Implementation
+-- HistoryLength is in seconds (REQ.21.6.1.2.1): 34128000 = 395 days, 604800 = 7 days (#284).
 
 -- Insert additional default ESPI-compliant clients with proper JSON serialization
 INSERT INTO oauth2_registered_client 
@@ -16,7 +17,7 @@ VALUES
  'authorization_code,refresh_token',
  'https://gbconnect.example.com/oauth/callback,https://gbconnect.example.com/oauth/callback2',
  'https://gbconnect.example.com/logout',
- 'openid,profile,FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13,FB=4_5_16;IntervalDuration=900;BlockDuration=daily;HistoryLength=7',
+ 'openid,profile,FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000,FB=4_5_16;IntervalDuration=900;BlockDuration=daily;HistoryLength=604800',
  '{"@class":"java.util.Collections$UnmodifiableMap","settings.client.require-proof-key":true,"settings.client.require-authorization-consent":true}',
  '{"@class":"java.util.Collections$UnmodifiableMap","settings.token.reuse-refresh-tokens":false,"settings.token.id-token-signature-algorithm":["org.springframework.security.oauth2.jose.jws.SignatureAlgorithm","RS256"],"settings.token.access-token-time-to-live":["java.time.Duration",21600.000000000],"settings.token.access-token-format":{"@class":"org.springframework.security.oauth2.server.authorization.settings.OAuth2TokenFormat","value":"reference"},"settings.token.refresh-token-time-to-live":["java.time.Duration",216000.000000000],"settings.token.authorization-code-time-to-live":["java.time.Duration",300.000000000]}',
  '4.0', 'high', 'active', 'migration_v3_0_0'),
@@ -55,7 +56,7 @@ VALUES
  'authorization_code,refresh_token',
  'com.example.espi://oauth/callback,https://mobile.example.com/oauth/callback',
  'com.example.espi://logout,https://mobile.example.com/logout',
- 'openid,profile,FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13',
+ 'openid,profile,FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000',
  '{"@class":"java.util.Collections$UnmodifiableMap","settings.client.require-proof-key":true,"settings.client.require-authorization-consent":true}',
  '{"@class":"java.util.Collections$UnmodifiableMap","settings.token.reuse-refresh-tokens":false,"settings.token.id-token-signature-algorithm":["org.springframework.security.oauth2.jose.jws.SignatureAlgorithm","RS256"],"settings.token.access-token-time-to-live":["java.time.Duration",3600.000000000],"settings.token.access-token-format":{"@class":"org.springframework.security.oauth2.server.authorization.settings.OAuth2TokenFormat","value":"reference"},"settings.token.refresh-token-time-to-live":["java.time.Duration",86400.000000000],"settings.token.authorization-code-time-to-live":["java.time.Duration",300.000000000]}',
  '4.0', 'high', 'active', 'migration_v3_0_0'),
@@ -68,7 +69,7 @@ VALUES
  'authorization_code,client_credentials,refresh_token',
  'http://localhost:3000/oauth/callback,https://test.example.com/oauth/callback',
  'http://localhost:3000/logout,https://test.example.com/logout',
- 'openid,profile,FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13,DataCustodian_Admin_Access',
+ 'openid,profile,FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000,DataCustodian_Admin_Access',
  '{"@class":"java.util.Collections$UnmodifiableMap","settings.client.require-proof-key":false,"settings.client.require-authorization-consent":false}',
  '{"@class":"java.util.Collections$UnmodifiableMap","settings.token.reuse-refresh-tokens":true,"settings.token.id-token-signature-algorithm":["org.springframework.security.oauth2.jose.jws.SignatureAlgorithm","RS256"],"settings.token.access-token-time-to-live":["java.time.Duration",3600.000000000],"settings.token.access-token-format":{"@class":"org.springframework.security.oauth2.server.authorization.settings.OAuth2TokenFormat","value":"reference"},"settings.token.refresh-token-time-to-live":["java.time.Duration",7200.000000000],"settings.token.authorization-code-time-to-live":["java.time.Duration",300.000000000]}',
  '4.0', 'standard', 'active', 'migration_v3_0_0');
@@ -93,7 +94,7 @@ VALUES
  'https://gbconnect.greenbuttonalliance.org/privacy',
  'GB_CONNECT_2024',
  '2.1.0',
- 'openid,profile,FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13,FB=4_5_16;IntervalDuration=900;BlockDuration=daily;HistoryLength=7',
+ 'openid,profile,FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000,FB=4_5_16;IntervalDuration=900;BlockDuration=daily;HistoryLength=604800',
  'authorization_code,refresh_token',
  'code',
  'client_secret_basic',
@@ -162,7 +163,7 @@ VALUES
  'https://mobile.example.com/privacy',
  'MOBILE_ESPI_2024',
  '4.2.1',
- 'openid,profile,FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13',
+ 'openid,profile,FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000',
  'authorization_code,refresh_token',
  'code',
  'none',
@@ -185,7 +186,7 @@ VALUES
  'https://test.example.com/privacy',
  'TEST_CLIENT_2024',
  '1.0.0',
- 'openid,profile,FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13,DataCustodian_Admin_Access',
+ 'openid,profile,FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000,DataCustodian_Admin_Access',
  'authorization_code,client_credentials,refresh_token',
  'code',
  'client_secret_basic',
@@ -224,7 +225,7 @@ VALUES
  'green-button-connect-client',
  'customer@example.com',
  '1.0',
- 'openid,profile,FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13',
+ 'openid,profile,FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000',
  '["usage_data", "billing_data", "meter_readings"]',
  '2 years',
  'web',
@@ -234,7 +235,7 @@ VALUES
  'mobile-customer-app',
  'mobile.user@example.com',
  '1.0',
- 'openid,profile,FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13',
+ 'openid,profile,FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000',
  '["usage_data", "meter_readings"]',
  '1 year',
  'mobile',
@@ -246,8 +247,8 @@ INSERT INTO oauth2_audit_log
  grant_type, ip_address, additional_data)
 VALUES 
 ('client_registration', 'green_button_connect_mydata', 'system', TRUE, 
- 'openid,profile,FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13',
- 'openid,profile,FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13',
+ 'openid,profile,FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000',
+ 'openid,profile,FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000',
  'registration', '127.0.0.1',
  '{"client_type": "web", "registration_method": "manual", "created_by": "migration"}'),
 
@@ -258,8 +259,8 @@ VALUES
  '{"client_type": "admin", "registration_method": "manual", "created_by": "migration"}'),
 
 ('client_registration', 'mobile_espi_customer_app', 'system', TRUE,
- 'openid,profile,FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13',
- 'openid,profile,FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13',
+ 'openid,profile,FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000',
+ 'openid,profile,FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000',
  'registration', '127.0.0.1',
  '{"client_type": "native", "registration_method": "manual", "created_by": "migration", "pkce_required": true}');
 

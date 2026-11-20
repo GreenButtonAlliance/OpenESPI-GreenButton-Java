@@ -30,8 +30,13 @@ import java.util.TreeSet;
  * Immutable value object for one parsed NAESB ESPI 4.0 OAuth scope string.
  *
  * <p>ESPI scope grammar is a {@code ;}-delimited list of {@code key=value} terms, e.g.
- * {@code FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13}. The {@code FB}
+ * {@code FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000}. The {@code FB}
  * term carries a {@code _}-delimited set of Function Block ids.</p>
+ *
+ * <p>{@code IntervalDuration} and {@code HistoryLength} are both in seconds (REQ.21.6.1.2.1,
+ * REQ.21.4.2.1.3.3). {@code HistoryLength} is the most history the Data Custodian makes available, so
+ * {@code 34128000} is 395 days (about 13 months) and {@code 31536000} is 365 days. It is not a month or
+ * day count: {@code HistoryLength=13} means 13 seconds.</p>
  *
  * <p>The parser is intentionally <strong>FB-agnostic</strong>: it carries whatever FB ids appear
  * in the string (including spec-deprecated or future ids) without consulting the catalog. Semantic
@@ -46,7 +51,7 @@ import java.util.TreeSet;
  * @param functionBlocks       FB ids from the {@code FB=} term, sorted ascending and immutable
  * @param intervalDuration     {@code IntervalDuration} term in seconds, or {@code null} if absent
  * @param blockDuration        {@code BlockDuration} term (e.g. {@code monthly}), or {@code null} if absent
- * @param historyLength        {@code HistoryLength} term, or {@code null} if absent
+ * @param historyLength        {@code HistoryLength} term in seconds, or {@code null} if absent
  * @param additionalParameters any other {@code key=value} terms (and bare tokens, with empty value),
  *                             insertion-ordered and immutable
  * @see FunctionBlock

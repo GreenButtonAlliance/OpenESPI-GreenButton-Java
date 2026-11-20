@@ -52,7 +52,7 @@ Check 'espi_admin -> authserver.admin' $true ([bool]$asAdmin)
 Check 'espi_registrar -> client.create (RFC 7591 initial access token)' $true ([bool]$registrar)
 Check 'third_party cannot get a customer FB scope with client_credentials' 400 `
     (Status "$AS/oauth2/token" (Basic 'third_party' 'tp-secret') 'POST' `
-        @{ grant_type = 'client_credentials'; scope = 'FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13' })
+        @{ grant_type = 'client_credentials'; scope = 'FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000' })
 
 Write-Host '== Introspection'
 $introspection = try {
