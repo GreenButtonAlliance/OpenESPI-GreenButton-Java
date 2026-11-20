@@ -217,7 +217,7 @@ public class AuthorizeContinueController {
 	/**
 	 * Split the approved scope into Spring AS scope tokens using the same rule Spring AS applies to
 	 * the replayed {@code scope} parameter: space-delimited per RFC 6749 &sect;3.3. An ESPI scope
-	 * string such as {@code FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13}
+	 * string such as {@code FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000}
 	 * is a <em>single</em> scope token &mdash; its {@code ;} separates that scope's parameters, not
 	 * scopes &mdash; so it must be stored whole. Splitting on {@code ;} made the consent set
 	 * disjoint from the requested set, and Spring AS looped back to {@code /authorize/delegate}

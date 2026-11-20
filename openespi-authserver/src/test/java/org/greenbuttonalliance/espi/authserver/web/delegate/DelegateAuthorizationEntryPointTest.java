@@ -32,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("DelegateAuthorizationEntryPoint (#232)")
 class DelegateAuthorizationEntryPointTest {
 
-	private static final String SCOPE = "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13";
+	private static final String SCOPE = "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000";
 
 	private final DelegateAuthorizationEntryPoint entryPoint = new DelegateAuthorizationEntryPoint();
 

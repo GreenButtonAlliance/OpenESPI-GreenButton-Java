@@ -24,7 +24,10 @@ import org.greenbuttonalliance.espi.common.repositories.usage.ApplicationInforma
 import org.greenbuttonalliance.espi.common.repositories.usage.UsagePointRepository;
 import org.greenbuttonalliance.espi.common.scope.EspiScope;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -32,6 +35,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.context.MessageSource;
+import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.context.support.StaticMessageSource;
 
 import java.util.List;
@@ -166,6 +170,45 @@ class AuthorizeScreenServiceTest {
 		assertThat(vm.piiOptions()).extracting(AuthorizeScreenViewModel.PiiOption::fbId).containsExactly(54);
 	}
 
+	@ParameterizedTest(name = "HistoryLength={0}")
+	@DisplayName("#284: HistoryLength seconds are shown to the customer in months, years or days")
+	@CsvSource(delimiter = '|', value = {
+			"34128000 | This application may receive energy data from up to the last 13 months (395 days).",
+			"31536000 | This application may receive energy data from up to the last year (365 days).",
+			"63072000 | This application may receive energy data from up to the last 2 years (730 days).",
+			"2592000  | This application may receive energy data from up to the last 30 days.",
+			"604800   | This application may receive energy data from up to the last 7 days.",
+			"86400    | This application may receive energy data from up to the last day.",
+			"13       | This application may receive energy data from up to the last 13 seconds."})
+	void buildViewModel_shows_history_length_in_calendar_units(String historyLength, String expected) {
+		AuthorizeScreenService realMessages = new AuthorizeScreenService(
+				applicationInformationRepository, usagePointRepository, projectMessages());
+		String scope = "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=" + historyLength;
+
+		AuthorizeScreenViewModel vm = realMessages.buildViewModel(appWithRegisteredScopes(scope), scope, 42L, "tok", LOCALE);
+
+		assertThat(vm.historyNote()).isEqualTo(expected);
+	}
+
+	@Test
+	void buildViewModel_without_history_length_says_all_history() {
+		AuthorizeScreenService realMessages = new AuthorizeScreenService(
+				applicationInformationRepository, usagePointRepository, projectMessages());
+
+		AuthorizeScreenViewModel vm = realMessages.buildViewModel(appWithRegisteredScopes("FB=4_5_15"), "FB=4_5_15", 42L, "tok", LOCALE);
+
+		assertThat(vm.historyNote()).isEqualTo("This application may receive all of your available energy data history.");
+	}
+
+	@Test
+	void buildViewModel_PII_only_grant_has_no_history_note() {
+		String scope = "FB=4_51_54;HistoryLength=34128000";
+
+		AuthorizeScreenViewModel vm = service.buildViewModel(appWithRegisteredScopes(scope), scope, 42L, "tok", LOCALE);
+
+		assertThat(vm.historyNote()).isNull();
+	}
+
 	@Test
 	void computeApprovedScope_narrows_commodity_to_selected_kinds() {
 		UUID elec = UUID.randomUUID();
@@ -190,7 +233,7 @@ class AuthorizeScreenServiceTest {
 	@Test
 	void computeApprovedScope_full_approval_returns_the_requested_scope_unchanged() {
 		UUID elec = UUID.randomUUID();
-		String requested = "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13";
+		String requested = "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000";
 
 		assertThat(service.computeApprovedScope(requested, Set.of(elec), Set.of(),
 				List.of(usagePoint(elec, ServiceCategory.ELECTRICITY))))
@@ -249,6 +292,15 @@ class AuthorizeScreenServiceTest {
 		up.setId(id);
 		up.setServiceCategory(category);
 		return up;
+	}
+
+	/** The Data Custodian's own {@code messages.properties}, so the customer-facing wording itself is tested. */
+	private static MessageSource projectMessages() {
+		ResourceBundleMessageSource src = new ResourceBundleMessageSource();
+		src.setBasename("messages");
+		src.setDefaultEncoding("UTF-8");
+		src.setFallbackToSystemLocale(false);
+		return src;
 	}
 
 	private static MessageSource staticMessages() {

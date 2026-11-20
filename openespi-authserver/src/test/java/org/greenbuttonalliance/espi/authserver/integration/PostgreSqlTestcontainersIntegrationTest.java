@@ -269,7 +269,7 @@ class PostgreSqlTestcontainersIntegrationTest {
                     .redirectUri("https://example.com/callback")
                     .scope("openid")
                     .scope("profile")
-                    .scope("FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13")
+                    .scope("FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000")
                     .clientSettings(ClientSettings.builder()
                             .requireAuthorizationConsent(true)
                             .requireProofKey(false)
@@ -301,8 +301,8 @@ class PostgreSqlTestcontainersIntegrationTest {
             // scope token cannot contain a space, so RegisteredClient rejects one space-separated string.
             List<String> largeScopes = List.of(
                     "scope1", "scope2", "scope3", "scope4", "scope5", "scope6", "scope7", "scope8", "scope9", "scope10",
-                    "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13",
-                    "FB=4_5_16;IntervalDuration=900;BlockDuration=daily;HistoryLength=7",
+                    "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000",
+                    "FB=4_5_16;IntervalDuration=900;BlockDuration=daily;HistoryLength=604800",
                     "DataCustodian_Admin_Access", "ThirdParty_Admin_Access", "Customer_Data_Access");
 
             RegisteredClient client = RegisteredClient.withId("test-large-text")
@@ -454,8 +454,8 @@ class PostgreSqlTestcontainersIntegrationTest {
                     .redirectUri("https://example.com/callback")
                     .scope("openid")
                     .scope("profile")
-                    .scope("FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13")
-                    .scope("FB=4_5_16;IntervalDuration=900;BlockDuration=daily;HistoryLength=7")
+                    .scope("FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000")
+                    .scope("FB=4_5_16;IntervalDuration=900;BlockDuration=daily;HistoryLength=604800")
                     .scope("DataCustodian_Admin_Access")
                     .build();
 
@@ -465,8 +465,8 @@ class PostgreSqlTestcontainersIntegrationTest {
 
             // Then
             assertThat(retrieved.getScopes())
-                    .contains("FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13")
-                    .contains("FB=4_5_16;IntervalDuration=900;BlockDuration=daily;HistoryLength=7")
+                    .contains("FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000")
+                    .contains("FB=4_5_16;IntervalDuration=900;BlockDuration=daily;HistoryLength=604800")
                     .contains("DataCustodian_Admin_Access");
         }
     }
@@ -505,7 +505,7 @@ class PostgreSqlTestcontainersIntegrationTest {
                     .contains(AuthorizationGrantType.REFRESH_TOKEN);
             assertThat(thirdParty.getScopes())
                     .contains("openid", "profile")
-                    .contains("FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13");
+                    .contains("FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000");
             assertThat(thirdParty.getTokenSettings().getAccessTokenFormat())
                     .isEqualTo(OAuth2TokenFormat.REFERENCE);
         }
@@ -602,7 +602,7 @@ class PostgreSqlTestcontainersIntegrationTest {
                 .postLogoutRedirectUri("https://example.com/logout")
                 .scope("openid")
                 .scope("profile")
-                .scope("FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13")
+                .scope("FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000")
                 .clientSettings(ClientSettings.builder()
                         .requireAuthorizationConsent(true)
                         .build())

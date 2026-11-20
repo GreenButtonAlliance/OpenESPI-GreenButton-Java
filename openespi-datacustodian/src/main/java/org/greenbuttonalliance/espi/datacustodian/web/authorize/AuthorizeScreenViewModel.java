@@ -36,7 +36,10 @@ import java.util.UUID;
  *                              checks each individually (default-unchecked).
  * @param implicitBaseLabels    Display-only footer note for FB 1 / 4 / 51 that are part of the
  *                              grant but are not customer-selectable (structural prerequisites).
- * @param handoffToken          The signed outbound handoff token, round-tripped through the form
+ * @param historyNote           Display-only sentence on how far back the energy data goes: the
+ *                              scope's {@code HistoryLength} (seconds) in months, years or days
+ *                              (#284); {@code null} when the grant has no energy data.
+ * @param handoffToken         The signed outbound handoff token, round-tripped through the form
  *                              as a hidden field so the POST handler can re-verify and rebuild the
  *                              return payload.
  */
@@ -45,6 +48,7 @@ public record AuthorizeScreenViewModel(
 		List<CommoditySection> commoditySections,
 		List<PiiOption> piiOptions,
 		List<String> implicitBaseLabels,
+		String historyNote,
 		String handoffToken
 ) {
 

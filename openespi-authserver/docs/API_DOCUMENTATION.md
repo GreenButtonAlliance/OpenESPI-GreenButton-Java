@@ -77,7 +77,7 @@ Accept: application/json
       "scopes": [
         "openid",
         "profile",
-        "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"
+        "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000"
       ],
       "authorizationGrantTypes": [
         "authorization_code",
@@ -137,7 +137,7 @@ Accept: application/json
   "scopes": [
     "openid",
     "profile",
-    "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"
+    "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000"
   ],
   "authorizationGrantTypes": [
     "authorization_code",
@@ -178,7 +178,7 @@ Accept: application/json
     "openid",
     "profile",
     "email",
-    "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"
+    "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000"
   ],
   "authorizationGrantTypes": [
     "authorization_code",
@@ -214,7 +214,7 @@ Accept: application/json
     "openid",
     "profile",
     "email",
-    "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"
+    "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000"
   ],
   "authorizationGrantTypes": [
     "authorization_code",
@@ -428,7 +428,7 @@ Accept: application/json
 {
   "customerId": "customer-123",
   "scopes": [
-    "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"
+    "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000"
   ]
 }
 ```
@@ -439,7 +439,7 @@ Accept: application/json
   "customerId": "customer-123",
   "scopeValidation": [
     {
-      "scope": "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13",
+      "scope": "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000",
       "valid": true,
       "accessLevel": "READ",
       "restrictions": [],
@@ -461,7 +461,7 @@ Accept: application/json
   "customerId": "customer-123",
   "thirdPartyId": "espi-third-party-001",
   "scopes": [
-    "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"
+    "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000"
   ],
   "usagePointIds": ["up-001"],
   "expirationDate": "2025-01-16T00:00:00Z"
@@ -475,7 +475,7 @@ Accept: application/json
   "customerId": "customer-123",
   "thirdPartyId": "espi-third-party-001",
   "scopes": [
-    "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"
+    "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000"
   ],
   "usagePointIds": ["up-001"],
   "status": "ACTIVE",
@@ -563,7 +563,7 @@ access_token=eyJhbGciOiJSUzI1NiIs...
   "account_number": "ACC-789456",
   "service_territory": "Northern California",
   "espi_scopes": [
-    "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"
+    "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000"
   ],
   "datacustodian_grant_id": "grant-456",
   "authorized_usage_points": ["up-001", "up-002"],
@@ -590,7 +590,7 @@ access_token=eyJhbGciOiJSUzI1NiIs...
   "iat": "2024-01-15T10:00:00Z",
   "exp": "2024-01-15T16:00:00Z",
   "auth_time": "2024-01-15T10:00:00Z",
-  "scope": "openid profile email FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"
+  "scope": "openid profile email FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000"
 }
 ```
 
@@ -613,7 +613,7 @@ access_token=eyJhbGciOiJSUzI1NiIs...
 
 **Example**:
 ```http
-GET /oauth2/authorize?response_type=code&client_id=espi-third-party-001&redirect_uri=https://app.example.com/callback&scope=openid%20profile%20FB%3D4_5_15%3BIntervalDuration%3D3600%3BBlockDuration%3Dmonthly%3BHistoryLength%3D13&state=xyz123&code_challenge=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk&code_challenge_method=S256
+GET /oauth2/authorize?response_type=code&client_id=espi-third-party-001&redirect_uri=https://app.example.com/callback&scope=openid%20profile%20FB%3D4_5_15%3BIntervalDuration%3D3600%3BBlockDuration%3Dmonthly%3BHistoryLength%3D34128000&state=xyz123&code_challenge=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk&code_challenge_method=S256
 ```
 
 ### Token Endpoint
@@ -651,7 +651,7 @@ grant_type=refresh_token&refresh_token=def456
   "token_type": "Bearer",
   "expires_in": 3600,
   "refresh_token": "def456",
-  "scope": "openid profile FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13",
+  "scope": "openid profile FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000",
   "id_token": "eyJhbGciOiJSUzI1NiIs..."
 }
 ```
@@ -682,7 +682,7 @@ token=eyJhbGciOiJSUzI1NiIs...
   "iss": "https://authorization.greenbuttonalliance.org",
   "exp": 1642262400,
   "iat": 1642258800,
-  "scope": "openid profile FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13",
+  "scope": "openid profile FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000",
   "client_id": "espi-third-party-001",
   "token_type": "Bearer"
 }
@@ -819,8 +819,8 @@ FB=x_y_z;IntervalDuration=nnn;BlockDuration=xxx;HistoryLength=nn
 ```
 
 **Examples**:
-- `FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13`
-- `FB=4_5_15;IntervalDuration=900;BlockDuration=daily;HistoryLength=30`
+- `FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000`
+- `FB=4_5_15;IntervalDuration=900;BlockDuration=daily;HistoryLength=2592000`
 
 ### Scope Parameters
 
@@ -829,7 +829,7 @@ FB=x_y_z;IntervalDuration=nnn;BlockDuration=xxx;HistoryLength=nn
 | `FB` | Function Block version | `4_5_15`, `4_5_16`, etc. |
 | `IntervalDuration` | Data interval in seconds | `900` (15min), `3600` (1hr) |
 | `BlockDuration` | Billing period | `monthly`, `daily`, `hourly` |
-| `HistoryLength` | Historical data periods | Number of periods |
+| `HistoryLength` | Most history the Data Custodian makes available, **in seconds** (REQ.21.6.1.2.1) | `604800` (7 days), `2592000` (30 days), `31536000` (365 days), `34128000` (395 days). Not a month or day count: `13` means 13 seconds |
 
 ### Data Rights
 

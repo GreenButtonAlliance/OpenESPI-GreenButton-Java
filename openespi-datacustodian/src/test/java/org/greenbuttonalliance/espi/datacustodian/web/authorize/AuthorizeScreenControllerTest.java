@@ -198,6 +198,22 @@ class AuthorizeScreenControllerTest {
 	}
 
 	@Test
+	void GET_shows_history_length_in_months_not_seconds() throws Exception {
+		// #284: HistoryLength is seconds on the wire (REQ.21.6.1.2.1); the customer sees calendar units.
+		String token = codec.encode(SignedHandoff.Outbound.of(
+				"corr-4h", Instant.now(), Instant.now().plusSeconds(120), UUID.randomUUID().toString(),
+				TP_CLIENT_ID, "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000",
+				"https://as.example.com/continue"));
+
+		mockMvc.perform(get("/oauth/authorize-screen")
+						.param("handoff", token)
+						.with(user(CUSTOMER_USERNAME).roles("USER")))
+				.andExpect(status().isOk())
+				.andExpect(content().string(org.hamcrest.Matchers.containsString(
+						"This application may receive energy data from up to the last 13 months (395 days).")));
+	}
+
+	@Test
 	void POST_allow_redirects_to_AS_with_signed_return_handoff_carrying_approved_scope() throws Exception {
 		String token = codec.encode(SignedHandoff.Outbound.of(
 				"corr-5", Instant.now(), Instant.now().plusSeconds(120), UUID.randomUUID().toString(),

@@ -535,7 +535,7 @@ class OAuthAdminControllerTest {
                 .redirectUri("https://example.com/callback")
                 .scope("openid")
                 .scope("profile")
-                .scope("FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13")
+                .scope("FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000")
                 .scope("DataCustodian_Admin_Access")
                 .build();
     }

@@ -43,7 +43,7 @@ check "espi_admin -> authserver.admin" yes "$([[ -n "$AS_ADMIN" ]] && echo yes |
 check "espi_registrar -> client.create (RFC 7591 initial access token)" yes "$([[ -n "$REGISTRAR" ]] && echo yes || echo no)"
 check "third_party cannot get a customer FB scope with client_credentials" 400 \
   "$(status -u third_party:tp-secret -d grant_type=client_credentials \
-      --data-urlencode 'scope=FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13' "$AS/oauth2/token")"
+      --data-urlencode 'scope=FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000' "$AS/oauth2/token")"
 
 echo "== Introspection"
 active=$(curl -s -u datacustodian:datacustodian-secret -d "token=$DC_ADMIN" "$AS/oauth2/introspect")

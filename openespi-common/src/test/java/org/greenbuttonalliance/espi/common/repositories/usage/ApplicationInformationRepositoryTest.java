@@ -67,7 +67,7 @@ class ApplicationInformationRepositoryTest extends BaseRepositoryTest {
         scopes.add("FB=1_3_4_5_13_14_39_40");
         scopes.add("IntervalDuration=3600");
         scopes.add("BlockDuration=monthly");
-        scopes.add("HistoryLength=13");
+        scopes.add("HistoryLength=34128000");
         app.setScope(scopes);
         
         // Add grant types

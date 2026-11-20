@@ -36,10 +36,10 @@ class EspiScopeTest {
 	@Test
 	@DisplayName("parses the full ESPI scope grammar")
 	void parsesFullGrammar() {
-		EspiScope scope = EspiScope.parse("FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13");
+		EspiScope scope = EspiScope.parse("FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000");
 
 		assertThat(scope)
-				.satisfies(s -> assertThat(s.raw()).isEqualTo("FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"))
+				.satisfies(s -> assertThat(s.raw()).isEqualTo("FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000"))
 				.extracting(
 						EspiScope::functionBlocks,
 						EspiScope::intervalDuration,
@@ -50,7 +50,7 @@ class EspiScopeTest {
 						java.util.Set.of(4, 5, 15),
 						3600,
 						"monthly",
-						13,
+						34_128_000, // seconds (REQ.21.6.1.2.1): 395 days
 						java.util.Map.of());
 	}
 
@@ -75,11 +75,11 @@ class EspiScopeTest {
 	@Test
 	@DisplayName("recognized term keys are matched case-insensitively")
 	void keysAreCaseInsensitive() {
-		EspiScope scope = EspiScope.parse("fb=4_5;intervalduration=900;BLOCKDURATION=daily;HistoryLength=7");
+		EspiScope scope = EspiScope.parse("fb=4_5;intervalduration=900;BLOCKDURATION=daily;HistoryLength=604800");
 
 		assertThat(scope)
 				.extracting(EspiScope::functionBlocks, EspiScope::intervalDuration, EspiScope::blockDuration, EspiScope::historyLength)
-				.containsExactly(java.util.Set.of(4, 5), 900, "daily", 7);
+				.containsExactly(java.util.Set.of(4, 5), 900, "daily", 604_800);
 		assertThat(scope.additionalParameters()).isEmpty();
 	}
 
@@ -126,6 +126,22 @@ class EspiScopeTest {
 		assertThatExceptionOfType(IllegalArgumentException.class)
 				.isThrownBy(() -> EspiScope.parse("FB=4;IntervalDuration=hourly"))
 				.withMessageContaining("IntervalDuration");
+	}
+
+	@ParameterizedTest(name = "HistoryLength={0} is rejected")
+	@DisplayName("a zero or negative HistoryLength is rejected (it is a number of seconds, REQ.21.6.1.2.1)")
+	@ValueSource(strings = {"0", "-1", "-34128000"})
+	void rejectsNonPositiveHistoryLength(String historyLength) {
+		assertThatExceptionOfType(IllegalArgumentException.class)
+				.isThrownBy(() -> EspiScope.parse("FB=4_5_15;IntervalDuration=3600;HistoryLength=" + historyLength))
+				.withMessageContaining("HistoryLength")
+				.withMessageContaining("positive");
+	}
+
+	@Test
+	@DisplayName("a one-second HistoryLength is accepted (no minimum beyond positive, #284)")
+	void acceptsOneSecondHistoryLength() {
+		assertThat(EspiScope.parse("FB=4_5_15;HistoryLength=1").historyLength()).isEqualTo(1);
 	}
 
 	@Test

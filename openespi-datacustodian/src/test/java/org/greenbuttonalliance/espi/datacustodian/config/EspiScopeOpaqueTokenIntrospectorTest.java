@@ -54,14 +54,14 @@ class EspiScopeOpaqueTokenIntrospectorTest {
 	void customerFbScopeMapsToFbAuthorities() {
 		OpaqueTokenIntrospector introspector = new EspiScopeOpaqueTokenIntrospector(delegateWithScope(
 				List.of("openid", "profile",
-						"FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13")));
+						"FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000")));
 
 		List<String> authorities = authorities(introspector.introspect("tok"));
 
 		assertThat(authorities)
 				.contains("FB_4", "FB_5", "FB_15")     // function blocks
 				.contains("SCOPE_openid", "SCOPE_profile") // non-FB scopes pass through
-				.doesNotContain("SCOPE_FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13");
+				.doesNotContain("SCOPE_FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000");
 	}
 
 	@Test

@@ -28,7 +28,7 @@ POST /userinfo
 - `email`
 - `phone`
 - `address`
-- ESPI scopes (e.g., `FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13`)
+- ESPI scopes (e.g., `FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000`)
 
 ## Request Examples
 
@@ -87,7 +87,7 @@ access_token=eyJhbGciOiJSUzI1NiIs...
   "account_number": "ACC-789456",
   "service_territory": "Northern California",
   "espi_scopes": [
-    "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"
+    "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000"
   ],
   "datacustodian_grant_id": "grant-456",
   "authorized_usage_points": ["up-001", "up-002"],
@@ -114,7 +114,7 @@ access_token=eyJhbGciOiJSUzI1NiIs...
   "iat": "2024-01-15T10:00:00Z",
   "exp": "2024-01-15T16:00:00Z",
   "auth_time": "2024-01-15T10:00:00Z",
-  "scope": "openid profile email FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"
+  "scope": "openid profile email FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000"
 }
 ```
 
@@ -361,7 +361,7 @@ VALUES ('custom_scope', 'custom_claim', 'Custom claim description', false, 'user
 @Test
 public void testUserInfoWithESPIScopes() {
     // Test UserInfo response with ESPI scopes
-    String accessToken = createTokenWithScopes("openid", "profile", "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13");
+    String accessToken = createTokenWithScopes("openid", "profile", "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000");
     
     ResponseEntity<Map> response = restTemplate.exchange(
         "/userinfo",

@@ -327,7 +327,7 @@ class BatchSubscriptionIntegrationTest {
 	@DisplayName("an FB scope that does not parse is refused, not read as 'no HistoryLength'")
 	void unreadable_scope_is_refused() throws Exception {
 		mockMvc.perform(get(BASE + "/Batch/Subscription/" + SUBSCRIPTION_A)
-						.with(customer(SUBSCRIPTION_A, "FB=4_x;HistoryLength=13")))
+						.with(customer(SUBSCRIPTION_A, "FB=4_x;HistoryLength=34128000")))
 				.andExpect(status().isForbidden());
 	}
 

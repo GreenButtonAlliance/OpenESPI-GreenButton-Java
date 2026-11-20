@@ -160,7 +160,7 @@ Validate access scope for specific usage points.
 ```json
 {
   "customer_id": "customer-123",
-  "scope": "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13",
+  "scope": "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000",
   "usage_point_ids": ["up-001", "up-002"]
 }
 ```
@@ -169,7 +169,7 @@ Validate access scope for specific usage points.
 ```json
 {
   "valid": true,
-  "granted_scope": "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13",
+  "granted_scope": "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000",
   "authorized_usage_points": ["up-001", "up-002"],
   "denied_usage_points": [],
   "reasons": []
@@ -187,7 +187,7 @@ Create authorization grants in the DataCustodian.
 {
   "customer_id": "customer-123",
   "client_id": "third_party_app",
-  "scope": "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13",
+  "scope": "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000",
   "usage_point_ids": ["up-001", "up-002"]
 }
 ```
@@ -198,7 +198,7 @@ Create authorization grants in the DataCustodian.
   "grant_id": "grant-456",
   "customer_id": "customer-123",
   "client_id": "third_party_app",
-  "scope": "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13",
+  "scope": "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000",
   "usage_point_ids": ["up-001", "up-002"],
   "granted_at": "2024-01-15T10:30:00Z",
   "expires_at": "2025-01-15T10:30:00Z"

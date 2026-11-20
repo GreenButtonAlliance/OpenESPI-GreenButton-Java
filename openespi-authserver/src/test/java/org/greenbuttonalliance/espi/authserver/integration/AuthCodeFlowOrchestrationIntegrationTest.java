@@ -81,7 +81,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class AuthCodeFlowOrchestrationIntegrationTest extends AbstractAuthserverIntegrationTest {
 
 	private static final String REDIRECT_URI = "https://tp.example/cb";
-	private static final String SCOPE = "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13";
+	private static final String SCOPE = "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000";
 	private static final String CUSTOMER_ID = "42";
 
 	@Autowired
@@ -232,14 +232,14 @@ class AuthCodeFlowOrchestrationIntegrationTest extends AbstractAuthserverIntegra
 	@ParameterizedTest(name = "requested {0}, customer approved {1}")
 	@CsvSource(delimiter = '|', value = {
 			// customer drops FB 15 from the registered scope
-			"FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"
-					+ "|FB=4_5;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13",
+			"FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000"
+					+ "|FB=4_5;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000",
 			// Third Party requests FB 4, 5 only; the customer approves all of it
-			"FB=4_5;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"
-					+ "|FB=4_5;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13",
+			"FB=4_5;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000"
+					+ "|FB=4_5;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000",
 			// Third Party requests FB 4, 5; the customer narrows further to FB 5
-			"FB=4_5;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"
-					+ "|FB=5;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"})
+			"FB=4_5;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000"
+					+ "|FB=5;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000"})
 	@DisplayName("narrowed scope (#211): code, token, introspection and back-channel carry the narrowed scope")
 	void narrowedScopeCompletesWithTheNarrowedScope(String requested, String narrowed) throws Exception {
 		String suffix = UUID.randomUUID().toString().substring(0, 8);
@@ -300,15 +300,15 @@ class AuthCodeFlowOrchestrationIntegrationTest extends AbstractAuthserverIntegra
 	@Test
 	@DisplayName("Third Party requests a narrowing of its registered scope (#211): delegated to the customer")
 	void thirdPartyNarrowedRequestIsDelegatedToTheCustomer() throws Exception {
-		assertThat(authorizeLocation("FB=4_5;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"))
+		assertThat(authorizeLocation("FB=4_5;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000"))
 				.contains("/authorize/delegate")
 				.doesNotContain("error=");
 	}
 
 	@ParameterizedTest
 	@ValueSource(strings = {
-			"FB=1_4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13", // adds FB 1
-			"FB=4_5;IntervalDuration=900;BlockDuration=monthly;HistoryLength=13"})      // changes a parameter
+			"FB=1_4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000", // adds FB 1
+			"FB=4_5;IntervalDuration=900;BlockDuration=monthly;HistoryLength=34128000"})      // changes a parameter
 	@DisplayName("Third Party requests a scope that is not a narrowing of its registration (#211): invalid_scope")
 	void thirdPartyWidenedRequestIsInvalidScope(String scope) throws Exception {
 		assertThat(authorizeLocation(scope)).startsWith(REDIRECT_URI).contains("error=invalid_scope");

@@ -82,7 +82,7 @@ class OAuth2DynamicClientRegistrationIntegrationTest extends AbstractAuthserverI
     private static final String REGISTRAR_SECRET = "registrar-test-secret";
     /** A JWS/JWT compact serialization: three base64url segments separated by dots. */
     private static final String JWT_PATTERN = "^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]*$";
-    private static final String ESPI_SCOPE = "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13";
+    private static final String ESPI_SCOPE = "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000";
     private static final String REDIRECT_URI = "https://dcr-tp.example/cb";
 
     @Autowired

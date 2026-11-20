@@ -96,13 +96,14 @@ public class OAuth2ClientManagementController {
     private final ClientMetricsService clientMetricsService;
     private final SecureRandom secureRandom = new SecureRandom();
 
-    // ESPI 4.0 compliant scopes
+    // ESPI 4.0 compliant scopes. HistoryLength is in seconds (REQ.21.6.1.2.1):
+    // 34128000 = 395 days (about 13 months), 604800 = 7 days.
     private static final Set<String> ESPI_SCOPES = Set.of(
         "openid", "profile", "email",
-        "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13",
-        "FB=4_5_15;IntervalDuration=900;BlockDuration=monthly;HistoryLength=13",
-        "FB=4_5_15;IntervalDuration=3600;BlockDuration=daily;HistoryLength=7",
-        "FB=4_5_16;IntervalDuration=900;BlockDuration=daily;HistoryLength=7",
+        "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000",
+        "FB=4_5_15;IntervalDuration=900;BlockDuration=monthly;HistoryLength=34128000",
+        "FB=4_5_15;IntervalDuration=3600;BlockDuration=daily;HistoryLength=604800",
+        "FB=4_5_16;IntervalDuration=900;BlockDuration=daily;HistoryLength=604800",
         "FB=34_35",   // Third Party client access token (client_credentials)
         "FB=36_40",   // registration access token renewal
         "DataCustodian_Admin_Access",
@@ -303,7 +304,7 @@ public class OAuth2ClientManagementController {
                 // Default ESPI scopes
                 clientBuilder.scope("openid")
                            .scope("profile")
-                           .scope("FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13");
+                           .scope("FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000");
             }
 
             // Configure client settings

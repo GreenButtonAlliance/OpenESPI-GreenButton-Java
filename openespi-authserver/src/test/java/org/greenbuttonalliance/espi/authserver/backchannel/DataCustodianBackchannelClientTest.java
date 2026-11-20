@@ -78,7 +78,7 @@ class DataCustodianBackchannelClientTest {
 
 		BackchannelResponse response = client.provision(new BackchannelRequest(
 				"corr-7f3a1c20", "third_party",
-				"FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13",
+				"FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000",
 				42L, List.of(UP_1)));
 
 		assertThat(response)

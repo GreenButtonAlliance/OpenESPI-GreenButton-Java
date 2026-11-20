@@ -72,7 +72,7 @@ class AuthorizeContinueControllerTest {
 
 	private static final String SIGNING_KEY = "test-signing-key-must-be-at-least-32-chars-long";
 	private static final String ESPI_SCOPE =
-			"FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13";
+			"FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000";
 
 	@Mock
 	private HandoffNonceService nonceService;
@@ -119,7 +119,7 @@ class AuthorizeContinueControllerTest {
 					.andExpect(status().is3xxRedirection())
 					.andExpect(redirectedUrl(
 							"/oauth2/authorize?response_type=code&client_id=tp-1&redirect_uri=https://tp.example/cb"
-									+ "&scope=FB%3D4_5_15;IntervalDuration%3D3600;BlockDuration%3Dmonthly;HistoryLength%3D13"
+									+ "&scope=FB%3D4_5_15;IntervalDuration%3D3600;BlockDuration%3Dmonthly;HistoryLength%3D34128000"
 									+ "&state=tp-state-1"));
 
 			verify(nonceService).consume(any(), any());
@@ -139,7 +139,7 @@ class AuthorizeContinueControllerTest {
 		@DisplayName("space-separated scopes: each ESPI scope string is stored whole as its own consent scope")
 		void spaceSeparatedScopesAreSeparateConsentScopes() throws Exception {
 			String cid = "corr-allow-3";
-			String second = "FB=1_3_4_5_13_14_39;IntervalDuration=900;BlockDuration=daily;HistoryLength=7";
+			String second = "FB=1_3_4_5_13_14_39;IntervalDuration=900;BlockDuration=daily;HistoryLength=604800";
 			delegationStateService.save(cid, "tp-1", "https://tp.example/cb", "tp-state-1",
 					ESPI_SCOPE + " " + second);
 			when(registeredClientRepository.findByClientId("tp-1")).thenReturn(client(ESPI_SCOPE, second));
@@ -156,7 +156,7 @@ class AuthorizeContinueControllerTest {
 		@DisplayName("narrowed approved scope (#211): recorded as consent and replayed as the effective scope")
 		void narrowedApprovedScopeIsConsentedAndReplayed() throws Exception {
 			String cid = "corr-allow-narrow";
-			String narrowed = "FB=4_5;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13";
+			String narrowed = "FB=4_5;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000";
 			delegationStateService.save(cid, "tp-1", "https://tp.example/cb", "tp-state-1", ESPI_SCOPE);
 			when(registeredClientRepository.findByClientId("tp-1")).thenReturn(client(ESPI_SCOPE));
 
@@ -164,7 +164,7 @@ class AuthorizeContinueControllerTest {
 					.andExpect(status().is3xxRedirection())
 					.andExpect(redirectedUrl(
 							"/oauth2/authorize?response_type=code&client_id=tp-1&redirect_uri=https://tp.example/cb"
-									+ "&scope=FB%3D4_5;IntervalDuration%3D3600;BlockDuration%3Dmonthly;HistoryLength%3D13"
+									+ "&scope=FB%3D4_5;IntervalDuration%3D3600;BlockDuration%3Dmonthly;HistoryLength%3D34128000"
 									+ "&state=tp-state-1"));
 
 			assertThat(savedConsent().getScopes()).containsExactly(narrowed);
@@ -172,8 +172,8 @@ class AuthorizeContinueControllerTest {
 
 		@ParameterizedTest
 		@ValueSource(strings = {
-				"FB=1_4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13", // adds FB 1
-				"FB=4_5;IntervalDuration=900;BlockDuration=monthly;HistoryLength=13",       // changes a parameter
+				"FB=1_4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000", // adds FB 1
+				"FB=4_5;IntervalDuration=900;BlockDuration=monthly;HistoryLength=34128000",       // changes a parameter
 				"FB=4_5_15"})                                                               // drops parameters
 		@DisplayName("approved scope that is not a narrowing of the request (#211): 400 with no consent write")
 		void approvedScopeThatWidensTheRequestIs400(String approved) throws Exception {

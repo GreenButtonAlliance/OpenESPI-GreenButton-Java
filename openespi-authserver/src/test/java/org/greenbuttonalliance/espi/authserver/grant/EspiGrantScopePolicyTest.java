@@ -49,7 +49,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DisplayName("ESPI per-grant scope policy (#251)")
 class EspiGrantScopePolicyTest {
 
-	private static final String CUSTOMER_SCOPE = "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13";
+	private static final String CUSTOMER_SCOPE = "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000";
 
 	/** A client registered for both grants and both kinds of scope: the case Spring alone would allow. */
 	private static final RegisteredClient CLIENT = RegisteredClient.withId("id-1")
@@ -132,8 +132,8 @@ class EspiGrantScopePolicyTest {
 	}
 
 	@ParameterizedTest
-	@ValueSource(strings = {"FB=4_5;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13",
-			"FB=15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13"})
+	@ValueSource(strings = {"FB=4_5;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000",
+			"FB=15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000"})
 	@DisplayName("authorization_code (#211): a narrowing of a registered scope is allowed, no prior consent needed")
 	void authorizationCodeAllowsNarrowing(String narrowed) {
 		assertThatCode(() -> EspiGrantScopePolicy.authorizationCodeValidator()
@@ -142,8 +142,8 @@ class EspiGrantScopePolicyTest {
 	}
 
 	@ParameterizedTest
-	@ValueSource(strings = {"FB=1_4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13",
-			"FB=4_5;IntervalDuration=900;BlockDuration=monthly;HistoryLength=13", "FB=4_5",
+	@ValueSource(strings = {"FB=1_4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000",
+			"FB=4_5;IntervalDuration=900;BlockDuration=monthly;HistoryLength=34128000", "FB=4_5",
 			"FB=35", "FB=40"}) // narrowings of the registered administrative FB=34_35 and FB=36_40
 	@DisplayName("authorization_code (#211): a scope that widens or changes the registered scope is invalid_scope")
 	void authorizationCodeRejectsNonNarrowing(String scope) {
@@ -154,19 +154,19 @@ class EspiGrantScopePolicyTest {
 	}
 
 	@ParameterizedTest
-	@ValueSource(strings = {"FB=4_5;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13",
-			"FB=15;historylength=13;IntervalDuration=3600; BlockDuration=monthly", CUSTOMER_SCOPE})
+	@ValueSource(strings = {"FB=4_5;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000",
+			"FB=15;historylength=34128000;IntervalDuration=3600; BlockDuration=monthly", CUSTOMER_SCOPE})
 	@DisplayName("isNarrowingOf (#211): a subset of the Function Blocks with the same other parameters")
 	void narrowings(String candidate) {
 		assertThat(EspiGrantScopePolicy.isNarrowingOf(candidate, CUSTOMER_SCOPE)).isTrue();
 	}
 
 	@ParameterizedTest
-	@ValueSource(strings = {"FB=1_4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13",
-			"FB=4_5;IntervalDuration=900;BlockDuration=monthly;HistoryLength=13",
+	@ValueSource(strings = {"FB=1_4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000",
+			"FB=4_5;IntervalDuration=900;BlockDuration=monthly;HistoryLength=34128000",
 			"FB=4_5;IntervalDuration=3600;BlockDuration=monthly", "FB=4_5_15",
-			"FB=4_5;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13;Extra=1",
-			"FB=;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13", "FB=x", ""})
+			"FB=4_5;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000;Extra=1",
+			"FB=;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000", "FB=x", ""})
 	@DisplayName("isNarrowingOf (#211): an added Function Block, a changed, missing or extra parameter, or no FB is not")
 	void notNarrowings(String candidate) {
 		assertThat(EspiGrantScopePolicy.isNarrowingOf(candidate, CUSTOMER_SCOPE)).isFalse();

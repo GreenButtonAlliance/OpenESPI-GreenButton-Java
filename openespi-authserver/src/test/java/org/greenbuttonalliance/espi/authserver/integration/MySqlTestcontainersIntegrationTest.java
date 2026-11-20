@@ -207,7 +207,7 @@ class MySqlTestcontainersIntegrationTest {
                     .redirectUri("https://example.com/callback")
                     .scope("openid")
                     .scope("profile")
-                    .scope("FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13")
+                    .scope("FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000")
                     .scope("DataCustodian_Admin_Access")
                     .build();
 
@@ -217,7 +217,7 @@ class MySqlTestcontainersIntegrationTest {
 
             // Then
             assertThat(retrieved.getScopes())
-                    .contains("FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13")
+                    .contains("FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000")
                     .contains("DataCustodian_Admin_Access");
         }
 
@@ -509,7 +509,7 @@ class MySqlTestcontainersIntegrationTest {
                 .postLogoutRedirectUri("https://example.com/logout")
                 .scope("openid")
                 .scope("profile")
-                .scope("FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13")
+                .scope("FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000")
                 .clientSettings(ClientSettings.builder()
                         .requireAuthorizationConsent(true)
                         .build())

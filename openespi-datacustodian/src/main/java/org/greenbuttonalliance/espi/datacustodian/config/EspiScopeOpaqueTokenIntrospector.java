@@ -37,7 +37,7 @@ import java.util.Set;
  * scope into ESPI Function-Block authorities the Data Custodian enforces on its resource endpoints.
  *
  * <p>The Authorization Server issues the ESPI 4.0 scope grammar
- * ({@code FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13}). Spring's stock
+ * ({@code FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000}). Spring's stock
  * introspector would map that whole string to a single opaque authority
  * ({@code SCOPE_FB=4_5_15;...}), which matches none of the DC's endpoint rules — so a real customer
  * token would 403 on every resource (issue #157). This introspector instead parses the scope via
