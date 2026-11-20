@@ -23,6 +23,7 @@ import javax.net.ssl.SSLParameters;
 import java.security.GeneralSecurityException;
 import java.time.Duration;
 import java.time.format.DateTimeFormatter;
+import java.util.regex.Pattern;
 
 /**
  * GETs a {@code Batch/Subscription} feed from the Data Custodian with a customer's access token (#89).
@@ -37,6 +38,8 @@ public class SubscriptionClient {
 	static final String NOT_ON_DATA_CUSTODIAN = "The authorization's resource URI is not on the configured Data Custodian.";
 
 	private static final String SUBSCRIPTION_PATH = "/espi/1_1/resource/Batch/Subscription/";
+	/** A percent-encoded {@code /} or {@code \}: a server that decodes it would see more than one id segment. */
+	private static final Pattern ENCODED_SEPARATOR = Pattern.compile("(?i)%2f|%5c");
 	private static final Logger log = LoggerFactory.getLogger(SubscriptionClient.class);
 	private static final MediaType ATOM = MediaType.APPLICATION_ATOM_XML;
 
@@ -121,10 +124,12 @@ public class SubscriptionClient {
 		if (!onDataCustodian(resourceUri)) {
 			throw new DataCustodianUnreachableException(NOT_ON_DATA_CUSTODIAN, null);
 		}
+		// build(true): the resource URI is already encoded and was checked as is, so it is sent byte for byte
+		// (no %41 -> %2541); the added ISO-8601 values hold only characters legal in a query.
 		URI uri = UriComponentsBuilder.fromUriString(resourceUri)
 				.queryParam("published-min", DateTimeFormatter.ISO_INSTANT.format(range.publishedMin()))
 				.queryParam("published-max", DateTimeFormatter.ISO_INSTANT.format(range.publishedMax()))
-				.build().encode().toUri();
+				.build(true).toUri();
 		try {
 			return restClient.get().uri(uri)
 					.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
@@ -175,7 +180,7 @@ public class SubscriptionClient {
 		boolean ok = uri.getScheme() != null && uri.getScheme().equalsIgnoreCase(baseUrl.getScheme())
 				&& uri.getHost() != null && uri.getHost().equalsIgnoreCase(baseUrl.getHost())
 				&& effectivePort(uri) == effectivePort(baseUrl)
-				&& !idPart.isEmpty() && idPart.indexOf('/') < 0;
+				&& !idPart.isEmpty() && idPart.indexOf('/') < 0 && !ENCODED_SEPARATOR.matcher(idPart).find();
 		if (!ok) {
 			log.warn("Refusing a resource URI whose host is {}: it is not on the configured Data Custodian", uri.getHost());
 		}
@@ -183,8 +188,10 @@ public class SubscriptionClient {
 	}
 
 	/**
-	 * True when the raw path has a {@code .} or {@code ..} segment, written plainly or percent-encoded
-	 * ({@code %2e}/{@code %2E}), or when normalizing the decoded path would change it.
+	 * True when a segment of the raw path is {@code .} or {@code ..}, written plainly or percent-encoded
+	 * ({@code %2e}/{@code %2E}), or when {@link URI#normalize()} (which works on the raw path) would change the
+	 * path. It does not look inside a segment: an encoded separator such as {@code a%2F..%2Fb} is one segment
+	 * here, and {@link #onDataCustodian} refuses it in the id instead ({@link #ENCODED_SEPARATOR}).
 	 */
 	private static boolean hasDotSegment(URI uri) {
 		String raw = uri.getRawPath();

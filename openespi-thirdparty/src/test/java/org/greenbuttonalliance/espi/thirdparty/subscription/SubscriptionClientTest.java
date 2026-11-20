@@ -52,6 +52,18 @@ class SubscriptionClientTest {
 	}
 
 	@Test
+	void sendsAPercentEncodedIdExactlyAsChecked() {
+		String encoded = "https://dc.example/espi/1_1/resource/Batch/Subscription/a%41b";
+		server.expect(requestTo(encoded + "?published-min=2026-01-01T00:00:00Z&published-max=2026-01-03T00:00:00Z"))
+				.andRespond(MockRestResponseCreators.withSuccess("<feed/>", MediaType.APPLICATION_ATOM_XML));
+
+		SubscriptionClient.Response response = client.get(encoded, "tok", RANGE);
+
+		server.verify();
+		assertThat(response).extracting(SubscriptionClient.Response::status).isEqualTo(200);
+	}
+
+	@Test
 	void returnsNon200WithoutThrowing() {
 		server.expect(requestTo(startsWith(URI)))
 				.andRespond(MockRestResponseCreators.withStatus(HttpStatus.FORBIDDEN).body("denied"));
@@ -89,7 +101,10 @@ class SubscriptionClientTest {
 			"https://dc.example/espi/1_1/resource/Batch/Subscription/abc#frag",
 			"https://dc.example/espi/1_1/%2e%2e/x/Batch/Subscription/abc",
 			"https://dc.example/espi/1_1/%2E%2E/x/Batch/Subscription/abc",
-			"https://dc.example/espi/1_1/resource/Batch/Subscription/abc/%2e%2E/abc"})
+			"https://dc.example/espi/1_1/resource/Batch/Subscription/abc/%2e%2E/abc",
+			"https://dc.example/espi/1_1/resource/Batch/Subscription/abc%2F..%2FRetailCustomer",
+			"https://dc.example/espi/1_1/resource/Batch/Subscription/abc%2fx",
+			"https://dc.example/espi/1_1/resource/Batch/Subscription/abc%5Cx"})
 	void refusesAUriNotOnTheConfiguredDataCustodian(String uri) {
 		assertThatThrownBy(() -> client.get(uri, "secret-token", RANGE))
 				.isInstanceOf(DataCustodianUnreachableException.class)
