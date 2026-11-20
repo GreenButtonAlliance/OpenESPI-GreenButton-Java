@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<atom:feed xmlns:atom="http://www.w3.org/2005/Atom" xmlns:espi="http://naesb.org/espi">
+    <atom:id>urn:uuid:7308002c-5f5c-5e38-93c0-d8f42d730d24</atom:id>
+    <atom:title>Green Button Subscription Feed</atom:title>
+    <atom:updated>2026-11-20T19:39:53Z</atom:updated>
+    <atom:link rel="self" href="http://localhost:8081/DataCustodian/espi/1_1/resource/Batch/Subscription/10a5db7c-ab59-5b0b-bd7d-63c8b9b20fa2" type="espi-feed/Subscription"/>
+</atom:feed>
