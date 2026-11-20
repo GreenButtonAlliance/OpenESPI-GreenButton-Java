@@ -90,7 +90,7 @@ class SubscriptionClientTlsTest {
 			exchange.close();
 		});
 		server.start();
-		return "https://localhost:" + server.getAddress().getPort() + "/espi";
+		return "https://localhost:" + server.getAddress().getPort();
 	}
 
 	private SubscriptionClient client(String base) {
@@ -112,7 +112,7 @@ class SubscriptionClientTlsTest {
 	void succeedsAgainstATls13Server() throws Exception {
 		String base = start("TLSv1.3");
 
-		SubscriptionClient.Response response = client(base).get(base + "/1_1/resource/Batch/Subscription/abc", "tok", RANGE);
+		SubscriptionClient.Response response = client(base).get(base + "/espi/1_1/resource/Batch/Subscription/abc", "tok", RANGE);
 
 		assertThat(response).extracting(SubscriptionClient.Response::status, r -> new String(r.body(), StandardCharsets.UTF_8))
 				.containsExactly(200, "<feed/>");
@@ -123,7 +123,7 @@ class SubscriptionClientTlsTest {
 		String base = start("TLSv1.2");
 		SubscriptionClient client = client(base);
 
-		assertThatThrownBy(() -> client.get(base + "/1_1/resource/Batch/Subscription/abc", "tok", RANGE))
+		assertThatThrownBy(() -> client.get(base + "/espi/1_1/resource/Batch/Subscription/abc", "tok", RANGE))
 				.isInstanceOf(DataCustodianUnreachableException.class);
 	}
 
@@ -133,7 +133,8 @@ class SubscriptionClientTlsTest {
 		String base = start("TLSv1.3", otherHostContext);
 		SubscriptionClient client = client(base, otherHostContext);
 
-		assertThatThrownBy(() -> client.get(base + "/1_1/resource/Batch/Subscription/abc", "tok", RANGE))
-				.isInstanceOf(DataCustodianUnreachableException.class);
+		assertThatThrownBy(() -> client.get(base + "/espi/1_1/resource/Batch/Subscription/abc", "tok", RANGE))
+				.isInstanceOf(DataCustodianUnreachableException.class)
+				.hasRootCauseInstanceOf(java.security.cert.CertificateException.class);
 	}
 }

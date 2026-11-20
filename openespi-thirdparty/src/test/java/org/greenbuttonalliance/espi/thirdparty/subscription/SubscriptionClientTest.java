@@ -16,8 +16,8 @@ import org.springframework.mock.env.MockEnvironment;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.time.Duration;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,7 +34,7 @@ class SubscriptionClientTest {
 
 	private final RestClient.Builder builder = RestClient.builder();
 	private final MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
-	private final SubscriptionClient client = new SubscriptionClient(builder, "https://dc.example/espi", 10);
+	private final SubscriptionClient client = new SubscriptionClient(builder, "https://dc.example", 10);
 
 	@Test
 	void sendsRangeBearerAndAccept() {
@@ -82,7 +82,14 @@ class SubscriptionClientTest {
 			"https://dc.example/elsewhere/1_1/resource/Batch/Subscription/abc",
 			"https://dc.example/espi/../other/Batch/Subscription/abc",
 			"https://dc.example/espi/1_1/resource/UsagePoint/abc",
-			"https://dc.example/espi/1_1/resource/Batch/Subscription/"})
+			"https://dc.example/espi/1_1/resource/Batch/Subscription/",
+			"https://dc.example/espi/1_1/resource/Batch/Subscription/abc/../../RetailCustomer/5/UsagePoint",
+			"https://dc.example/espi/1_1/resource/Batch/Subscription/abc/UsagePoint",
+			"https://dc.example/espi/1_1/resource/Batch/Subscription/abc?published-min=2020-01-01T00:00:00Z",
+			"https://dc.example/espi/1_1/resource/Batch/Subscription/abc#frag",
+			"https://dc.example/espi/1_1/%2e%2e/x/Batch/Subscription/abc",
+			"https://dc.example/espi/1_1/%2E%2E/x/Batch/Subscription/abc",
+			"https://dc.example/espi/1_1/resource/Batch/Subscription/abc/%2e%2E/abc"})
 	void refusesAUriNotOnTheConfiguredDataCustodian(String uri) {
 		assertThatThrownBy(() -> client.get(uri, "secret-token", RANGE))
 				.isInstanceOf(DataCustodianUnreachableException.class)
@@ -97,7 +104,23 @@ class SubscriptionClientTest {
 
 		assertThatThrownBy(() -> client.get(URI, "tok", RANGE))
 				.isInstanceOf(DataCustodianUnreachableException.class)
-				.hasMessage("The Data Custodian's response exceeded 0 MB.");
+				.hasMessage("The Data Custodian's response exceeded 10 bytes.");
+	}
+
+	@Test
+	void theLimitIsNamedInMegabytesWithOneDecimalFromOneMebibyte() {
+		assertThat(SubscriptionClient.describeLimit(512 * 1024 * 2)).isEqualTo("1.0 MB");
+		assertThat(SubscriptionClient.describeLimit(67_108_864)).isEqualTo("64.0 MB");
+		assertThat(SubscriptionClient.describeLimit(1024 * 1024 - 1)).isEqualTo("1048575 bytes");
+		assertThat(SubscriptionClient.describeLimit(1_572_864)).isEqualTo("1.5 MB");
+	}
+
+	@ParameterizedTest
+	@ValueSource(ints = {0, -1, Integer.MAX_VALUE})
+	void aMaxBodyBytesOutsideOneToIntMaxMinusOneFailsConstruction(int limit) {
+		assertThatThrownBy(() -> new SubscriptionClient(RestClient.builder(), "https://dc.example", limit))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("espi.thirdparty.subscription.max-body-bytes");
 	}
 
 	@Test
@@ -115,7 +138,7 @@ class SubscriptionClientTest {
 	void outsideLocalAndDevAnHttpResourceUriIsRefusedWithoutARequest() {
 		RestClient.Builder httpBuilder = RestClient.builder();
 		MockRestServiceServer httpServer = MockRestServiceServer.bindTo(httpBuilder).build();
-		SubscriptionClient strict = new SubscriptionClient(httpBuilder, "https://dc.example/espi", 10, true);
+		SubscriptionClient strict = new SubscriptionClient(httpBuilder, "https://dc.example", 10, true);
 
 		assertThatThrownBy(() -> strict.get("http://dc.example/espi/1_1/resource/Batch/Subscription/abc", "secret-token", RANGE))
 				.isInstanceOf(DataCustodianUnreachableException.class)
@@ -134,7 +157,7 @@ class SubscriptionClientTest {
 	void outsideLocalAndDevAnHttpsResourceUriIsAccepted() {
 		RestClient.Builder httpsBuilder = RestClient.builder();
 		MockRestServiceServer httpsServer = MockRestServiceServer.bindTo(httpsBuilder).build();
-		SubscriptionClient strict = new SubscriptionClient(httpsBuilder, "https://dc.example/espi", 10, true);
+		SubscriptionClient strict = new SubscriptionClient(httpsBuilder, "https://dc.example", 10, true);
 		httpsServer.expect(requestTo(startsWith(URI))).andRespond(MockRestResponseCreators.withSuccess("<f/>", MediaType.APPLICATION_ATOM_XML));
 
 		assertThat(strict.get(URI, "tok", RANGE).status()).isEqualTo(200);

@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * The reader reads what the Data Custodian sends today: the tests use the unedited DC capture
- * ({@code feed-with-278-errors.xml}), whose SummaryMeasurement children carry no namespace (tracked separately).
+ * ({@code feed-with-278-errors.xml}), whose SummaryMeasurement children carry no namespace (tracked in #297).
  */
 class SubscriptionFeedReaderTest {
 
@@ -53,6 +53,7 @@ class SubscriptionFeedReaderTest {
 						.returns("urn:uuid:07171718-b165-522a-b413-11d9eeb1ca43", SubscriptionTree.Entry::id))
 				.satisfies(n -> assertThat(n.localTimeParameters()).isNotNull())
 				.satisfies(n -> assertThat(n.meterReadings()).hasSize(1))
+				// pins today's unqualified SummaryMeasurement output; these values must change with #297, not before
 				.satisfies(n -> assertThat(n.usageSummaries()).singleElement()
 						.satisfies(s -> assertThat(s.resource().getOverallConsumptionLastPeriod())
 								.returns(1325000000L, m -> m.getValue())
@@ -99,6 +100,35 @@ class SubscriptionFeedReaderTest {
 				.satisfies(t -> assertThat(t.usagePoints()).singleElement()
 						.satisfies(n -> assertThat(n.meterReadings()).singleElement()
 								.satisfies(m -> assertThat(m.readingType()).isNull())
+								.satisfies(m -> assertThat(m.intervalBlocks()).hasSize(2))));
+	}
+
+	@Test
+	void duplicateSelfHrefKeepsTheFirstAndIsReported() throws IOException {
+		String first = "http://localhost:8081/DataCustodian/espi/1_1/resource/IntervalBlock/b3e75607-31de-53a7-9300-42b8be3ddb73";
+		String secondHref = "http://localhost:8081/DataCustodian/espi/1_1/resource/IntervalBlock/48b371f7-b1a2-52ef-a86e-0788a3d97328";
+		String xml = fixture("feed-with-278-errors.xml").replace(secondHref + "\"", first + "\"");
+
+		SubscriptionTree tree = reader.read(xml.getBytes(StandardCharsets.UTF_8));
+
+		assertThat(tree.linkingProblems())
+				.containsExactly("Entry urn:uuid:48b371f7-b1a2-52ef-a86e-0788a3d97328: duplicate self link " + first);
+	}
+
+	@Test
+	void entryWithoutSelfLinkIsReportedAndStillPlaced() throws IOException {
+		String selfLine = "<atom:link rel=\"self\" href=\"http://localhost:8081/DataCustodian/espi/1_1/resource/IntervalBlock/"
+				+ "48b371f7-b1a2-52ef-a86e-0788a3d97328\" type=\"espi-entry/IntervalBlock\"/>";
+		String original = fixture("feed-with-278-errors.xml");
+		assertThat(original).contains(selfLine);
+
+		SubscriptionTree tree = reader.read(original.replace(selfLine, "").getBytes(StandardCharsets.UTF_8));
+
+		assertThat(tree)
+				.satisfies(t -> assertThat(t.linkingProblems())
+						.containsExactly("Entry urn:uuid:48b371f7-b1a2-52ef-a86e-0788a3d97328: no self link"))
+				.satisfies(t -> assertThat(t.usagePoints()).singleElement()
+						.satisfies(n -> assertThat(n.meterReadings()).singleElement()
 								.satisfies(m -> assertThat(m.intervalBlocks()).hasSize(2))));
 	}
 

@@ -107,10 +107,11 @@ class SubscriptionControllerTest {
 	}
 
 	private void saved(SubscriptionFeedFetchEntity... saved) {
-		when(fetches.findAllByAuthorizationIdOrderByFetchedAtDesc(AUTH_ID)).thenReturn(List.of(saved));
-		if (saved.length > 0) {
-			when(fetches.findFirstByAuthorizationIdOrderByFetchedAtDesc(AUTH_ID)).thenReturn(Optional.of(saved[0]));
-		}
+		// the list holds summaries without bodies; a body is loaded only for the one fetch shown
+		when(fetches.findAllByAuthorizationIdOrderByFetchedAtDesc(AUTH_ID)).thenReturn(java.util.Arrays.stream(saved)
+				.map(f -> new SubscriptionFeedFetchRepository.FetchSummary(f.getId(), f.getFetchedAt(), f.getHttpStatus(),
+						f.getPublishedMin(), f.getPublishedMax()))
+				.toList());
 		for (SubscriptionFeedFetchEntity each : saved) {
 			when(fetches.findByIdAndAuthorizationId(each.getId(), AUTH_ID)).thenReturn(Optional.of(each));
 		}
@@ -151,6 +152,17 @@ class SubscriptionControllerTest {
 				.doesNotContainPattern("(?s)(<details.*){3}")
 				.doesNotContain(ACCESS_TOKEN, REFRESH_TOKEN, ACCESS_TOKEN.substring(0, 8));
 		verify(fetchService, never()).fetch(any(), any(), any(), any());
+	}
+
+	@Test
+	void aFeedWithoutItsReadingTypeShowsNoReadingType() throws Exception {
+		String original = fixture("feed-with-278-errors.xml");
+		String withoutReadingType = original.replaceFirst(
+				"(?s)<atom:entry>((?!</atom:entry>).)*<espi:ReadingType>((?!</atom:entry>).)*</atom:entry>", "");
+		assertThat(withoutReadingType).hasSizeLessThan(original.length());
+		saved(savedFetch(200, withoutReadingType, XmlValidationMode.REPORT, true));
+
+		assertThat(page()).contains("(no ReadingType)");
 	}
 
 	@Test
@@ -312,6 +324,16 @@ class SubscriptionControllerTest {
 						.with(alice()).with(csrf()))
 				.andExpect(redirectedUrl(PAGE))
 				.andExpect(flash().attribute("notice", "Dates must be in the form YYYY-MM-DD: garbage"));
+
+		verify(fetchService, never()).fetch(any(), any(), any(), any());
+	}
+
+	@Test
+	void postUnparseableDateEchoesAtMost40CharactersOfIt() throws Exception {
+		String longValue = "x".repeat(100);
+		mockMvc.perform(post(PAGE + "/fetch").param("from", longValue).with(alice()).with(csrf()))
+				.andExpect(redirectedUrl(PAGE))
+				.andExpect(flash().attribute("notice", "Dates must be in the form YYYY-MM-DD: " + "x".repeat(40) + "…"));
 
 		verify(fetchService, never()).fetch(any(), any(), any(), any());
 	}

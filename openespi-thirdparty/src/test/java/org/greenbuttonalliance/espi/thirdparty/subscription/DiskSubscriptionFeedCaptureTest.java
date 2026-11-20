@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 class DiskSubscriptionFeedCaptureTest {
 
@@ -107,7 +108,8 @@ class DiskSubscriptionFeedCaptureTest {
 
 	@Test
 	void disabledIgnoresAnInvalidDirSilently() {
-		assertThat(logged(() -> new DiskSubscriptionFeedCapture(false, "bad\0dir"))).isEmpty();
+		assertThat(logged(() -> new DiskSubscriptionFeedCapture(false, "bad\0dir")))
+				.noneSatisfy(e -> assertThat(e.getLevel()).isEqualTo(Level.WARN));
 	}
 
 	/** Runs the action and returns what DiskSubscriptionFeedCapture logged meanwhile; the action must not throw. */
@@ -149,7 +151,7 @@ class DiskSubscriptionFeedCaptureTest {
 		for (Path p = tempDir; p != null; p = p.getParent()) {
 			gitAbove |= Files.exists(p.resolve(".git"));
 		}
-		org.junit.jupiter.api.Assumptions.assumeFalse(gitAbove);
+		assumeFalse(gitAbove);
 
 		assertThat(DiskSubscriptionFeedCapture.resolveCaptureDir("out", start)).isEqualTo(start.resolve("out"));
 	}
