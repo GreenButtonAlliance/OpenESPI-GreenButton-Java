@@ -89,7 +89,8 @@ public record EspiScope(
 	 * @return the parsed value object
 	 * @throws IllegalArgumentException if {@code scope} is null/blank, or an {@code FB},
 	 *                                  {@code IntervalDuration}, or {@code HistoryLength} value is
-	 *                                  not an integer
+	 *                                  not an integer, or {@code HistoryLength} is not positive (it is
+	 *                                  a number of seconds of history, REQ.21.6.1.2.1)
 	 */
 	public static EspiScope parse(String scope) {
 		if (scope == null || scope.isBlank()) {
@@ -124,7 +125,7 @@ public record EspiScope(
 					}
 				}
 				case "intervalduration" -> intervalDuration = parseIntTerm(key, value);
-				case "historylength" -> historyLength = parseIntTerm(key, value);
+				case "historylength" -> historyLength = parsePositiveIntTerm(key, value);
 				case "blockduration" -> blockDuration = value;
 				default -> extras.put(key, value);
 			}
@@ -141,6 +142,15 @@ public record EspiScope(
 			throw new IllegalArgumentException(
 					"ESPI scope term '" + key + "' expected an integer but was '" + value + "'", e);
 		}
+	}
+
+	private static int parsePositiveIntTerm(String key, String value) {
+		int parsed = parseIntTerm(key, value);
+		if (parsed <= 0) {
+			throw new IllegalArgumentException(
+					"ESPI scope term '" + key + "' must be a positive number of seconds but was '" + value + "'");
+		}
+		return parsed;
 	}
 
 	/** @return whether the given FB id is present in this scope. */

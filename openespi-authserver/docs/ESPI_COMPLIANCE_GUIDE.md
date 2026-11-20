@@ -445,7 +445,7 @@ public void testESPIScopeValidation() {
     String invalidScope = "FB=4_5_15;IntervalDuration=invalid;BlockDuration=monthly;HistoryLength=34128000";
     assertFalse(scopeValidator.validate(invalidScope));
     
-    // Invalid ESPI scope - out of range (HistoryLength not a whole number of seconds)
+    // Invalid ESPI scope - out of range (HistoryLength not a positive number of seconds)
     String outOfRangeScope = "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=-1";
     assertFalse(scopeValidator.validate(outOfRangeScope));
 }

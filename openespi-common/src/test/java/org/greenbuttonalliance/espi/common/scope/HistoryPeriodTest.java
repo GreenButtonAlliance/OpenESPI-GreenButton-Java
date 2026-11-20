@@ -21,6 +21,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -41,15 +42,16 @@ class HistoryPeriodTest {
 			"86400,    DAYS,    1,   1",
 			"86399,    SECONDS, 86399, 0",
 			"13,       SECONDS, 13,  0",
-			"0,        SECONDS,  0,  0"})
+			"1,        SECONDS,  1,  0"})
 	void convertsSecondsToCalendarUnit(long seconds, Unit unit, long amount, long days) {
 		assertThat(HistoryPeriod.ofSeconds(seconds)).isEqualTo(new HistoryPeriod(unit, amount, days));
 	}
 
-	@Test
-	void rejectsNegativeSeconds() {
-		assertThatThrownBy(() -> HistoryPeriod.ofSeconds(-1))
+	@ParameterizedTest(name = "{0} s is rejected")
+	@ValueSource(longs = {0, -1})
+	void rejectsZeroOrNegativeSeconds(long seconds) {
+		assertThatThrownBy(() -> HistoryPeriod.ofSeconds(seconds))
 				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessageContaining("-1");
+				.hasMessageContaining("must be positive: " + seconds);
 	}
 }

@@ -128,6 +128,22 @@ class EspiScopeTest {
 				.withMessageContaining("IntervalDuration");
 	}
 
+	@ParameterizedTest(name = "HistoryLength={0} is rejected")
+	@DisplayName("a zero or negative HistoryLength is rejected (it is a number of seconds, REQ.21.6.1.2.1)")
+	@ValueSource(strings = {"0", "-1", "-34128000"})
+	void rejectsNonPositiveHistoryLength(String historyLength) {
+		assertThatExceptionOfType(IllegalArgumentException.class)
+				.isThrownBy(() -> EspiScope.parse("FB=4_5_15;IntervalDuration=3600;HistoryLength=" + historyLength))
+				.withMessageContaining("HistoryLength")
+				.withMessageContaining("positive");
+	}
+
+	@Test
+	@DisplayName("a one-second HistoryLength is accepted (no minimum beyond positive, #284)")
+	void acceptsOneSecondHistoryLength() {
+		assertThat(EspiScope.parse("FB=4_5_15;HistoryLength=1").historyLength()).isEqualTo(1);
+	}
+
 	@Test
 	@DisplayName("containsFunctionBlock reflects membership")
 	void containsFunctionBlock() {

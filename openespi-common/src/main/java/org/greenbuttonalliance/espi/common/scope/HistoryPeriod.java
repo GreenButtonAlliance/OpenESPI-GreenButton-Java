@@ -51,13 +51,13 @@ public record HistoryPeriod(Unit unit, long amount, long days) {
 	/**
 	 * The period of a {@code HistoryLength}.
 	 *
-	 * @param seconds the {@code HistoryLength} in seconds, not negative
+	 * @param seconds the {@code HistoryLength} in seconds, positive (as {@link EspiScope#parse} requires)
 	 * @return the period in the unit described on this class
-	 * @throws IllegalArgumentException if {@code seconds} is negative
+	 * @throws IllegalArgumentException if {@code seconds} is zero or negative
 	 */
 	public static HistoryPeriod ofSeconds(long seconds) {
-		if (seconds < 0) {
-			throw new IllegalArgumentException("HistoryLength must not be negative: " + seconds);
+		if (seconds <= 0) {
+			throw new IllegalArgumentException("HistoryLength must be positive: " + seconds);
 		}
 		long days = seconds / SECONDS_PER_DAY;
 		if (days == 0) {
