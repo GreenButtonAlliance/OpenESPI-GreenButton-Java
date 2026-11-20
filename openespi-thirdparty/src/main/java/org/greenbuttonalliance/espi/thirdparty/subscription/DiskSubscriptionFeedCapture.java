@@ -25,6 +25,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -48,34 +49,43 @@ public class DiskSubscriptionFeedCapture implements SubscriptionFeedCapture {
 	private static final Logger log = LoggerFactory.getLogger(DiskSubscriptionFeedCapture.class);
 	private static final DateTimeFormatter RUN_ID = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
 
-	private final boolean enabled;
 	private final Path runDir;
 	private final AtomicInteger counter = new AtomicInteger();
 
 	public DiskSubscriptionFeedCapture(
 			@Value("${espi.dev.xml-capture.enabled:true}") boolean enabled,
 			@Value("${espi.dev.xml-capture.dir:dev-xml-capture}") String dir) {
-		this.enabled = enabled;
-		this.runDir = resolveCaptureDir(dir).resolve("thirdparty-run-" + LocalDateTime.now().format(RUN_ID));
+		this.runDir = enabled ? resolveRunDir(dir) : null;
 	}
 
-	/** A relative capture dir is anchored at the repository root, else at the working directory. */
-	static Path resolveCaptureDir(String captureDir) {
+	/** The run folder, or null (capture off) when the configured dir is not a valid path. */
+	private static Path resolveRunDir(String dir) {
+		try {
+			return resolveCaptureDir(dir, Path.of("").toAbsolutePath())
+					.resolve("thirdparty-run-" + LocalDateTime.now().format(RUN_ID));
+		} catch (InvalidPathException e) {
+			log.warn("[dev] Subscription feed capture is off: invalid espi.dev.xml-capture.dir: {}", e.getMessage());
+			return null;
+		}
+	}
+
+	/** A relative capture dir is anchored at the nearest ancestor of {@code start} holding .git, else at start. */
+	static Path resolveCaptureDir(String captureDir, Path start) {
 		Path dir = Path.of(captureDir);
 		if (dir.isAbsolute()) {
 			return dir;
 		}
-		for (Path p = Path.of("").toAbsolutePath(); p != null; p = p.getParent()) {
+		for (Path p = start; p != null; p = p.getParent()) {
 			if (Files.exists(p.resolve(".git"))) {
 				return p.resolve(dir);
 			}
 		}
-		return dir.toAbsolutePath();
+		return start.resolve(dir);
 	}
 
 	@Override
 	public void capture(String subscriptionId, int httpStatus, byte[] body) {
-		if (!enabled) {
+		if (runDir == null) {
 			return;
 		}
 		byte[] content = body == null ? new byte[0] : body;

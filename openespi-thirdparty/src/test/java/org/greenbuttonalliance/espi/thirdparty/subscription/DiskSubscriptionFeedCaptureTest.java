@@ -16,9 +16,14 @@
 
 package org.greenbuttonalliance.espi.thirdparty.subscription;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -32,6 +37,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 class DiskSubscriptionFeedCaptureTest {
 
@@ -51,16 +57,12 @@ class DiskSubscriptionFeedCaptureTest {
 		new DiskSubscriptionFeedCapture(true, tempDir.toString()).capture("sub-1", 200, body);
 
 		List<Path> files = captured();
+		byte[] written = Files.readAllBytes(files.get(0));
 		assertThat(files).singleElement()
 				.satisfies(f -> assertThat(f.getFileName().toString()).isEqualTo("GET_Batch_Subscription_sub-1_1.xml"))
-				.satisfies(f -> assertThat(f.getParent().getFileName().toString()).matches("thirdparty-run-\\d{8}-\\d{6}"))
-				.extracting(f -> {
-					try {
-						return Files.readAllBytes(f);
-					} catch (IOException e) {
-						throw new IllegalStateException(e);
-					}
-				}).isEqualTo(body);
+				.extracting(f -> f.getParent().getFileName().toString()).asString()
+				.matches("thirdparty-run-\\d{8}-\\d{6}");
+		assertThat(written).isEqualTo(body);
 	}
 
 	@Test
@@ -69,15 +71,10 @@ class DiskSubscriptionFeedCaptureTest {
 				.capture("sub-2", 403, "forbidden body".getBytes(StandardCharsets.UTF_8));
 
 		List<Path> files = captured();
-		assertThat(files).singleElement()
-				.satisfies(f -> assertThat(f.getFileName().toString()).isEqualTo("GET_Batch_Subscription_sub-2_1.error.txt"))
-				.extracting(f -> {
-					try {
-						return Files.readString(f);
-					} catch (IOException e) {
-						throw new IllegalStateException(e);
-					}
-				}).asString().contains("HTTP 403").contains("forbidden body");
+		String written = Files.readString(files.get(0));
+		assertThat(files).extracting(f -> f.getFileName().toString())
+				.containsExactly("GET_Batch_Subscription_sub-2_1.error.txt");
+		assertThat(written).contains("HTTP 403").contains("forbidden body");
 	}
 
 	@Test
@@ -96,6 +93,69 @@ class DiskSubscriptionFeedCaptureTest {
 				.capture("sub-4", 200, "<a/>".getBytes(StandardCharsets.UTF_8));
 
 		assertThat(captured()).isEmpty();
+	}
+
+	@Test
+	void invalidDirDisablesCaptureWithoutFailing() throws IOException {
+		DiskSubscriptionFeedCapture capture = new DiskSubscriptionFeedCapture(true, "bad\0dir");
+
+		assertThatCode(() -> capture.capture("sub-5", 200, "<a/>".getBytes(StandardCharsets.UTF_8)))
+				.doesNotThrowAnyException();
+		assertThat(captured()).isEmpty();
+	}
+
+	@Test
+	void disabledIgnoresAnInvalidDir() {
+		assertThatCode(() -> new DiskSubscriptionFeedCapture(false, "bad\0dir")).doesNotThrowAnyException();
+	}
+
+	@Test
+	void relativeDirResolvesUnderNearestGitAncestor() throws IOException {
+		Files.createDirectories(tempDir.resolve("repo/.git"));
+		Path nested = Files.createDirectories(tempDir.resolve("repo/module/deep"));
+
+		assertThat(DiskSubscriptionFeedCapture.resolveCaptureDir("dev-xml-capture", nested))
+				.isEqualTo(tempDir.resolve("repo/dev-xml-capture"));
+	}
+
+	@Test
+	void absoluteDirIsReturnedUnchanged() throws IOException {
+		Path nested = Files.createDirectories(tempDir.resolve("repo/.git/x"));
+		Path absolute = tempDir.resolve("elsewhere").toAbsolutePath();
+
+		assertThat(DiskSubscriptionFeedCapture.resolveCaptureDir(absolute.toString(), nested)).isEqualTo(absolute);
+	}
+
+	@Test
+	void withoutGitAncestorFallsBackToStartDir() throws IOException {
+		Path start = Files.createDirectories(tempDir.resolve("nogit/sub"));
+		// A stray .git above the temp dir would legitimately win, so only assert when none exists.
+		boolean gitAbove = false;
+		for (Path p = tempDir; p != null; p = p.getParent()) {
+			gitAbove |= Files.exists(p.resolve(".git"));
+		}
+		org.junit.jupiter.api.Assumptions.assumeFalse(gitAbove);
+
+		assertThat(DiskSubscriptionFeedCapture.resolveCaptureDir("out", start)).isEqualTo(start.resolve("out"));
+	}
+
+	@Test
+	void ioFailureIsLoggedAndNotThrown() throws IOException {
+		Path occupied = Files.writeString(tempDir.resolve("occupied"), "a regular file");
+		Logger logger = (Logger) LoggerFactory.getLogger(DiskSubscriptionFeedCapture.class);
+		ListAppender<ILoggingEvent> appender = new ListAppender<>();
+		appender.start();
+		logger.addAppender(appender);
+		try {
+			DiskSubscriptionFeedCapture capture = new DiskSubscriptionFeedCapture(true, occupied.toString());
+
+			assertThatCode(() -> capture.capture("sub-6", 200, "<a/>".getBytes(StandardCharsets.UTF_8)))
+					.doesNotThrowAnyException();
+			assertThat(appender.list).singleElement()
+					.satisfies(e -> assertThat(e.getLevel()).isEqualTo(Level.WARN));
+		} finally {
+			logger.detachAppender(appender);
+		}
 	}
 
 	@Nested
