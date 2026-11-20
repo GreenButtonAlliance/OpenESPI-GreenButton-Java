@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:espi="http://naesb.org/espi">
+   <id>urn:uuid:3f1c2b2e-9d3a-5b1e-8f0e-000000000001</id>
+   <title>Green Button Usage Feed</title>
+   <updated>2026-01-01T00:00:00Z</updated>
+   <link rel="self" href="https://dc.example/DataCustodian/espi/1_1/resource/Batch/Subscription/1" type="espi-entry/Subscription"/>
+   <entry>
+      <id>urn:uuid:07171718-b165-522a-b413-11d9eeb1ca43</id>
+      <link rel="self" href="https://dc.example/DataCustodian/espi/1_1/resource/UsagePoint/1" type="espi-entry/UsagePoint"/>
+      <link rel="up" href="https://dc.example/DataCustodian/espi/1_1/resource/UsagePoint" type="espi-feed/UsagePoint"/>
+      <title>UsagePoint</title>
+      <content>
+         <espi:UsagePoint>
+            <espi:ServiceCategory>
+               <espi:kind>ELECTRICITY</espi:kind>
+            </espi:ServiceCategory>
+            <espi:status>1</espi:status>
+         </espi:UsagePoint>
+      </content>
+      <published>2026-01-01T00:00:00Z</published>
+      <updated>2026-01-01T00:00:00Z</updated>
+   </entry>
+</feed>

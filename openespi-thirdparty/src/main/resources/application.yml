@@ -189,6 +189,12 @@ management:
 # ESPI Third Party Configuration
 espi:
   thirdparty:
+    # XSD validation of a fetched Batch/Subscription feed (atom.xsd, espi.xsd, customer.xsd):
+    #   off     - not validated
+    #   report  - validated; the issues are listed but the data is still shown and saved (default)
+    #   enforce - a feed that fails validation is not shown (a Data Custodian that emits invalid XML,
+    #             e.g. the non-numeric ServiceCategory kind of #278, is refused)
+    xml-validation: report
     base-url: ${THIRDPARTY_BASE_URL:http://localhost:8082/ThirdParty}
     name: "Green Button Alliance Third Party"
     description: "NAESB ESPI 1.0 Third Party Client Implementation"
