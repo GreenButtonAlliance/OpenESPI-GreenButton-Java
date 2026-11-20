@@ -193,7 +193,7 @@ Application behavior is controlled via Spring profiles:
 Flyway manages database schema migrations:
 - **Shared scripts**: `openespi-common/src/main/resources/db/migration/` - `V1__Create_Base_Tables.sql`, `V3__Create_additiional_Base_Tables.sql`
 - **Vendor-specific scripts**: `openespi-common/src/main/resources/db/vendor/{mysql,postgres,h2}/V2__*_Specific_Tables.sql`
-- **Authorization Server**: has its own Flyway scripts under `openespi-authserver/src/main/resources/db/vendor/`; these currently diverge by vendor (MySQL V3–V6 are `.disabled`; see #145, #152)
+- **Authorization Server**: has its own Flyway scripts under `openespi-authserver/src/main/resources/db/vendor/`; these currently diverge by vendor (MySQL V3–V6 are `.disabled`; see #145). The PostgreSQL set applies in full on a fresh database and `PostgreSqlTestcontainersIntegrationTest` runs it (#152)
 - **Run migrations**: Automatically on application startup with `spring.flyway.enabled=true`
 
 IMPORTANT: When adding/modifying entities, ensure Flyway migration scripts are updated to match JPA entity definitions.

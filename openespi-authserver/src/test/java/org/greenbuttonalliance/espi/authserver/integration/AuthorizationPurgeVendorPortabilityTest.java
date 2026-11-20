@@ -56,9 +56,8 @@ import static org.greenbuttonalliance.espi.authserver.integration.AuthorizationP
  * <ul>
  *   <li><strong>H2</strong>: the real {@code db/vendor/h2} migrations, including the new V8
  *       {@code oauth2_audit_log}.</li>
- *   <li><strong>PostgreSQL</strong>: {@code db/vendor/postgresql} V1 only, plus the
- *       {@code oauth2_audit_log} DDL copied from V2, because V2 itself fails on a fresh database
- *       (#152). Replace with a full migrate once #152 lands.</li>
+ *   <li><strong>PostgreSQL</strong>: the real {@code db/vendor/postgresql} migrations, whose V2
+ *       creates {@code oauth2_audit_log} (it applies on a fresh database since #152).</li>
  * </ul>
  *
  * <p>Tagged {@code testcontainers-it} with the other Docker-backed integration tests (the PostgreSQL
@@ -69,29 +68,6 @@ import static org.greenbuttonalliance.espi.authserver.integration.AuthorizationP
 class AuthorizationPurgeVendorPortabilityTest {
 
 	private static final Instant NOW = Instant.parse("2035-01-01T00:00:00Z");
-
-	/** oauth2_audit_log as created by db/vendor/postgresql/V2_0_0 (column list and types). */
-	private static final String POSTGRES_AUDIT_LOG_DDL = """
-			CREATE TABLE oauth2_audit_log (
-			    id BIGSERIAL PRIMARY KEY,
-			    event_type VARCHAR(50) NOT NULL,
-			    client_id VARCHAR(100) NOT NULL,
-			    principal_name VARCHAR(200) DEFAULT NULL,
-			    event_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-			    ip_address INET DEFAULT NULL,
-			    user_agent VARCHAR(500) DEFAULT NULL,
-			    session_id VARCHAR(128) DEFAULT NULL,
-			    request_id VARCHAR(128) DEFAULT NULL,
-			    success BOOLEAN NOT NULL DEFAULT TRUE,
-			    error_code VARCHAR(50) DEFAULT NULL,
-			    error_description VARCHAR(500) DEFAULT NULL,
-			    scopes_requested VARCHAR(1000) DEFAULT NULL,
-			    scopes_granted VARCHAR(1000) DEFAULT NULL,
-			    grant_type VARCHAR(50) DEFAULT NULL,
-			    espi_version VARCHAR(10) DEFAULT '4.0',
-			    compliance_flags JSONB DEFAULT NULL,
-			    additional_data JSONB DEFAULT NULL
-			)""";
 
 	@Nested
 	@TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -120,7 +96,7 @@ class AuthorizationPurgeVendorPortabilityTest {
 
 	@Nested
 	@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-	@DisplayName("PostgreSQL (db/vendor/postgresql V1 + V2 audit table)")
+	@DisplayName("PostgreSQL (db/vendor/postgresql migrations)")
 	class Postgres {
 
 		private final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:18")
@@ -136,10 +112,8 @@ class AuthorizationPurgeVendorPortabilityTest {
 			postgres.start();
 			dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(),
 					postgres.getPassword());
-			Flyway.configure().dataSource(dataSource).locations("classpath:db/vendor/postgresql")
-					.target("1.0.0").load().migrate();
+			Flyway.configure().dataSource(dataSource).locations("classpath:db/vendor/postgresql").load().migrate();
 			jdbc = new JdbcTemplate(dataSource);
-			jdbc.execute(POSTGRES_AUDIT_LOG_DDL);
 		}
 
 		@AfterAll
