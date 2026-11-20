@@ -133,8 +133,8 @@ The TP administrator (`admin` / `admin`) can obtain the TP's own client access t
 Open items (see the roadmap, #255):
 
 - **#89:** the TP fetches, validates, saves and displays the Subscription feed; importing it into the usage tables is not done.
-- **#299 (same root cause family as #276):** in the same browser, a second authorization with a different scope (Daily after Monthly, or the reverse) ends at `/ThirdParty/?authorization_error` with no token stored, because the AS's consent-page path returns Spring's consent state instead of the TP's. Workaround: authorize the second registration after restarting the AS, or in a fresh browser.
+- **#299 (related to #276):** in the same browser, a second authorization with a different scope (Daily after Monthly, or the reverse) ends at `/ThirdParty/?authorization_error` with no token stored, because the AS's consent-page path returns Spring's consent state instead of the TP's. Workaround: authorize the second registration after restarting the AS, or in a fresh browser.
 - **#278 / #297:** DC feed defects shown on the Subscription page in `report` mode (see "Customer flow" step 5).
 - The AS PostgreSQL and MySQL seed scripts still list the old `FB=4_5_15` scopes; only the local H2 seed matches the TP registrations.
-- The sample data covers 2026-01-01 to 02 and is visible through the customer's `HistoryLength` (395 days) until about 2027-01-31; after that the feed is empty.
+- The sample data covers 2026-01-01 to 02 and is visible through the customer's `HistoryLength` (395 days) until about 2027-01-31; after that the feed still holds the UsagePoints and MeterReadings but no IntervalBlocks or summaries.
 - **#202:** the AS's token-response URIs: `customerResourceURI` is gated on FB 54–62 instead of FB_51, a refresh re-provisions the subscription, and the `FB=34_35` client access token carries no `authorizationURI`, `resourceURI` (energy usage Bulk) or `customerResourceURI` (Customer PII Bulk).
