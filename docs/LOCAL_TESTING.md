@@ -91,6 +91,8 @@ open "$TP/oauth2/authorization/datacustodian-monthly"
 
 On the `local` profile the DC writes every ESPI resource response to `dev-xml-capture/run-<timestamp>/` at the repository root (`GET_UsagePoint.xml`, …), and an `.error.txt` with the status, body or exception chain for any 4xx/5xx or unhandled exception. The folder is git-ignored.
 
+On the `local`/`dev` profiles the TP captures each `Batch/Subscription` fetch to `dev-xml-capture/thirdparty-run-<yyyyMMdd-HHmmss>/GET_Batch_Subscription_<subscriptionId>_<n>.xml` (a non-200 response goes to `.error.txt` instead).
+
 ## Sample data (DC)
 
 On the `local` profile the DC seeds a small, deterministic ESPI dataset at startup (`LocalSampleDataSeedRunner`, #253). The data is in-memory, so it is recreated on every restart, with the same ids.
@@ -114,13 +116,24 @@ The schema values follow the most common shapes in the Green Button CMD certific
 3. At the DC, sign in as `customer` / `customer` and approve the requested data on the Authorization Screen.
 4. You return to the TP home page, still signed in to the TP, with "The Data Custodian authorized this Third Party". **Your authorizations** lists the scope, the access token's expiry, and the `resourceURI`, `authorizationURI` and `customerResourceURI` from the token response.
 
+5. Under **Your authorizations**, choose **View data** (an ended authorization shows **Authorize again** instead). The TP fetches `Batch/Subscription` from the DC with the customer token (never shown or stored on the page), validates the feed against the ESPI XSDs, saves the fetch in its `subscription_feed_fetches` table and shows `/subscription/{authorizationId}`: the feed's UsagePoints with LocalTimeParameters, MeterReadings with ReadingType, IntervalBlocks and their readings, UsageSummaries and ElectricPowerQualitySummaries, the validation result, and the list of fetches; **Fetch now** adds a row. The sample data gives 1 UsagePoint, 1 MeterReading, 2 IntervalBlocks of 24 readings, 1 UsageSummary and 1 ElectricPowerQualitySummary. Local times use the LocalTimeParameters standard offset; DST is not applied (the rules are shown).
+
+Both customer registrations (`datacustodian-monthly`, `datacustodian-daily`) request `FB=4_5_15_17` with the scope the AS registers: Monthly `FB=4_5_15_17;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000`, Daily `FB=4_5_15_17;IntervalDuration=900;BlockDuration=monthly;HistoryLength=34128000`. If a stored AS client still has an older scope, delete the local H2 files and restart.
+
+`espi.thirdparty.xml-validation` is `off`, `report` (default: issues are listed, the data is still shown) or `enforce` (a feed with issues is rejected and its data is not shown). The DC currently writes enumeration values the XSD rejects (#278, e.g. ServiceCategory `ELECTRICITY`, `MILLI`, `WH`) and SummaryMeasurement/BillingChargeSource children without the ESPI namespace (#297), so in `enforce` mode every real feed is rejected until both are fixed. To try it: restart only the TP with `ESPI_THIRDPARTY_XML_VALIDATION=enforce`.
+
+The `SubscriptionClient` sends the customer token only to a `Batch/Subscription` URI on the configured DC (`espi.datacustodian.base-url`: same scheme, host and port, path under its base path), limits the body (`espi.thirdparty.subscription.max-body-bytes`, 64 MiB), uses connect/read timeouts of 10 s / 60 s and TLS 1.3 only. Outside the `local`, `dev`, `dev-mysql` and `dev-postgresql` profiles it requires https, so a deployment must set `espi.datacustodian.base-url` to an https URL or the TP fails at startup (#298).
+
 The TP stores each token in its own ESPI `authorizations` table (Spring Security `oauth2Client`, #146), so the tokens survive a TP restart only on `dev-mysql` / `dev-postgresql`; on `local` the H2 database is in memory.
 
 The TP administrator (`admin` / `admin`) can obtain the TP's own client access token (client_credentials, `FB=34_35`) from the **Client Access Token** card on the admin page; it shows the scope, expiry, the first characters of the token only, and the token response's `authorizationURI`, `resourceURI` (energy usage Bulk) and `customerResourceURI` (Customer PII Bulk, when applicable). The AS does not return these URIs for client_credentials tokens yet (#202).
 
 ## Known limitations
 
-The customer flow stops after the token is stored. Open items (see the roadmap, #255):
+Open items (see the roadmap, #255):
 
-- **#197 / #89:** the TP cannot yet read and display the DC's feeds.
+- **#89:** the TP fetches, validates, saves and displays the Subscription feed; importing it into the usage tables is not done.
+- **#278 / #297:** DC feed defects shown on the Subscription page in `report` mode (see "Customer flow" step 5).
+- The AS PostgreSQL and MySQL seed scripts still list the old `FB=4_5_15` scopes; only the local H2 seed matches the TP registrations.
+- The sample data covers 2026-01-01 to 02 and is visible through the customer's `HistoryLength` (395 days) until about 2027-01-31; after that the feed is empty.
 - **#202:** the AS's token-response URIs: `customerResourceURI` is gated on FB 54–62 instead of FB_51, a refresh re-provisions the subscription, and the `FB=34_35` client access token carries no `authorizationURI`, `resourceURI` (energy usage Bulk) or `customerResourceURI` (Customer PII Bulk).
