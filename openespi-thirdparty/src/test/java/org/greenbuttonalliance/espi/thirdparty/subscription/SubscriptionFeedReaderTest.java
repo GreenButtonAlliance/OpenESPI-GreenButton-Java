@@ -6,11 +6,16 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+/**
+ * The reader reads what the Data Custodian sends today: the tests use the unedited DC capture
+ * ({@code feed-with-278-errors.xml}), whose SummaryMeasurement children carry no namespace (tracked separately).
+ */
 class SubscriptionFeedReaderTest {
 
 	private final SubscriptionFeedReader reader = new SubscriptionFeedReader();
@@ -21,39 +26,50 @@ class SubscriptionFeedReaderTest {
 		}
 	}
 
-	/** The fixture without the one entry whose text contains {@code marker}. */
+	/** The real DC capture without the one entry whose text contains {@code marker}; fails if none was removed. */
 	private static byte[] withoutEntryContaining(String marker) throws IOException {
 		String entry = "<atom:entry>((?!</atom:entry>).)*" + Pattern.quote(marker) + "((?!</atom:entry>).)*</atom:entry>";
-		String xml = Pattern.compile(entry, Pattern.DOTALL).matcher(fixture("valid-feed.xml")).replaceFirst("");
+		String original = fixture("feed-with-278-errors.xml");
+		Matcher matcher = Pattern.compile(entry, Pattern.DOTALL).matcher(original);
+		String xml = matcher.replaceFirst("");
+		assertThat(xml).as("entry containing %s removed", marker).hasSizeLessThan(original.length());
 		return xml.getBytes(StandardCharsets.UTF_8);
 	}
 
 	@Test
 	void readsSampleSubscription() throws IOException {
-		SubscriptionTree tree = reader.read(fixture("valid-feed.xml").getBytes(StandardCharsets.UTF_8));
+		SubscriptionTree tree = reader.read(fixture("feed-with-278-errors.xml").getBytes(StandardCharsets.UTF_8));
 
 		assertThat(tree)
 				.returns(8, SubscriptionTree::entryCount)
 				.returns("Green Button Subscription Feed", SubscriptionTree::title)
 				.satisfies(t -> assertThat(t.linkingProblems()).isEmpty())
-				.extracting(SubscriptionTree::usagePoints, org.assertj.core.api.InstanceOfAssertFactories.LIST)
-				.hasSize(1);
+				.satisfies(t -> assertThat(t.usagePoints()).hasSize(1));
 
 		UsagePointNode usagePoint = tree.usagePoints().get(0);
 		assertThat(usagePoint)
 				.satisfies(n -> assertThat(n.localTimeParameters()).isNotNull())
-				.satisfies(n -> assertThat(n.usageSummaries()).hasSize(1))
-				.satisfies(n -> assertThat(n.powerQualitySummaries()).hasSize(1))
-				.satisfies(n -> assertThat(n.meterReadings()).hasSize(1));
+				.satisfies(n -> assertThat(n.meterReadings()).hasSize(1))
+				.satisfies(n -> assertThat(n.usageSummaries()).singleElement()
+						.satisfies(s -> assertThat(s.resource().getOverallConsumptionLastPeriod())
+								.returns(1325000000L, m -> m.getValue())
+								.returns(1769922000L, m -> m.getTimeStamp())))
+				.satisfies(n -> assertThat(n.powerQualitySummaries()).singleElement()
+						.satisfies(s -> assertThat(s.resource().getMainsVoltage()).isEqualTo(240000L)));
 
 		MeterReadingNode meterReading = usagePoint.meterReadings().get(0);
 		assertThat(meterReading)
-				.satisfies(n -> assertThat(n.readingType()).isNotNull())
+				.satisfies(n -> assertThat(n.readingType()).isNotNull()
+						.satisfies(r -> assertThat(r.resource())
+								.returns("-3", rt -> rt.getPowerOfTenMultiplier())
+								.returns("72", rt -> rt.getUom())))
 				.satisfies(n -> assertThat(n.intervalBlocks())
 						.hasSize(2)
 						.allSatisfy(b -> assertThat(b.resource().getIntervalReadings()).hasSize(24))
 						.extracting(b -> b.resource().getInterval().getStart())
-						.isSorted());
+						.isSorted())
+				.satisfies(n -> assertThat(n.intervalBlocks().get(0).resource().getIntervalReadings().get(0).getValue())
+						.isEqualTo(420000L));
 	}
 
 	@Test
