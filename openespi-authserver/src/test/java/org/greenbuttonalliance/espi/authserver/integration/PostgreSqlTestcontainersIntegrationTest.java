@@ -23,12 +23,13 @@ package org.greenbuttonalliance.espi.authserver.integration;
 import org.greenbuttonalliance.espi.authserver.repository.RegisteredClientAdminDao;
 import org.springframework.security.oauth2.server.authorization.client.JdbcRegisteredClientRepository;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
@@ -46,10 +47,13 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Testcontainers integration tests for PostgreSQL database operations
@@ -65,11 +69,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Testcontainers
 @ActiveProfiles("testcontainers")
 @DisplayName("PostgreSQL Testcontainers Integration Tests")
-@Disabled("Blocked by #152: PostgreSQL migration V2 attaches chk_risk_score_range to "
-        + "oauth2_registered_client, but risk_score lives on oauth2_authorization, so Flyway "
-        + "aborts and the context never loads. The Flyway-locations path bug in this class IS "
-        + "fixed here (db/vendor/postgresql); re-enable once #152 lands. MySQL equivalent "
-        + "(MySqlTestcontainersIntegrationTest) is green.")
+@Tag("testcontainers-it") // Docker-backed; selectable alone via -Dgroups=testcontainers-it
 class PostgreSqlTestcontainersIntegrationTest {
 
     @Container
@@ -111,10 +111,14 @@ class PostgreSqlTestcontainersIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        // Clean up any existing test data
-        jdbcTemplate.execute("DELETE FROM oauth2_authorization WHERE registered_client_id LIKE 'test-%'");
-        jdbcTemplate.execute("DELETE FROM espi_application_info WHERE client_id LIKE 'test-%'");
-        jdbcTemplate.execute("DELETE FROM oauth2_registered_client WHERE id LIKE 'test-%'");
+        // Clean up the clients these tests create (ids "test-..."). The V3 seed client
+        // test-development-client shares the prefix and has metrics and consent rows, so it is kept (#152).
+        String createdByTests = "SELECT id FROM oauth2_registered_client"
+                + " WHERE id LIKE 'test-%' AND id <> 'test-development-client'";
+        jdbcTemplate.execute("DELETE FROM oauth2_authorization WHERE registered_client_id IN (" + createdByTests + ")");
+        jdbcTemplate.execute("DELETE FROM espi_application_info WHERE client_id IN"
+                + " (SELECT client_id FROM oauth2_registered_client WHERE id IN (" + createdByTests + "))");
+        jdbcTemplate.execute("DELETE FROM oauth2_registered_client WHERE id IN (" + createdByTests + ")");
     }
 
     @Nested
@@ -238,16 +242,18 @@ class PostgreSqlTestcontainersIntegrationTest {
             RegisteredClient retrieved = clientRepository.findByClientId("test-postgres-client");
 
             // Then
-            assertThat(retrieved).isNotNull();
-            assertThat(retrieved.getClientName()).isEqualTo("PostgreSQL Test Client");
-            
-            // Verify that UUIDs in ESPI application info table are properly generated
-            String uuid = jdbcTemplate.queryForObject(
-                "SELECT uuid FROM espi_application_info WHERE client_id = ?",
-                String.class, "test-postgres-client"
-            );
-            assertThat(uuid).isNotNull();
-            assertThat(uuid).matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
+            assertThat(retrieved).isNotNull()
+                    .extracting(RegisteredClient::getClientName)
+                    .isEqualTo("PostgreSQL Test Client");
+
+            // ESPI application info can only reference a registered client: the V1 foreign key
+            // fk_espi_application_info_client_id rejects an unknown client_id. (Saving a client creates
+            // no application info row and the uuid column has no default, so nothing is generated, #152.)
+            assertThatThrownBy(() -> jdbcTemplate.update(
+                "INSERT INTO espi_application_info (uuid, client_id, client_name) VALUES (?, ?, ?)",
+                UUID.randomUUID().toString(), "no-such-client", "Orphan"))
+                    .isInstanceOf(DataIntegrityViolationException.class)
+                    .hasMessageContaining("fk_espi_application_info_client_id");
         }
 
         @Test
@@ -291,12 +297,14 @@ class PostgreSqlTestcontainersIntegrationTest {
         @Test
         @DisplayName("Should handle large text fields correctly")
         void shouldHandleLargeTextFieldsCorrectly() {
-            // Given - Create a client with large text fields
-            String largeScope = "scope1 scope2 scope3 scope4 scope5 scope6 scope7 scope8 scope9 scope10 " +
-                               "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13 " +
-                               "FB=4_5_16;IntervalDuration=900;BlockDuration=daily;HistoryLength=7 " +
-                               "DataCustodian_Admin_Access ThirdParty_Admin_Access Customer_Data_Access";
-            
+            // Given - Create a client with large text fields. Each scope is added on its own: an OAuth2
+            // scope token cannot contain a space, so RegisteredClient rejects one space-separated string.
+            List<String> largeScopes = List.of(
+                    "scope1", "scope2", "scope3", "scope4", "scope5", "scope6", "scope7", "scope8", "scope9", "scope10",
+                    "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13",
+                    "FB=4_5_16;IntervalDuration=900;BlockDuration=daily;HistoryLength=7",
+                    "DataCustodian_Admin_Access", "ThirdParty_Admin_Access", "Customer_Data_Access");
+
             RegisteredClient client = RegisteredClient.withId("test-large-text")
                     .clientId("test-large-text-client")
                     .clientName("Large Text Test Client with Very Long Name That Tests Field Limits")
@@ -304,7 +312,7 @@ class PostgreSqlTestcontainersIntegrationTest {
                     .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                     .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                     .redirectUri("https://example.com/callback?with=very&long=query&parameters=that&test=field&limits=properly")
-                    .scope(largeScope)
+                    .scopes(scopes -> scopes.addAll(largeScopes))
                     .build();
 
             // When
@@ -312,9 +320,9 @@ class PostgreSqlTestcontainersIntegrationTest {
             RegisteredClient retrieved = clientRepository.findByClientId("test-large-text-client");
 
             // Then
-            assertThat(retrieved).isNotNull();
-            assertThat(retrieved.getScopes()).hasSize(8); // All scopes should be preserved
-            assertThat(retrieved.getScopes()).contains("FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=13");
+            assertThat(retrieved).isNotNull()
+                    .extracting(RegisteredClient::getScopes)
+                    .isEqualTo(Set.copyOf(largeScopes)); // all 15 scopes are preserved
         }
 
         @Test
@@ -341,8 +349,8 @@ class PostgreSqlTestcontainersIntegrationTest {
         @Test
         @DisplayName("Should handle timestamp fields correctly")
         void shouldHandleTimestampFieldsCorrectly() {
-            // Given
-            Instant now = Instant.now();
+            // Given - PostgreSQL timestamps hold microseconds, so the test's instants carry no finer digits
+            Instant now = Instant.now().truncatedTo(ChronoUnit.MICROS);
             Instant futureExpiry = now.plus(Duration.ofDays(365));
             
             RegisteredClient client = RegisteredClient.withId("test-timestamps")
@@ -379,26 +387,24 @@ class PostgreSqlTestcontainersIntegrationTest {
         @Test
         @DisplayName("Should populate ESPI application info for new clients")
         void shouldPopulateEspiApplicationInfoForNewClients() {
-            // Given
-            RegisteredClient client = createEspiTestClient("test-espi-info", "ESPI Info Test Client");
+            // Given - a client and its ESPI application info row. Saving a RegisteredClient does not
+            // create the row (only the client management API inserts it), so the test inserts it (#152).
+            clientRepository.save(createEspiTestClient("test-espi-info", "ESPI Info Test Client"));
+            jdbcTemplate.update(
+                "INSERT INTO espi_application_info (uuid, client_id, client_name, updated_at) " +
+                "VALUES (?, ?, ?, TIMESTAMP '2000-01-01 00:00:00')",
+                UUID.randomUUID().toString(), "test-espi-info", "ESPI Info Test Client");
 
             // When
-            clientRepository.save(client);
+            jdbcTemplate.update("UPDATE espi_application_info SET client_description = ? WHERE client_id = ?",
+                "updated", "test-espi-info");
 
-            // Then
-            // Verify ESPI application info is created
-            int count = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM espi_application_info WHERE client_id = ?",
-                Integer.class, "test-espi-info"
-            );
-            assertThat(count).isEqualTo(1);
-
-            // Verify updated_at trigger works
-            String updatedAt = jdbcTemplate.queryForObject(
+            // Then - the V1 trigger update_espi_application_info_updated_at has moved updated_at forward
+            Instant updatedAt = jdbcTemplate.queryForObject(
                 "SELECT updated_at FROM espi_application_info WHERE client_id = ?",
-                String.class, "test-espi-info"
-            );
-            assertThat(updatedAt).isNotNull();
+                java.sql.Timestamp.class, "test-espi-info"
+            ).toInstant();
+            assertThat(updatedAt).isAfter(Instant.parse("2001-01-01T00:00:00Z"));
         }
 
         @Test
@@ -580,10 +586,14 @@ class PostgreSqlTestcontainersIntegrationTest {
     }
 
     private RegisteredClient createEspiTestClient(String clientId, String clientName) {
-        return RegisteredClient.withId("test-" + UUID.randomUUID().toString())
+        // Unique secret per client, as in MySqlTestcontainersIntegrationTest: Spring's stock
+        // JdbcRegisteredClientRepository rejects a save whose client_secret duplicates an existing row
+        // ("Found duplicate client secret"), which broke every test that persists more than one client.
+        String unique = UUID.randomUUID().toString();
+        return RegisteredClient.withId("test-" + unique)
                 .clientId(clientId)
                 .clientName(clientName)
-                .clientSecret("{noop}secret")
+                .clientSecret("{noop}secret-" + unique)
                 .clientIdIssuedAt(Instant.now())
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)

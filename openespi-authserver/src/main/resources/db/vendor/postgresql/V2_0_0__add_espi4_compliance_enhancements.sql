@@ -294,7 +294,12 @@ CREATE INDEX idx_oauth2_registered_client_created ON oauth2_registered_client (c
 ALTER TABLE oauth2_registered_client
 ADD CONSTRAINT chk_rate_limit_positive CHECK (rate_limit_per_minute > 0),
 ADD CONSTRAINT chk_max_sessions_positive CHECK (max_concurrent_sessions > 0),
-ADD CONSTRAINT chk_failure_count_non_negative CHECK (failure_count >= 0),
+ADD CONSTRAINT chk_failure_count_non_negative CHECK (failure_count >= 0);
+
+-- risk_score is a column of oauth2_authorization (added above), not oauth2_registered_client (#152).
+-- Editing this applied-looking migration is safe: on PostgreSQL it always failed here, and PostgreSQL
+-- DDL is transactional, so no database has V2 recorded as applied.
+ALTER TABLE oauth2_authorization
 ADD CONSTRAINT chk_risk_score_range CHECK (risk_score >= 0.00 AND risk_score <= 1.00);
 
 -- Create function for calculating client metrics
@@ -339,11 +344,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Create trigger for espi_application_info
-CREATE TRIGGER update_espi_application_info_updated_at 
-    BEFORE UPDATE ON espi_application_info 
-    FOR EACH ROW 
-    EXECUTE FUNCTION update_updated_at_column();
+-- The update_espi_application_info_updated_at trigger is created by V1 (#152: creating it again here
+-- failed with "trigger ... already exists").
 
 -- Add ESPI 4.0 compliance validation
 INSERT INTO oauth2_audit_log (event_type, client_id, principal_name, success, additional_data)
