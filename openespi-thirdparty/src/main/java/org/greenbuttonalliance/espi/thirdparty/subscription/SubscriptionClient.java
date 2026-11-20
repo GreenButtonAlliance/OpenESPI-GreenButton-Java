@@ -5,6 +5,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
@@ -17,6 +19,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLParameters;
+import java.security.GeneralSecurityException;
 import java.time.Duration;
 import java.time.format.DateTimeFormatter;
 
@@ -36,30 +41,65 @@ public class SubscriptionClient {
 	private final RestClient restClient;
 	private final URI baseUrl;
 	private final int maxBodyBytes;
+	private final boolean requireHttps;
 
 	@Autowired
 	public SubscriptionClient(RestClient.Builder builder,
 							  @Value("${espi.datacustodian.base-url:http://localhost:8081/DataCustodian}") String baseUrl,
 							  @Value("${espi.thirdparty.subscription.max-body-bytes:67108864}") int maxBodyBytes,
 							  @Value("${espi.thirdparty.subscription.connect-timeout:10s}") Duration connectTimeout,
-							  @Value("${espi.thirdparty.subscription.read-timeout:60s}") Duration readTimeout) {
-		this(builder.clone().requestFactory(requestFactory(connectTimeout, readTimeout)), baseUrl, maxBodyBytes, true);
+							  @Value("${espi.thirdparty.subscription.read-timeout:60s}") Duration readTimeout,
+							  Environment environment) {
+		this(builder, baseUrl, maxBodyBytes, connectTimeout, readTimeout,
+				!environment.acceptsProfiles(Profiles.of("local", "dev", "dev-mysql", "dev-postgresql")), defaultTlsContext());
 	}
 
 	/** For tests: {@code builder} is used as given (a mock server may be bound to it). */
 	SubscriptionClient(RestClient.Builder builder, String baseUrl, int maxBodyBytes) {
-		this(builder.clone(), baseUrl, maxBodyBytes, true);
+		this(builder, baseUrl, maxBodyBytes, false);
 	}
 
-	private SubscriptionClient(RestClient.Builder builder, String baseUrl, int maxBodyBytes, boolean ready) {
-		this.restClient = builder.build();
+	/** For tests: as above, with the https-only rule of the non-local profiles switched on or off. */
+	SubscriptionClient(RestClient.Builder builder, String baseUrl, int maxBodyBytes, boolean requireHttps) {
+		this(builder.clone(), baseUrl, maxBodyBytes, requireHttps, true);
+	}
+
+	/** For tests: a real connection, trusting what {@code sslContext} trusts. */
+	SubscriptionClient(RestClient.Builder builder, String baseUrl, int maxBodyBytes, Duration connectTimeout,
+					   Duration readTimeout, boolean requireHttps, SSLContext sslContext) {
+		this(builder.clone().requestFactory(requestFactory(connectTimeout, readTimeout, sslContext)),
+				baseUrl, maxBodyBytes, requireHttps, true);
+	}
+
+	private SubscriptionClient(RestClient.Builder builder, String baseUrl, int maxBodyBytes, boolean requireHttps,
+							   boolean ready) {
 		this.baseUrl = URI.create(baseUrl);
+		if (requireHttps && !"https".equalsIgnoreCase(this.baseUrl.getScheme())) {
+			throw new IllegalStateException("espi.datacustodian.base-url must use https outside the local and dev profiles: "
+					+ baseUrl);
+		}
+		this.restClient = builder.build();
 		this.maxBodyBytes = maxBodyBytes;
+		this.requireHttps = requireHttps;
 	}
 
-	private static JdkClientHttpRequestFactory requestFactory(Duration connectTimeout, Duration readTimeout) {
-		JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(
-				HttpClient.newBuilder().connectTimeout(connectTimeout).build());
+	private static SSLContext defaultTlsContext() {
+		try {
+			SSLContext context = SSLContext.getInstance("TLS");
+			context.init(null, null, null);
+			return context;
+		} catch (GeneralSecurityException e) {
+			throw new IllegalStateException("No TLS support available", e);
+		}
+	}
+
+	/** The outbound connection speaks TLS 1.3 only: a server that offers TLS 1.2 or earlier is refused. */
+	private static JdkClientHttpRequestFactory requestFactory(Duration connectTimeout, Duration readTimeout,
+															   SSLContext sslContext) {
+		SSLParameters parameters = new SSLParameters();
+		parameters.setProtocols(new String[]{"TLSv1.3"});
+		JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(HttpClient.newBuilder()
+				.connectTimeout(connectTimeout).sslContext(sslContext).sslParameters(parameters).build());
 		factory.setReadTimeout(readTimeout);
 		return factory;
 	}
@@ -111,7 +151,7 @@ public class SubscriptionClient {
 		}
 		String basePath = baseUrl.getPath() == null ? "" : baseUrl.getPath().replaceAll("/+$", "");
 		String path = uri.getPath() == null ? "" : uri.getPath();
-		boolean ok = uri.getScheme() != null && uri.getScheme().equalsIgnoreCase(baseUrl.getScheme())
+		boolean ok = uri.getScheme() != null && (!requireHttps || "https".equalsIgnoreCase(uri.getScheme())) && uri.getScheme().equalsIgnoreCase(baseUrl.getScheme())
 				&& uri.getHost() != null && uri.getHost().equalsIgnoreCase(baseUrl.getHost())
 				&& effectivePort(uri) == effectivePort(baseUrl)
 				&& (path.equals(basePath) || path.startsWith(basePath + "/"))

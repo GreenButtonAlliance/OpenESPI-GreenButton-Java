@@ -50,7 +50,8 @@ espi:
   thirdparty:
     base-url: http://localhost:8082/ThirdParty
   datacustodian:
-    base-url: http://localhost:8081/DataCustodian
+    # https: the test profile is not local/dev, so SubscriptionClient requires it (#298)
+    base-url: https://localhost:8081/DataCustodian
   authorization-server:
     issuer-uri: http://localhost:9999
     authorization-endpoint: http://localhost:9999/oauth2/authorize

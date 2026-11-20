@@ -196,6 +196,9 @@ espi:
     #             e.g. the non-numeric ServiceCategory kind of #278, is refused)
     xml-validation: report
     subscription:
+      # The Data Custodian is reached over HTTPS with TLS 1.3 only (a TLS 1.2 or earlier server is
+      # refused, #298). Plain http is accepted only when one of the local, dev, dev-mysql or
+      # dev-postgresql profiles is active; elsewhere espi.datacustodian.base-url must be https.
       # Limits on the Data Custodian's answer to a Batch/Subscription fetch: a body over max-body-bytes
       # (64 MiB) is refused and nothing is saved; the connect and read timeouts end a stalled call.
       max-body-bytes: 67108864

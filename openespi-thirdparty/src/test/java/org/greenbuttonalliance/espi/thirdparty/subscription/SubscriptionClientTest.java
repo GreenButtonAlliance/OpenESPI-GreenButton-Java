@@ -104,4 +104,61 @@ class SubscriptionClientTest {
 		server.verify();
 		assertThat(response.status()).isEqualTo(302);
 	}
+
+	@Test
+	void outsideLocalAndDevAnHttpResourceUriIsRefusedWithoutARequest() {
+		RestClient.Builder httpBuilder = RestClient.builder();
+		MockRestServiceServer httpServer = MockRestServiceServer.bindTo(httpBuilder).build();
+		SubscriptionClient strict = new SubscriptionClient(httpBuilder, "https://dc.example/espi", 10, true);
+
+		assertThatThrownBy(() -> strict.get("http://dc.example/espi/1_1/resource/Batch/Subscription/abc", "secret-token", RANGE))
+				.isInstanceOf(DataCustodianUnreachableException.class)
+				.hasMessage("The authorization's resource URI is not on the configured Data Custodian.");
+		httpServer.verify();
+	}
+
+	@Test
+	void outsideLocalAndDevAnHttpBaseUrlFailsConstruction() {
+		assertThatThrownBy(() -> new SubscriptionClient(RestClient.builder(), "http://dc.example/espi", 10, true))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessageContaining("espi.datacustodian.base-url must use https");
+	}
+
+	@Test
+	void outsideLocalAndDevAnHttpsResourceUriIsAccepted() {
+		RestClient.Builder httpsBuilder = RestClient.builder();
+		MockRestServiceServer httpsServer = MockRestServiceServer.bindTo(httpsBuilder).build();
+		SubscriptionClient strict = new SubscriptionClient(httpsBuilder, "https://dc.example/espi", 10, true);
+		httpsServer.expect(requestTo(startsWith(URI))).andRespond(MockRestResponseCreators.withSuccess("<f/>", MediaType.APPLICATION_ATOM_XML));
+
+		assertThat(strict.get(URI, "tok", RANGE).status()).isEqualTo(200);
+	}
+
+	@Test
+	void onLocalAnHttpResourceUriIsAccepted() {
+		RestClient.Builder localBuilder = RestClient.builder();
+		MockRestServiceServer localServer = MockRestServiceServer.bindTo(localBuilder).build();
+		SubscriptionClient local = new SubscriptionClient(localBuilder, "http://localhost:8081/DataCustodian", 10, false);
+		String http = "http://localhost:8081/DataCustodian/espi/1_1/resource/Batch/Subscription/abc";
+		localServer.expect(requestTo(startsWith(http))).andRespond(MockRestResponseCreators.withSuccess("<f/>", MediaType.APPLICATION_ATOM_XML));
+
+		assertThat(local.get(http, "tok", RANGE).status()).isEqualTo(200);
+	}
+
+	@Test
+	void profilesDecideWhetherHttpIsAllowed() {
+		org.springframework.mock.env.MockEnvironment dev = new org.springframework.mock.env.MockEnvironment();
+		dev.setActiveProfiles("dev-mysql");
+		org.springframework.mock.env.MockEnvironment prod = new org.springframework.mock.env.MockEnvironment();
+		prod.setActiveProfiles("prod");
+		String http = "http://localhost:8081/DataCustodian";
+
+		SubscriptionClient onDev = new SubscriptionClient(RestClient.builder(), http, 10,
+				java.time.Duration.ofSeconds(1), java.time.Duration.ofSeconds(1), dev);
+
+		assertThat(onDev).isNotNull();
+		assertThatThrownBy(() -> new SubscriptionClient(RestClient.builder(), http, 10,
+				java.time.Duration.ofSeconds(1), java.time.Duration.ofSeconds(1), prod))
+				.isInstanceOf(IllegalStateException.class);
+	}
 }
