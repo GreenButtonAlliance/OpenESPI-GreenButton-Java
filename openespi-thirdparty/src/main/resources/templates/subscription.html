@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<!--
+  The Subscription page (#89): the Batch/Subscription feed the Third Party fetched for one of the signed-in
+  customer's authorizations. Model: page (SubscriptionPage) and display (SubscriptionDisplay, which turns
+  feed values into text). Feed text is always written with th:text (escaped), never th:utext.
+-->
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(~{::title})}">
+    <title>Your energy data - Third Party - Green Button Alliance</title>
+</head>
+<body data-gba-app="thirdparty">
+
+<nav th:replace="~{fragments/layout :: header}"></nav>
+
+<main class="container mt-4" th:with="auth=${page.authorization}">
+    <h1 class="h3">Your energy data</h1>
+
+    <div th:if="${notice}" class="alert alert-warning" role="alert">
+        <i class="bi bi-exclamation-triangle"></i> <span th:text="${notice}">The Data Custodian could not be reached.</span>
+    </div>
+
+    <!-- 1. Authorization and fetches -->
+    <section class="card mb-4">
+        <div class="gba-card-header"><h2>Authorization</h2></div>
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-sm-3">Access</dt>
+                <dd class="col-sm-9" th:text="${auth.access}">Data Custodian (Monthly)</dd>
+                <dt class="col-sm-3">Scope</dt>
+                <dd class="col-sm-9"><code th:text="${auth.scope}">FB=4_5_15</code></dd>
+                <dt class="col-sm-3">History available</dt>
+                <dd class="col-sm-9" th:text="${auth.historyPeriod}">13 months (395 days)</dd>
+                <dt class="col-sm-3">Subscription</dt>
+                <dd class="col-sm-9"><code th:text="${auth.resourceUri}"></code></dd>
+            </dl>
+
+            <div th:unless="${auth.active}" class="alert alert-warning mt-3 mb-0" role="alert">
+                <i class="bi bi-exclamation-triangle"></i>
+                This authorization has ended; the Third Party can no longer fetch your data. The fetches saved
+                earlier are listed below.
+                <a th:if="${auth.authorizeUrl != null}" th:href="@{${auth.authorizeUrl}}" class="btn btn-primary btn-sm ms-2">
+                    <i class="bi bi-shield-check"></i> Authorize again</a>
+            </div>
+
+            <form th:if="${auth.active}" th:action="@{/subscription/{id}/fetch(id=${auth.id})}" method="post"
+                  class="row g-2 align-items-end mt-3">
+                <div class="col-auto">
+                    <label for="from" class="form-label small mb-0">From (UTC)</label>
+                    <input type="date" id="from" name="from" class="form-control form-control-sm">
+                </div>
+                <div class="col-auto">
+                    <label for="to" class="form-label small mb-0">To (UTC, inclusive)</label>
+                    <input type="date" id="to" name="to" class="form-control form-control-sm">
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-arrow-repeat"></i> Fetch now</button>
+                </div>
+                <div class="col-12 small text-muted">Leave the dates empty to ask for all the history the authorization allows.</div>
+            </form>
+
+            <div th:if="${page.selected != null}" th:with="shown=${page.selected}" class="mt-3">
+                <h3 class="h6">Fetch shown</h3>
+                <dl class="row mb-0 small">
+                    <dt class="col-sm-3">Fetched</dt>
+                    <dd class="col-sm-9" th:text="${shown.fetchedAt}"></dd>
+                    <dt class="col-sm-3">Range asked for</dt>
+                    <dd class="col-sm-9" th:text="${shown.range}"></dd>
+                    <dt class="col-sm-3">HTTP status</dt>
+                    <dd class="col-sm-9" th:text="${shown.status}"></dd>
+                </dl>
+                <div th:if="${page.errorBody != null}" class="mt-2">
+                    <p class="mb-1">The Data Custodian did not return the feed. Its response:</p>
+                    <pre class="border p-2 small" th:text="${page.errorBody}"></pre>
+                </div>
+            </div>
+
+            <h3 class="h6 mt-3">Saved fetches</h3>
+            <p th:if="${page.fetches.isEmpty()}" class="small mb-0">No fetches saved yet.</p>
+            <ul th:unless="${page.fetches.isEmpty()}" class="small mb-0">
+                <li th:each="saved : ${page.fetches}">
+                    <a th:href="@{/subscription/{id}(id=${auth.id},fetch=${saved.id})}" th:text="${saved.fetchedAt}">2026-11-20 19:39 UTC</a>
+                    &middot; <span th:text="${saved.status}">200 OK</span>
+                    <span th:if="${page.selected != null and page.selected.id == saved.id}" class="badge text-bg-secondary">shown</span>
+                </li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- 2. Validation -->
+    <section th:if="${page.validation != null}" th:with="validation=${page.validation}" class="card mb-4">
+        <div class="gba-card-header"><h2>Schema validation</h2></div>
+        <div class="card-body">
+            <p>Mode: <code th:text="${validation.mode}">REPORT</code></p>
+            <p th:if="${validation.valid == null}" class="mb-0">Validation is off.</p>
+            <p th:if="${validation.valid == true}" class="mb-0">The feed is valid against the ESPI schemas.</p>
+            <th:block th:if="${validation.valid == false}">
+                <p th:if="${validation.blocksDisplay()}" class="alert alert-danger">
+                    The feed does not conform to the ESPI schemas, and this Third Party is set to enforce them: the
+                    data is not shown.
+                </p>
+                <p th:text="${validation.errorCount} + ' schema error(s):'">278 schema error(s):</p>
+                <div class="table-responsive">
+                    <table class="table table-sm small" id="validation-issues">
+                        <thead><tr><th>Severity</th><th>Line</th><th>Column</th><th>Message</th></tr></thead>
+                        <tbody>
+                        <tr th:each="issue : ${validation.issues}">
+                            <td th:text="${issue.severity}">ERROR</td>
+                            <td th:text="${issue.line}">1</td>
+                            <td th:text="${issue.column}">1</td>
+                            <td th:text="${issue.message}">cvc-...</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </th:block>
+        </div>
+    </section>
+
+    <div th:if="${page.readError != null}" class="alert alert-danger" role="alert"
+         th:text="'The feed could not be read: ' + ${page.readError}">The feed could not be read: reason</div>
+
+    <th:block th:if="${page.tree != null}" th:with="tree=${page.tree}">
+
+        <!-- 3. Linking problems -->
+        <section th:unless="${tree.linkingProblems.isEmpty()}" class="card mb-4">
+            <div class="gba-card-header"><h2>Linking problems</h2></div>
+            <div class="card-body">
+                <ul class="mb-0"><li th:each="problem : ${tree.linkingProblems}" th:text="${problem}"></li></ul>
+            </div>
+        </section>
+
+        <p th:if="${page.message != null}" class="alert alert-info" th:text="${page.message}"></p>
+
+        <!-- 4. UsagePoints -->
+        <section th:each="node : ${tree.usagePoints}" class="card mb-4"
+                 th:with="usagePoint=${node.usagePoint.resource},
+                          localTime=${node.localTimeParameters == null ? null : node.localTimeParameters.resource}">
+            <div class="gba-card-header"><h2>UsagePoint</h2></div>
+            <div class="card-body">
+                <dl class="row small">
+                    <dt class="col-sm-3">Id</dt>
+                    <dd class="col-sm-9"><code th:text="${node.usagePoint.id}"></code></dd>
+                    <dt class="col-sm-3">Service category</dt>
+                    <dd class="col-sm-9" th:text="${display.serviceCategory(usagePoint.serviceCategory)}"></dd>
+                    <dt class="col-sm-3">Status</dt>
+                    <dd class="col-sm-9" th:text="${usagePoint.status} ?: '-'"></dd>
+                    <dt class="col-sm-3">Local time</dt>
+                    <dd class="col-sm-9">
+                        <span th:if="${localTime == null}">No LocalTimeParameters: times are shown in UTC.</span>
+                        <span th:if="${localTime != null}">
+                            Standard offset <span th:text="${display.offset(localTime.tzOffset)}"></span>;
+                            DST offset <span th:text="${display.duration(localTime.dstOffset)}"></span>,
+                            rules start <code th:text="${display.hex(localTime.dstStartRule)}"></code>
+                            end <code th:text="${display.hex(localTime.dstEndRule)}"></code>
+                            (local times below use the standard offset; DST is not applied)
+                        </span>
+                    </dd>
+                </dl>
+
+                <!-- MeterReadings -->
+                <div th:each="reading : ${node.meterReadings}" class="border rounded p-3 mb-3"
+                     th:with="readingType=${reading.readingType == null ? null : reading.readingType.resource}">
+                    <h3 class="h5">MeterReading</h3>
+                    <p class="small mb-1"><code th:text="${reading.meterReading.id}"></code></p>
+                    <p th:if="${readingType == null}" class="small">(no ReadingType)</p>
+                    <dl th:if="${readingType != null}" class="row small">
+                        <dt class="col-sm-3">Commodity</dt><dd class="col-sm-9" th:text="${display.commodity(readingType.commodity)}"></dd>
+                        <dt class="col-sm-3">Kind</dt><dd class="col-sm-9" th:text="${display.kind(readingType.kind)}"></dd>
+                        <dt class="col-sm-3">Unit</dt><dd class="col-sm-9" th:text="${display.unit(readingType.uom)}"></dd>
+                        <dt class="col-sm-3">Power of ten multiplier</dt><dd class="col-sm-9" th:text="${display.multiplier(readingType.powerOfTenMultiplier)}"></dd>
+                        <dt class="col-sm-3">Interval length</dt><dd class="col-sm-9" th:text="${display.duration(readingType.intervalLength)}"></dd>
+                        <dt class="col-sm-3">Accumulation</dt><dd class="col-sm-9" th:text="${display.accumulation(readingType.accumulationBehaviour)}"></dd>
+                        <dt class="col-sm-3">Flow direction</dt><dd class="col-sm-9" th:text="${display.flowDirection(readingType.flowDirection)}"></dd>
+                        <dt class="col-sm-3">Currency</dt><dd class="col-sm-9" th:text="${display.currency(readingType.currency)}"></dd>
+                    </dl>
+
+                    <p th:if="${reading.intervalBlocks.isEmpty()}" class="small mb-0">No IntervalBlocks in this range.</p>
+                    <details th:each="block : ${reading.intervalBlocks}" class="mb-2"
+                             th:with="interval=${block.resource.interval}, readings=${display.readings(block.resource)}">
+                        <summary>
+                            IntervalBlock from
+                            <span th:text="${display.local(interval?.start, localTime)}"></span>
+                            (<span th:text="${display.utc(interval?.start)}"></span>),
+                            <span th:text="${display.duration(interval?.duration)}"></span>,
+                            <span th:text="${readings.size()} + ' readings'">24 readings</span>
+                        </summary>
+                        <div class="table-responsive">
+                            <table class="table table-sm small">
+                                <thead>
+                                <tr><th>Start (local)</th><th>Start (UTC)</th><th>Duration</th><th>Raw value</th><th>Value</th><th>Cost</th></tr>
+                                </thead>
+                                <tbody>
+                                <tr th:each="r : ${readings}">
+                                    <td th:text="${display.local(r.timePeriod?.start, localTime)}"></td>
+                                    <td th:text="${display.utc(r.timePeriod?.start)}"></td>
+                                    <td th:text="${display.duration(r.timePeriod?.duration)}"></td>
+                                    <td th:text="${r.value} ?: '-'"></td>
+                                    <td th:text="${display.scaled(r.value, readingType)}"></td>
+                                    <td th:text="${display.money(r.cost, readingType?.currency)}"></td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </details>
+                </div>
+
+                <!-- Summaries -->
+                <div th:each="summary : ${node.usageSummaries}" th:with="s=${summary.resource}" class="border rounded p-3 mb-3">
+                    <h3 class="h5">UsageSummary</h3>
+                    <dl class="row small mb-0">
+                        <dt class="col-sm-3">Billing period</dt>
+                        <dd class="col-sm-9">
+                            <span th:text="${display.local(s.billingPeriod?.start, localTime)}"></span>,
+                            <span th:text="${display.duration(s.billingPeriod?.duration)}"></span>
+                        </dd>
+                        <dt class="col-sm-3">Overall consumption</dt>
+                        <dd class="col-sm-9" th:text="${display.measurement(s.overallConsumptionLastPeriod)}"></dd>
+                        <dt class="col-sm-3">Bill last period</dt>
+                        <dd class="col-sm-9" th:text="${display.money(s.billLastPeriod, s.currency)}"></dd>
+                        <dt class="col-sm-3">Bill to date</dt>
+                        <dd class="col-sm-9" th:text="${display.money(s.billToDate, s.currency)}"></dd>
+                        <dt class="col-sm-3">Currency</dt>
+                        <dd class="col-sm-9" th:text="${display.currency(s.currency)}"></dd>
+                    </dl>
+                </div>
+
+                <div th:each="summary : ${node.powerQualitySummaries}" th:with="q=${summary.resource}" class="border rounded p-3 mb-3">
+                    <h3 class="h5">ElectricPowerQualitySummary</h3>
+                    <dl class="row small mb-0">
+                        <dt class="col-sm-3">Summary interval</dt>
+                        <dd class="col-sm-9">
+                            <span th:text="${display.local(q.summaryInterval?.start, localTime)}"></span>,
+                            <span th:text="${display.duration(q.summaryInterval?.duration)}"></span>
+                        </dd>
+                        <th:block th:each="measured : ${display.powerQuality(q)}">
+                            <dt class="col-sm-3" th:text="${measured.label}"></dt>
+                            <dd class="col-sm-9" th:text="${measured.value}"></dd>
+                        </th:block>
+                    </dl>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. Feed facts -->
+        <section class="card mb-4">
+            <div class="gba-card-header"><h2>Feed</h2></div>
+            <div class="card-body">
+                <dl class="row small mb-0">
+                    <dt class="col-sm-3">Id</dt><dd class="col-sm-9"><code th:text="${tree.feedId}"></code></dd>
+                    <dt class="col-sm-3">Updated</dt><dd class="col-sm-9" th:text="${tree.updated} ?: '-'"></dd>
+                    <dt class="col-sm-3">Entries</dt><dd class="col-sm-9" th:text="${tree.entryCount}"></dd>
+                </dl>
+            </div>
+        </section>
+    </th:block>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+
+</body>
+</html>

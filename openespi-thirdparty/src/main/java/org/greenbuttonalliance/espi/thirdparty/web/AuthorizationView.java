@@ -20,6 +20,7 @@
 package org.greenbuttonalliance.espi.thirdparty.web;
 
 import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
+import org.greenbuttonalliance.espi.thirdparty.oauth.DataCustodianRegistrations;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 
@@ -31,14 +32,37 @@ import java.time.format.DateTimeFormatter;
  * One stored Data Custodian authorization (#146) as the TP pages show it. Never carries a token
  * value except {@link #tokenPrefix}, the first characters of the access token, for the administrator's
  * client access token check.
+ *
+ * @param id           the authorization's id, for the Subscription page link (#89)
+ * @param active       the status is ACTIVE; an expired access token still counts, since fetching refreshes it
+ * @param authorizeUrl the home page's authorize button for this registration ("Authorize again"), or null
  */
-public record AuthorizationView(String access, String status, String scope, String expires, String obtained,
-								String tokenPrefix, String resourceUri, String authorizationUri,
-								String customerResourceUri) {
+public record AuthorizationView(String id, String access, String status, boolean active, String scope,
+								String expires, String obtained, String tokenPrefix, String resourceUri,
+								String authorizationUri, String customerResourceUri, String authorizeUrl) {
 
 	private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z")
 			.withZone(ZoneId.systemDefault());
 	private static final int TOKEN_PREFIX_LENGTH = 8;
+
+	/**
+	 * The home page's authorize button for a customer registration (OAuth2ClientController), or null for
+	 * any other registration.
+	 */
+	public static String authorizeUrl(String registrationId) {
+		if (DataCustodianRegistrations.MONTHLY.equals(registrationId)) {
+			return "/oauth2/authorize/monthly";
+		}
+		if (DataCustodianRegistrations.DAILY.equals(registrationId)) {
+			return "/oauth2/authorize/daily";
+		}
+		return null;
+	}
+
+	/** The status is ACTIVE (token expiry aside: a fetch refreshes an expired access token). */
+	public static boolean isActive(AuthorizationEntity authorization) {
+		return AuthorizationEntity.STATUS_ACTIVE.equals(authorization.getStatus());
+	}
 
 	static AuthorizationView of(AuthorizationEntity authorization, ClientRegistrationRepository registrations) {
 		ClientRegistration registration = authorization.getClientRegistrationId() == null ? null
@@ -51,8 +75,10 @@ public record AuthorizationView(String access, String status, String scope, Stri
 		String token = authorization.getAccessToken();
 		String tokenPrefix = token == null ? null
 				: token.substring(0, Math.min(TOKEN_PREFIX_LENGTH, token.length())) + "…";
-		return new AuthorizationView(access, authorization.getStatus(), authorization.getScope(), expires, obtained,
-				tokenPrefix, authorization.getResourceURI(), authorization.getAuthorizationURI(),
-				authorization.getCustomerResourceURI());
+		String id = authorization.getId() == null ? null : authorization.getId().toString();
+		return new AuthorizationView(id, access, authorization.getStatus(), isActive(authorization),
+				authorization.getScope(), expires, obtained, tokenPrefix, authorization.getResourceURI(),
+				authorization.getAuthorizationURI(), authorization.getCustomerResourceURI(),
+				authorizeUrl(authorization.getClientRegistrationId()));
 	}
 }

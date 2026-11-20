@@ -93,6 +93,7 @@
                             <th scope="col">Scope</th>
                             <th scope="col">Access token expires</th>
                             <th scope="col">Data Custodian resources</th>
+                            <th scope="col">Your data</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -105,6 +106,15 @@
                                 <div th:if="${authorization.resourceUri}">Resource: <code th:text="${authorization.resourceUri}"></code></div>
                                 <div th:if="${authorization.authorizationUri}">Authorization: <code th:text="${authorization.authorizationUri}"></code></div>
                                 <div th:if="${authorization.customerResourceUri}">Customer: <code th:text="${authorization.customerResourceUri}"></code></div>
+                            </td>
+                            <td>
+                                <!-- #89: the Subscription page; a revoked (or otherwise ended) row offers its authorize button -->
+                                <a th:if="${authorization.active and authorization.resourceUri != null}"
+                                   th:href="@{/subscription/{id}(id=${authorization.id})}"
+                                   class="btn btn-outline-primary btn-sm"><i class="bi bi-table"></i> View data</a>
+                                <a th:if="${!authorization.active and authorization.authorizeUrl != null}"
+                                   th:href="@{${authorization.authorizeUrl}}"
+                                   class="btn btn-primary btn-sm"><i class="bi bi-shield-check"></i> Authorize again</a>
                             </td>
                         </tr>
                         </tbody>

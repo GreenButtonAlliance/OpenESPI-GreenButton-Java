@@ -19,21 +19,50 @@
 
 package org.greenbuttonalliance.espi.thirdparty.web;
 
+import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
+import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.greenbuttonalliance.espi.common.repositories.usage.AuthorizationRepository;
+import org.greenbuttonalliance.espi.thirdparty.oauth.DataCustodianRegistrations;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.ui.ExtendedModelMap;
 
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * The home page. Most tests call the controller directly; the rendering tests go through MockMvc with the
+ * customer's authorizations mocked, to check the per-row links of "Your authorizations" (#89).
+ */
+@SpringBootTest
+@AutoConfigureMockMvc
+@ActiveProfiles("test")
 class HomeControllerTests {
+
+	private static final UUID ACTIVE_ID = UUID.fromString("11111111-2222-5333-8444-555555555555");
+	private static final UUID REVOKED_ID = UUID.fromString("66666666-7777-5888-9999-000000000000");
+
+	@Autowired
+	private MockMvc mockMvc;
+
+	@MockitoBean
+	private AuthorizationRepository renderedAuthorizations;
 
 	private final AuthorizationRepository authorizationRepository = mock(AuthorizationRepository.class);
 
@@ -90,5 +119,57 @@ class HomeControllerTests {
 	@Test
 	void usagePolicy_displaysUsagePolicyView() {
 		assertThat(controller.usagePolicy()).isEqualTo("/UsagePolicy");
+	}
+
+	private static AuthorizationEntity authorization(UUID id, String registrationId, boolean active) {
+		RetailCustomerEntity customer = new RetailCustomerEntity();
+		customer.setUsername("customer");
+		AuthorizationEntity authorization = new AuthorizationEntity();
+		authorization.setId(id);
+		authorization.setRetailCustomer(customer);
+		authorization.setClientRegistrationId(registrationId);
+		authorization.setScope("FB=4_5_15;HistoryLength=604800");
+		authorization.setResourceURI("http://localhost:8081/DataCustodian/espi/1_1/resource/Batch/Subscription/" + id);
+		if (active) {
+			authorization.activate();
+		} else {
+			authorization.revoke();
+		}
+		return authorization;
+	}
+
+	private String homeWith(AuthorizationEntity... authorizations) throws Exception {
+		when(renderedAuthorizations
+				.findAllByRetailCustomer_UsernameAndClientRegistrationIdIsNotNullOrderByUpdatedDesc("customer"))
+				.thenReturn(List.of(authorizations));
+		String html = mockMvc.perform(get("/").with(user("customer").roles("USER")))
+				.andExpect(status().isOk())
+				.andReturn().getResponse().getContentAsString();
+		// only the "Your authorizations" table: the authorize cards above it link to /oauth2/authorize/... too
+		int table = html.indexOf("id=\"authorizations\"");
+		assertThat(table).as("authorizations table rendered").isNotNegative();
+		return html.substring(table, html.indexOf("</table>", table));
+	}
+
+	@Test
+	void activeRowWithResourceUriLinksToItsSubscriptionPage() throws Exception {
+		assertThat(homeWith(authorization(ACTIVE_ID, DataCustodianRegistrations.DAILY, true)))
+				.contains("href=\"/subscription/" + ACTIVE_ID + "\"", "View data")
+				.doesNotContain("Authorize again");
+	}
+
+	@Test
+	void revokedRowOffersAuthorizeAgainAndNoLink() throws Exception {
+		assertThat(homeWith(authorization(REVOKED_ID, DataCustodianRegistrations.DAILY, false)))
+				.contains("Authorize again", "href=\"/oauth2/authorize/daily\"")
+				.doesNotContain("/subscription/" + REVOKED_ID, "View data");
+	}
+
+	@Test
+	void activeRowWithoutResourceUriHasNoLink() throws Exception {
+		AuthorizationEntity noUri = authorization(ACTIVE_ID, DataCustodianRegistrations.MONTHLY, true);
+		noUri.setResourceURI(null);
+
+		assertThat(homeWith(noUri)).doesNotContain("/subscription/", "View data");
 	}
 }
