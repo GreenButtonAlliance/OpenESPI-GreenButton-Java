@@ -37,7 +37,6 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 
 class DiskSubscriptionFeedCaptureTest {
 
@@ -57,12 +56,11 @@ class DiskSubscriptionFeedCaptureTest {
 		new DiskSubscriptionFeedCapture(true, tempDir.toString()).capture("sub-1", 200, body);
 
 		List<Path> files = captured();
-		byte[] written = Files.readAllBytes(files.get(0));
 		assertThat(files).singleElement()
 				.satisfies(f -> assertThat(f.getFileName().toString()).isEqualTo("GET_Batch_Subscription_sub-1_1.xml"))
 				.extracting(f -> f.getParent().getFileName().toString()).asString()
 				.matches("thirdparty-run-\\d{8}-\\d{6}");
-		assertThat(written).isEqualTo(body);
+		assertThat(Files.readAllBytes(files.get(0))).isEqualTo(body);
 	}
 
 	@Test
@@ -71,10 +69,9 @@ class DiskSubscriptionFeedCaptureTest {
 				.capture("sub-2", 403, "forbidden body".getBytes(StandardCharsets.UTF_8));
 
 		List<Path> files = captured();
-		String written = Files.readString(files.get(0));
 		assertThat(files).extracting(f -> f.getFileName().toString())
 				.containsExactly("GET_Batch_Subscription_sub-2_1.error.txt");
-		assertThat(written).contains("HTTP 403").contains("forbidden body");
+		assertThat(Files.readString(files.get(0))).contains("HTTP 403").contains("forbidden body");
 	}
 
 	@Test
@@ -96,17 +93,35 @@ class DiskSubscriptionFeedCaptureTest {
 	}
 
 	@Test
-	void invalidDirDisablesCaptureWithoutFailing() throws IOException {
-		DiskSubscriptionFeedCapture capture = new DiskSubscriptionFeedCapture(true, "bad\0dir");
+	void invalidDirDisablesCaptureWithOneWarning() {
+		List<ILoggingEvent> logged = logged(() -> {
+			DiskSubscriptionFeedCapture capture = new DiskSubscriptionFeedCapture(true, "bad\0dir");
+			capture.capture("sub-5", 200, "<a/>".getBytes(StandardCharsets.UTF_8));
+		});
 
-		assertThatCode(() -> capture.capture("sub-5", 200, "<a/>".getBytes(StandardCharsets.UTF_8)))
-				.doesNotThrowAnyException();
-		assertThat(captured()).isEmpty();
+		assertThat(logged).singleElement()
+				.satisfies(e -> assertThat(e.getLevel()).isEqualTo(Level.WARN))
+				.extracting(ILoggingEvent::getFormattedMessage).asString()
+				.contains("capture is off", "espi.dev.xml-capture.dir");
 	}
 
 	@Test
-	void disabledIgnoresAnInvalidDir() {
-		assertThatCode(() -> new DiskSubscriptionFeedCapture(false, "bad\0dir")).doesNotThrowAnyException();
+	void disabledIgnoresAnInvalidDirSilently() {
+		assertThat(logged(() -> new DiskSubscriptionFeedCapture(false, "bad\0dir"))).isEmpty();
+	}
+
+	/** Runs the action and returns what DiskSubscriptionFeedCapture logged meanwhile; the action must not throw. */
+	private static List<ILoggingEvent> logged(Runnable action) {
+		Logger logger = (Logger) LoggerFactory.getLogger(DiskSubscriptionFeedCapture.class);
+		ListAppender<ILoggingEvent> appender = new ListAppender<>();
+		appender.start();
+		logger.addAppender(appender);
+		try {
+			action.run();
+			return List.copyOf(appender.list);
+		} finally {
+			logger.detachAppender(appender);
+		}
 	}
 
 	@Test
@@ -142,20 +157,12 @@ class DiskSubscriptionFeedCaptureTest {
 	@Test
 	void ioFailureIsLoggedAndNotThrown() throws IOException {
 		Path occupied = Files.writeString(tempDir.resolve("occupied"), "a regular file");
-		Logger logger = (Logger) LoggerFactory.getLogger(DiskSubscriptionFeedCapture.class);
-		ListAppender<ILoggingEvent> appender = new ListAppender<>();
-		appender.start();
-		logger.addAppender(appender);
-		try {
-			DiskSubscriptionFeedCapture capture = new DiskSubscriptionFeedCapture(true, occupied.toString());
+		List<ILoggingEvent> logged = logged(() ->
+				new DiskSubscriptionFeedCapture(true, occupied.toString())
+						.capture("sub-6", 200, "<a/>".getBytes(StandardCharsets.UTF_8)));
 
-			assertThatCode(() -> capture.capture("sub-6", 200, "<a/>".getBytes(StandardCharsets.UTF_8)))
-					.doesNotThrowAnyException();
-			assertThat(appender.list).singleElement()
-					.satisfies(e -> assertThat(e.getLevel()).isEqualTo(Level.WARN));
-		} finally {
-			logger.detachAppender(appender);
-		}
+		assertThat(logged).singleElement()
+				.satisfies(e -> assertThat(e.getLevel()).isEqualTo(Level.WARN));
 	}
 
 	@Nested
