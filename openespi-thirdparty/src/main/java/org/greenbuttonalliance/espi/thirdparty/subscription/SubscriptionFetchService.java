@@ -12,6 +12,7 @@ import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.core.OAuth2AuthorizationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionOperations;
+import org.springframework.web.client.ResourceAccessException;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
@@ -45,6 +46,8 @@ public class SubscriptionFetchService {
 		record InvalidRange(String message) implements FetchOutcome {
 		}
 	}
+
+	static final String AS_UNREACHABLE = "The Authorization Server could not be reached.";
 
 	private final AuthorizationRepository authorizations;
 	private final OAuth2AuthorizedClientManager authorizedClientManager;
@@ -116,6 +119,9 @@ public class SubscriptionFetchService {
 			authorizedClient = authorizedClientManager.authorize(
 					OAuth2AuthorizeRequest.withClientRegistrationId(owned.getClientRegistrationId()).principal(user).build());
 		} catch (OAuth2AuthorizationException e) {
+			if (authorizationServerUnreachable(e)) {
+				return new FetchOutcome.Unreachable(AS_UNREACHABLE);
+			}
 			// the token is gone (ClientAuthorizationRequiredException) or its refresh was rejected
 			authorizedClient = null;
 		}
@@ -144,8 +150,25 @@ public class SubscriptionFetchService {
 				: new FeedValidation(validator.mode(), null, 0, List.of());
 		SubscriptionFeedFetchEntity saved = fetches.save(new SubscriptionFeedFetchEntity(authorizationId,
 				clock.instant(), resourceUri, range.publishedMin(), range.publishedMax(), response.status(),
+				// decoded as UTF-8 whatever the XML declaration says: ESPI feeds are UTF-8
 				new String(response.body(), StandardCharsets.UTF_8), validation));
 		return new FetchOutcome.Saved(saved.getId());
+	}
+
+	/**
+	 * A refresh that failed because the Authorization Server could not be reached or answered no token response
+	 * (Spring's {@code invalid_token_response}) says nothing about the customer's authorization.
+	 */
+	private static boolean authorizationServerUnreachable(OAuth2AuthorizationException e) {
+		if (e.getError() != null && "invalid_token_response".equals(e.getError().getErrorCode())) {
+			return true;
+		}
+		for (Throwable cause = e.getCause(); cause != null; cause = cause.getCause()) {
+			if (cause instanceof ResourceAccessException) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private static boolean notBlank(String value) {

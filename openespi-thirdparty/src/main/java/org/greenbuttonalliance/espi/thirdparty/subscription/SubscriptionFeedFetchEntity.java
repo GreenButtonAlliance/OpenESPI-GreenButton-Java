@@ -24,10 +24,14 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
+import jakarta.persistence.PostLoad;
+import jakarta.persistence.PostPersist;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import org.hibernate.Length;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import org.springframework.data.domain.Persistable;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -39,7 +43,14 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "subscription_feed_fetches")
-public class SubscriptionFeedFetchEntity {
+public class SubscriptionFeedFetchEntity implements Persistable<UUID> {
+
+	/**
+	 * The id is assigned in the constructor, so Spring Data cannot tell a new row by a null id: without this
+	 * flag {@code save} would SELECT before every INSERT. False once persisted or loaded.
+	 */
+	@Transient
+	private boolean newEntity = true;
 
 	@Id
 	@JdbcTypeCode(SqlTypes.CHAR)
@@ -101,8 +112,20 @@ public class SubscriptionFeedFetchEntity {
 		this.errorCount = validation.errorCount();
 	}
 
+	@Override
 	public UUID getId() {
 		return id;
+	}
+
+	@Override
+	public boolean isNew() {
+		return newEntity;
+	}
+
+	@PostPersist
+	@PostLoad
+	void markNotNew() {
+		this.newEntity = false;
 	}
 
 	public UUID getAuthorizationId() {

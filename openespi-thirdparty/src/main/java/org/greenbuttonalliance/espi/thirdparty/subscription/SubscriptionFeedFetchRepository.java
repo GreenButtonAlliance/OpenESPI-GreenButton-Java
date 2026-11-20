@@ -22,6 +22,7 @@ package org.greenbuttonalliance.espi.thirdparty.subscription;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -29,9 +30,12 @@ import java.util.UUID;
 /** Saved {@code Batch/Subscription} fetches (#89), always read through their authorization. */
 public interface SubscriptionFeedFetchRepository extends JpaRepository<SubscriptionFeedFetchEntity, UUID> {
 
-	List<SubscriptionFeedFetchEntity> findAllByAuthorizationIdOrderByFetchedAtDesc(UUID authorizationId);
+	/** A fetch without its body (which can be tens of MiB): what the page's list of earlier fetches needs. */
+	record FetchSummary(UUID id, Instant fetchedAt, int httpStatus, Instant publishedMin, Instant publishedMax) {
+	}
 
-	Optional<SubscriptionFeedFetchEntity> findFirstByAuthorizationIdOrderByFetchedAtDesc(UUID authorizationId);
+	/** Newest first; loads no body. Load the one to show with {@link #findByIdAndAuthorizationId}. */
+	List<FetchSummary> findAllByAuthorizationIdOrderByFetchedAtDesc(UUID authorizationId);
 
 	Optional<SubscriptionFeedFetchEntity> findByIdAndAuthorizationId(UUID id, UUID authorizationId);
 }

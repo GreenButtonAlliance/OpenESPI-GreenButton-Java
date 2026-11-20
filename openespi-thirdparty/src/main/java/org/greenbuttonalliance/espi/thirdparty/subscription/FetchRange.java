@@ -3,6 +3,7 @@ package org.greenbuttonalliance.espi.thirdparty.subscription;
 import org.greenbuttonalliance.espi.common.scope.EspiScope;
 
 import java.time.Clock;
+import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -25,15 +26,23 @@ public record FetchRange(Instant publishedMin, Instant publishedMax) {
 		if (from != null && to != null && from.isAfter(to)) {
 			throw new IllegalArgumentException(INVERTED);
 		}
-		Instant min = from != null ? from.atStartOfDay(ZoneOffset.UTC).toInstant() : defaultMin(now, scope);
-		Instant max = to != null ? to.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant() : now;
+		Instant min;
+		Instant max;
+		try {
+			min = from != null ? from.atStartOfDay(ZoneOffset.UTC).toInstant() : defaultMin(now, scope);
+			max = to != null ? to.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant() : now;
+		} catch (DateTimeException e) {
+			throw new IllegalArgumentException(OUT_OF_RANGE, e);
+		}
 		if (min.isAfter(max)) {
-			throw new IllegalArgumentException(INVERTED);
+			throw new IllegalArgumentException(from == null ? BEFORE_HISTORY : INVERTED);
 		}
 		return new FetchRange(min, max);
 	}
 
 	private static final String INVERTED = "The start date must be on or before the end date.";
+	private static final String BEFORE_HISTORY = "The end date is before the history this authorization allows.";
+	private static final String OUT_OF_RANGE = "A date is outside the range of dates that can be requested.";
 
 	private static Instant defaultMin(Instant now, String scope) {
 		try {

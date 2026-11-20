@@ -31,9 +31,11 @@ spring:
           use_query_cache: false
   
   # Flyway Database Migration: the ESPI schema scripts shipped in openespi-common, as in the Data
-  # Custodian. db/migration holds the shared versions (V1, V3, V5); db/vendor/<vendor> holds V2.
-  # Each profile sets its vendor folder; MySQL is the fallback. V4 (the Data Custodian's handoff
-  # nonces, from openespi-handoff) is not used by the Third Party, so its absence is expected.
+  # Custodian. db/migration holds the shared versions; db/vendor/<vendor> holds V2 and the other
+  # vendor-specific ones; db/thirdparty/<vendor> holds the Third Party's own V7
+  # (subscription_feed_fetches, #89). Each profile sets its vendor folders; MySQL is the fallback.
+  # V4 (the Data Custodian's handoff nonces, from openespi-handoff) is not used by the Third Party,
+  # so its absence is expected.
   flyway:
     enabled: true
     # No baselining: no Third Party database was ever built by Flyway (before #267 Hibernate built
@@ -200,7 +202,9 @@ espi:
       # refused, #298). Plain http is accepted only when one of the local, dev, dev-mysql or
       # dev-postgresql profiles is active; elsewhere espi.datacustodian.base-url must be https.
       # Limits on the Data Custodian's answer to a Batch/Subscription fetch: a body over max-body-bytes
-      # (64 MiB) is refused and nothing is saved; the connect and read timeouts end a stalled call.
+      # (64 MiB) is refused and nothing is saved. The connect timeout bounds the connection; the read
+      # timeout bounds only the wait for the response headers, not a body that stalls once it has
+      # started (the body limit bounds size, not time).
       max-body-bytes: 67108864
       connect-timeout: 10s
       read-timeout: 60s

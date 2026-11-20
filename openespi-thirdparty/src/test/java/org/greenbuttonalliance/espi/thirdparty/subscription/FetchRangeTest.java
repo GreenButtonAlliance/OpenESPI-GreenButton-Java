@@ -60,6 +60,13 @@ class FetchRangeTest {
 	void rejectsAToBeforeTheHistoryLengthDefault() {
 		assertThatThrownBy(() -> FetchRange.of(null, LocalDate.of(2020, 1, 1), "FB=4;HistoryLength=34128000", CLOCK))
 				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessage("The start date must be on or before the end date.");
+				.hasMessage("The end date is before the history this authorization allows.");
+	}
+
+	@Test
+	void aDateBeyondWhatJavaCanRepresentIsRejectedNotAnError() {
+		assertThatThrownBy(() -> FetchRange.of(null, LocalDate.of(999999999, 12, 31), "FB=4", CLOCK))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("A date is outside the range of dates that can be requested.");
 	}
 }

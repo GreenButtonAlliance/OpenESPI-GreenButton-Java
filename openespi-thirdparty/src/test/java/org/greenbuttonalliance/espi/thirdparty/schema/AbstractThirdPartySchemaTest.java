@@ -141,24 +141,30 @@ abstract class AbstractThirdPartySchemaTest {
 					authorizationId, first.plusSeconds(1).plusMillis(1), uri, null, null, 500, "error",
 					new FeedValidation(XmlValidationMode.ENFORCE, Boolean.FALSE, 3, List.of())));
 
+			// the list is a body-less projection, newest first; timestamps keep their instant on every database
 			assertThat(feedFetchRepository.findAllByAuthorizationIdOrderByFetchedAtDesc(authorizationId))
-					.extracting(SubscriptionFeedFetchEntity::getHttpStatus,
-							f -> f.getBody().length(),
-							SubscriptionFeedFetchEntity::getValidationMode,
-							SubscriptionFeedFetchEntity::getSchemaValid)
+					.extracting(SubscriptionFeedFetchRepository.FetchSummary::httpStatus,
+							SubscriptionFeedFetchRepository.FetchSummary::fetchedAt,
+							SubscriptionFeedFetchRepository.FetchSummary::publishedMin,
+							SubscriptionFeedFetchRepository.FetchSummary::publishedMax)
 					.containsExactly(
-							tuple(500, "error".length(), XmlValidationMode.ENFORCE, Boolean.FALSE),
-							tuple(403, "forbidden".length(), XmlValidationMode.OFF, null),
-							tuple(200, 100_000, XmlValidationMode.REPORT, Boolean.TRUE));
+							tuple(500, first.plusSeconds(1).plusMillis(1), null, null),
+							tuple(403, first.plusSeconds(1), null, null),
+							tuple(200, first, Instant.parse("2026-01-01T00:00:00Z"), Instant.parse("2026-11-01T00:00:00Z")));
 
-			assertThat(feedFetchRepository.findFirstByAuthorizationIdOrderByFetchedAtDesc(authorizationId))
-					.hasValueSatisfying(f -> assertThat(f)
-							.extracting(SubscriptionFeedFetchEntity::getId, SubscriptionFeedFetchEntity::getFetchedAt,
-									SubscriptionFeedFetchEntity::getErrorCount)
-							.containsExactly(newest.getId(), first.plusSeconds(1).plusMillis(1), 3));
-
+			// the body, validation and error count are loaded only with the one fetch asked for
 			assertThat(feedFetchRepository.findByIdAndAuthorizationId(newest.getId(), authorizationId))
-					.hasValueSatisfying(f -> assertThat(f.getHttpStatus()).isEqualTo(500));
+					.hasValueSatisfying(f -> assertThat(f)
+							.extracting(SubscriptionFeedFetchEntity::getHttpStatus,
+									f2 -> f2.getBody().length(),
+									SubscriptionFeedFetchEntity::getValidationMode,
+									SubscriptionFeedFetchEntity::getSchemaValid,
+									SubscriptionFeedFetchEntity::getErrorCount, SubscriptionFeedFetchEntity::isNew)
+							.containsExactly(500, "error".length(), XmlValidationMode.ENFORCE, Boolean.FALSE, 3, false));
+			assertThat(feedFetchRepository.findByIdAndAuthorizationId(
+					feedFetchRepository.findAllByAuthorizationIdOrderByFetchedAtDesc(authorizationId).get(2).id(),
+					authorizationId))
+					.hasValueSatisfying(f -> assertThat(f.getBody()).hasSize(100_000));
 			assertThat(feedFetchRepository.findByIdAndAuthorizationId(newest.getId(), UUID.randomUUID())).isEmpty();
 
 			authorizationRepository.deleteById(authorizationId);

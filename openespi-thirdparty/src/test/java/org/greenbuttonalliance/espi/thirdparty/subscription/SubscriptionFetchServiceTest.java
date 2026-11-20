@@ -21,6 +21,7 @@ import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.support.TransactionOperations;
+import org.springframework.web.client.ResourceAccessException;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -151,6 +152,31 @@ class SubscriptionFetchServiceTest {
 		FetchOutcome outcome = service.fetch(id, user, null, null);
 
 		assertThat(outcome).isEqualTo(new FetchOutcome.NotAuthorized());
+		verifyNoInteractions(client);
+		verify(fetches, never()).save(any());
+	}
+
+	@Test
+	void anInvalidTokenResponseIsTheAuthorizationServerUnreachableNotAnEndedAuthorization() {
+		when(manager.authorize(any(OAuth2AuthorizeRequest.class)))
+				.thenThrow(new ClientAuthorizationException(new OAuth2Error("invalid_token_response"), "datacustodian-monthly"));
+
+		FetchOutcome outcome = service.fetch(id, user, null, null);
+
+		assertThat(outcome).isEqualTo(new FetchOutcome.Unreachable("The Authorization Server could not be reached."));
+		verifyNoInteractions(client);
+		verify(fetches, never()).save(any());
+	}
+
+	@Test
+	void aResourceAccessCauseIsTheAuthorizationServerUnreachable() {
+		when(manager.authorize(any(OAuth2AuthorizeRequest.class)))
+				.thenThrow(new ClientAuthorizationException(new OAuth2Error("server_error"), "datacustodian-monthly",
+						new ResourceAccessException("connect timed out")));
+
+		FetchOutcome outcome = service.fetch(id, user, null, null);
+
+		assertThat(outcome).isEqualTo(new FetchOutcome.Unreachable("The Authorization Server could not be reached."));
 		verifyNoInteractions(client);
 		verify(fetches, never()).save(any());
 	}
