@@ -1,6 +1,5 @@
 package org.greenbuttonalliance.espi.thirdparty.subscription;
 
-import org.greenbuttonalliance.espi.common.uri.EspiBatchUri;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,20 +27,22 @@ import java.time.format.DateTimeFormatter;
 /**
  * GETs a {@code Batch/Subscription} feed from the Data Custodian with a customer's access token (#89).
  * The token is attached only to a URI on the configured Data Custodian, and the answer is bounded in
- * size and time.
+ * size and time. The read timeout bounds only the wait for the response headers, not a body that stalls
+ * once it has started; the body cap ({@code espi.thirdparty.subscription.max-body-bytes}) bounds its size,
+ * not the time it takes.
  */
 @Component
 public class SubscriptionClient {
 
 	static final String NOT_ON_DATA_CUSTODIAN = "The authorization's resource URI is not on the configured Data Custodian.";
 
+	private static final String SUBSCRIPTION_PATH = "/espi/1_1/resource/Batch/Subscription/";
 	private static final Logger log = LoggerFactory.getLogger(SubscriptionClient.class);
 	private static final MediaType ATOM = MediaType.APPLICATION_ATOM_XML;
 
 	private final RestClient restClient;
 	private final URI baseUrl;
 	private final int maxBodyBytes;
-	private final boolean requireHttps;
 
 	@Autowired
 	public SubscriptionClient(RestClient.Builder builder,
@@ -61,26 +62,29 @@ public class SubscriptionClient {
 
 	/** For tests: as above, with the https-only rule of the non-local profiles switched on or off. */
 	SubscriptionClient(RestClient.Builder builder, String baseUrl, int maxBodyBytes, boolean requireHttps) {
-		this(builder.clone(), baseUrl, maxBodyBytes, requireHttps, true);
+		this(builder.clone().build(), baseUrl, maxBodyBytes, requireHttps);
 	}
 
 	/** For tests: a real connection, trusting what {@code sslContext} trusts. */
 	SubscriptionClient(RestClient.Builder builder, String baseUrl, int maxBodyBytes, Duration connectTimeout,
 					   Duration readTimeout, boolean requireHttps, SSLContext sslContext) {
-		this(builder.clone().requestFactory(requestFactory(connectTimeout, readTimeout, sslContext)),
-				baseUrl, maxBodyBytes, requireHttps, true);
+		this(builder.clone().requestFactory(requestFactory(connectTimeout, readTimeout, sslContext)).build(),
+				baseUrl, maxBodyBytes, requireHttps);
 	}
 
-	private SubscriptionClient(RestClient.Builder builder, String baseUrl, int maxBodyBytes, boolean requireHttps,
-							   boolean ready) {
+	/** The one place the settings are validated; it takes a built client, which keeps its signature distinct. */
+	private SubscriptionClient(RestClient restClient, String baseUrl, int maxBodyBytes, boolean requireHttps) {
+		if (maxBodyBytes < 1 || maxBodyBytes > Integer.MAX_VALUE - 1) {
+			throw new IllegalArgumentException("espi.thirdparty.subscription.max-body-bytes must be between 1 and "
+					+ (Integer.MAX_VALUE - 1) + ": " + maxBodyBytes);
+		}
 		this.baseUrl = URI.create(baseUrl);
 		if (requireHttps && !"https".equalsIgnoreCase(this.baseUrl.getScheme())) {
 			throw new IllegalStateException("espi.datacustodian.base-url must use https outside the local and dev profiles: "
 					+ baseUrl);
 		}
-		this.restClient = builder.build();
+		this.restClient = restClient;
 		this.maxBodyBytes = maxBodyBytes;
-		this.requireHttps = requireHttps;
 	}
 
 	private static SSLContext defaultTlsContext() {
@@ -135,33 +139,65 @@ public class SubscriptionClient {
 		byte[] body = in.readNBytes(maxBodyBytes + 1);
 		if (body.length > maxBodyBytes) {
 			throw new DataCustodianUnreachableException(
-					"The Data Custodian's response exceeded " + maxBodyBytes / (1024 * 1024) + " MB.", null);
+					"The Data Custodian's response exceeded " + describeLimit(maxBodyBytes) + ".", null);
 		}
 		return body;
 	}
 
-	/** Same scheme, host and port as the base URL, a path under its path, and a Batch/Subscription id. */
+	/** "64.0 MB" from 1 MiB up, "512 bytes" below it. */
+	static String describeLimit(int bytes) {
+		return bytes < 1024 * 1024 ? bytes + " bytes"
+				: String.format(java.util.Locale.ROOT, "%.1f MB", bytes / (1024.0 * 1024.0));
+	}
+
+	/**
+	 * Same scheme, host and port as the base URL, and a path that is exactly the base path +
+	 * {@code /espi/1_1/resource/Batch/Subscription/{id}}: one id segment, no further segment, no query, no fragment.
+	 */
 	private boolean onDataCustodian(String resourceUri) {
 		URI uri;
 		try {
-			uri = URI.create(resourceUri).normalize();
+			uri = URI.create(resourceUri);
 		} catch (IllegalArgumentException | NullPointerException e) {
 			log.warn("Refusing a resource URI that does not parse");
 			return false;
 		}
-		String basePath = baseUrl.getPath() == null ? "" : baseUrl.getPath().replaceAll("/+$", "");
-		String path = uri.getPath() == null ? "" : uri.getPath();
+		// With no dot segment (written or encoded) normalizing changes nothing, so the URI sent is the URI checked.
+		if (hasDotSegment(uri) || uri.getRawQuery() != null || uri.getRawFragment() != null) {
+			log.warn("Refusing a resource URI with a dot segment, a query or a fragment");
+			return false;
+		}
+		String basePath = baseUrl.getRawPath() == null ? "" : baseUrl.getRawPath().replaceAll("/+$", "");
+		String path = uri.getRawPath() == null ? "" : uri.getRawPath();
+		String idPart = path.startsWith(basePath + SUBSCRIPTION_PATH) ? path.substring((basePath + SUBSCRIPTION_PATH).length()) : "";
 		// Equality with the base URL's scheme is enough for https-only: the constructor has already
 		// refused a non-https base URL when https is required.
 		boolean ok = uri.getScheme() != null && uri.getScheme().equalsIgnoreCase(baseUrl.getScheme())
 				&& uri.getHost() != null && uri.getHost().equalsIgnoreCase(baseUrl.getHost())
 				&& effectivePort(uri) == effectivePort(baseUrl)
-				&& (path.equals(basePath) || path.startsWith(basePath + "/"))
-				&& EspiBatchUri.subscriptionId(resourceUri).filter(id -> !id.isBlank()).isPresent();
+				&& !idPart.isEmpty() && idPart.indexOf('/') < 0;
 		if (!ok) {
 			log.warn("Refusing a resource URI whose host is {}: it is not on the configured Data Custodian", uri.getHost());
 		}
 		return ok;
+	}
+
+	/**
+	 * True when the raw path has a {@code .} or {@code ..} segment, written plainly or percent-encoded
+	 * ({@code %2e}/{@code %2E}), or when normalizing the decoded path would change it.
+	 */
+	private static boolean hasDotSegment(URI uri) {
+		String raw = uri.getRawPath();
+		if (raw == null) {
+			return false;
+		}
+		for (String segment : raw.split("/", -1)) {
+			String decoded = segment.replaceAll("(?i)%2e", ".");
+			if (decoded.equals(".") || decoded.equals("..")) {
+				return true;
+			}
+		}
+		return !uri.normalize().getPath().equals(uri.getPath());
 	}
 
 	private static int effectivePort(URI uri) {

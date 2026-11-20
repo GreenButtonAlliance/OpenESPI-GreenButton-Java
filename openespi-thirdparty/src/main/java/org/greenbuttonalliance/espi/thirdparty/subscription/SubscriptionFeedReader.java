@@ -56,8 +56,10 @@ public class SubscriptionFeedReader {
 		Map<String, AtomEntryDto> index = new LinkedHashMap<>();
 		for (AtomEntryDto entry : entries) {
 			String href = selfHref(entry);
-			if (href != null) {
-				index.put(href, entry);
+			if (href == null) {
+				problems.add("Entry " + entry.getId() + ": no self link");
+			} else if (index.putIfAbsent(href, entry) != null) {
+				problems.add("Entry " + entry.getId() + ": duplicate self link " + href);
 			}
 		}
 
@@ -122,7 +124,16 @@ public class SubscriptionFeedReader {
 		meterReadings.values().forEach(n -> n.intervalBlocks().sort(byStart));
 
 		return new SubscriptionTree(feed.getId(), feed.getTitle(), feed.getUpdated(), entries.size(),
-				List.copyOf(usagePoints.values()), List.copyOf(problems));
+				usagePoints.values().stream().map(SubscriptionFeedReader::frozen).toList(), List.copyOf(problems));
+	}
+
+	/** The node with its lists copied: they were filled while linking and are fixed from here on. */
+	private static UsagePointNode frozen(UsagePointNode node) {
+		return new UsagePointNode(node.usagePoint(), node.localTimeParameters(),
+				node.meterReadings().stream()
+						.map(m -> new MeterReadingNode(m.meterReading(), m.readingType(), List.copyOf(m.intervalBlocks())))
+						.toList(),
+				List.copyOf(node.usageSummaries()), List.copyOf(node.powerQualitySummaries()));
 	}
 
 	private static AtomFeedDto unmarshal(byte[] xml) {
@@ -132,15 +143,18 @@ public class SubscriptionFeedReader {
 			factory.setProperty(XMLInputFactory.SUPPORT_DTD, false);
 			factory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false);
 			reader = factory.createXMLStreamReader(new ByteArrayInputStream(xml));
-			if (CONTEXT.createUnmarshaller().unmarshal(reader) instanceof AtomFeedDto feed) {
+			Object root = CONTEXT.createUnmarshaller().unmarshal(reader);
+			if (root instanceof AtomFeedDto feed) {
 				return feed;
 			}
+			// no exception was thrown, so there is no cause to pass on
+			throw new SubscriptionFeedReadException(
+					"The fetched document is not an Atom feed (root " + root.getClass().getSimpleName() + ")", null);
 		} catch (JAXBException | XMLStreamException e) {
 			throw new SubscriptionFeedReadException("The fetched bytes are not an ESPI Atom feed", e);
 		} finally {
 			closeQuietly(reader);
 		}
-		throw new SubscriptionFeedReadException("The fetched document is not an Atom feed", null);
 	}
 
 	private static void closeQuietly(XMLStreamReader reader) {

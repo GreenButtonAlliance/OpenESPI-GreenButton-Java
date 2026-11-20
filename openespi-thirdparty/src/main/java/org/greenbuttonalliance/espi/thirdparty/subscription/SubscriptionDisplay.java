@@ -84,9 +84,9 @@ public class SubscriptionDisplay {
 		}
 		ZoneOffset offset = zoneOffset(localTime.getTzOffset());
 		if (offset == null) {
-			String utc = utc(epochSeconds);
-			return at(epochSeconds, ZoneOffset.UTC) == null ? utc
-					: utc + " (tzOffset " + localTime.getTzOffset() + " s is not a valid offset)";
+			String utcTime = at(epochSeconds, ZoneOffset.UTC);
+			return utcTime == null ? unrepresentable(epochSeconds)
+					: utcTime + " UTC (tzOffset " + localTime.getTzOffset() + " s is not a valid offset)";
 		}
 		String time = at(epochSeconds, offset);
 		return time == null ? unrepresentable(epochSeconds) : time + " (" + offset(localTime.getTzOffset()) + ")";

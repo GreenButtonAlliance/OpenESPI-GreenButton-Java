@@ -21,6 +21,7 @@ package org.greenbuttonalliance.espi.thirdparty.subscription;
 
 import jakarta.servlet.http.HttpServletResponse;
 import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
+import org.greenbuttonalliance.espi.thirdparty.subscription.SubscriptionFeedFetchRepository.FetchSummary;
 import org.greenbuttonalliance.espi.thirdparty.subscription.SubscriptionFetchService.FetchOutcome;
 import org.greenbuttonalliance.espi.thirdparty.web.AuthorizationView;
 import org.springframework.http.HttpStatus;
@@ -90,7 +91,7 @@ public class SubscriptionController {
 					   Authentication user, Model model, RedirectAttributes redirect) {
 		AuthorizationEntity authorization = fetchService.ownedAuthorization(authorizationId, user.getName());
 		boolean active = AuthorizationView.isStatusActive(authorization);
-		List<SubscriptionFeedFetchEntity> saved = fetches.findAllByAuthorizationIdOrderByFetchedAtDesc(authorizationId);
+		List<FetchSummary> saved = fetches.findAllByAuthorizationIdOrderByFetchedAtDesc(authorizationId);
 
 		SubscriptionFeedFetchEntity selected;
 		if (fetch != null) {
@@ -104,7 +105,9 @@ public class SubscriptionController {
 			}
 			selected = null;
 		} else {
-			selected = saved.getFirst();
+			// only the shown fetch's body is loaded; the list above holds no bodies
+			selected = fetches.findByIdAndAuthorizationId(saved.getFirst().id(), authorizationId)
+					.orElseThrow(FetchNotFoundException::new);
 		}
 
 		model.addAttribute("page", page(authorization, active, saved, selected));
@@ -131,9 +134,14 @@ public class SubscriptionController {
 			fromDate = date(from);
 			toDate = date(to);
 		} catch (DateTimeParseException e) {
-			return withNotice(page, BAD_DATE + e.getParsedString(), redirect);
+			return withNotice(page, BAD_DATE + truncated(e.getParsedString()), redirect);
 		}
 		return redirectAfter(authorizationId, fetchService.fetch(authorizationId, user, fromDate, toDate), redirect);
+	}
+
+	/** User text echoed back in a notice is cut to 40 characters. */
+	private static String truncated(String text) {
+		return text.length() <= 40 ? text : text.substring(0, 40) + "…";
 	}
 
 	private static LocalDate date(String text) {
@@ -162,7 +170,7 @@ public class SubscriptionController {
 	}
 
 	private SubscriptionPage page(AuthorizationEntity authorization, boolean active,
-								  List<SubscriptionFeedFetchEntity> saved, SubscriptionFeedFetchEntity selected) {
+								  List<FetchSummary> saved, SubscriptionFeedFetchEntity selected) {
 		SubscriptionPage.Authorization summary = new SubscriptionPage.Authorization(authorization.getId().toString(),
 				accessName(authorization.getClientRegistrationId()), authorization.getScope(),
 				display.historyPeriod(authorization.getScope()), authorization.getResourceURI(), active,
@@ -171,7 +179,8 @@ public class SubscriptionController {
 		if (selected == null) {
 			return new SubscriptionPage(summary, list, null, null, null, null, null, null);
 		}
-		SubscriptionPage.Fetch shown = fetchSummary(selected);
+		SubscriptionPage.Fetch shown = fetchSummary(new FetchSummary(selected.getId(), selected.getFetchedAt(),
+				selected.getHttpStatus(), selected.getPublishedMin(), selected.getPublishedMax()));
 		String body = selected.getBody() == null ? "" : selected.getBody();
 		if (selected.getHttpStatus() != HttpStatus.OK.value()) {
 			// at most ERROR_BODY_LIMIT characters, the ellipsis included
@@ -193,12 +202,12 @@ public class SubscriptionController {
 		}
 	}
 
-	private SubscriptionPage.Fetch fetchSummary(SubscriptionFeedFetchEntity fetch) {
-		HttpStatus status = HttpStatus.resolve(fetch.getHttpStatus());
-		String statusText = status == null ? String.valueOf(fetch.getHttpStatus())
-				: fetch.getHttpStatus() + " " + status.getReasonPhrase();
-		return new SubscriptionPage.Fetch(fetch.getId().toString(), utc(fetch.getFetchedAt()), fetch.getHttpStatus(),
-				statusText, utc(fetch.getPublishedMin()) + " to " + utc(fetch.getPublishedMax()));
+	private SubscriptionPage.Fetch fetchSummary(FetchSummary fetch) {
+		HttpStatus status = HttpStatus.resolve(fetch.httpStatus());
+		String statusText = status == null ? String.valueOf(fetch.httpStatus())
+				: fetch.httpStatus() + " " + status.getReasonPhrase();
+		return new SubscriptionPage.Fetch(fetch.id().toString(), utc(fetch.fetchedAt()), fetch.httpStatus(),
+				statusText, utc(fetch.publishedMin()) + " to " + utc(fetch.publishedMax()));
 	}
 
 	private String utc(Instant instant) {
