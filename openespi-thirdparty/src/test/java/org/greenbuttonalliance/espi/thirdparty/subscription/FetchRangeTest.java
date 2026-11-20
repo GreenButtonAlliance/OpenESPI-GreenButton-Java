@@ -48,4 +48,18 @@ class FetchRangeTest {
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessage("The start date must be on or before the end date.");
 	}
+
+	@Test
+	void rejectsAFromAfterNow() {
+		assertThatThrownBy(() -> FetchRange.of(LocalDate.of(2027, 1, 1), null, "FB=4", CLOCK))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("The start date must be on or before the end date.");
+	}
+
+	@Test
+	void rejectsAToBeforeTheHistoryLengthDefault() {
+		assertThatThrownBy(() -> FetchRange.of(null, LocalDate.of(2020, 1, 1), "FB=4;HistoryLength=34128000", CLOCK))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("The start date must be on or before the end date.");
+	}
 }

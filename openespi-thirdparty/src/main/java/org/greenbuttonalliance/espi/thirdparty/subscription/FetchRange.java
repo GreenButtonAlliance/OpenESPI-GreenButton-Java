@@ -23,12 +23,17 @@ public record FetchRange(Instant publishedMin, Instant publishedMax) {
 	public static FetchRange of(LocalDate from, LocalDate to, String scope, Clock clock) {
 		Instant now = clock.instant().truncatedTo(ChronoUnit.SECONDS);
 		if (from != null && to != null && from.isAfter(to)) {
-			throw new IllegalArgumentException("The start date must be on or before the end date.");
+			throw new IllegalArgumentException(INVERTED);
 		}
 		Instant min = from != null ? from.atStartOfDay(ZoneOffset.UTC).toInstant() : defaultMin(now, scope);
 		Instant max = to != null ? to.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant() : now;
+		if (min.isAfter(max)) {
+			throw new IllegalArgumentException(INVERTED);
+		}
 		return new FetchRange(min, max);
 	}
+
+	private static final String INVERTED = "The start date must be on or before the end date.";
 
 	private static Instant defaultMin(Instant now, String scope) {
 		try {

@@ -10,12 +10,15 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.ClientAuthorizationException;
+import org.springframework.security.oauth2.client.ClientAuthorizationRequiredException;
 import org.springframework.security.oauth2.client.OAuth2AuthorizeRequest;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
+import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.support.TransactionOperations;
 
@@ -84,13 +87,15 @@ class SubscriptionFetchServiceTest {
 		service = new SubscriptionFetchService(authorizations, manager, client, validator, fetches, capture, TransactionOperations.withoutTransaction(), CLOCK);
 	}
 
-	private void grantToken() {
+	private OAuth2AuthorizedClient grantToken() {
 		ClientRegistration registration = ClientRegistration.withRegistrationId("datacustodian-monthly")
 				.authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
 				.clientId("c").authorizationUri("https://a").tokenUri("https://t").redirectUri("https://r").build();
 		OAuth2AccessToken token = new OAuth2AccessToken(OAuth2AccessToken.TokenType.BEARER, "tok",
 				Instant.parse("2026-11-20T11:00:00Z"), Instant.parse("2026-11-20T13:00:00Z"));
-		when(manager.authorize(any(OAuth2AuthorizeRequest.class))).thenReturn(new OAuth2AuthorizedClient(registration, "alice", token));
+		OAuth2AuthorizedClient granted = new OAuth2AuthorizedClient(registration, "alice", token);
+		when(manager.authorize(any(OAuth2AuthorizeRequest.class))).thenReturn(granted);
+		return granted;
 	}
 
 	@Test
@@ -124,9 +129,11 @@ class SubscriptionFetchServiceTest {
 	@Test
 	void usesResourceUriReloadedAfterAuthorize() {
 		String changed = "https://dc.example/espi/1_1/resource/Batch/Subscription/sub-2";
-		AuthorizationEntity reloaded = authorization(changed);
-		when(authorizations.findById(id)).thenReturn(Optional.of(row), Optional.of(reloaded));
-		grantToken();
+		OAuth2AuthorizedClient granted = grantToken();
+		when(manager.authorize(any(OAuth2AuthorizeRequest.class))).thenAnswer(call -> {
+			row.setResourceURI(changed);
+			return granted;
+		});
 		when(client.get(eq(changed), eq("tok"), any(FetchRange.class)))
 				.thenReturn(new SubscriptionClient.Response(403, "no".getBytes(StandardCharsets.UTF_8)));
 
@@ -134,6 +141,57 @@ class SubscriptionFetchServiceTest {
 
 		assertThat(outcome).isEqualTo(new FetchOutcome.Saved(FETCH_ID));
 		verify(client).get(eq(changed), eq("tok"), any(FetchRange.class));
+	}
+
+	@Test
+	void aTokenThatIsGoneIsNotAuthorized() {
+		when(manager.authorize(any(OAuth2AuthorizeRequest.class)))
+				.thenThrow(new ClientAuthorizationRequiredException("datacustodian-monthly"));
+
+		FetchOutcome outcome = service.fetch(id, user, null, null);
+
+		assertThat(outcome).isEqualTo(new FetchOutcome.NotAuthorized());
+		verifyNoInteractions(client);
+		verify(fetches, never()).save(any());
+	}
+
+	@Test
+	void aRejectedRefreshIsNotAuthorized() {
+		when(manager.authorize(any(OAuth2AuthorizeRequest.class)))
+				.thenThrow(new ClientAuthorizationException(new OAuth2Error("invalid_grant"), "datacustodian-monthly"));
+
+		FetchOutcome outcome = service.fetch(id, user, null, null);
+
+		assertThat(outcome).isEqualTo(new FetchOutcome.NotAuthorized());
+		verifyNoInteractions(client);
+		verify(fetches, never()).save(any());
+	}
+
+	@Test
+	void aResourceUriNotOnTheDataCustodianIsUnreachableAndNothingIsSaved() {
+		grantToken();
+		when(client.get(any(), any(), any())).thenThrow(new DataCustodianUnreachableException(SubscriptionClient.NOT_ON_DATA_CUSTODIAN, null));
+
+		FetchOutcome outcome = service.fetch(id, user, null, null);
+
+		assertThat(outcome).isEqualTo(new FetchOutcome.Unreachable("The authorization's resource URI is not on the configured Data Custodian."));
+		verify(fetches, never()).save(any());
+	}
+
+	@Test
+	void anotherUsersAuthorizationIsNotFoundBeforeAnyAuthorizeOrRequest() {
+		Authentication mallory = new TestingAuthenticationToken("mallory", "x");
+
+		assertThatThrownBy(() -> service.fetch(id, mallory, null, null)).isInstanceOf(AuthorizationNotFoundException.class);
+		verifyNoInteractions(manager, client);
+	}
+
+	@Test
+	void aBlankClientRegistrationIdIsNotFound() {
+		row.setClientRegistrationId(" ");
+
+		assertThatThrownBy(() -> service.fetch(id, user, null, null)).isInstanceOf(AuthorizationNotFoundException.class);
+		verifyNoInteractions(manager, client);
 	}
 
 	@Test

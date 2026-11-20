@@ -9,6 +9,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.OAuth2AuthorizeRequest;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
+import org.springframework.security.oauth2.core.OAuth2AuthorizationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionOperations;
 
@@ -110,8 +111,14 @@ public class SubscriptionFetchService {
 			return new FetchOutcome.InvalidRange(e.getMessage());
 		}
 
-		OAuth2AuthorizedClient authorizedClient = authorizedClientManager.authorize(
-				OAuth2AuthorizeRequest.withClientRegistrationId(owned.getClientRegistrationId()).principal(user).build());
+		OAuth2AuthorizedClient authorizedClient;
+		try {
+			authorizedClient = authorizedClientManager.authorize(
+					OAuth2AuthorizeRequest.withClientRegistrationId(owned.getClientRegistrationId()).principal(user).build());
+		} catch (OAuth2AuthorizationException e) {
+			// the token is gone (ClientAuthorizationRequiredException) or its refresh was rejected
+			authorizedClient = null;
+		}
 		if (authorizedClient == null) {
 			return new FetchOutcome.NotAuthorized();
 		}
