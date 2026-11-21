@@ -329,11 +329,12 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- API Documentation -->
+        <!-- API Documentation. 3.2.1 brings swagger-ui 5.35.1, which bundles DOMPurify 3.4.17:
+             3.2.0's swagger-ui 5.34.0 bundled DOMPurify 3.4.16 (CVE-2026-116802/116803/116804, #131). -->
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>3.2.0</version>
+            <version>3.2.1</version>
         </dependency>
     </dependencies>
 
