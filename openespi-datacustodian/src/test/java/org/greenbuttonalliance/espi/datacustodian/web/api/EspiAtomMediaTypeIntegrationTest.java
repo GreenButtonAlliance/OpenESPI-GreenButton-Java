@@ -44,6 +44,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -139,7 +140,7 @@ class EspiAtomMediaTypeIntegrationTest {
 				.filter(path -> {
 					Map<String, Object> content = parsed.read("$.paths['" + path + "'].get.responses['200'].content");
 					return content == null
-							|| !content.keySet().equals(java.util.Set.of(MediaType.APPLICATION_ATOM_XML_VALUE));
+							|| !content.keySet().equals(Set.of(MediaType.APPLICATION_ATOM_XML_VALUE));
 				})
 				.toList();
 

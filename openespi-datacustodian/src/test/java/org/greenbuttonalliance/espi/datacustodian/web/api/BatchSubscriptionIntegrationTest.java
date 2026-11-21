@@ -47,6 +47,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.ActiveProfiles;
@@ -67,6 +68,7 @@ import java.util.regex.Pattern;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.opaqueToken;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -440,6 +442,7 @@ class BatchSubscriptionIntegrationTest {
 	// --- helpers ------------------------------------------------------------------------------------------
 
 	/** GET the subscription's feed, expecting 200; {@code params} are query parameter name/value pairs. */
+	/** Sends no Accept header, as some clients do: the feed must still be application/atom+xml (#312). */
 	private String fetch(UUID subscriptionId, RequestPostProcessor token, String... params) throws Exception {
 		MockHttpServletRequestBuilder request = get(BASE + "/Batch/Subscription/" + subscriptionId).with(token);
 		for (int i = 0; i + 1 < params.length; i += 2) {
@@ -447,6 +450,7 @@ class BatchSubscriptionIntegrationTest {
 		}
 		return mockMvc.perform(request)
 				.andExpect(status().isOk())
+				.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_ATOM_XML))
 				.andReturn().getResponse().getContentAsString();
 	}
 

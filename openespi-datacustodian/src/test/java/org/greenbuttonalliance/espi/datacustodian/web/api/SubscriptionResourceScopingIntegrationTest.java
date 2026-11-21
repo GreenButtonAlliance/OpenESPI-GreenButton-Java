@@ -47,6 +47,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.ActiveProfiles;
@@ -67,6 +68,7 @@ import java.util.regex.Pattern;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.opaqueToken;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -416,9 +418,11 @@ class SubscriptionResourceScopingIntegrationTest {
 		return "<atom:link rel=\"related\" href=\"" + BASE + path + "\" type=\"espi-feed/" + resource + "\"/>";
 	}
 
+	/** Sends no Accept header, as some clients do: the response must still be application/atom+xml (#312). */
 	private String read(String path, RequestPostProcessor token) throws Exception {
 		return mockMvc.perform(get(BASE + path).with(token))
 				.andExpect(status().isOk())
+				.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_ATOM_XML))
 				.andReturn().getResponse().getContentAsString();
 	}
 
