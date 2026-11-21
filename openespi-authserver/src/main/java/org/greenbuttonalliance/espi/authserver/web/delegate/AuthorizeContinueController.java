@@ -71,6 +71,9 @@ import java.util.List;
  *       (looked up from {@link DelegationStateService}). Spring AS sees an authenticated user
  *       with pre-existing consent, mints the authorization code, and redirects to the third
  *       party's {@code redirect_uri}.</li>
+ *   <li>The sign-in and the consent serve that one replay only:
+ *       {@link SingleUseCustomerAuthorizationResponseHandler} clears both once the code is minted, so
+ *       the customer's next authorization is delegated to the DC again (#299, #276).</li>
  * </ol>
  *
  * <h2>Deny path</h2>

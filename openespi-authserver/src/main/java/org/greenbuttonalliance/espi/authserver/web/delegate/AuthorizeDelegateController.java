@@ -20,11 +20,18 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.greenbuttonalliance.espi.authserver.config.DataCustodianIntegrationConfig;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
+import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
+import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
+import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
+import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.nio.charset.StandardCharsets;
@@ -65,10 +72,12 @@ import java.util.UUID;
 public class AuthorizeDelegateController {
 
 	private static final String DC_AUTHORIZE_SCREEN_PATH = "/oauth/authorize-screen";
+	private static final OAuth2TokenType STATE_TOKEN_TYPE = new OAuth2TokenType(OAuth2ParameterNames.STATE);
 
 	private final OutboundHandoffBuilder handoffBuilder;
 	private final DataCustodianIntegrationConfig dcIntegration;
 	private final DelegationStateService delegationStateService;
+	private final OAuth2AuthorizationService authorizationService;
 	private final RegisteredClientRepository registeredClientRepository;
 
 	/**
@@ -81,7 +90,15 @@ public class AuthorizeDelegateController {
 	 *   <li>{@code client_id} &mdash; the requesting TP's client_id</li>
 	 *   <li>{@code state} &mdash; the TP's CSRF state, used here as the correlation id so the
 	 *       AS-side and DC-side logs join cleanly</li>
+	 *   <li>{@code redirect_uri} &mdash; the TP's callback, forwarded by {@link DelegateAuthorizationEntryPoint}</li>
 	 * </ul>
+	 *
+	 * <p>Spring AS's consent-page redirect is different: it carries Spring's own consent {@code state} and no
+	 * {@code redirect_uri}. Taken as the TP's, that state made the TP ignore the callback (#299). The TP's
+	 * {@code state} and {@code redirect_uri} are then read from the original request that Spring AS saved with
+	 * the pending authorization under its consent state. Since #299 the customer's AS sign-in no longer outlives
+	 * a minted code ({@link SingleUseCustomerAuthorizationResponseHandler}), so this path is only reached when a
+	 * delegation was left unfinished.</p>
 	 */
 	@GetMapping("/authorize/delegate")
 	public String delegate(@RequestParam("scope") String scope,
@@ -90,17 +107,26 @@ public class AuthorizeDelegateController {
 						   @RequestParam(value = "redirect_uri", required = false) String redirectUri,
 						   HttpServletRequest request) {
 
-		String correlationId = state != null && !state.isBlank() ? state : UUID.randomUUID().toString();
+		String tpState = state;
+		String resolvedRedirectUri = redirectUri;
+		if (redirectUri == null || redirectUri.isBlank()) {
+			OAuth2AuthorizationRequest original = pendingConsentRequest(clientId, state);
+			if (original != null) {
+				tpState = original.getState();
+				resolvedRedirectUri = original.getRedirectUri();
+			}
+			if (resolvedRedirectUri == null || resolvedRedirectUri.isBlank()) {
+				resolvedRedirectUri = soleRegisteredRedirectUri(clientId);
+			}
+			if (resolvedRedirectUri == null) {
+				log.warn("AS delegation refused: client_id={} sent no redirect_uri and it cannot be determined", clientId);
+				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "redirect_uri cannot be determined");
+			}
+		}
+		String correlationId = tpState != null && !tpState.isBlank() ? tpState : UUID.randomUUID().toString();
 
-		// Save delegation state so AuthorizeContinueController can find the third party's
-		// redirect_uri and TP state on the return trip. redirect_uri is optional in the request
-		// (Spring AS's consentPage redirect doesn't always include it); when absent we fall back
-		// to the FIRST configured redirect_uri on the RegisteredClient — adequate for most ESPI
-		// third parties which register a single URI, documented as a limitation for the rest.
-		String resolvedRedirectUri = redirectUri != null && !redirectUri.isBlank()
-				? redirectUri
-				: firstRegisteredRedirectUri(clientId);
-		delegationStateService.save(correlationId, clientId, resolvedRedirectUri, state, scope);
+		// Saved so AuthorizeContinueController replays /oauth2/authorize with the TP's redirect_uri and state.
+		delegationStateService.save(correlationId, clientId, resolvedRedirectUri, tpState, scope);
 
 		String signedToken = handoffBuilder.buildSignedToken(clientId, scope, correlationId);
 
@@ -117,9 +143,34 @@ public class AuthorizeDelegateController {
 		return "redirect:" + url;
 	}
 
-	private String firstRegisteredRedirectUri(String clientId) {
+	/**
+	 * The TP's original request, when {@code state} is Spring AS's consent state for a pending authorization of
+	 * this client; that pending authorization is removed, as the replay from /continue creates its own.
+	 */
+	private OAuth2AuthorizationRequest pendingConsentRequest(String clientId, String state) {
+		if (state == null || state.isBlank()) {
+			return null;
+		}
+		OAuth2Authorization pending = authorizationService.findByToken(state, STATE_TOKEN_TYPE);
+		if (pending == null) {
+			return null;
+		}
+		OAuth2AuthorizationRequest original = pending.getAttribute(OAuth2AuthorizationRequest.class.getName());
+		if (original == null || !clientId.equals(original.getClientId())) {
+			return null;
+		}
+		authorizationService.remove(pending);
+		return original;
+	}
+
+	/**
+	 * The client's redirect_uri when it registered exactly one, which RFC 6749 3.1.2.3 lets it leave out of the
+	 * request. With several there is no telling which one was meant ({@code RegisteredClient} holds them in a
+	 * set), so none is guessed (#299).
+	 */
+	private String soleRegisteredRedirectUri(String clientId) {
 		RegisteredClient client = registeredClientRepository.findByClientId(clientId);
-		if (client == null || client.getRedirectUris().isEmpty()) {
+		if (client == null || client.getRedirectUris().size() != 1) {
 			return null;
 		}
 		return client.getRedirectUris().iterator().next();
