@@ -39,26 +39,55 @@ jobs:
       - name: Install modules (no tests)
         run: mvn install -DskipTests
 
-      # ADVISORY until #131 (pre-existing high-severity transitive CVEs) is cleared: findings are
-      # reported (artifact) but never block a PR. To make it a gate: remove `continue-on-error`
-      # and add `-DfailBuildOnCVSS=8` to the command below.
+      # ADVISORY until #131 is cleared, and visibly so: the step fails on any dependency with CVSS 8
+      # or higher, or when it cannot run at all (an NVD outage, say). continue-on-error keeps that
+      # from blocking a PR, and the next step turns it into a warning on the run instead of a silent
+      # pass. To make it a gate: remove continue-on-error and the warning step.
+      #
+      # NVD_API_KEY is REQUIRED (free from NIST): dependency-check 13 cannot download the NVD data
+      # without one. It is read through nvdApiKeyEnvironmentVariable, never passed as -DnvdApiKey,
+      # which puts it on Maven's command line where debug logging can expose it (GHSA-qqhq-8r2c-c3f5).
+      # Runs that get no secrets (Dependabot, fork PRs) end in the warning below.
+      #
+      # Analyzers: OSS Index now requires Sonatype credentials, so it is off. RetireJS stays on: it
+      # scans the JavaScript bundled in webjars (it found DOMPurify inside swagger-ui, #131). No Node
+      # manifest is tracked, so the Node analyzer is off.
       - name: Run dependency-check (aggregate)
+        id: owasp
         continue-on-error: true
         env:
-          NVD_API_KEY: ${{ secrets.NVD_API_KEY }} # optional; without it NVD updates are slow
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
         run: >-
           mvn org.owasp:dependency-check-maven:aggregate
+          -DfailBuildOnCVSS=8
           -Dformats=HTML,JSON,SARIF
-          ${NVD_API_KEY:+-DnvdApiKey=$NVD_API_KEY}
+          -DsuppressionFile=.github/dependency-check-suppressions.xml
+          -DossIndexAnalyzerEnabled=false
+          -DnodeAnalyzerEnabled=false
+          -DskipSystemScope=true
+          -DnvdApiKeyEnvironmentVariable=NVD_API_KEY
+
+      - name: Report the advisory result
+        if: steps.owasp.outcome == 'failure'
+        run: >-
+          echo "::warning title=OWASP dependency-check::Found a dependency with CVSS 8 or higher, or
+          could not run. See the dependency-check-report artifact and the step log."
+
+      # A plain dependency listing stays useful when the check above cannot reach the NVD.
+      - name: Record dependency tree
+        if: always()
+        run: mvn dependency:tree > dependency-tree.txt
 
       - name: Upload dependency-check report
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: dependency-check-report
-          path: target/dependency-check-report.*
+          path: |
+            target/dependency-check-report.*
+            dependency-tree.txt
           if-no-files-found: ignore
-          retention-days: 14
+          retention-days: 30
 
   codeql:
     name: CodeQL (java-kotlin)
