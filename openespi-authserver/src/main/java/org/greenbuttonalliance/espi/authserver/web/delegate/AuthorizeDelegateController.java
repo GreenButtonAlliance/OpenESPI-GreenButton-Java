@@ -21,6 +21,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.greenbuttonalliance.espi.authserver.config.DataCustodianIntegrationConfig;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.AuthenticationTrustResolver;
+import org.springframework.security.authentication.AuthenticationTrustResolverImpl;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
 import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
@@ -73,6 +77,7 @@ public class AuthorizeDelegateController {
 
 	private static final String DC_AUTHORIZE_SCREEN_PATH = "/oauth/authorize-screen";
 	private static final OAuth2TokenType STATE_TOKEN_TYPE = new OAuth2TokenType(OAuth2ParameterNames.STATE);
+	private static final AuthenticationTrustResolver TRUST_RESOLVER = new AuthenticationTrustResolverImpl();
 
 	private final OutboundHandoffBuilder handoffBuilder;
 	private final DataCustodianIntegrationConfig dcIntegration;
@@ -95,10 +100,11 @@ public class AuthorizeDelegateController {
 	 *
 	 * <p>Spring AS's consent-page redirect is different: it carries Spring's own consent {@code state} and no
 	 * {@code redirect_uri}. Taken as the TP's, that state made the TP ignore the callback (#299). The TP's
-	 * {@code state} and {@code redirect_uri} are then read from the original request that Spring AS saved with
-	 * the pending authorization under its consent state. Since #299 the customer's AS sign-in no longer outlives
-	 * a minted code ({@link SingleUseCustomerAuthorizationResponseHandler}), so this path is only reached when a
-	 * delegation was left unfinished.</p>
+	 * {@code state}, {@code redirect_uri} and {@code scope} are then read from the original request that Spring
+	 * AS saved with the pending authorization under its consent state, if that authorization is the signed-in
+	 * customer's; a signed-in request without one is refused (400). Since #299 the customer's AS sign-in no
+	 * longer outlives an authorization response ({@link SingleUseCustomerAuthorizationResponseHandler}), so this
+	 * path is only reached when a delegation was left unfinished.</p>
 	 */
 	@GetMapping("/authorize/delegate")
 	public String delegate(@RequestParam("scope") String scope,
@@ -108,12 +114,23 @@ public class AuthorizeDelegateController {
 						   HttpServletRequest request) {
 
 		String tpState = state;
+		String requestedScope = scope;
 		String resolvedRedirectUri = redirectUri;
+		String pendingAuthorizationId = null;
 		if (redirectUri == null || redirectUri.isBlank()) {
-			OAuth2AuthorizationRequest original = pendingConsentRequest(clientId, state);
-			if (original != null) {
+			OAuth2Authorization pending = pendingConsentAuthorization(clientId, state);
+			if (pending != null) {
+				// The consent-page redirect: state, redirect_uri and scope all come from the TP's saved request.
+				OAuth2AuthorizationRequest original = pending.getAttribute(OAuth2AuthorizationRequest.class.getName());
 				tpState = original.getState();
 				resolvedRedirectUri = original.getRedirectUri();
+				requestedScope = String.join(" ", original.getScopes());
+				pendingAuthorizationId = pending.getId();
+			} else if (TRUST_RESOLVER.isAuthenticated(SecurityContextHolder.getContext().getAuthentication())) {
+				// Spring AS sends a signed-in customer here only from its consent page, so this state is Spring's
+				// consent state and must never reach the TP as its own (#299): the request is unknown or expired.
+				log.warn("AS delegation refused: client_id={} consent-page request has no pending authorization", clientId);
+				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "authorization request expired; start again");
 			}
 			if (resolvedRedirectUri == null || resolvedRedirectUri.isBlank()) {
 				resolvedRedirectUri = soleRegisteredRedirectUri(clientId);
@@ -125,10 +142,12 @@ public class AuthorizeDelegateController {
 		}
 		String correlationId = tpState != null && !tpState.isBlank() ? tpState : UUID.randomUUID().toString();
 
-		// Saved so AuthorizeContinueController replays /oauth2/authorize with the TP's redirect_uri and state.
-		delegationStateService.save(correlationId, clientId, resolvedRedirectUri, tpState, scope);
+		// Saved so AuthorizeContinueController replays /oauth2/authorize with the TP's redirect_uri and state,
+		// and removes the pending consent-page authorization, which a reload of this page still needs until then.
+		delegationStateService.save(correlationId, clientId, resolvedRedirectUri, tpState, requestedScope,
+				pendingAuthorizationId);
 
-		String signedToken = handoffBuilder.buildSignedToken(clientId, scope, correlationId);
+		String signedToken = handoffBuilder.buildSignedToken(clientId, requestedScope, correlationId);
 
 		String url = UriComponentsBuilder.fromUriString(dcIntegration.getBaseUrl())
 				.path(DC_AUTHORIZE_SCREEN_PATH)
@@ -144,10 +163,11 @@ public class AuthorizeDelegateController {
 	}
 
 	/**
-	 * The TP's original request, when {@code state} is Spring AS's consent state for a pending authorization of
-	 * this client; that pending authorization is removed, as the replay from /continue creates its own.
+	 * The pending authorization Spring AS saved before its consent-page redirect, when {@code state} is its
+	 * consent state, it holds this client's original request, and it is the signed-in customer's. It is not
+	 * removed here: a reload of this page needs it again, and {@link AuthorizeContinueController} removes it.
 	 */
-	private OAuth2AuthorizationRequest pendingConsentRequest(String clientId, String state) {
+	private OAuth2Authorization pendingConsentAuthorization(String clientId, String state) {
 		if (state == null || state.isBlank()) {
 			return null;
 		}
@@ -159,8 +179,11 @@ public class AuthorizeDelegateController {
 		if (original == null || !clientId.equals(original.getClientId())) {
 			return null;
 		}
-		authorizationService.remove(pending);
-		return original;
+		Authentication signedIn = SecurityContextHolder.getContext().getAuthentication();
+		if (!TRUST_RESOLVER.isAuthenticated(signedIn) || !signedIn.getName().equals(pending.getPrincipalName())) {
+			return null;
+		}
+		return pending;
 	}
 
 	/**

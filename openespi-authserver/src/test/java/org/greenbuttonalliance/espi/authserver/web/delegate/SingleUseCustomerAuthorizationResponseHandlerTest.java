@@ -21,6 +21,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -29,9 +30,12 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextImpl;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
+import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
 import org.springframework.security.oauth2.server.authorization.InMemoryOAuth2AuthorizationConsentService;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationCode;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsent;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationCodeRequestAuthenticationException;
 import org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationCodeRequestAuthenticationToken;
 import org.springframework.security.oauth2.server.authorization.client.InMemoryRegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
@@ -39,6 +43,7 @@ import org.springframework.security.web.context.HttpSessionSecurityContextReposi
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -113,14 +118,54 @@ class SingleUseCustomerAuthorizationResponseHandlerTest {
 	}
 
 	@Test
-	@DisplayName("a non-customer sign-in (an AS administrator) is left as it is")
-	void nonCustomerSignInIsKept() throws Exception {
+	@DisplayName("a non-customer (an AS administrator): the sign-in and the consent are left as they are")
+	void nonCustomerSignInAndConsentAreKept() throws Exception {
 		Authentication admin = signedIn("admin", "ROLE_ADMIN");
+		consents.save(OAuth2AuthorizationConsent.withId(client.getId(), "admin").scope(SCOPE).build());
 		MockHttpServletRequest request = sessionOf(admin);
 
 		handler.onAuthenticationSuccess(request, new MockHttpServletResponse(), minted(admin, "s"));
 
 		assertThat(request.getSession().getAttribute(CONTEXT))
 				.isInstanceOfSatisfying(SecurityContext.class, c -> assertThat(c.getAuthentication()).isSameAs(admin));
+		assertThat(consents.findById(client.getId(), "admin")).isNotNull();
+	}
+
+	private static OAuth2AuthorizationCodeRequestAuthenticationException refused(Authentication principal,
+																				 String redirectUri) {
+		OAuth2AuthorizationCodeRequestAuthenticationToken request = new OAuth2AuthorizationCodeRequestAuthenticationToken(
+				"https://as.example/oauth2/authorize", "tp-1", principal, redirectUri, "tp state", Set.of(SCOPE),
+				Map.of());
+		return new OAuth2AuthorizationCodeRequestAuthenticationException(
+				new OAuth2Error(OAuth2ErrorCodes.INVALID_SCOPE, "scope not allowed", null), request);
+	}
+
+	@Test
+	@DisplayName("a customer's replay ending in an error: the consent and the sign-in are removed, the error goes to the Third Party")
+	void customerErrorRemovesTheConsentAndTheSignIn() throws Exception {
+		Authentication customer = signedIn("42", "ROLE_CUSTOMER");
+		consents.save(OAuth2AuthorizationConsent.withId(client.getId(), "42").scope(SCOPE).build());
+		MockHttpServletRequest request = sessionOf(customer);
+		MockHttpServletResponse response = new MockHttpServletResponse();
+
+		handler.onAuthenticationFailure(request, response, refused(customer, "https://tp.example/cb"));
+
+		assertThat(response.getRedirectedUrl()).isEqualTo(
+				"https://tp.example/cb?error=invalid_scope&error_description=scope%20not%20allowed&state=tp%20state");
+		assertThat(consents.findById(client.getId(), "42")).isNull();
+		assertThat(request.getSession().getAttribute(CONTEXT)).isNull();
+	}
+
+	@Test
+	@DisplayName("an error without a redirect_uri is a 400, as Spring's default")
+	void errorWithoutRedirectUriIs400() throws Exception {
+		MockHttpServletResponse response = new MockHttpServletResponse();
+
+		Authentication anonymous = new AnonymousAuthenticationToken("key", "anonymousUser",
+				List.of(new SimpleGrantedAuthority("ROLE_ANONYMOUS")));
+
+		handler.onAuthenticationFailure(new MockHttpServletRequest(), response, refused(anonymous, null));
+
+		assertThat(response.getStatus()).isEqualTo(400);
 	}
 }

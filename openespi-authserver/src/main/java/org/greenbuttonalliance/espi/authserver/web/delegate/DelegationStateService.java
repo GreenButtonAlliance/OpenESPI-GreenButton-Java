@@ -52,8 +52,17 @@ public class DelegationStateService {
 	 */
 	public void save(String correlationId, String clientId, String redirectUri, String tpState,
 					 String requestedScope) {
+		save(correlationId, clientId, redirectUri, tpState, requestedScope, null);
+	}
+
+	/**
+	 * As {@link #save(String, String, String, String, String)}, also naming the pending consent-page
+	 * authorization the delegation came from (#299), for {@link AuthorizeContinueController} to remove.
+	 */
+	public void save(String correlationId, String clientId, String redirectUri, String tpState,
+					 String requestedScope, String pendingAuthorizationId) {
 		states.put(correlationId, new Entry(clientId, redirectUri, tpState, requestedScope,
-				Instant.now().plus(TTL)));
+				pendingAuthorizationId, Instant.now().plus(TTL)));
 		// Lazy reaping: drop expired entries on each save call.
 		Instant now = Instant.now();
 		states.entrySet().removeIf(e -> e.getValue().expiresAt.isBefore(now));
@@ -91,8 +100,10 @@ public class DelegationStateService {
 	 *                    request &mdash; echoed back verbatim per OAuth2 spec
 	 * @param requestedScope the scope the third party requested; the customer's approved scope
 	 *                    must narrow it, never widen it (#211)
+	 * @param pendingAuthorizationId the id of the pending authorization Spring AS saved before its
+	 *                    consent-page redirect, when the delegation came from there (#299); otherwise null
 	 * @param expiresAt   when this entry should be considered stale
 	 */
 	public record Entry(String clientId, String redirectUri, String tpState, String requestedScope,
-						Instant expiresAt) {}
+						String pendingAuthorizationId, Instant expiresAt) {}
 }

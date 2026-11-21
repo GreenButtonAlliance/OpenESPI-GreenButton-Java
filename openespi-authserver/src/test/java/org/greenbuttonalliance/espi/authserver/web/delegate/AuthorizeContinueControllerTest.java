@@ -26,8 +26,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
+import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsent;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsentService;
+import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.test.web.servlet.MockMvc;
@@ -80,6 +82,8 @@ class AuthorizeContinueControllerTest {
 	private OAuth2AuthorizationConsentService consentService;
 	@Mock
 	private RegisteredClientRepository registeredClientRepository;
+	@Mock
+	private OAuth2AuthorizationService authorizationService;
 
 	private SignedHandoffCodec codec;
 	private DelegationStateService delegationStateService;
@@ -94,7 +98,7 @@ class AuthorizeContinueControllerTest {
 
 		AuthorizeContinueController controller = new AuthorizeContinueController(
 				codec, nonceService, delegationStateService, consentService, registeredClientRepository,
-				grantContextSessionStore);
+				grantContextSessionStore, authorizationService);
 
 		// No custom view resolver: Spring's standalone setup handles "redirect:" directives natively
 		// (via RedirectView), and view().name(...) assertions match against the controller's return
@@ -202,6 +206,38 @@ class AuthorizeContinueControllerTest {
 					.andExpect(view().name("error/400"));
 
 			verifyNoInteractions(consentService);
+		}
+
+		@Test
+		@DisplayName("a delegation from Spring's consent page (#299): its pending authorization is removed")
+		void pendingConsentAuthorizationIsRemoved() throws Exception {
+			String cid = "corr-allow-pending";
+			delegationStateService.save(cid, "tp-1", "https://tp.example/cb", "tp-state-1", ESPI_SCOPE, "pending-id");
+			when(registeredClientRepository.findByClientId("tp-1")).thenReturn(client(ESPI_SCOPE));
+			OAuth2Authorization pending = OAuth2Authorization.withRegisteredClient(client(ESPI_SCOPE))
+					.id("pending-id")
+					.principalName("42")
+					.authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+					.build();
+			when(authorizationService.findById("pending-id")).thenReturn(pending);
+
+			mockMvc.perform(get("/oauth2/authorize/continue").param("handoff", codec.encode(allowReturn(cid, ESPI_SCOPE))))
+					.andExpect(status().is3xxRedirection());
+
+			verify(authorizationService).remove(pending);
+		}
+
+		@Test
+		@DisplayName("a delegation not from the consent page touches no authorization")
+		void noPendingAuthorizationNoRemoval() throws Exception {
+			String cid = "corr-allow-no-pending";
+			delegationStateService.save(cid, "tp-1", "https://tp.example/cb", "tp-state-1", ESPI_SCOPE);
+			when(registeredClientRepository.findByClientId("tp-1")).thenReturn(client(ESPI_SCOPE));
+
+			mockMvc.perform(get("/oauth2/authorize/continue").param("handoff", codec.encode(allowReturn(cid, ESPI_SCOPE))))
+					.andExpect(status().is3xxRedirection());
+
+			verifyNoInteractions(authorizationService);
 		}
 	}
 

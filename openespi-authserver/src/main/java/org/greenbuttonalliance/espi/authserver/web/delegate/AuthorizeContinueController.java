@@ -34,8 +34,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsent;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsentService;
+import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
@@ -104,6 +106,7 @@ public class AuthorizeContinueController {
 	private final OAuth2AuthorizationConsentService consentService;
 	private final RegisteredClientRepository registeredClientRepository;
 	private final GrantContextSessionStore grantContextSessionStore;
+	private final OAuth2AuthorizationService authorizationService;
 	private final SecurityContextRepository securityContextRepository =
 			new HttpSessionSecurityContextRepository();
 
@@ -118,12 +121,27 @@ public class AuthorizeContinueController {
 		if (state == null) {
 			throw new InvalidHandoffException("no delegation state for correlation_id " + payload.correlationId());
 		}
+		removePendingConsentAuthorization(state.pendingAuthorizationId());
 
 		if (SignedHandoff.Return.CONSENT_ALLOW.equals(payload.consent())
 				&& payload.approvedScope() != null && !payload.approvedScope().isBlank()) {
 			return handleAllow(payload, state, request, response);
 		}
 		return handleDeny(state);
+	}
+
+	/**
+	 * Removes the pending authorization Spring AS saved before its consent-page redirect (#299). The replay
+	 * below creates its own, and the purge job never removes a row that holds only a state.
+	 */
+	private void removePendingConsentAuthorization(String pendingAuthorizationId) {
+		if (pendingAuthorizationId == null) {
+			return;
+		}
+		OAuth2Authorization pending = authorizationService.findById(pendingAuthorizationId);
+		if (pending != null) {
+			authorizationService.remove(pending);
+		}
 	}
 
 	private String handleAllow(SignedHandoff.Return payload,

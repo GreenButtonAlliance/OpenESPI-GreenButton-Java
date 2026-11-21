@@ -468,15 +468,18 @@ public class AuthorizationServerConfig {
         // login step is handled transparently inside DC.
         org.springframework.context.ApplicationContext context =
                 http.getSharedObject(org.springframework.context.ApplicationContext.class);
+        var singleUseResponseHandler = new org.greenbuttonalliance.espi.authserver.web.delegate
+                .SingleUseCustomerAuthorizationResponseHandler(
+                        context.getBean(OAuth2AuthorizationConsentService.class),
+                        context.getBean(RegisteredClientRepository.class));
         authorizationServerConfigurer.authorizationEndpoint(authorize -> authorize
                 .consentPage("/authorize/delegate")
-                // #299, #276: once the code is minted, the consent and the customer's AS sign-in that
-                // /oauth2/authorize/continue set up for it are cleared, so the next authorization in the
-                // same browser is delegated again, with the Third Party's own state and redirect_uri.
-                .authorizationResponseHandler(new org.greenbuttonalliance.espi.authserver.web.delegate
-                        .SingleUseCustomerAuthorizationResponseHandler(
-                                context.getBean(OAuth2AuthorizationConsentService.class),
-                                context.getBean(RegisteredClientRepository.class)))
+                // #299, #276: once the code is minted, or the replay ends in an error, the consent and the
+                // customer's AS sign-in that /oauth2/authorize/continue set up for it are cleared, so the next
+                // authorization in the same browser is delegated again, with the Third Party's own state and
+                // redirect_uri.
+                .authorizationResponseHandler(singleUseResponseHandler)
+                .errorResponseHandler(singleUseResponseHandler)
                 // #251: customer authorization never yields an administrative scope.
                 // #211: the Third Party and the customer may each narrow the registered scope, never widen it.
                 .authenticationProviders(providers -> providers.forEach(provider -> {

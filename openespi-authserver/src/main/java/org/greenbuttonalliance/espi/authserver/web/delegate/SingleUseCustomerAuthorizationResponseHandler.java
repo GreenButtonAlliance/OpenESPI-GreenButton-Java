@@ -19,16 +19,23 @@ package org.greenbuttonalliance.espi.authserver.web.delegate;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
 import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsent;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsentService;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationCodeRequestAuthenticationException;
 import org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationCodeRequestAuthenticationToken;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.web.DefaultRedirectStrategy;
 import org.springframework.security.web.RedirectStrategy;
+import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
@@ -40,7 +47,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Sends the authorization response once {@code /oauth2/authorize} has minted a code, after making the
+ * Sends the authorization response of {@code /oauth2/authorize}, a code or an error, after making the
  * customer's authorization single use (#299, #276).
  *
  * <p>{@link AuthorizeContinueController} signs the customer in at the AS and saves a consent for the scope
@@ -51,17 +58,21 @@ import java.nio.charset.StandardCharsets;
  * {@code /authorize/delegate} with Spring's own {@code state} and no {@code redirect_uri}, so the Third Party
  * could not match the callback (#299).</p>
  *
- * <p>Here, after the code is minted, the consent is removed and a customer's sign-in is cleared from the
- * session, so every customer authorization goes through {@link DelegateAuthorizationEntryPoint} and the Data
- * Custodian's Authorization Screen with the Third Party's own {@code state} and {@code redirect_uri}. The
- * customer's consent to a Subscription is held by the Data Custodian, not here. A non-customer sign-in (an AS
- * administrator's) is left as it is.</p>
+ * <p>Here, whether the replay mints a code or ends in an error (e.g. {@code invalid_scope}), a customer's
+ * consent is removed and the customer's sign-in is cleared from the session, so every customer authorization
+ * goes through {@link DelegateAuthorizationEntryPoint} and the Data Custodian's Authorization Screen with the
+ * Third Party's own {@code state} and {@code redirect_uri}. The customer's consent to a Subscription is held
+ * by the Data Custodian, not here. A non-customer's (an AS administrator's) sign-in and consent are left as
+ * they are. A replay whose redirect the browser never follows is not cleaned up here.</p>
  *
- * <p>The response itself is Spring's default ({@code OAuth2AuthorizationEndpointFilter#sendAuthorizationResponse}):
- * a redirect to the request's {@code redirect_uri} with {@code code} and, when present, {@code state}.</p>
+ * <p>The responses themselves are Spring's defaults ({@code OAuth2AuthorizationEndpointFilter}'s
+ * {@code sendAuthorizationResponse} and {@code sendErrorResponse}): a redirect to the request's
+ * {@code redirect_uri} with {@code code}, or with {@code error}, {@code error_description} and
+ * {@code error_uri}, and, when present, {@code state}; an error without a {@code redirect_uri} is a 400.</p>
  */
 @Slf4j
-public class SingleUseCustomerAuthorizationResponseHandler implements AuthenticationSuccessHandler {
+public class SingleUseCustomerAuthorizationResponseHandler
+		implements AuthenticationSuccessHandler, AuthenticationFailureHandler {
 
 	static final String CUSTOMER_AUTHORITY = "ROLE_CUSTOMER";
 
@@ -81,15 +92,56 @@ public class SingleUseCustomerAuthorizationResponseHandler implements Authentica
 										Authentication authentication) throws IOException {
 		OAuth2AuthorizationCodeRequestAuthenticationToken codeRequest =
 				(OAuth2AuthorizationCodeRequestAuthenticationToken) authentication;
-		Authentication principal = (Authentication) codeRequest.getPrincipal();
+		endCustomerAuthorization(codeRequest.getClientId(), (Authentication) codeRequest.getPrincipal(),
+				request, response);
 
-		removeConsent(codeRequest.getClientId(), principal.getName());
-		if (isCustomer(principal)) {
-			SecurityContextHolder.clearContext();
-			securityContextRepository.saveContext(SecurityContextHolder.createEmptyContext(), request, response);
+		UriComponentsBuilder uri = UriComponentsBuilder.fromUriString(codeRequest.getRedirectUri())
+				.queryParam(OAuth2ParameterNames.CODE, codeRequest.getAuthorizationCode().getTokenValue());
+		sendRedirect(request, response, uri, codeRequest.getState());
+	}
+
+	@Override
+	public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
+										AuthenticationException exception) throws IOException {
+		OAuth2AuthorizationCodeRequestAuthenticationToken codeRequest =
+				exception instanceof OAuth2AuthorizationCodeRequestAuthenticationException codeRequestException
+						? codeRequestException.getAuthorizationCodeRequestAuthentication()
+						: null;
+		Authentication principal = codeRequest != null && codeRequest.getPrincipal() instanceof Authentication a
+				? a
+				: SecurityContextHolder.getContext().getAuthentication();
+		if (codeRequest != null) {
+			endCustomerAuthorization(codeRequest.getClientId(), principal, request, response);
 		}
 
-		sendAuthorizationResponse(request, response, codeRequest);
+		OAuth2Error error = exception instanceof OAuth2AuthenticationException oauth2
+				? oauth2.getError()
+				: new OAuth2Error(OAuth2ErrorCodes.SERVER_ERROR);
+		if (codeRequest == null || !StringUtils.hasText(codeRequest.getRedirectUri())) {
+			response.sendError(HttpStatus.BAD_REQUEST.value(), error.toString());
+			return;
+		}
+		UriComponentsBuilder uri = UriComponentsBuilder.fromUriString(codeRequest.getRedirectUri())
+				.queryParam(OAuth2ParameterNames.ERROR, error.getErrorCode());
+		if (StringUtils.hasText(error.getDescription())) {
+			uri.queryParam(OAuth2ParameterNames.ERROR_DESCRIPTION,
+					UriUtils.encode(error.getDescription(), StandardCharsets.UTF_8));
+		}
+		if (StringUtils.hasText(error.getUri())) {
+			uri.queryParam(OAuth2ParameterNames.ERROR_URI, UriUtils.encode(error.getUri(), StandardCharsets.UTF_8));
+		}
+		sendRedirect(request, response, uri, codeRequest.getState());
+	}
+
+	/** A customer's consent and AS sign-in serve one authorization response only. */
+	private void endCustomerAuthorization(String clientId, Authentication principal,
+										  HttpServletRequest request, HttpServletResponse response) {
+		if (!isCustomer(principal)) {
+			return;
+		}
+		removeConsent(clientId, principal.getName());
+		SecurityContextHolder.clearContext();
+		securityContextRepository.saveContext(SecurityContextHolder.createEmptyContext(), request, response);
 	}
 
 	private void removeConsent(String clientId, String principalName) {
@@ -105,19 +157,16 @@ public class SingleUseCustomerAuthorizationResponseHandler implements Authentica
 	}
 
 	private static boolean isCustomer(Authentication principal) {
-		return principal.getAuthorities().stream().anyMatch(a -> CUSTOMER_AUTHORITY.equals(a.getAuthority()));
+		return principal != null
+				&& principal.getAuthorities().stream().anyMatch(a -> CUSTOMER_AUTHORITY.equals(a.getAuthority()));
 	}
 
-	/** As {@code OAuth2AuthorizationEndpointFilter#sendAuthorizationResponse} in Spring Authorization Server 7.1. */
-	private void sendAuthorizationResponse(HttpServletRequest request, HttpServletResponse response,
-										   OAuth2AuthorizationCodeRequestAuthenticationToken codeRequest)
-			throws IOException {
-		UriComponentsBuilder uri = UriComponentsBuilder.fromUriString(codeRequest.getRedirectUri())
-				.queryParam(OAuth2ParameterNames.CODE, codeRequest.getAuthorizationCode().getTokenValue());
-		if (StringUtils.hasText(codeRequest.getState())) {
-			uri.queryParam(OAuth2ParameterNames.STATE, UriUtils.encode(codeRequest.getState(), StandardCharsets.UTF_8));
+	/** Adds {@code state} when present; {@code build(true)}: the components are explicitly encoded. */
+	private void sendRedirect(HttpServletRequest request, HttpServletResponse response, UriComponentsBuilder uri,
+							  String state) throws IOException {
+		if (StringUtils.hasText(state)) {
+			uri.queryParam(OAuth2ParameterNames.STATE, UriUtils.encode(state, StandardCharsets.UTF_8));
 		}
-		// build(true): the components are explicitly encoded
 		redirectStrategy.sendRedirect(request, response, uri.build(true).toUriString());
 	}
 }
