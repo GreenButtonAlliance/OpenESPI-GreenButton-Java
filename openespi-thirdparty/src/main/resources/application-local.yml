@@ -26,7 +26,7 @@ spring:
         format_sql: true
 
   flyway:
-    locations: classpath:db/migration,classpath:db/vendor/h2
+    locations: classpath:db/migration,classpath:db/vendor/h2,classpath:db/thirdparty/h2
 
   h2:
     console:
@@ -77,9 +77,9 @@ espi:
 # ESPI scopes the AS allows. No openid/profile: the AS issues opaque ESPI tokens only.
 # HistoryLength is in seconds (REQ.21.6.1.2.1): 34128000 = 395 days.
 spring.security.oauth2.client.registration.datacustodian-monthly.client-secret: tp-secret
-spring.security.oauth2.client.registration.datacustodian-monthly.scope: "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000"
+spring.security.oauth2.client.registration.datacustodian-monthly.scope: "FB=4_5_15_17;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000"
 spring.security.oauth2.client.registration.datacustodian-daily.client-secret: tp-secret
-spring.security.oauth2.client.registration.datacustodian-daily.scope: "FB=4_5_15;IntervalDuration=900;BlockDuration=monthly;HistoryLength=34128000"
+spring.security.oauth2.client.registration.datacustodian-daily.scope: "FB=4_5_15_17;IntervalDuration=900;BlockDuration=monthly;HistoryLength=34128000"
 # The ESPI client access token (Authorization and Bulk APIs) is client_credentials, never customer consent.
 spring.security.oauth2.client.registration.datacustodian-admin.client-secret: tp-secret
 spring.security.oauth2.client.registration.datacustodian-admin.authorization-grant-type: client_credentials

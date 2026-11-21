@@ -33,6 +33,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+/**
+ * The home page controller called directly, without a Spring context. The rendering of the per-row links of
+ * "Your authorizations" (#89) is in {@link HomeControllerRenderingTest}.
+ */
 class HomeControllerTests {
 
 	private final AuthorizationRepository authorizationRepository = mock(AuthorizationRepository.class);

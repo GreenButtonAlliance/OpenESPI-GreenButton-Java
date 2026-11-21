@@ -75,10 +75,15 @@ class EspiGrantScopePolicyTest {
 	}
 
 	private static OAuth2AuthorizationCodeRequestAuthenticationContext authorizationRequest(Set<String> scopes) {
+		return authorizationRequest(CLIENT, scopes);
+	}
+
+	private static OAuth2AuthorizationCodeRequestAuthenticationContext authorizationRequest(
+			RegisteredClient client, Set<String> scopes) {
 		OAuth2AuthorizationCodeRequestAuthenticationToken request = new OAuth2AuthorizationCodeRequestAuthenticationToken(
-				"https://as.example/oauth2/authorize", CLIENT.getClientId(),
+				"https://as.example/oauth2/authorize", client.getClientId(),
 				new TestingAuthenticationToken("customer", null), "https://tp.example/cb", "state-1", scopes, Map.of());
-		return OAuth2AuthorizationCodeRequestAuthenticationContext.with(request).registeredClient(CLIENT).build();
+		return OAuth2AuthorizationCodeRequestAuthenticationContext.with(request).registeredClient(client).build();
 	}
 
 	@Test
@@ -128,6 +133,20 @@ class EspiGrantScopePolicyTest {
 	void authorizationCodeAllowsCustomerScope() {
 		assertThatCode(() -> EspiGrantScopePolicy.authorizationCodeValidator()
 				.accept(authorizationRequest(Set.of(CUSTOMER_SCOPE))))
+				.doesNotThrowAnyException();
+	}
+
+	@Test
+	@DisplayName("authorization_code: the FB_17 customer scope is allowed")
+	void acceptsFb17CustomerScope() {
+		String scope = "FB=4_5_15_17;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000";
+		RegisteredClient client = RegisteredClient.from(CLIENT).scopes(s -> {
+			s.clear();
+			s.add(scope);
+		}).build();
+
+		assertThatCode(() -> EspiGrantScopePolicy.authorizationCodeValidator()
+				.accept(authorizationRequest(client, Set.of(scope))))
 				.doesNotThrowAnyException();
 	}
 

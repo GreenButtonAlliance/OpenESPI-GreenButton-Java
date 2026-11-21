@@ -45,10 +45,12 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
     "org.greenbuttonalliance.espi.common"
 })
 @EntityScan(basePackages = {
-    "org.greenbuttonalliance.espi.common.domain"
+    "org.greenbuttonalliance.espi.common.domain",
+    "org.greenbuttonalliance.espi.thirdparty.subscription"
 })
 @EnableJpaRepositories(basePackages = {
-    "org.greenbuttonalliance.espi.common.repositories"
+    "org.greenbuttonalliance.espi.common.repositories",
+    "org.greenbuttonalliance.espi.thirdparty.subscription"
 })
 public class ThirdPartyApplication {
 

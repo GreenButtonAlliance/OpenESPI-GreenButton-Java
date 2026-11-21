@@ -193,6 +193,7 @@ Application behavior is controlled via Spring profiles:
 Flyway manages database schema migrations:
 - **Shared scripts**: `openespi-common/src/main/resources/db/migration/` - `V1__Create_Base_Tables.sql`, `V3__Create_additiional_Base_Tables.sql`
 - **Vendor-specific scripts**: `openespi-common/src/main/resources/db/vendor/{mysql,postgres,h2}/V2__*_Specific_Tables.sql`
+- **Third Party**: `openespi-thirdparty/src/main/resources/db/thirdparty/{mysql,postgres,h2}/V7__Create_subscription_feed_fetches.sql` (#89) runs after the common scripts; V7 is reserved for it in the shared version sequence (V4 is the handoff nonces, used by the DC only)
 - **Authorization Server**: has its own Flyway scripts under `openespi-authserver/src/main/resources/db/vendor/`; these currently diverge by vendor (MySQL V3–V6 are `.disabled`; see #145). The PostgreSQL set applies in full on a fresh database and `PostgreSqlTestcontainersIntegrationTest` runs it (#152)
 - **Run migrations**: Automatically on application startup with `spring.flyway.enabled=true`
 
@@ -353,7 +354,8 @@ The codebase has been migrated to Spring Boot 4.0.1 and Java 25. Key migration a
 
 Still in progress (logic migration from the original OpenESPI code):
 - ESPI REST API completion (see "REST API Structure" above)
-- openespi-thirdparty: notification receiver works, but fetched data is not imported (#89) and most portal controllers are original legacy code whose views have no templates
+- openespi-thirdparty: notification receiver works; the TP fetches the customer's `Batch/Subscription` feed, validates it against the ESPI XSDs (`espi.thirdparty.xml-validation` off/report/enforce, default report), saves every fetch in the TP-only `subscription_feed_fetches` table and shows it on `/subscription/{authorizationId}`; importing the feed into the usage tables is the remainder of #89. Most portal controllers are original legacy code whose views have no templates
+- HTTPS with TLS 1.3 only on every AS/DC/TP interface is required before deployment (#298): the TP's `SubscriptionClient` already uses TLS 1.3 only and requires an https `espi.datacustodian.base-url` outside the local/dev profiles; the rest of #298 is open
 - `RestTemplate` still used in 6 main-code files (e.g. `NotificationServiceImpl`, AS `DataCustodianIntegrationService`); migrate to `RestClient`/`WebClient`
 - Entity field type/length verification against the XSDs (#101 Phases 2-3)
 

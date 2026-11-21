@@ -22,7 +22,7 @@ spring:
         generate_statistics: true
 
   flyway:
-    locations: classpath:db/migration,classpath:db/vendor/mysql
+    locations: classpath:db/migration,classpath:db/vendor/mysql,classpath:db/thirdparty/mysql
 
 # Development-specific logging
 logging:

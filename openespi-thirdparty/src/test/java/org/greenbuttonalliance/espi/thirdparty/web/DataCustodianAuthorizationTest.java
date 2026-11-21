@@ -91,7 +91,7 @@ class DataCustodianAuthorizationTest {
 	private static final String BULK_RESOURCE_URI = "http://localhost:8081/DataCustodian/espi/1_1/resource/Batch/Bulk/11";
 	private static final String BULK_AUTHORIZATION_URI = "http://localhost:8081/DataCustodian/espi/1_1/resource/Authorization/12";
 	private static final String BULK_CUSTOMER_RESOURCE_URI = "http://localhost:8081/DataCustodian/espi/1_1/resource/Batch/Bulk/13";
-	private static final String MONTHLY_SCOPE ="FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000";
+	private static final String MONTHLY_SCOPE ="FB=4_5_15_17;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000";
 
 	/** HttpSessionRequestCache's session attribute: the request saved for after sign-in. */
 	private static final String SAVED_REQUEST = "SPRING_SECURITY_SAVED_REQUEST";
