@@ -20,7 +20,10 @@
 
 package org.greenbuttonalliance.espi.datacustodian.web.api;
 
+import com.jayway.jsonpath.Configuration;
+import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.Option;
 import org.greenbuttonalliance.espi.common.domain.common.ServiceCategory;
 import org.greenbuttonalliance.espi.common.domain.usage.UsagePointEntity;
 import org.greenbuttonalliance.espi.common.repositories.usage.UsagePointRepository;
@@ -70,8 +73,9 @@ class EspiAtomMediaTypeIntegrationTest {
 		return opaqueToken().authorities(new SimpleGrantedAuthority("SCOPE_DataCustodian_Admin_Access"));
 	}
 
-	/** The type and subtype only: a charset parameter does not matter. */
-	private static String mediaType(MockHttpServletResponse response) {
+	/** The type and subtype only: a charset parameter does not matter. A missing Content-Type fails by name. */
+	private static String mediaType(String request, MockHttpServletResponse response) {
+		assertThat(response.getContentType()).as("Content-Type of " + request).isNotBlank();
 		MediaType type = MediaType.parseMediaType(response.getContentType());
 		return type.getType() + "/" + type.getSubtype();
 	}
@@ -89,7 +93,7 @@ class EspiAtomMediaTypeIntegrationTest {
 				.andExpect(status().isOk())
 				.andReturn().getResponse();
 
-		assertThat(List.of(mediaType(asked), mediaType(unasked)))
+		assertThat(List.of(mediaType(resource + " (Accept: Atom)", asked), mediaType(resource + " (no Accept)", unasked)))
 				.containsOnly(MediaType.APPLICATION_ATOM_XML_VALUE);
 	}
 
@@ -106,7 +110,7 @@ class EspiAtomMediaTypeIntegrationTest {
 				.andExpect(status().isOk())
 				.andReturn().getResponse();
 
-		assertThat(mediaType(response)).isEqualTo(MediaType.APPLICATION_ATOM_XML_VALUE);
+		assertThat(mediaType("UsagePoint entry", response)).isEqualTo(MediaType.APPLICATION_ATOM_XML_VALUE);
 	}
 
 	@ParameterizedTest(name = "Accept: {0}")
@@ -128,11 +132,14 @@ class EspiAtomMediaTypeIntegrationTest {
 				.filter(e -> e.getKey().startsWith(RESOURCE) && e.getValue().containsKey("get"))
 				.map(Map.Entry::getKey)
 				.toList();
+		// A GET whose 200 response documents no content at all counts as not Atom-only, by name.
+		DocumentContext parsed = JsonPath.using(
+				Configuration.defaultConfiguration().addOptions(Option.SUPPRESS_EXCEPTIONS)).parse(docs);
 		List<String> notAtomOnly = resourceGets.stream()
 				.filter(path -> {
-					Map<String, Object> content = JsonPath.read(docs,
-							"$.paths['" + path + "'].get.responses['200'].content");
-					return !content.keySet().equals(java.util.Set.of(MediaType.APPLICATION_ATOM_XML_VALUE));
+					Map<String, Object> content = parsed.read("$.paths['" + path + "'].get.responses['200'].content");
+					return content == null
+							|| !content.keySet().equals(java.util.Set.of(MediaType.APPLICATION_ATOM_XML_VALUE));
 				})
 				.toList();
 
@@ -159,8 +166,10 @@ class EspiAtomMediaTypeIntegrationTest {
 				.andReturn().getResponse().getContentAsString();
 		Map<String, Object> paths = JsonPath.read(docs, "$.paths");
 
+		// Only the ESPI resource API is documented (springdoc.paths-to-match), so nothing else is labelled Atom.
 		assertThat(paths.keySet())
 				.isNotEmpty()
-				.noneMatch(path -> path.startsWith("/internal/") || path.startsWith("/actuator"));
+				.noneMatch(path -> path.startsWith("/internal/") || path.startsWith("/actuator"))
+				.allMatch(path -> path.startsWith(RESOURCE));
 	}
 }
