@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  OWASP dependency-check suppressions for the whole repository, read by the dependency-check job in
+  .github/workflows/security.yml (-DsuppressionFile).
+
+  Add an entry only for a finding confirmed not to apply: name the dependency by its package URL and
+  the advisory by its id (never a blanket match), say why in <notes>, and set `until` so the entry is
+  reviewed again. A real vulnerability is fixed by an upgrade or tracked in an issue (#131), not
+  suppressed here.
+-->
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+
+    <suppress until="2027-11-21Z">
+        <notes><![CDATA[
+        False positive (#131). CVE-2022-31691 is in Spring Tools 4 for Eclipse and the VS Code Spring
+        extensions (Spring Boot Tools, Concourse CI Pipeline Editor, Bosh Editor, Cloudfoundry Manifest
+        YML Support): their YAML editing uses SnakeYAML. The CPE analyzer matched spring-boot-devtools
+        to the spring_boot_tools / spring_tools products by name. spring-boot-devtools is not one of the
+        affected products, and the DC declares it runtime and optional, for local development only.
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework\.boot/spring-boot-devtools@.*$</packageUrl>
+        <cve>CVE-2022-31691</cve>
+    </suppress>
+
+</suppressions>

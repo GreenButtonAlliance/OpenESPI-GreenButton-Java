@@ -72,11 +72,19 @@ through `env:`.
   `mvn org.owasp:dependency-check-maven:aggregate`, which produces one report for the reactor.
   The plugin version is managed in the root pom (`owasp-dependency-check.version`). The NVD
   database is cached in `~/.m2/repository/org/owasp/dependency-check-data`. Reports (HTML, JSON,
-  SARIF) are uploaded as `dependency-check-report`.
-  - **Advisory until #131 is cleared:** the step has `continue-on-error: true` and no CVSS
-    threshold.
-  - **To make it a gate:** remove `continue-on-error` and add `-DfailBuildOnCVSS=8`.
-  - The optional `NVD_API_KEY` secret makes NVD updates much faster.
+  SARIF) and a `mvn dependency:tree` listing are uploaded as `dependency-check-report` (30 days).
+  - **Advisory until #131 is cleared, and visibly so:** the step fails on a dependency with CVSS 8
+    or higher (`-DfailBuildOnCVSS=8`) or when it cannot run, `continue-on-error: true` keeps that
+    from blocking the PR, and the next step adds a warning to the run.
+  - **To make it a gate:** remove `continue-on-error` and the warning step.
+  - **`NVD_API_KEY` is required:** dependency-check 13 cannot download the NVD data without it.
+    The plugin reads it from the environment (`-DnvdApiKeyEnvironmentVariable=NVD_API_KEY`); never
+    pass it as `-DnvdApiKey`, which puts it on Maven's command line (GHSA-qqhq-8r2c-c3f5). Runs
+    without secrets (Dependabot, fork PRs) end in the warning.
+  - **Suppressions:** [`dependency-check-suppressions.xml`](dependency-check-suppressions.xml),
+    for confirmed false positives only, each with a reason and an `until` date.
+  - **Analyzers:** OSS Index is off (it now requires Sonatype credentials) and so is the Node
+    analyzer (no Node manifest is tracked). RetireJS stays on for the JavaScript bundled in webjars.
 - **CodeQL** (`java-kotlin`, `build-mode: none`). It extracts the source without compiling, so
   it does not depend on JDK 25 support in the CodeQL autobuilder. Results go to *Security → Code
   scanning*. It does not run on fork PRs, because they cannot upload results.
@@ -101,7 +109,7 @@ Actions are pinned to **major version tags** throughout, and Dependabot keeps th
 | Name | Kind | Required | Used by |
 |---|---|---|---|
 | `SONAR_TOKEN` | secret | yes (for `quality`, fork-PR Sonar) | SonarCloud analysis token for project `GreenButtonAlliance_OpenESPI-GreenButton-Java` |
-| `NVD_API_KEY` | secret | optional | dependency-check NVD updates ([request a key](https://nvd.nist.gov/developers/request-an-api-key)) |
+| `NVD_API_KEY` | secret | yes (for the dependency-check) | dependency-check NVD data download ([request a key](https://nvd.nist.gov/developers/request-an-api-key)) |
 | `AWS_ECR_ROLE_ARN` | variable | optional\* | IAM role assumed via GitHub OIDC to push the datacustodian image |
 | `AWS_REGION` | variable | optional\* | Region of the ECR repository, e.g. `us-east-1` |
 | `ECR_REPOSITORY` | variable | optional\* | ECR repository name, e.g. `openespi-datacustodian` |
@@ -191,6 +199,9 @@ create and approve pull requests**. The release workflow needs this to open its 
 ```bash
 mvn install -DskipTests -pl openespi-datacustodian -am && mvn verify -pl openespi-datacustodian
 mvn install -DskipTests -pl openespi-authserver -am && mvn verify -pl openespi-authserver
-mvn install -DskipTests && mvn org.owasp:dependency-check-maven:aggregate
+export NVD_API_KEY=...   # your own key
+mvn install -DskipTests && mvn org.owasp:dependency-check-maven:aggregate -DfailBuildOnCVSS=8 \
+  -DsuppressionFile=.github/dependency-check-suppressions.xml -DossIndexAnalyzerEnabled=false \
+  -DnodeAnalyzerEnabled=false -DskipSystemScope=true -DnvdApiKeyEnvironmentVariable=NVD_API_KEY
 docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:latest -color             # lint workflows
 ```
