@@ -1,6 +1,8 @@
 package org.greenbuttonalliance.espi.thirdparty.subscription;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -61,6 +63,21 @@ class FetchRangeTest {
 		assertThatThrownBy(() -> FetchRange.of(null, LocalDate.of(2020, 1, 1), "FB=4;HistoryLength=34128000", CLOCK))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessage("The end date is before the history this authorization allows.");
+	}
+
+	@ParameterizedTest
+	@CsvSource({"1969-12-31, 2026-01-01", "2026-01-01, 9999-12-31", "-0001-01-01, ", ", +10000-01-01"})
+	void aDateOutsideWhatEveryDatabaseStoresIsRejectedBeforeTheFetch(LocalDate from, LocalDate to) {
+		assertThatThrownBy(() -> FetchRange.of(from, to, "FB=4", CLOCK))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("A date is outside the range of dates that can be requested.");
+	}
+
+	@Test
+	void theEarliestAndLatestDatesAreAccepted() {
+		FetchRange range = FetchRange.of(LocalDate.of(1970, 1, 1), LocalDate.of(9999, 12, 30), "FB=4", CLOCK);
+
+		assertThat(range).isEqualTo(new FetchRange(FetchRange.EARLIEST, FetchRange.LATEST));
 	}
 
 	@Test

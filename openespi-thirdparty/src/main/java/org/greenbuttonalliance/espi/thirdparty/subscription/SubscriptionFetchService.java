@@ -3,8 +3,11 @@ package org.greenbuttonalliance.espi.thirdparty.subscription;
 import org.greenbuttonalliance.espi.common.domain.usage.AuthorizationEntity;
 import org.greenbuttonalliance.espi.common.repositories.usage.AuthorizationRepository;
 import org.greenbuttonalliance.espi.common.uri.EspiBatchUri;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.OAuth2AuthorizeRequest;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
@@ -45,9 +48,15 @@ public class SubscriptionFetchService {
 		/** The requested date range is not valid; no request was made. */
 		record InvalidRange(String message) implements FetchOutcome {
 		}
+
+		/** The Data Custodian answered, but the database refused to save the answer (e.g. MySQL max_allowed_packet). */
+		record NotSaved(String message) implements FetchOutcome {
+		}
 	}
 
 	static final String AS_UNREACHABLE = "The Authorization Server could not be reached.";
+	static final String NOT_SAVED = "The Data Custodian's answer could not be saved.";
+	private static final Logger log = LoggerFactory.getLogger(SubscriptionFetchService.class);
 
 	private final AuthorizationRepository authorizations;
 	private final OAuth2AuthorizedClientManager authorizedClientManager;
@@ -148,10 +157,18 @@ public class SubscriptionFetchService {
 		FeedValidation validation = response.status() == 200
 				? validator.validate(response.body())
 				: new FeedValidation(validator.mode(), null, 0, List.of());
-		SubscriptionFeedFetchEntity saved = fetches.save(new SubscriptionFeedFetchEntity(authorizationId,
-				clock.instant(), resourceUri, range.publishedMin(), range.publishedMax(), response.status(),
-				// decoded as UTF-8 whatever the XML declaration says: ESPI feeds are UTF-8
-				new String(response.body(), StandardCharsets.UTF_8), validation));
+		SubscriptionFeedFetchEntity saved;
+		try {
+			saved = fetches.save(new SubscriptionFeedFetchEntity(authorizationId,
+					clock.instant(), resourceUri, range.publishedMin(), range.publishedMax(), response.status(),
+					// decoded as UTF-8 whatever the XML declaration says: ESPI feeds are UTF-8
+					new String(response.body(), StandardCharsets.UTF_8), validation));
+		} catch (DataAccessException e) {
+			// the class and the database's reason only: the exception's SQL may carry the feed body
+			log.warn("A Subscription fetch of {} bytes for authorization {} could not be saved: {}",
+					response.body().length, authorizationId, e.getMostSpecificCause().getClass().getName());
+			return new FetchOutcome.NotSaved(NOT_SAVED);
+		}
 		return new FetchOutcome.Saved(saved.getId());
 	}
 

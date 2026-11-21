@@ -16,6 +16,14 @@ import java.time.temporal.ChronoUnit;
 public record FetchRange(Instant publishedMin, Instant publishedMax) {
 
 	/**
+	 * The earliest {@code published-min}: the default without a HistoryLength. A range is saved with the fetch,
+	 * so it must fit every database's timestamp column, and must be refused before the Data Custodian is called.
+	 */
+	public static final Instant EARLIEST = Instant.EPOCH;
+	/** The latest {@code published-max} (MySQL {@code DATETIME} ends with the year 9999). */
+	public static final Instant LATEST = Instant.parse("9999-12-31T00:00:00Z");
+
+	/**
 	 * Both dates null: the scope's {@code HistoryLength} up to now (the whole epoch when the scope
 	 * has none). A date is a UTC day; {@code to} is inclusive, so the window ends at the midnight after it.
 	 *
@@ -33,6 +41,9 @@ public record FetchRange(Instant publishedMin, Instant publishedMax) {
 			max = to != null ? to.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant() : now;
 		} catch (DateTimeException e) {
 			throw new IllegalArgumentException(OUT_OF_RANGE, e);
+		}
+		if (min.isBefore(EARLIEST) || max.isAfter(LATEST)) {
+			throw new IllegalArgumentException(OUT_OF_RANGE);
 		}
 		if (min.isAfter(max)) {
 			throw new IllegalArgumentException(from == null ? BEFORE_HISTORY : INVERTED);

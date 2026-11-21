@@ -50,7 +50,7 @@ public class SubscriptionClient {
 	@Autowired
 	public SubscriptionClient(RestClient.Builder builder,
 							  @Value("${espi.datacustodian.base-url:http://localhost:8081/DataCustodian}") String baseUrl,
-							  @Value("${espi.thirdparty.subscription.max-body-bytes:67108864}") int maxBodyBytes,
+							  @Value("${espi.thirdparty.subscription.max-body-bytes:16777216}") int maxBodyBytes,
 							  @Value("${espi.thirdparty.subscription.connect-timeout:10s}") Duration connectTimeout,
 							  @Value("${espi.thirdparty.subscription.read-timeout:60s}") Duration readTimeout,
 							  Environment environment) {

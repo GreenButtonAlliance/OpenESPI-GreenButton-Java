@@ -28,6 +28,7 @@ import org.greenbuttonalliance.espi.common.dto.usage.TimeConfigurationDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -87,6 +88,13 @@ class SubscriptionDisplayTest {
 				display.scaled(15L, readingType("3", "72")), display.scaled(7L, readingType(null, "999")),
 				display.scaled(420000L, null), display.scaled(5L, readingType("x", "72"))})
 				.containsExactly("420 WH", "15000 WH", "7 999", "420000 (no ReadingType)", "5 WH (multiplier x unknown)");
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = {"2147483647", "-2147483648", "100000000", "4", "-24"})
+	void aMultiplierThatIsNotAUnitMultiplierKindIsShownRawNotApplied(String multiplier) {
+		assertThat(display.scaled(5L, readingType(multiplier, "72")))
+				.isEqualTo("5 WH (multiplier " + multiplier + " unknown)");
 	}
 
 	@Test

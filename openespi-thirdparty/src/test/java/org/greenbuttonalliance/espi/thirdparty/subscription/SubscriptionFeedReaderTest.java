@@ -2,6 +2,7 @@ package org.greenbuttonalliance.espi.thirdparty.subscription;
 
 import org.greenbuttonalliance.espi.thirdparty.subscription.SubscriptionTree.MeterReadingNode;
 import org.greenbuttonalliance.espi.thirdparty.subscription.SubscriptionTree.UsagePointNode;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -11,6 +12,7 @@ import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 /**
  * The reader reads what the Data Custodian sends today: the tests use the unedited DC capture
@@ -113,6 +115,28 @@ class SubscriptionFeedReaderTest {
 
 		assertThat(tree.linkingProblems())
 				.containsExactly("Entry urn:uuid:48b371f7-b1a2-52ef-a86e-0788a3d97328: duplicate self link " + first);
+	}
+
+	@Test
+	void aUsagePointWithADuplicateSelfHrefIsStillShownAndTheFirstKeepsTheChildren() throws IOException {
+		String original = fixture("feed-with-278-errors.xml");
+		Matcher usagePointEntry = Pattern.compile("<atom:entry>((?!</atom:entry>).)*<espi:UsagePoint((?!</atom:entry>).)*</atom:entry>",
+				Pattern.DOTALL).matcher(original);
+		assertThat(usagePointEntry.find()).as("UsagePoint entry in the fixture").isTrue();
+		String copy = usagePointEntry.group()
+				.replace("urn:uuid:07171718-b165-522a-b413-11d9eeb1ca43", "urn:uuid:07171718-b165-522a-b413-11d9eeb1ca44")
+				.replace("Sample residential electric service", "Copy with the same self link");
+		String xml = original.substring(0, usagePointEntry.end()) + copy + original.substring(usagePointEntry.end());
+
+		SubscriptionTree tree = reader.read(xml.getBytes(StandardCharsets.UTF_8));
+
+		assertThat(tree)
+				.satisfies(t -> assertThat(t.linkingProblems()).singleElement(InstanceOfAssertFactories.STRING)
+						.startsWith("Entry urn:uuid:07171718-b165-522a-b413-11d9eeb1ca44: duplicate self link "))
+				.satisfies(t -> assertThat(t.usagePoints())
+						.extracting(n -> n.usagePoint().title(), n -> n.meterReadings().size(), n -> n.usageSummaries().size())
+						.containsExactly(tuple("Sample residential electric service", 1, 1),
+								tuple("Copy with the same self link", 0, 0)));
 	}
 
 	@Test

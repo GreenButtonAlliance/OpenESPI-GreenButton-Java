@@ -8,6 +8,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.ClientAuthorizationException;
@@ -275,5 +276,18 @@ class SubscriptionFetchServiceTest {
 		assertThat(saved.getValue()).extracting(SubscriptionFeedFetchEntity::getHttpStatus, SubscriptionFeedFetchEntity::getBody,
 						SubscriptionFeedFetchEntity::getSchemaValid, SubscriptionFeedFetchEntity::getErrorCount)
 				.containsExactly(200, "<feed/>", false, 2);
+	}
+
+	@Test
+	void aFetchTheDatabaseRefusesIsNotSavedNotAnError() {
+		grantToken();
+		when(client.get(eq(URI), eq("tok"), any(FetchRange.class)))
+				.thenReturn(new SubscriptionClient.Response(403, "no".getBytes(StandardCharsets.UTF_8)));
+		when(fetches.save(any(SubscriptionFeedFetchEntity.class)))
+				.thenThrow(new DataAccessResourceFailureException("Packet for query is too large (70000000 > 67108864)"));
+
+		FetchOutcome outcome = service.fetch(id, user, null, null);
+
+		assertThat(outcome).isEqualTo(new FetchOutcome.NotSaved(SubscriptionFetchService.NOT_SAVED));
 	}
 }

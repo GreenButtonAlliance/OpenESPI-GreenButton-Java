@@ -27,6 +27,7 @@ import org.greenbuttonalliance.espi.common.domain.usage.RetailCustomerEntity;
 import org.greenbuttonalliance.espi.common.repositories.usage.AuthorizationRepository;
 import org.greenbuttonalliance.espi.common.repositories.usage.RetailCustomerRepository;
 import org.greenbuttonalliance.espi.thirdparty.subscription.FeedValidation;
+import org.greenbuttonalliance.espi.thirdparty.subscription.FetchRange;
 import org.greenbuttonalliance.espi.thirdparty.subscription.SubscriptionFeedFetchEntity;
 import org.greenbuttonalliance.espi.thirdparty.subscription.SubscriptionFeedFetchRepository;
 import org.greenbuttonalliance.espi.thirdparty.subscription.XmlValidationMode;
@@ -170,6 +171,43 @@ abstract class AbstractThirdPartySchemaTest {
 			authorizationRepository.deleteById(authorizationId);
 
 			assertThat(feedFetchRepository.findAllByAuthorizationIdOrderByFetchedAtDesc(authorizationId)).isEmpty();
+		} finally {
+			retailCustomerRepository.delete(customer);
+		}
+	}
+
+	@Test
+	@DisplayName("saved Subscription feeds keep any range FetchRange accepts: the 1970 default without HistoryLength, after 2038, and its earliest and latest bounds")
+	void subscription_feed_fetches_keep_every_range_fetch_range_accepts() {
+		String username = "range-" + UUID.randomUUID().toString().substring(0, 8);
+		RetailCustomerEntity account = new RetailCustomerEntity(username, "Schema", "Test",
+				username + "@example.local", RetailCustomerEntity.ROLE_USER);
+		account.setPassword("$2a$10$abcdefghijklmnopqrstuuJ0123456789abcdefghijklmnopqrstu");
+		account.setEnabled(Boolean.TRUE);
+		account.setAccountLocked(Boolean.FALSE);
+		RetailCustomerEntity customer = retailCustomerRepository.save(account);
+		try {
+			AuthorizationEntity authorization = new AuthorizationEntity(customer, null, "FB=4_5_13_14");
+			UUID authorizationId = UUID.randomUUID();
+			authorization.setId(authorizationId);
+			authorizationRepository.save(authorization);
+			String uri = "https://dc.example.local/DataCustodian/espi/1_1/resource/Batch/Subscription/1";
+			Instant fetched = Instant.parse("2026-11-20T10:00:00Z");
+			Instant after2038 = Instant.parse("2040-01-02T00:00:00Z");
+
+			feedFetchRepository.save(new SubscriptionFeedFetchEntity(authorizationId, fetched, uri,
+					Instant.EPOCH, after2038, 200, "<feed/>",
+					new FeedValidation(XmlValidationMode.OFF, null, 0, List.of())));
+			feedFetchRepository.save(new SubscriptionFeedFetchEntity(authorizationId, fetched.plusSeconds(1), uri,
+					FetchRange.EARLIEST, FetchRange.LATEST, 200, "<feed/>",
+					new FeedValidation(XmlValidationMode.OFF, null, 0, List.of())));
+
+			assertThat(feedFetchRepository.findAllByAuthorizationIdOrderByFetchedAtDesc(authorizationId))
+					.extracting(SubscriptionFeedFetchRepository.FetchSummary::publishedMin,
+							SubscriptionFeedFetchRepository.FetchSummary::publishedMax)
+					.containsExactly(tuple(FetchRange.EARLIEST, FetchRange.LATEST), tuple(Instant.EPOCH, after2038));
+
+			authorizationRepository.deleteById(authorizationId);
 		} finally {
 			retailCustomerRepository.delete(customer);
 		}

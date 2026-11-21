@@ -19,7 +19,7 @@
 - Range query parameters are UTC timestamps ending in `Z` (`2026-01-01T00:00:00Z`); the DC rejects anything else with 400.
 - `espi.thirdparty.xml-validation` values: `off`, `report`, `enforce`; default `report` in `application.yml`.
 - Disk capture only under `@Profile({"dev-mysql", "dev-postgresql", "local", "dev"})`; properties `espi.dev.xml-capture.enabled` (default `true`) and `espi.dev.xml-capture.dir` (default `dev-xml-capture`, resolved against the repository root).
-- Customer registrations' scopes: Monthly `FB=4_5_15_17;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000`; Daily keeps its own IntervalDuration/BlockDuration/HistoryLength with `FB=4_5_15_17`.
+- Customer registrations' scopes: Monthly `FB=4_5_15_17;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000`; Daily `FB=4_5_15_17;IntervalDuration=900;BlockDuration=monthly;HistoryLength=34128000` (amended during Task 1: Daily now asks for the scope the AS registers for it, instead of its earlier daily blocks and 7-day history).
 - AssertJ chained assertions: one chain per object under test (CLAUDE.md).
 - Use the Edit tool for source changes, never sed/awk (CLAUDE.md).
 - Build/test: `mvn install -DskipTests -pl openespi-thirdparty -am` once, then `mvn test -pl openespi-thirdparty -Dtest=<Class>`. Testcontainers tests (MySQL/PostgreSQL schema tests) run in WSL with Docker (Java 25 at `$HOME/.sdkman/candidates/java/25-tem`).

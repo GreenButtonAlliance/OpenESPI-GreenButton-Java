@@ -161,6 +161,7 @@ public class SubscriptionController {
 			case FetchOutcome.NotAuthorized ignored -> withNotice(page, NOT_AUTHORIZED, redirect);
 			case FetchOutcome.Unreachable unreachable -> withNotice(page, UNREACHABLE + unreachable.message(), redirect);
 			case FetchOutcome.InvalidRange invalid -> withNotice(page, invalid.message(), redirect);
+			case FetchOutcome.NotSaved notSaved -> withNotice(page, notSaved.message(), redirect);
 		};
 	}
 

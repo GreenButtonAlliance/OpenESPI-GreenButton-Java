@@ -63,6 +63,9 @@ public class SubscriptionFeedReader {
 			}
 		}
 
+		// Every UsagePoint is shown; children link only to the first one with a given self href (as the index
+		// keeps the first), and one without a self href takes no children. Both are already reported above.
+		List<UsagePointNode> shown = new ArrayList<>();
 		Map<String, UsagePointNode> usagePoints = new LinkedHashMap<>();
 		Map<String, MeterReadingNode> meterReadings = new LinkedHashMap<>();
 
@@ -71,8 +74,12 @@ public class SubscriptionFeedReader {
 				Entry<UsagePointDto> usagePoint = wrap(entry, resource);
 				Entry<TimeConfigurationDto> localTime = related(entry, "LocalTimeParameters", index,
 						TimeConfigurationDto.class);
-				usagePoints.put(usagePoint.selfHref(), new UsagePointNode(usagePoint, localTime, new ArrayList<>(),
-						new ArrayList<>(), new ArrayList<>()));
+				UsagePointNode node = new UsagePointNode(usagePoint, localTime, new ArrayList<>(),
+						new ArrayList<>(), new ArrayList<>());
+				shown.add(node);
+				if (usagePoint.selfHref() != null) {
+					usagePoints.putIfAbsent(usagePoint.selfHref(), node);
+				}
 			}
 		}
 		for (AtomEntryDto entry : entries) {
@@ -85,7 +92,9 @@ public class SubscriptionFeedReader {
 				Entry<MeterReadingDto> meterReading = wrap(entry, resource);
 				MeterReadingNode node = new MeterReadingNode(meterReading,
 						related(entry, "ReadingType", index, ReadingTypeDto.class), new ArrayList<>());
-				meterReadings.put(meterReading.selfHref(), node);
+				if (meterReading.selfHref() != null) {
+					meterReadings.putIfAbsent(meterReading.selfHref(), node);
+				}
 				parent.meterReadings().add(node);
 			}
 		}
@@ -121,10 +130,10 @@ public class SubscriptionFeedReader {
 		Comparator<Entry<IntervalBlockDto>> byStart = Comparator.comparing(
 				b -> b.resource().getInterval() == null ? null : b.resource().getInterval().getStart(),
 				Comparator.nullsLast(Comparator.naturalOrder()));
-		meterReadings.values().forEach(n -> n.intervalBlocks().sort(byStart));
+		shown.forEach(u -> u.meterReadings().forEach(m -> m.intervalBlocks().sort(byStart)));
 
 		return new SubscriptionTree(feed.getId(), feed.getTitle(), feed.getUpdated(), entries.size(),
-				usagePoints.values().stream().map(SubscriptionFeedReader::frozen).toList(), List.copyOf(problems));
+				shown.stream().map(SubscriptionFeedReader::frozen).toList(), List.copyOf(problems));
 	}
 
 	/** The node with its lists copied: they were filled while linking and are fixed from here on. */

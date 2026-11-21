@@ -232,6 +232,17 @@ class SubscriptionControllerTest {
 	}
 
 	@Test
+	void aFetchThatCouldNotBeSavedIsANoticeNotAnError() throws Exception {
+		saved();
+		when(fetchService.fetch(eq(AUTH_ID), any(Authentication.class), isNull(), isNull()))
+				.thenReturn(new FetchOutcome.NotSaved("The Data Custodian's answer could not be saved."));
+
+		mockMvc.perform(get(PAGE).with(alice()))
+				.andExpect(redirectedUrl(PAGE))
+				.andExpect(flash().attribute("notice", "The Data Custodian's answer could not be saved."));
+	}
+
+	@Test
 	void failedAutomaticFetchIsShownAndNotRepeated() throws Exception {
 		saved();
 		when(fetchService.fetch(eq(AUTH_ID), any(Authentication.class), isNull(), isNull()))

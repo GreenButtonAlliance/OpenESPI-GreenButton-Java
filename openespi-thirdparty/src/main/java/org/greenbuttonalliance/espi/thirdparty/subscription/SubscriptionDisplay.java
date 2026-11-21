@@ -180,15 +180,23 @@ public class SubscriptionDisplay {
 		return BigDecimal.valueOf(value).scaleByPowerOfTen(power).stripTrailingZeros().toPlainString() + unit;
 	}
 
+	/**
+	 * The power of ten of a {@link UnitMultiplierKind} code or name, or null for anything else. Only those
+	 * values (-12 to 12) are applied: the feed is not trusted, and in report mode an invalid feed still renders,
+	 * so a multiplier such as 2147483647 must not be turned into a number with that many digits.
+	 */
 	private static Integer power(String code) {
+		String trimmed = code.trim();
 		try {
-			return Integer.parseInt(code.trim());
+			return UnitMultiplierKind.fromValue(Integer.parseInt(trimmed)).getValue();
 		} catch (NumberFormatException notNumeric) {
 			try {
-				return UnitMultiplierKind.valueOf(code.trim()).getValue();
+				return UnitMultiplierKind.valueOf(trimmed).getValue();
 			} catch (IllegalArgumentException unknown) {
 				return null;
 			}
+		} catch (IllegalArgumentException notAKind) {
+			return null;
 		}
 	}
 
