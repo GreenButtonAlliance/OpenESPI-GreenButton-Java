@@ -446,6 +446,96 @@ class AuthCodeFlowOrchestrationIntegrationTest extends AbstractAuthserverIntegra
 				.containsExactly(clientId, REDIRECT_URI, tpState);
 	}
 
+	/**
+	 * A customer who has just authorized one registration starts another in the same browser session
+	 * (#299: a different scope; #276: the same scope again). The second request must be delegated to the
+	 * Data Custodian like the first, through the entry point and carrying the Third Party's own
+	 * {@code state} and {@code redirect_uri}: not Spring's consent state (#299), and not a code minted
+	 * from the consent left by the first authorization (#276).
+	 */
+	@ParameterizedTest(name = "second authorization: {0}")
+	@CsvSource({"'Daily (a different scope, #299)', DAILY", "'Monthly again (the same scope, #276)', MONTHLY"})
+	@DisplayName("a second authorization in the same session is delegated with the Third Party's state and redirect_uri")
+	void secondAuthorizationInTheSameSessionIsDelegatedWithTheThirdPartysStateAndRedirectUri(
+			String description, String second) throws Exception {
+		String daily = "FB=4_5_15;IntervalDuration=900;BlockDuration=monthly;HistoryLength=34128000";
+		String monthlyCallback = "https://tp.example/cb/monthly";
+		String dailyCallback = "https://tp.example/cb/daily";
+		String suffix = UUID.randomUUID().toString().substring(0, 8);
+		String clientId = "pr-299-tp-" + suffix;
+		String clientSecret = "pr-299-secret-" + suffix;
+		registeredClientRepository.save(RegisteredClient.withId(UUID.randomUUID().toString())
+				.clientId(clientId)
+				.clientName("#299 Test ThirdParty")
+				.clientSecret("{noop}" + clientSecret)
+				.clientIdIssuedAt(Instant.now())
+				.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+				.authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+				.authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
+				.redirectUri(monthlyCallback)
+				.redirectUri(dailyCallback)
+				.scope(SCOPE)
+				.scope(daily)
+				.clientSettings(ClientSettings.builder().requireAuthorizationConsent(true).requireProofKey(false).build())
+				.tokenSettings(TokenSettings.builder().accessTokenFormat(OAuth2TokenFormat.REFERENCE).build())
+				.build());
+
+		// 1) The first authorization (Monthly) completes: continue -> authorize -> code at the Monthly callback.
+		String correlationId = "corr-299-" + suffix;
+		delegationStateService.save(correlationId, clientId, monthlyCallback, "tp-state-1-" + suffix, SCOPE);
+		Instant now = Instant.now();
+		String handoff = codec.encode(SignedHandoff.Return.of(correlationId, now, now.plusSeconds(300),
+				UUID.randomUUID().toString().replace("-", ""), CUSTOMER_ID, List.of(UUID.randomUUID()),
+				SignedHandoff.Return.CONSENT_ALLOW, SCOPE));
+		MvcResult continueResult = mockMvc.perform(get("/oauth2/authorize/continue").param("handoff", handoff))
+				.andExpect(status().is3xxRedirection())
+				.andReturn();
+		MockHttpSession session = (MockHttpSession) continueResult.getRequest().getSession(false);
+		String firstLocation = mockMvc.perform(get(java.net.URI.create(
+						continueResult.getResponse().getHeader("Location"))).session(session))
+				.andExpect(status().is3xxRedirection())
+				.andReturn().getResponse().getHeader("Location");
+		assertThat(firstLocation).startsWith(monthlyCallback).contains("code=", "state=tp-state-1-" + suffix);
+
+		// 2) In the same session, the Third Party starts the second authorization with its own state.
+		boolean isDaily = "DAILY".equals(second);
+		String secondScope = isDaily ? daily : SCOPE;
+		String secondCallback = isDaily ? dailyCallback : monthlyCallback;
+		String secondState = "tp-state-2-" + suffix;
+		java.net.URI authorizeUri = org.springframework.web.util.UriComponentsBuilder.fromPath("/oauth2/authorize")
+				.queryParam("response_type", "code")
+				.queryParam("client_id", clientId)
+				.queryParam("scope", secondScope)
+				.queryParam("redirect_uri", secondCallback)
+				.queryParam("state", secondState)
+				.encode()
+				.build()
+				.toUri();
+		String delegateUrl = mockMvc.perform(get(authorizeUri).session(session)
+						.accept(org.springframework.http.MediaType.TEXT_HTML))
+				.andExpect(status().is3xxRedirection())
+				.andReturn().getResponse().getHeader("Location");
+
+		assertThat(delegateUrl)
+				.as("the second authorization is delegated to the DC, not answered with a code")
+				.doesNotContain("code=")
+				.satisfies(url -> assertThat(java.net.URI.create(url).getPath()).isEqualTo("/authorize/delegate"))
+				.satisfies(url -> assertThat(new String[] {extractQueryParam(url, "state"),
+						extractQueryParam(url, "redirect_uri")})
+						.as("the Third Party's own state and redirect_uri reach the delegate")
+						.containsExactly(java.net.URLEncoder.encode(secondState, java.nio.charset.StandardCharsets.UTF_8),
+								java.net.URLEncoder.encode(secondCallback, java.nio.charset.StandardCharsets.UTF_8)));
+
+		// 3) The delegate saves the return leg under the Third Party's state, with the callback it asked for.
+		mockMvc.perform(get(java.net.URI.create(delegateUrl)).session(session))
+				.andExpect(status().is3xxRedirection());
+		assertThat(delegationStateService.consume(secondState))
+				.isNotNull()
+				.extracting(DelegationStateService.Entry::redirectUri, DelegationStateService.Entry::tpState,
+						DelegationStateService.Entry::requestedScope)
+				.containsExactly(secondCallback, secondState, secondScope);
+	}
+
 	@Test
 	@DisplayName("seeded third_party client has PKCE disabled (ESPI does not support PKCE)")
 	void seededThirdPartyClientDoesNotRequireProofKey() {

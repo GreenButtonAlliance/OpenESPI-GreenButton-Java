@@ -14,6 +14,7 @@ import org.greenbuttonalliance.espi.handoff.HandoffNonceService;
 import org.greenbuttonalliance.espi.handoff.InvalidHandoffException;
 import org.greenbuttonalliance.espi.handoff.SignedHandoff;
 import org.greenbuttonalliance.espi.handoff.SignedHandoffCodec;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -24,12 +25,21 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockHttpSession;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.context.SecurityContextImpl;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
+import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsent;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsentService;
+import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.time.Instant;
@@ -80,6 +90,10 @@ class AuthorizeContinueControllerTest {
 	private OAuth2AuthorizationConsentService consentService;
 	@Mock
 	private RegisteredClientRepository registeredClientRepository;
+	@Mock
+	private OAuth2AuthorizationService authorizationService;
+
+	private static final String SECURITY_CONTEXT_KEY = HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY;
 
 	private SignedHandoffCodec codec;
 	private DelegationStateService delegationStateService;
@@ -94,12 +108,17 @@ class AuthorizeContinueControllerTest {
 
 		AuthorizeContinueController controller = new AuthorizeContinueController(
 				codec, nonceService, delegationStateService, consentService, registeredClientRepository,
-				grantContextSessionStore);
+				grantContextSessionStore, authorizationService);
 
 		// No custom view resolver: Spring's standalone setup handles "redirect:" directives natively
 		// (via RedirectView), and view().name(...) assertions match against the controller's return
 		// value before resolution — so the absence of a Thymeleaf engine doesn't matter.
 		mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+	}
+
+	@AfterEach
+	void clearSignIn() {
+		SecurityContextHolder.clearContext();
 	}
 
 	@Nested
@@ -203,11 +222,80 @@ class AuthorizeContinueControllerTest {
 
 			verifyNoInteractions(consentService);
 		}
+
+		@Test
+		@DisplayName("a delegation from Spring's consent page (#299): its pending authorization is removed")
+		void pendingConsentAuthorizationIsRemoved() throws Exception {
+			String cid = "corr-allow-pending";
+			delegationStateService.save(cid, "tp-1", "https://tp.example/cb", "tp-state-1", ESPI_SCOPE, "pending-id");
+			when(registeredClientRepository.findByClientId("tp-1")).thenReturn(client(ESPI_SCOPE));
+			OAuth2Authorization pending = OAuth2Authorization.withRegisteredClient(client(ESPI_SCOPE))
+					.id("pending-id")
+					.principalName("42")
+					.authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+					.build();
+			when(authorizationService.findById("pending-id")).thenReturn(pending);
+
+			mockMvc.perform(get("/oauth2/authorize/continue").param("handoff", codec.encode(allowReturn(cid, ESPI_SCOPE))))
+					.andExpect(status().is3xxRedirection());
+
+			verify(authorizationService).remove(pending);
+		}
+
+		@Test
+		@DisplayName("a delegation not from the consent page touches no authorization")
+		void noPendingAuthorizationNoRemoval() throws Exception {
+			String cid = "corr-allow-no-pending";
+			delegationStateService.save(cid, "tp-1", "https://tp.example/cb", "tp-state-1", ESPI_SCOPE);
+			when(registeredClientRepository.findByClientId("tp-1")).thenReturn(client(ESPI_SCOPE));
+
+			mockMvc.perform(get("/oauth2/authorize/continue").param("handoff", codec.encode(allowReturn(cid, ESPI_SCOPE))))
+					.andExpect(status().is3xxRedirection());
+
+			verifyNoInteractions(authorizationService);
+		}
+
+		@Test
+		@DisplayName("a handoff rejected at /continue (widened scope) leaves no customer sign-in (#299)")
+		void rejectedHandoffLeavesNoSignIn() throws Exception {
+			String cid = "corr-allow-widened";
+			delegationStateService.save(cid, "tp-1", "https://tp.example/cb", "tp-state-1", "FB_1");
+			when(registeredClientRepository.findByClientId("tp-1")).thenReturn(client("FB_1"));
+			MockHttpSession session = new MockHttpSession();
+
+			mockMvc.perform(get("/oauth2/authorize/continue").session(session)
+							.param("handoff", codec.encode(allowReturn(cid, "FB_99"))))
+					.andExpect(status().isBadRequest());
+
+			assertThat(session.getAttribute(SECURITY_CONTEXT_KEY)).isNull();
+			verifyNoInteractions(consentService);
+		}
 	}
 
 	@Nested
 	@DisplayName("Deny path")
 	class DenyPath {
+
+		@Test
+		@DisplayName("deny clears a customer sign-in and grant context left in the session (#299)")
+		void denyClearsALeftoverCustomerSignIn() throws Exception {
+			String cid = "corr-deny-leftover";
+			delegationStateService.save(cid, "tp-1", "https://tp.example/cb", "tp-state-1", ESPI_SCOPE);
+			MockHttpSession session = new MockHttpSession();
+			SecurityContext leftover = new SecurityContextImpl(UsernamePasswordAuthenticationToken.authenticated(
+					"42", null, List.of(new SimpleGrantedAuthority("ROLE_CUSTOMER"))));
+			session.setAttribute(SECURITY_CONTEXT_KEY, leftover);
+			SecurityContextHolder.setContext(leftover);
+			grantContextSessionStore.put(session, new org.greenbuttonalliance.espi.authserver.grant.GrantContext(
+					"old-cid", 42L, ESPI_SCOPE, List.of()));
+
+			mockMvc.perform(get("/oauth2/authorize/continue").session(session)
+							.param("handoff", codec.encode(denyReturn(cid))))
+					.andExpect(status().is3xxRedirection());
+
+			assertThat(session.getAttribute(SECURITY_CONTEXT_KEY)).isNull();
+			assertThat(grantContextSessionStore.peek(session)).isNull();
+		}
 
 		@Test
 		@DisplayName("valid deny handoff: 302 to TP redirect_uri with error=access_denied + state")

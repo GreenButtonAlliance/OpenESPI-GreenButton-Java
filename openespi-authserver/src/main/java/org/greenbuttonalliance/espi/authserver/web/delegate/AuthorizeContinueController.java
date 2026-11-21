@@ -34,8 +34,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsent;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsentService;
+import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
@@ -71,6 +73,9 @@ import java.util.List;
  *       (looked up from {@link DelegationStateService}). Spring AS sees an authenticated user
  *       with pre-existing consent, mints the authorization code, and redirects to the third
  *       party's {@code redirect_uri}.</li>
+ *   <li>The sign-in and the consent serve that one replay only:
+ *       {@link SingleUseCustomerAuthorizationResponseHandler} clears both once the code is minted, so
+ *       the customer's next authorization is delegated to the DC again (#299, #276).</li>
  * </ol>
  *
  * <h2>Deny path</h2>
@@ -101,6 +106,7 @@ public class AuthorizeContinueController {
 	private final OAuth2AuthorizationConsentService consentService;
 	private final RegisteredClientRepository registeredClientRepository;
 	private final GrantContextSessionStore grantContextSessionStore;
+	private final OAuth2AuthorizationService authorizationService;
 	private final SecurityContextRepository securityContextRepository =
 			new HttpSessionSecurityContextRepository();
 
@@ -115,25 +121,62 @@ public class AuthorizeContinueController {
 		if (state == null) {
 			throw new InvalidHandoffException("no delegation state for correlation_id " + payload.correlationId());
 		}
+		removePendingConsentAuthorization(state.pendingAuthorizationId());
 
 		if (SignedHandoff.Return.CONSENT_ALLOW.equals(payload.consent())
 				&& payload.approvedScope() != null && !payload.approvedScope().isBlank()) {
 			return handleAllow(payload, state, request, response);
 		}
+		clearCustomerSignIn(request, response);
 		return handleDeny(state);
+	}
+
+	/**
+	 * Clears a customer's AS sign-in, and the grant context stashed for it, when no authorization response
+	 * will (#299): only {@link SingleUseCustomerAuthorizationResponseHandler} clears them otherwise.
+	 */
+	private void clearCustomerSignIn(HttpServletRequest request, HttpServletResponse response) {
+		Authentication signedIn = SecurityContextHolder.getContext().getAuthentication();
+		if (signedIn == null || signedIn.getAuthorities().stream()
+				.noneMatch(a -> SingleUseCustomerAuthorizationResponseHandler.CUSTOMER_AUTHORITY.equals(a.getAuthority()))) {
+			return;
+		}
+		SecurityContextHolder.clearContext();
+		securityContextRepository.saveContext(SecurityContextHolder.createEmptyContext(), request, response);
+		HttpSession session = request.getSession(false);
+		if (session != null) {
+			grantContextSessionStore.consume(session);
+		}
+	}
+
+	/**
+	 * Removes the pending authorization Spring AS saved before its consent-page redirect (#299). The replay
+	 * below creates its own, and the purge job never removes a row that holds only a state.
+	 */
+	private void removePendingConsentAuthorization(String pendingAuthorizationId) {
+		if (pendingAuthorizationId == null) {
+			return;
+		}
+		OAuth2Authorization pending = authorizationService.findById(pendingAuthorizationId);
+		if (pending != null) {
+			authorizationService.remove(pending);
+		}
 	}
 
 	private String handleAllow(SignedHandoff.Return payload,
 							   DelegationStateService.Entry state,
 							   HttpServletRequest request,
 							   HttpServletResponse response) {
-		authenticateCustomer(payload.principal(), request, response);
-
 		RegisteredClient client = registeredClientRepository.findByClientId(state.clientId());
 		if (client == null) {
 			throw new InvalidHandoffException("registered client disappeared: " + state.clientId());
 		}
 		requireNarrowingOfRequest(payload.approvedScope(), state.requestedScope());
+		Long retailCustomerId = parseRetailCustomerId(payload.principal());
+
+		// Only once the handoff is accepted: a sign-in left by a rejected one would send the customer's next
+		// authorization through Spring's consent page instead of the delegation (#299).
+		authenticateCustomer(payload.principal(), request, response);
 
 		// Pre-populate the consent store with the customer's effective approved scope so Spring
 		// AS's consent check passes when /oauth2/authorize is replayed.
@@ -148,7 +191,6 @@ public class AuthorizeContinueController {
 		// can stamp it onto the OAuth2Authorization Spring AS creates when /oauth2/authorize is
 		// replayed below. Lifetime is the brief window between this redirect and Spring AS's
 		// auth-code persistence; consumed single-use by the enricher.
-		Long retailCustomerId = parseRetailCustomerId(payload.principal());
 		HttpSession session = request.getSession(true);
 		grantContextSessionStore.put(session, new GrantContext(
 				payload.correlationId(),
@@ -263,7 +305,9 @@ public class AuthorizeContinueController {
 
 	@ExceptionHandler(InvalidHandoffException.class)
 	@ResponseStatus(HttpStatus.BAD_REQUEST)
-	public String handleInvalidHandoff(InvalidHandoffException e, HttpServletRequest request) {
+	public String handleInvalidHandoff(InvalidHandoffException e, HttpServletRequest request,
+									   HttpServletResponse response) {
+		clearCustomerSignIn(request, response);
 		log.warn("/oauth2/authorize/continue handoff rejected: cause='{}', remoteAddr={}, userAgent='{}'",
 				e.getMessage(), request.getRemoteAddr(), request.getHeader("User-Agent"));
 		return "error/400";
