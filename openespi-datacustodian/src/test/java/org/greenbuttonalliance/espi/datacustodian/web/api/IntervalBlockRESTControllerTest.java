@@ -65,9 +65,9 @@ public class IntervalBlockRESTControllerTest extends AbstractControllerMockTest 
                     .thenReturn(dto);
 
             mockMvc.perform(get("/espi/1_1/resource/IntervalBlock")
-                            .accept(MediaType.APPLICATION_XML))
+                            .accept(MediaType.APPLICATION_ATOM_XML))
                     .andExpect(status().isOk())
-                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
+                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_ATOM_XML));
         }
 
         @Test
@@ -75,7 +75,7 @@ public class IntervalBlockRESTControllerTest extends AbstractControllerMockTest 
         @DisplayName("FB_4 + FB_5 pass the URL rule, but the root collection is admin only (#286)")
         void fbTokenIsRefusedOnRootCollection() throws Exception {
             mockMvc.perform(get("/espi/1_1/resource/IntervalBlock")
-                            .accept(MediaType.APPLICATION_XML))
+                            .accept(MediaType.APPLICATION_ATOM_XML))
                     .andExpect(status().isForbidden())
                     .andExpect(refusedByRowScope());
         }
@@ -112,9 +112,9 @@ public class IntervalBlockRESTControllerTest extends AbstractControllerMockTest 
             when(intervalBlockMapper.toDto(entity)).thenReturn(dto);
 
             mockMvc.perform(get("/espi/1_1/resource/IntervalBlock/" + id)
-                            .accept(MediaType.APPLICATION_XML))
+                            .accept(MediaType.APPLICATION_ATOM_XML))
                     .andExpect(status().isOk())
-                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
+                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_ATOM_XML));
         }
 
         @Test
@@ -142,7 +142,7 @@ public class IntervalBlockRESTControllerTest extends AbstractControllerMockTest 
                     .thenReturn(List.of(new IntervalBlockEntity()));
 
             mockMvc.perform(get("/espi/1_1/resource/RetailCustomer/1/UsagePoint/" + UUID.randomUUID() + "/MeterReading/" + mrId + "/IntervalBlock")
-                            .accept(MediaType.APPLICATION_XML))
+                            .accept(MediaType.APPLICATION_ATOM_XML))
                     .andExpect(status().isForbidden())
                     .andExpect(refusedByRowScope());
         }

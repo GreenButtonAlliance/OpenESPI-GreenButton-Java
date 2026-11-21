@@ -204,9 +204,12 @@ springdoc:
     enabled: true
     operations-sorter: alpha
     tags-sorter: alpha
-  show-actuator: true
+  # The docs describe the ESPI API a Third Party uses (#312): no Actuator endpoints and no internal
+  # AS->DC back-channel, and application/atom+xml, the only type an ESPI resource is served as.
+  show-actuator: false
+  paths-to-exclude: /internal/**
   default-consumes-media-type: application/json
-  default-produces-media-type: application/json
+  default-produces-media-type: application/atom+xml
 
 # Server Configuration
 spring.web.error.include-message: always

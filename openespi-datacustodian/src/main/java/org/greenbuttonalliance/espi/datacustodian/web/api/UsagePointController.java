@@ -77,7 +77,7 @@ public class UsagePointController {
         this.usageEntries = usageEntries;
     }
 
-    @GetMapping(value = "/UsagePoint", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    @GetMapping(value = "/UsagePoint", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
     @Operation(
             summary = "Get Usage Points",
             description = "The Usage Points the token may read: its subscription's, or every one for the DataCustodian admin",
@@ -104,10 +104,10 @@ public class UsagePointController {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         usageExportService.exportDto(usageExportService.buildFeedOf(feedHref, "UsagePoint", "UsagePoint Feed",
                 usagePoints.stream().map(usagePoint -> usageEntries.usagePoint(reader, base, usagePoint)).toList()), out);
-        return ResponseEntity.ok().contentType(MediaType.APPLICATION_XML).body(out.toByteArray());
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_ATOM_XML).body(out.toByteArray());
     }
 
-    @GetMapping(value = "/UsagePoint/{usagePointId}", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    @GetMapping(value = "/UsagePoint/{usagePointId}", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
     @Operation(
         summary = "Get Usage Point by ID",
         description = "One Usage Point the token may read, with the same Atom links as in its feeds",
@@ -129,6 +129,6 @@ public class UsagePointController {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         usageExportService.exportDto(usageExportService.buildEntry(
                 usageEntries.usagePoint(reader, base, reader.usagePoint(usagePointId))), out);
-        return ResponseEntity.ok().contentType(MediaType.APPLICATION_XML).body(out.toByteArray());
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_ATOM_XML).body(out.toByteArray());
     }
 }

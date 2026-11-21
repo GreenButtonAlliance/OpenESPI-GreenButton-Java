@@ -67,9 +67,9 @@ public class ReadingTypeRESTControllerTest extends AbstractControllerMockTest {
                     .thenReturn(dto);
 
             mockMvc.perform(get("/espi/1_1/resource/ReadingType")
-                            .accept(MediaType.APPLICATION_XML))
+                            .accept(MediaType.APPLICATION_ATOM_XML))
                     .andExpect(status().isOk())
-                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
+                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_ATOM_XML));
         }
 
         @Test
@@ -77,7 +77,7 @@ public class ReadingTypeRESTControllerTest extends AbstractControllerMockTest {
         @DisplayName("FB_4 + FB_5 pass the URL rule, but the root collection is admin only (#286)")
         void fbTokenIsRefusedOnRootCollection() throws Exception {
             mockMvc.perform(get("/espi/1_1/resource/ReadingType")
-                            .accept(MediaType.APPLICATION_XML))
+                            .accept(MediaType.APPLICATION_ATOM_XML))
                     .andExpect(status().isForbidden())
                     .andExpect(refusedByRowScope());
         }
@@ -114,9 +114,9 @@ public class ReadingTypeRESTControllerTest extends AbstractControllerMockTest {
             when(readingTypeMapper.toDto(entity)).thenReturn(dto);
 
             mockMvc.perform(get("/espi/1_1/resource/ReadingType/" + id)
-                            .accept(MediaType.APPLICATION_XML))
+                            .accept(MediaType.APPLICATION_ATOM_XML))
                     .andExpect(status().isOk())
-                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
+                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_ATOM_XML));
         }
 
         @Test

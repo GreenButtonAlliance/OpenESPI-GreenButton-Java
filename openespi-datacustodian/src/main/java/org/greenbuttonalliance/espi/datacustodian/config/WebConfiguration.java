@@ -78,6 +78,10 @@ public class WebConfiguration implements WebMvcConfigurer {
 
     /**
      * Configure content negotiation for ESPI endpoints.
+     *
+     * <p>A request without an {@code Accept} header accepts {@code application/atom+xml} first, the only type
+     * the ESPI resource endpoints produce (#312), then {@code application/json}, which the internal back-channel
+     * produces.</p>
      */
     @Override
     public void configureContentNegotiation(ContentNegotiationConfigurer configurer) {
@@ -86,7 +90,7 @@ public class WebConfiguration implements WebMvcConfigurer {
             //.favorPathExtension(false) // removed, was default
             .ignoreAcceptHeader(false)
             .useRegisteredExtensionsOnly(false)
-            .defaultContentType(MediaType.APPLICATION_JSON)
+            .defaultContentType(MediaType.APPLICATION_ATOM_XML, MediaType.APPLICATION_JSON)
             .mediaType("xml", MediaType.APPLICATION_XML)
             .mediaType("json", MediaType.APPLICATION_JSON)
             .mediaType("atom", MediaType.APPLICATION_ATOM_XML);

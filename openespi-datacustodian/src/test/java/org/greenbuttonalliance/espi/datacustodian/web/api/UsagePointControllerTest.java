@@ -75,9 +75,9 @@ public class UsagePointControllerTest extends AbstractControllerMockTest {
                     .thenReturn(dto);
 
             mockMvc.perform(get("/espi/1_1/resource/UsagePoint")
-                            .accept(MediaType.APPLICATION_XML))
+                            .accept(MediaType.APPLICATION_ATOM_XML))
                     .andExpect(status().isOk())
-                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
+                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_ATOM_XML));
         }
 
         @Test
@@ -85,7 +85,7 @@ public class UsagePointControllerTest extends AbstractControllerMockTest {
         @DisplayName("FB_4 + FB_5 pass the URL rule, but the root collection is admin only (#286)")
         void fbTokenIsRefusedOnRootCollection() throws Exception {
             mockMvc.perform(get("/espi/1_1/resource/UsagePoint")
-                            .accept(MediaType.APPLICATION_XML))
+                            .accept(MediaType.APPLICATION_ATOM_XML))
                     .andExpect(status().isForbidden())
                     .andExpect(refusedByRowScope());
         }
@@ -122,9 +122,9 @@ public class UsagePointControllerTest extends AbstractControllerMockTest {
             when(usagePointMapper.toDto(entity)).thenReturn(dto);
 
             mockMvc.perform(get("/espi/1_1/resource/UsagePoint/" + id)
-                            .accept(MediaType.APPLICATION_XML))
+                            .accept(MediaType.APPLICATION_ATOM_XML))
                     .andExpect(status().isOk())
-                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
+                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_ATOM_XML));
         }
 
         @Test

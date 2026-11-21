@@ -86,9 +86,9 @@ public class BatchSubscriptionController {
 		this.usageExportService = usageExportService;
 	}
 
-	// No "produces": WebConfiguration's default content type is JSON when a request has no Accept header, so
-	// an XML-only mapping would answer such requests 406. The response is always application/atom+xml.
-	@GetMapping("/Batch/Subscription/{subscriptionId}")
+	// Like every ESPI resource, application/atom+xml only (#312); a request without an Accept header gets it
+	// (WebConfiguration's default content type).
+	@GetMapping(value = "/Batch/Subscription/{subscriptionId}", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
 	@Operation(
 			summary = "Get a Subscription's energy usage data",
 			description = "One Atom feed with the subscription's UsagePoints and their MeterReadings, ReadingTypes,"

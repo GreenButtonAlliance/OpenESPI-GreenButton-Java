@@ -66,9 +66,9 @@ public class UsageSummaryRESTControllerTest extends AbstractControllerMockTest {
                     .thenReturn(dto);
 
             mockMvc.perform(get("/espi/1_1/resource/UsageSummary")
-                            .accept(MediaType.APPLICATION_XML))
+                            .accept(MediaType.APPLICATION_ATOM_XML))
                     .andExpect(status().isOk())
-                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
+                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_ATOM_XML));
         }
 
         @Test
@@ -76,7 +76,7 @@ public class UsageSummaryRESTControllerTest extends AbstractControllerMockTest {
         @DisplayName("FB_15 passes the URL rule, but the root collection is admin only (#286)")
         void fbTokenIsRefusedOnRootCollection() throws Exception {
             mockMvc.perform(get("/espi/1_1/resource/UsageSummary")
-                            .accept(MediaType.APPLICATION_XML))
+                            .accept(MediaType.APPLICATION_ATOM_XML))
                     .andExpect(status().isForbidden())
                     .andExpect(refusedByRowScope());
         }
@@ -98,9 +98,9 @@ public class UsageSummaryRESTControllerTest extends AbstractControllerMockTest {
             when(usageSummaryMapper.toDto(entity)).thenReturn(dto);
 
             mockMvc.perform(get("/espi/1_1/resource/UsageSummary/" + id)
-                            .accept(MediaType.APPLICATION_XML))
+                            .accept(MediaType.APPLICATION_ATOM_XML))
                     .andExpect(status().isOk())
-                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
+                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_ATOM_XML));
         }
 
         @Test
@@ -124,7 +124,7 @@ public class UsageSummaryRESTControllerTest extends AbstractControllerMockTest {
         @DisplayName("a token with no subscription gets 403 (#286)")
         void tokenWithoutSubscriptionIsRefused() throws Exception {
             mockMvc.perform(get("/espi/1_1/resource/RetailCustomer/1/UsagePoint/" + UUID.randomUUID() + "/UsageSummary")
-                            .accept(MediaType.APPLICATION_XML))
+                            .accept(MediaType.APPLICATION_ATOM_XML))
                     .andExpect(status().isForbidden())
                     .andExpect(refusedByRowScope());
         }

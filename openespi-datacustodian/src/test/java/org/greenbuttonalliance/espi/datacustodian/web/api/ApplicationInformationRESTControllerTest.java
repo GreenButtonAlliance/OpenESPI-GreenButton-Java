@@ -57,9 +57,9 @@ public class ApplicationInformationRESTControllerTest extends AbstractController
             when(applicationInformationService.findAll()).thenReturn(List.of(entity));
 
             mockMvc.perform(get("/espi/1_1/resource/ApplicationInformation")
-                            .accept(MediaType.APPLICATION_XML))
+                            .accept(MediaType.APPLICATION_ATOM_XML))
                     .andExpect(status().isOk())
-                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
+                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_ATOM_XML));
 
             // #247: the feed is built from the request URL (its self link and UUID v5 id)
             verify(applicationInformationService).export(
@@ -73,7 +73,7 @@ public class ApplicationInformationRESTControllerTest extends AbstractController
             when(applicationInformationService.findAll()).thenReturn(List.of());
 
             mockMvc.perform(get("/espi/1_1/resource/ApplicationInformation")
-                            .accept(MediaType.APPLICATION_XML))
+                            .accept(MediaType.APPLICATION_ATOM_XML))
                     .andExpect(status().isOk());
         }
 
@@ -106,9 +106,9 @@ public class ApplicationInformationRESTControllerTest extends AbstractController
             when(applicationInformationService.findById(id)).thenReturn(entity);
 
             mockMvc.perform(get("/espi/1_1/resource/ApplicationInformation/" + id)
-                            .accept(MediaType.APPLICATION_XML))
+                            .accept(MediaType.APPLICATION_ATOM_XML))
                     .andExpect(status().isOk())
-                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
+                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_ATOM_XML));
 
             verify(applicationInformationService).export(any(ApplicationInformationEntity.class), any());
         }

@@ -8,6 +8,8 @@ ESPI does not use RFC 4287 to the letter. It uses an **ESPI profile** of it, def
 - REQ.21's examples;
 - the feeds of CMD-certified Data Custodians.
 
+Every ESPI resource response, feed or entry, is served as `Content-Type: application/atom+xml`, and that is the only type the Data Custodian's resource endpoints produce: a request that accepts only `application/xml` or `application/json` gets 406, and a request without an `Accept` header gets Atom (#312).
+
 This page lists the differences so that they are not "fixed" by mistake. **Do not change the code to follow RFC 4287 where this page says ESPI differs.** Doing so would either reveal which utility the data comes from, or make our feeds differ from every certified feed.
 
 ## Intentional differences
@@ -54,6 +56,7 @@ REQ.21 p. 168 says related links "shall" use `type="application/atom+xml"`, for 
 | Entry (resource inside a bare `atom:content`) | `UsageAtomEntryDto.java`, `CustomerAtomEntryDto.java` |
 | Links (`type` on every link, also on an empty feed) | `openespi-common/.../service/BaseExportService.java` (`buildFeed`) |
 | Validation against atom.xsd + espi.xsd + customer.xsd | `openespi-common/.../xml/EspiXmlSchemaValidator.java` |
-| Tests | `AtomContentAndSchemaValidationTest`, `AtomFeedExportTest` |
+| Media type (`application/atom+xml` only; the default without `Accept`) | `produces` on each `openespi-datacustodian/.../web/api/` controller; `WebConfiguration#configureContentNegotiation` |
+| Tests | `AtomContentAndSchemaValidationTest`, `AtomFeedExportTest`, `EspiAtomMediaTypeIntegrationTest` |
 
-History: #197 (the `atom:content` wrapper, the schema validator, the feed `published` and empty-feed link fixes), #247 (feed date adapters, entry types).
+History: #197 (the `atom:content` wrapper, the schema validator, the feed `published` and empty-feed link fixes), #247 (feed date adapters, entry types), #312 (the `application/atom+xml` media type).

@@ -65,7 +65,7 @@ public class ApplicationInformationRESTController {
      *
      * @return XML response body
      */
-    @GetMapping(produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    @GetMapping(produces = MediaType.APPLICATION_ATOM_XML_VALUE)
     @Operation(
         summary = "Get All ApplicationInformation",
         description = "Returns a list of all registered applications in XML format"
@@ -88,7 +88,7 @@ public class ApplicationInformationRESTController {
         applicationInformationService.export(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString(),
                 entities, out);
         return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_XML)
+                .contentType(MediaType.APPLICATION_ATOM_XML)
                 .body(out.toByteArray());
     }
 
@@ -98,7 +98,7 @@ public class ApplicationInformationRESTController {
      * @param applicationInformationId Unique identifier for the ApplicationInformation
      * @return XML response body
      */
-    @GetMapping(value = "/{applicationInformationId}", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    @GetMapping(value = "/{applicationInformationId}", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
     @Operation(
         summary = "Get ApplicationInformation by ID",
         description = "Returns a specific ApplicationInformation resource in XML format"
@@ -124,7 +124,7 @@ public class ApplicationInformationRESTController {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         applicationInformationService.export(entity, out);
         return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_XML)
+                .contentType(MediaType.APPLICATION_ATOM_XML)
                 .body(out.toByteArray());
     }
 }

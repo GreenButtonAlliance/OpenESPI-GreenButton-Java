@@ -73,7 +73,7 @@ public class UsageSummaryRESTController {
     private final SubscriptionAccess subscriptionAccess;
     private final UsageEntries usageEntries;
 
-    @GetMapping(value = "/UsageSummary", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    @GetMapping(value = "/UsageSummary", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
     @Operation(
         summary = "Get Usage Summaries",
         description = "The Usage Summaries the token may read: its subscription's within its HistoryLength, or every one for the DataCustodian admin",
@@ -97,7 +97,7 @@ public class UsageSummaryRESTController {
                 : reader.usageSummaries());
     }
 
-    @GetMapping(value = "/UsageSummary/{usageSummaryId}", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    @GetMapping(value = "/UsageSummary/{usageSummaryId}", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
     @Operation(
         summary = "Get Usage Summary by ID",
         description = "One Usage Summary the token may read, with the same Atom links as in its feeds",
@@ -119,10 +119,10 @@ public class UsageSummaryRESTController {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         usageSummaryExportService.exportDto(usageSummaryExportService.buildEntry(
                 usageEntries.usageSummary(base, reader.usageSummary(usageSummaryId))), out);
-        return ResponseEntity.ok().contentType(MediaType.APPLICATION_XML).body(out.toByteArray());
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_ATOM_XML).body(out.toByteArray());
     }
 
-    @GetMapping(value = "/RetailCustomer/{retailCustomerId}/UsagePoint/{usagePointId}/UsageSummary", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    @GetMapping(value = "/RetailCustomer/{retailCustomerId}/UsagePoint/{usagePointId}/UsageSummary", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
     @Operation(
         summary = "Get a Usage Point's Usage Summaries",
         description = "The Usage Summaries of one of the retail customer's Usage Points within the token's HistoryLength (RetailCustomer XPath collection)",
@@ -151,6 +151,6 @@ public class UsageSummaryRESTController {
         usageSummaryExportService.exportDto(usageSummaryExportService.buildFeedOf(feedHref, "UsageSummary",
                 "UsageSummary Feed", summaries.stream().map(summary -> usageEntries.usageSummary(base, summary)).toList()),
                 out);
-        return ResponseEntity.ok().contentType(MediaType.APPLICATION_XML).body(out.toByteArray());
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_ATOM_XML).body(out.toByteArray());
     }
 }
