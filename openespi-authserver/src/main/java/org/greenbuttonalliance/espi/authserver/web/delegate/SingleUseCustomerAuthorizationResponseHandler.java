@@ -18,7 +18,9 @@ package org.greenbuttonalliance.espi.authserver.web.delegate;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
+import org.greenbuttonalliance.espi.authserver.grant.GrantContextSessionStore;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -59,7 +61,8 @@ import java.nio.charset.StandardCharsets;
  * could not match the callback (#299).</p>
  *
  * <p>Here, whether the replay mints a code or ends in an error (e.g. {@code invalid_scope}), a customer's
- * consent is removed and the customer's sign-in is cleared from the session, so every customer authorization
+ * consent is removed and the customer's sign-in and grant context are cleared from the session, so every
+ * customer authorization
  * goes through {@link DelegateAuthorizationEntryPoint} and the Data Custodian's Authorization Screen with the
  * Third Party's own {@code state} and {@code redirect_uri}. The customer's consent to a Subscription is held
  * by the Data Custodian, not here. A non-customer's (an AS administrator's) sign-in and consent are left as
@@ -78,13 +81,16 @@ public class SingleUseCustomerAuthorizationResponseHandler
 
 	private final OAuth2AuthorizationConsentService consentService;
 	private final RegisteredClientRepository registeredClientRepository;
+	private final GrantContextSessionStore grantContextSessionStore;
 	private final SecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
 	private final RedirectStrategy redirectStrategy = new DefaultRedirectStrategy();
 
 	public SingleUseCustomerAuthorizationResponseHandler(OAuth2AuthorizationConsentService consentService,
-														  RegisteredClientRepository registeredClientRepository) {
+														  RegisteredClientRepository registeredClientRepository,
+														  GrantContextSessionStore grantContextSessionStore) {
 		this.consentService = consentService;
 		this.registeredClientRepository = registeredClientRepository;
+		this.grantContextSessionStore = grantContextSessionStore;
 	}
 
 	@Override
@@ -133,7 +139,10 @@ public class SingleUseCustomerAuthorizationResponseHandler
 		sendRedirect(request, response, uri, codeRequest.getState());
 	}
 
-	/** A customer's consent and AS sign-in serve one authorization response only. */
+	/**
+	 * A customer's consent, AS sign-in and grant context serve one authorization response only. The grant
+	 * context is already consumed when a code was minted; after an error nothing else would consume it.
+	 */
 	private void endCustomerAuthorization(String clientId, Authentication principal,
 										  HttpServletRequest request, HttpServletResponse response) {
 		if (!isCustomer(principal)) {
@@ -142,6 +151,10 @@ public class SingleUseCustomerAuthorizationResponseHandler
 		removeConsent(clientId, principal.getName());
 		SecurityContextHolder.clearContext();
 		securityContextRepository.saveContext(SecurityContextHolder.createEmptyContext(), request, response);
+		HttpSession session = request.getSession(false);
+		if (session != null) {
+			grantContextSessionStore.consume(session);
+		}
 	}
 
 	private void removeConsent(String clientId, String principalName) {

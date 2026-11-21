@@ -471,7 +471,8 @@ public class AuthorizationServerConfig {
         var singleUseResponseHandler = new org.greenbuttonalliance.espi.authserver.web.delegate
                 .SingleUseCustomerAuthorizationResponseHandler(
                         context.getBean(OAuth2AuthorizationConsentService.class),
-                        context.getBean(RegisteredClientRepository.class));
+                        context.getBean(RegisteredClientRepository.class),
+                        context.getBean(org.greenbuttonalliance.espi.authserver.grant.GrantContextSessionStore.class));
         authorizationServerConfigurer.authorizationEndpoint(authorize -> authorize
                 .consentPage("/authorize/delegate")
                 // #299, #276: once the code is minted, or the replay ends in an error, the consent and the

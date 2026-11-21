@@ -16,6 +16,8 @@
 
 package org.greenbuttonalliance.espi.authserver.web.delegate;
 
+import org.greenbuttonalliance.espi.authserver.grant.GrantContext;
+import org.greenbuttonalliance.espi.authserver.grant.GrantContextSessionStore;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -63,8 +65,9 @@ class SingleUseCustomerAuthorizationResponseHandlerTest {
 			.scope(SCOPE)
 			.build();
 	private final InMemoryOAuth2AuthorizationConsentService consents = new InMemoryOAuth2AuthorizationConsentService();
-	private final SingleUseCustomerAuthorizationResponseHandler handler =
-			new SingleUseCustomerAuthorizationResponseHandler(consents, new InMemoryRegisteredClientRepository(client));
+	private final GrantContextSessionStore grantContexts = new GrantContextSessionStore();
+	private final SingleUseCustomerAuthorizationResponseHandler handler = new SingleUseCustomerAuthorizationResponseHandler(
+			consents, new InMemoryRegisteredClientRepository(client), grantContexts);
 
 	@AfterEach
 	void clearContext() {
@@ -146,6 +149,8 @@ class SingleUseCustomerAuthorizationResponseHandlerTest {
 		Authentication customer = signedIn("42", "ROLE_CUSTOMER");
 		consents.save(OAuth2AuthorizationConsent.withId(client.getId(), "42").scope(SCOPE).build());
 		MockHttpServletRequest request = sessionOf(customer);
+		// stashed by /oauth2/authorize/continue; with no authorization saved, nothing else consumes it
+		grantContexts.put(request.getSession(), new GrantContext("cid", 42L, SCOPE, List.of()));
 		MockHttpServletResponse response = new MockHttpServletResponse();
 
 		handler.onAuthenticationFailure(request, response, refused(customer, "https://tp.example/cb"));
@@ -154,6 +159,7 @@ class SingleUseCustomerAuthorizationResponseHandlerTest {
 				"https://tp.example/cb?error=invalid_scope&error_description=scope%20not%20allowed&state=tp%20state");
 		assertThat(consents.findById(client.getId(), "42")).isNull();
 		assertThat(request.getSession().getAttribute(CONTEXT)).isNull();
+		assertThat(grantContexts.peek(request.getSession())).isNull();
 	}
 
 	@Test

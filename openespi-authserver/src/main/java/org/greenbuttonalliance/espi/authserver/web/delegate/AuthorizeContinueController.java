@@ -127,7 +127,26 @@ public class AuthorizeContinueController {
 				&& payload.approvedScope() != null && !payload.approvedScope().isBlank()) {
 			return handleAllow(payload, state, request, response);
 		}
+		clearCustomerSignIn(request, response);
 		return handleDeny(state);
+	}
+
+	/**
+	 * Clears a customer's AS sign-in, and the grant context stashed for it, when no authorization response
+	 * will (#299): only {@link SingleUseCustomerAuthorizationResponseHandler} clears them otherwise.
+	 */
+	private void clearCustomerSignIn(HttpServletRequest request, HttpServletResponse response) {
+		Authentication signedIn = SecurityContextHolder.getContext().getAuthentication();
+		if (signedIn == null || signedIn.getAuthorities().stream()
+				.noneMatch(a -> SingleUseCustomerAuthorizationResponseHandler.CUSTOMER_AUTHORITY.equals(a.getAuthority()))) {
+			return;
+		}
+		SecurityContextHolder.clearContext();
+		securityContextRepository.saveContext(SecurityContextHolder.createEmptyContext(), request, response);
+		HttpSession session = request.getSession(false);
+		if (session != null) {
+			grantContextSessionStore.consume(session);
+		}
 	}
 
 	/**
@@ -148,13 +167,16 @@ public class AuthorizeContinueController {
 							   DelegationStateService.Entry state,
 							   HttpServletRequest request,
 							   HttpServletResponse response) {
-		authenticateCustomer(payload.principal(), request, response);
-
 		RegisteredClient client = registeredClientRepository.findByClientId(state.clientId());
 		if (client == null) {
 			throw new InvalidHandoffException("registered client disappeared: " + state.clientId());
 		}
 		requireNarrowingOfRequest(payload.approvedScope(), state.requestedScope());
+		Long retailCustomerId = parseRetailCustomerId(payload.principal());
+
+		// Only once the handoff is accepted: a sign-in left by a rejected one would send the customer's next
+		// authorization through Spring's consent page instead of the delegation (#299).
+		authenticateCustomer(payload.principal(), request, response);
 
 		// Pre-populate the consent store with the customer's effective approved scope so Spring
 		// AS's consent check passes when /oauth2/authorize is replayed.
@@ -169,7 +191,6 @@ public class AuthorizeContinueController {
 		// can stamp it onto the OAuth2Authorization Spring AS creates when /oauth2/authorize is
 		// replayed below. Lifetime is the brief window between this redirect and Spring AS's
 		// auth-code persistence; consumed single-use by the enricher.
-		Long retailCustomerId = parseRetailCustomerId(payload.principal());
 		HttpSession session = request.getSession(true);
 		grantContextSessionStore.put(session, new GrantContext(
 				payload.correlationId(),
@@ -284,7 +305,9 @@ public class AuthorizeContinueController {
 
 	@ExceptionHandler(InvalidHandoffException.class)
 	@ResponseStatus(HttpStatus.BAD_REQUEST)
-	public String handleInvalidHandoff(InvalidHandoffException e, HttpServletRequest request) {
+	public String handleInvalidHandoff(InvalidHandoffException e, HttpServletRequest request,
+									   HttpServletResponse response) {
+		clearCustomerSignIn(request, response);
 		log.warn("/oauth2/authorize/continue handoff rejected: cause='{}', remoteAddr={}, userAgent='{}'",
 				e.getMessage(), request.getRemoteAddr(), request.getHeader("User-Agent"));
 		return "error/400";
