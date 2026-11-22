@@ -35,6 +35,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Dev-only diagnostic: tees ESPI resource XML responses to files on disk so a developer can view
@@ -143,16 +145,16 @@ public class EspiXmlCaptureFilter extends OncePerRequestFilter {
         if (failure == null && wrapper.getStatus() < 400) {
             return;
         }
+        List<Throwable> chain = causes(failure);
         StringBuilder report = new StringBuilder()
                 .append("Time:    ").append(LocalDateTime.now()).append('\n')
                 .append("Request: ").append(request.getMethod()).append(' ').append(request.getRequestURI())
                 .append(request.getQueryString() != null ? "?" + request.getQueryString() : "").append('\n')
-                .append("Status:  ").append(failure == null ? String.valueOf(wrapper.getStatus())
-                        : accessDenied(failure) ? "403 (AccessDeniedException; Spring Security answers it after this filter)"
-                        : "unhandled exception (the container answers 500)").append('\n');
+                .append("Status:  ").append(failure == null ? String.valueOf(wrapper.getStatus()) : status(chain))
+                .append('\n');
         if (failure != null) {
             report.append("\nException chain:\n");
-            for (Throwable t = failure; t != null; t = t.getCause() == t ? null : t.getCause()) {
+            for (Throwable t : chain) {
                 report.append("  ").append(t.getClass().getName()).append(": ").append(t.getMessage()).append('\n');
             }
         }
@@ -165,14 +167,31 @@ public class EspiXmlCaptureFilter extends OncePerRequestFilter {
                 report.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8), "captured ESPI failure");
     }
 
-    /** A row-level refusal (#286, #316): Spring Security's ExceptionTranslationFilter turns it into a 403. */
-    private static boolean accessDenied(Throwable failure) {
-        for (Throwable t = failure; t != null; t = t.getCause() == t ? null : t.getCause()) {
+    /**
+     * What answers an exception that left the controller. Spring Security's ExceptionTranslationFilter, which runs
+     * after this filter, answers a security exception anywhere in the chain (#316); anything else is the container's.
+     */
+    private static String status(List<Throwable> chain) {
+        for (Throwable t : chain) {
             if (t instanceof org.springframework.security.access.AccessDeniedException) {
-                return true;
+                return "AccessDeniedException: Spring Security answers it after this filter"
+                        + " (403; 401 for an anonymous request)";
+            }
+            if (t instanceof org.springframework.security.core.AuthenticationException) {
+                return "AuthenticationException: Spring Security answers it after this filter (401)";
             }
         }
-        return false;
+        return "unhandled exception (the container answers 500)";
+    }
+
+    /** The exception and its causes, each once, so a cyclic cause chain ends. Empty for none. */
+    private static List<Throwable> causes(Throwable failure) {
+        Set<Throwable> seen = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+        List<Throwable> chain = new java.util.ArrayList<>();
+        for (Throwable t = failure; t != null && seen.add(t); t = t.getCause()) {
+            chain.add(t);
+        }
+        return chain;
     }
 
     private void write(String fileName, byte[] content, String what) {

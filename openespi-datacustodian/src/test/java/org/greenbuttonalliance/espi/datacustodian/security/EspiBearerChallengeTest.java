@@ -20,16 +20,28 @@
 package org.greenbuttonalliance.espi.datacustodian.security;
 
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.http.HttpHeaders;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.core.DefaultOAuth2AuthenticatedPrincipal;
+import org.springframework.security.oauth2.core.OAuth2AccessToken;
+import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.server.resource.BearerTokenErrors;
+import org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthentication;
 
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,6 +51,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * {@code BearerTokenError} keeps its own RFC 6750 code and status, so the two always agree, and only the code is sent.
  */
 @DisplayName("EspiBearerChallenge: the RFC 6750 code and status agree, with nothing else (#316)")
+@ExtendWith(OutputCaptureExtension.class)
 class EspiBearerChallengeTest {
 
 	static Stream<Arguments> failures() {
@@ -66,5 +79,27 @@ class EspiBearerChallengeTest {
 				r -> assertThat(r.getStatus()).as("status").isEqualTo(status),
 				r -> assertThat(r.getHeaders(HttpHeaders.WWW_AUTHENTICATE)).as("WWW-Authenticate")
 						.containsExactly(challenge));
+	}
+
+	@Test
+	@DisplayName("a 403 from an authentication failure logs the token's client_id, as an AccessDeniedException's does")
+	void insufficientScopeFailureLogsClientId(CapturedOutput output) {
+		OAuth2AccessToken token = new OAuth2AccessToken(OAuth2AccessToken.TokenType.BEARER, "secret-token-value",
+				Instant.now(), Instant.now().plusSeconds(60));
+		OAuth2AuthenticatedPrincipal principal = new DefaultOAuth2AuthenticatedPrincipal(
+				Map.of("client_id", "tp-client"), List.of());
+		SecurityContextHolder.getContext().setAuthentication(
+				new BearerTokenAuthentication(principal, token, List.of()));
+		try {
+			new EspiBearerChallenge().commence(new MockHttpServletRequest("GET", "/espi/1_1/resource/UsagePoint"),
+					new MockHttpServletResponse(),
+					new OAuth2AuthenticationException(BearerTokenErrors.insufficientScope("Needs FB_4", "FB_4")));
+		} finally {
+			SecurityContextHolder.clearContext();
+		}
+
+		assertThat(output.getOut()).as("server log")
+				.contains("GET /espi/1_1/resource/UsagePoint: insufficient_scope for client_id tp-client")
+				.doesNotContain("secret-token-value");
 	}
 }

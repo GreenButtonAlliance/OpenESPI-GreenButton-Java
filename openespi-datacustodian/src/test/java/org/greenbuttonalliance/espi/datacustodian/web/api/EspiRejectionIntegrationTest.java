@@ -91,7 +91,7 @@ class EspiRejectionIntegrationTest {
 				r -> assertThat(r.getHeaders(HttpHeaders.WWW_AUTHENTICATE)).as("WWW-Authenticate")
 						.containsExactly("Bearer error=\"invalid_token\""));
 		assertThat(output.getOut()).as("server log")
-				.contains("GET " + USAGE_POINT + ": invalid_token (Provided token isn't active)")
+				.contains("GET " + USAGE_POINT + ": invalid_token for client_id unknown (Provided token isn't active)")
 				.doesNotContain("inactive-token");
 	}
 

@@ -54,7 +54,7 @@ import java.util.Set;
  * retail customers or entries exist. Certified Data Custodians answer the same way.
  * <p>
  * The reason is logged on the server instead, for operators: the method, the request path (not the query string),
- * the token's {@code client_id} on a 403, and the exception's message. Never the token, the {@code Authorization}
+ * the token's {@code client_id} (known once introspection accepted the token, so on a 403), and the exception's message. Never the token, the {@code Authorization}
  * header or the exception's cause. A 403 or a rejected token is logged at INFO; a request without a token at DEBUG,
  * since every anonymous request gets one.
  */
@@ -79,7 +79,7 @@ public class EspiBearerChallenge implements AuthenticationEntryPoint, AccessDeni
 				status = bearer.getHttpStatus();
 				code = bearer.getErrorCode();
 			}
-			log.info("{} {}: {} ({})", request.getMethod(), request.getRequestURI(), code, authException.getMessage());
+			logRejection(request, code, authException.getMessage());
 			challenge(response, status, "Bearer error=\"" + code + "\"");
 		} else {
 			log.debug("{} {}: no bearer token ({})", request.getMethod(), request.getRequestURI(),
@@ -91,13 +91,21 @@ public class EspiBearerChallenge implements AuthenticationEntryPoint, AccessDeni
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response,
 			AccessDeniedException accessDeniedException) {
-		log.info("{} {}: insufficient_scope for client_id {} ({})", request.getMethod(), request.getRequestURI(),
-				clientId(), accessDeniedException.getMessage());
+		logRejection(request, BearerTokenErrorCodes.INSUFFICIENT_SCOPE, accessDeniedException.getMessage());
 		challenge(response, HttpStatus.FORBIDDEN,
 				"Bearer error=\"" + BearerTokenErrorCodes.INSUFFICIENT_SCOPE + "\"");
 	}
 
-	/** The token's {@code client_id} introspection attribute, or "unknown"; never the token itself. */
+	/** One format for every rejected token, whichever path refused it. */
+	private static void logRejection(HttpServletRequest request, String code, String reason) {
+		log.info("{} {}: {} for client_id {} ({})", request.getMethod(), request.getRequestURI(), code, clientId(),
+				reason);
+	}
+
+	/**
+	 * The {@code client_id} introspection attribute of the request's token, or "unknown" when there is none, as for a
+	 * token that failed introspection. Never the token itself.
+	 */
 	private static Object clientId() {
 		if (SecurityContextHolder.getContext().getAuthentication() instanceof BearerTokenAuthentication token) {
 			Object clientId = token.getTokenAttributes().get("client_id");

@@ -162,8 +162,26 @@ class EspiXmlCaptureFilterTest {
 
         assertThat(files(dir, ".error.txt")).singleElement()
                 .satisfies(p -> assertThat(Files.readString(p))
-                        .contains("Status:  403 (AccessDeniedException")
+                        .contains("Status:  AccessDeniedException: Spring Security answers it after this filter")
                         .doesNotContain("unhandled exception"));
+    }
+
+    @Test
+    @DisplayName("#316: a cyclic cause chain is listed once and the request ends")
+    void cyclicCauseChainEnds(@TempDir Path dir) throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/espi/1_1/resource/UsagePoint");
+        RuntimeException outer = new RuntimeException("outer");
+        RuntimeException inner = new RuntimeException("inner", outer);
+        outer.initCause(inner);
+
+        assertThatThrownBy(() -> new EspiXmlCaptureFilter(true, dir.toString())
+                .doFilter(request, new MockHttpServletResponse(), (req, res) -> { throw outer; }))
+                .isSameAs(outer);
+
+        assertThat(files(dir, ".error.txt")).singleElement()
+                .satisfies(p -> assertThat(Files.readString(p))
+                        .contains("unhandled exception", "java.lang.RuntimeException: outer",
+                                "java.lang.RuntimeException: inner"));
     }
 
     @Test
