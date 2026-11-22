@@ -149,6 +149,42 @@ class EspiXmlCaptureFilterTest {
     }
 
     @Test
+    @DisplayName("#316: a row-level AccessDeniedException, wrapped by the DispatcherServlet, is recorded as a 403, not a 500")
+    void capturesAccessDeniedAs403(@TempDir Path dir) throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/espi/1_1/resource/Batch/Subscription/1");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        jakarta.servlet.ServletException failure = new jakarta.servlet.ServletException("Request processing failed",
+                new org.springframework.security.access.AccessDeniedException("Not this token's subscription"));
+
+        assertThatThrownBy(() -> new EspiXmlCaptureFilter(true, dir.toString())
+                .doFilter(request, response, (req, res) -> { throw failure; }))
+                .isSameAs(failure);
+
+        assertThat(files(dir, ".error.txt")).singleElement()
+                .satisfies(p -> assertThat(Files.readString(p))
+                        .contains("Status:  AccessDeniedException: Spring Security answers it after this filter")
+                        .doesNotContain("unhandled exception"));
+    }
+
+    @Test
+    @DisplayName("#316: a cyclic cause chain is listed once and the request ends")
+    void cyclicCauseChainEnds(@TempDir Path dir) throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/espi/1_1/resource/UsagePoint");
+        RuntimeException outer = new RuntimeException("outer");
+        RuntimeException inner = new RuntimeException("inner", outer);
+        outer.initCause(inner);
+
+        assertThatThrownBy(() -> new EspiXmlCaptureFilter(true, dir.toString())
+                .doFilter(request, new MockHttpServletResponse(), (req, res) -> { throw outer; }))
+                .isSameAs(outer);
+
+        assertThat(files(dir, ".error.txt")).singleElement()
+                .satisfies(p -> assertThat(Files.readString(p))
+                        .contains("unhandled exception", "java.lang.RuntimeException: outer",
+                                "java.lang.RuntimeException: inner"));
+    }
+
+    @Test
     @DisplayName("#247: a 4xx/5xx response writes an .error.txt with the status and body, not an .xml")
     void captures4xxResponse(@TempDir Path dir) throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/espi/1_1/resource/Authorization/42");

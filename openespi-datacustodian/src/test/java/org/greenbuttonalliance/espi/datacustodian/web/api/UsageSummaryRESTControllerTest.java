@@ -72,12 +72,10 @@ public class UsageSummaryRESTControllerTest extends AbstractControllerMockTest {
         }
 
         @Test
-        @WithMockUser(authorities = "FB_15")
         @DisplayName("FB_15 passes the URL rule, but the root collection is admin only (#286)")
         void fbTokenIsRefusedOnRootCollection() throws Exception {
-            mockMvc.perform(get("/espi/1_1/resource/UsageSummary")
+            mockMvc.perform(get("/espi/1_1/resource/UsageSummary").with(bearer("FB_15"))
                             .accept(MediaType.APPLICATION_ATOM_XML))
-                    .andExpect(status().isForbidden())
                     .andExpect(refusedByRowScope());
         }
     }
@@ -120,12 +118,11 @@ public class UsageSummaryRESTControllerTest extends AbstractControllerMockTest {
     class RetailCustomerScopedTests {
 
         @Test
-        @WithMockUser(authorities = "FB_15")
         @DisplayName("a token with no subscription gets 403 (#286)")
         void tokenWithoutSubscriptionIsRefused() throws Exception {
             mockMvc.perform(get("/espi/1_1/resource/RetailCustomer/1/UsagePoint/" + UUID.randomUUID() + "/UsageSummary")
+                            .with(bearer("FB_15"))
                             .accept(MediaType.APPLICATION_ATOM_XML))
-                    .andExpect(status().isForbidden())
                     .andExpect(refusedByRowScope());
         }
 

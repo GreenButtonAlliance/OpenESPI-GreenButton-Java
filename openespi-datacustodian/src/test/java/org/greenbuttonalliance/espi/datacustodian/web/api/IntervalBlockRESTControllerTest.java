@@ -71,12 +71,10 @@ public class IntervalBlockRESTControllerTest extends AbstractControllerMockTest 
         }
 
         @Test
-        @WithMockUser(authorities = {"FB_4", "FB_5"})
         @DisplayName("FB_4 + FB_5 pass the URL rule, but the root collection is admin only (#286)")
         void fbTokenIsRefusedOnRootCollection() throws Exception {
-            mockMvc.perform(get("/espi/1_1/resource/IntervalBlock")
+            mockMvc.perform(get("/espi/1_1/resource/IntervalBlock").with(bearer("FB_4", "FB_5"))
                             .accept(MediaType.APPLICATION_ATOM_XML))
-                    .andExpect(status().isForbidden())
                     .andExpect(refusedByRowScope());
         }
 
@@ -134,7 +132,6 @@ public class IntervalBlockRESTControllerTest extends AbstractControllerMockTest 
     class GetMeterReadingIntervalBlocks {
 
         @Test
-        @WithMockUser(authorities = {"FB_4", "FB_5"})
         @DisplayName("a token with no subscription gets 403, even if the MeterReading has blocks (#286)")
         void tokenWithoutSubscriptionIsRefused() throws Exception {
             UUID mrId = UUID.randomUUID();
@@ -142,8 +139,8 @@ public class IntervalBlockRESTControllerTest extends AbstractControllerMockTest 
                     .thenReturn(List.of(new IntervalBlockEntity()));
 
             mockMvc.perform(get("/espi/1_1/resource/RetailCustomer/1/UsagePoint/" + UUID.randomUUID() + "/MeterReading/" + mrId + "/IntervalBlock")
+                            .with(bearer("FB_4", "FB_5"))
                             .accept(MediaType.APPLICATION_ATOM_XML))
-                    .andExpect(status().isForbidden())
                     .andExpect(refusedByRowScope());
         }
 

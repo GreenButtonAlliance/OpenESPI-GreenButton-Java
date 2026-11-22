@@ -10,6 +10,17 @@ ESPI does not use RFC 4287 to the letter. It uses an **ESPI profile** of it, def
 
 Every ESPI resource response, feed or entry, is served as `Content-Type: application/atom+xml`, and that is the only type the Data Custodian's resource endpoints produce: a request that accepts only `application/xml` or `application/json` gets 406, and a request without an `Accept` header gets Atom (#312).
 
+Error responses are not Atom (#316):
+
+- **401 and 403** carry a `WWW-Authenticate: Bearer` challenge with the RFC 6750 error code only (RFC 6750 §3, adopted by REQ.21.6.1.2), and have no body:
+  - no token: 401, `Bearer` (RFC 6750 §3.1: no error code when no credentials were sent);
+  - a token that is inactive or not acceptable: 401, `Bearer error="invalid_token"`;
+  - a valid token that may not read the resource: 403, `Bearer error="insufficient_scope"`. This is the same whether a URL rule refused it (a Function Block or token type) or the Data Custodian's row-level check did (another subscription or retail customer).
+
+  There is no `error_description`, `error_uri`, `scope` or `resource_metadata`, all optional in RFC 6750 and OAuth 2.1. A specific reason would let a client probing the API learn which subscriptions, retail customers or entries exist. Certified Data Custodians answer the same way. The reason is logged on the Data Custodian instead (`EspiBearerChallenge`, INFO): the method, path, the token's `client_id` on a 403, and the reason. The token itself is never logged.
+- **400** for a malformed query or path parameter (a timestamp, a UUID, a `-min` after its `-max`) carries the reason as a one-line `text/plain` body, whatever the request's `Accept` header says. A malformed `Authorization` (for example, two tokens) is a 400 with `Bearer error="invalid_request"` and no body.
+- **404**: an entry the token may not read is a 404, the same as one that does not exist (#286). To an Atom-only `Accept` it has no body. Otherwise (JSON accepted, or no `Accept` header) it gets Spring Boot's standard error body: `timestamp`, `status`, `error`, `message` and `path`. For the usage resources the `message` is generic, naming only the status, so the body is the same whether the entry is another customer's or does not exist. Customer, CustomerAccount, Authorization and ApplicationInformation name the resource type, and some the requested id. That id is only the one the client sent, so no 404 body tells a client whether the entry exists.
+
 This page lists the differences so that they are not "fixed" by mistake. **Do not change the code to follow RFC 4287 where this page says ESPI differs.** Doing so would either reveal which utility the data comes from, or make our feeds differ from every certified feed.
 
 ## Intentional differences
@@ -57,6 +68,7 @@ REQ.21 p. 168 says related links "shall" use `type="application/atom+xml"`, for 
 | Links (`type` on every link, also on an empty feed) | `openespi-common/.../service/BaseExportService.java` (`buildFeed`) |
 | Validation against atom.xsd + espi.xsd + customer.xsd | `openespi-common/.../xml/EspiXmlSchemaValidator.java` |
 | Media type (`application/atom+xml` only; the default without `Accept`) | `produces` on each `openespi-datacustodian/.../web/api/` controller; `WebConfiguration#configureContentNegotiation` |
-| Tests | `AtomContentAndSchemaValidationTest`, `AtomFeedExportTest`, `EspiAtomMediaTypeIntegrationTest` |
+| Error responses (the `WWW-Authenticate` challenge on 401/403; the `text/plain` 400 body) | `openespi-datacustodian/.../security/EspiBearerChallenge.java`; `.../web/api/EspiErrorResponseAdvice.java` |
+| Tests | `AtomContentAndSchemaValidationTest`, `AtomFeedExportTest`, `EspiAtomMediaTypeIntegrationTest`, `EspiRejectionIntegrationTest` |
 
-History: #197 (the `atom:content` wrapper, the schema validator, the feed `published` and empty-feed link fixes), #247 (feed date adapters, entry types), #312 (the `application/atom+xml` media type).
+History: #197 (the `atom:content` wrapper, the schema validator, the feed `published` and empty-feed link fixes), #247 (feed date adapters, entry types), #312 (the `application/atom+xml` media type), #316 (error responses).

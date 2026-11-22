@@ -20,6 +20,7 @@
 package org.greenbuttonalliance.espi.datacustodian.config;
 
 import org.greenbuttonalliance.espi.common.scope.FunctionBlock;
+import org.greenbuttonalliance.espi.datacustodian.security.EspiBearerChallenge;
 import org.springframework.boot.security.autoconfigure.web.servlet.PathRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -97,6 +98,7 @@ public class SecurityConfiguration {
     @Order(1)
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
                                                    OpaqueTokenIntrospector introspector) throws Exception {
+        EspiBearerChallenge bearerChallenge = new EspiBearerChallenge();
         // ESPI 4.0 Function-Block authorization managers. Authorities are minted by
         // EspiScopeOpaqueTokenIntrospector: FB_<n> per granted function block, plus SCOPE_<scope>
         // for admin/OIDC scopes. (Replaces the contractor's non-ESPI SCOPE_FB_n_READ/WRITE_3rd_party.)
@@ -242,8 +244,12 @@ public class SecurityConfiguration {
             // Configure OAuth2 Resource Server with opaque token introspection.
             // ESPI standard requires opaque tokens, not JWT. The custom introspector
             // (EspiScopeOpaqueTokenIntrospector) maps the ESPI FB scope to FB_<n> authorities.
+            // Every 401 and 403 carries a WWW-Authenticate challenge with the RFC 6750 error code only, the same
+            // whether a URL rule above or the DC's own row-level code refused the request (#316).
             .oauth2ResourceServer(oauth2 -> oauth2
                 .opaqueToken(opaque -> opaque.introspector(introspector))
+                .authenticationEntryPoint(bearerChallenge)
+                .accessDeniedHandler(bearerChallenge)
             )
             
             // Security headers configuration
