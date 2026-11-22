@@ -73,12 +73,10 @@ public class MeterReadingControllerTest extends AbstractControllerMockTest {
         }
 
         @Test
-        @WithMockUser(authorities = {"FB_4", "FB_5"})
         @DisplayName("FB_4 + FB_5 pass the URL rule, but the root collection is admin only (#286)")
         void fbTokenIsRefusedOnRootCollection() throws Exception {
-            mockMvc.perform(get("/espi/1_1/resource/MeterReading")
+            mockMvc.perform(get("/espi/1_1/resource/MeterReading").with(bearer("FB_4", "FB_5"))
                             .accept(MediaType.APPLICATION_ATOM_XML))
-                    .andExpect(status().isForbidden())
                     .andExpect(refusedByRowScope());
         }
 

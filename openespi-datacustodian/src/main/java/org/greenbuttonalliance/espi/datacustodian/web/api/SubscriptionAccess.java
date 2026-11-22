@@ -39,6 +39,7 @@ import org.greenbuttonalliance.espi.datacustodian.config.UsageFunctionBlockAutho
 import org.greenbuttonalliance.espi.datacustodian.web.api.SubscriptionFeedAssembler.Grants;
 import org.greenbuttonalliance.espi.datacustodian.web.api.scope.ScopeResolver;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -120,7 +121,7 @@ public class SubscriptionAccess {
 		try {
 			historyLength = scopeResolver.historyLengthSeconds(authentication).orElse(null);
 		} catch (IllegalArgumentException ex) {
-			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Unreadable ESPI scope");
+			throw new AccessDeniedException("Unreadable ESPI scope");
 		}
 		return new Grants(
 				UsageFunctionBlockAuthorities.serviceKinds(authentication),
@@ -132,7 +133,7 @@ public class SubscriptionAccess {
 	/** 403 unless the caller is the DataCustodian admin: for the customer (PII) root resources (#291). */
 	public void requireAdmin(Authentication authentication) {
 		if (!scopeResolver.isAdmin(authentication)) {
-			throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+			throw new AccessDeniedException("Data Custodian admin only");
 		}
 	}
 
@@ -146,7 +147,7 @@ public class SubscriptionAccess {
 		}
 		SubscriptionEntity subscription = scopeResolver.subscriptionId(authentication)
 				.flatMap(subscriptionRepository::findById)
-				.orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN));
+				.orElseThrow(() -> new AccessDeniedException("No subscription for this token"));
 		return new Reader(subscription, grants(authentication), clock.instant());
 	}
 
@@ -320,7 +321,7 @@ public class SubscriptionAccess {
 		public UsagePointEntity usagePoint(Long retailCustomerId, UUID usagePointId, boolean forSummaries) {
 			if (!admin() && (subscription.getRetailCustomer() == null
 					|| !subscription.getRetailCustomer().getId().equals(retailCustomerId))) {
-				throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+				throw new AccessDeniedException("Not this token's retail customer");
 			}
 			return usagePointRepository.findById(usagePointId)
 					.filter(usagePoint -> retailCustomerId.equals(retailCustomerIdOf(usagePoint)))

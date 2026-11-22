@@ -73,12 +73,10 @@ public class ElectricPowerQualitySummaryRESTControllerTest extends AbstractContr
         }
 
         @Test
-        @WithMockUser(authorities = "FB_17")
         @DisplayName("FB_17 passes the URL rule, but the root collection is admin only (#286)")
         void fbTokenIsRefusedOnRootCollection() throws Exception {
-            mockMvc.perform(get("/espi/1_1/resource/ElectricPowerQualitySummary")
+            mockMvc.perform(get("/espi/1_1/resource/ElectricPowerQualitySummary").with(bearer("FB_17"))
                             .accept(MediaType.APPLICATION_ATOM_XML))
-                    .andExpect(status().isForbidden())
                     .andExpect(refusedByRowScope());
         }
 
@@ -143,12 +141,11 @@ public class ElectricPowerQualitySummaryRESTControllerTest extends AbstractContr
     @DisplayName("GET /espi/1_1/resource/RetailCustomer/{retailCustomerId}/UsagePoint/{usagePointId}/ElectricPowerQualitySummary")
     class RetailCustomerTests {
         @Test
-        @WithMockUser(authorities = "FB_17")
         @DisplayName("a token with no subscription gets 403 (#286)")
         void tokenWithoutSubscriptionIsRefused() throws Exception {
             mockMvc.perform(get("/espi/1_1/resource/RetailCustomer/1/UsagePoint/" + UUID.randomUUID() + "/ElectricPowerQualitySummary")
+                            .with(bearer("FB_17"))
                             .accept(MediaType.APPLICATION_ATOM_XML))
-                    .andExpect(status().isForbidden())
                     .andExpect(refusedByRowScope());
         }
 

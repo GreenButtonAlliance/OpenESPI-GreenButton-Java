@@ -90,11 +90,10 @@ public class CustomerRESTControllerTest extends AbstractControllerMockTest {
     class CustomerPiiScopeGating {
 
         @Test
-        @WithMockUser(authorities = {"FB_53", "FB_54"})
         @DisplayName("FB_53 base + FB_54 (Customer) pass the URL rule; the root collection is admin only (#286)")
         void baseAndCustomerFbPassTheUrlRule() throws Exception {
-            mockMvc.perform(get("/espi/1_1/resource/Customer").accept(MediaType.APPLICATION_ATOM_XML))
-                    .andExpect(status().isForbidden())
+            mockMvc.perform(get("/espi/1_1/resource/Customer").with(bearer("FB_53", "FB_54"))
+                            .accept(MediaType.APPLICATION_ATOM_XML))
                     .andExpect(refusedByRowScope());
         }
 

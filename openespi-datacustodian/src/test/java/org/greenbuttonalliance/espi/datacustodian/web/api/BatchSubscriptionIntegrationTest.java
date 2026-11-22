@@ -257,8 +257,11 @@ class BatchSubscriptionIntegrationTest {
 				"2026-11-01T00:00:00-05:00", "2026-11-01T00:00:00Z ", "2026-11-01", "1761955200")) {
 			mockMvc.perform(get(BASE + "/Batch/Subscription/" + SUBSCRIPTION_A)
 							.param("published-min", value)
-							.with(customer(SUBSCRIPTION_A, "FB=1_3_4_5")))
-					.andExpect(status().isBadRequest());
+							.with(customer(SUBSCRIPTION_A, "FB=1_3_4_5"))
+							.accept(MediaType.APPLICATION_ATOM_XML))
+					// The reason reaches an Atom-only client as text/plain (#316).
+					.andExpect(EspiErrorResponses.badRequest(
+							"published-min must be a UTC timestamp ending in Z, e.g. 2026-11-01T00:00:00Z"));
 		}
 		fetch(SUBSCRIPTION_A, customer(SUBSCRIPTION_A, "FB=1_3_4_5"), "published-min", "2026-11-01T00:00:00Z");
 		fetch(SUBSCRIPTION_A, customer(SUBSCRIPTION_A, "FB=1_3_4_5"), "published-min", "2026-11-01T00:00:00.5Z");
@@ -320,8 +323,9 @@ class BatchSubscriptionIntegrationTest {
 				new String[]{"updated-min", ago(DAY), "updated-max", ago(2 * DAY)})) {
 			mockMvc.perform(get(BASE + "/Batch/Subscription/" + SUBSCRIPTION_A)
 							.param(range[0], range[1]).param(range[2], range[3])
-							.with(customer(SUBSCRIPTION_A, "FB=1_3_4_5")))
-					.andExpect(status().isBadRequest());
+							.with(customer(SUBSCRIPTION_A, "FB=1_3_4_5"))
+							.accept(MediaType.APPLICATION_ATOM_XML))
+					.andExpect(EspiErrorResponses.badRequest("A -min query parameter is after its -max"));
 		}
 	}
 
@@ -330,7 +334,7 @@ class BatchSubscriptionIntegrationTest {
 	void unreadable_scope_is_refused() throws Exception {
 		mockMvc.perform(get(BASE + "/Batch/Subscription/" + SUBSCRIPTION_A)
 						.with(customer(SUBSCRIPTION_A, "FB=4_x;HistoryLength=34128000")))
-				.andExpect(status().isForbidden());
+				.andExpect(EspiErrorResponses.insufficientScope());
 	}
 
 	@Test
@@ -360,7 +364,7 @@ class BatchSubscriptionIntegrationTest {
 				token(MIXED_SUBSCRIPTION, "FB=1_3_4_29", "FB_4", "FB_29"),
 				token(MIXED_SUBSCRIPTION, "FB=1_3_5", "FB_5"))) {
 			mockMvc.perform(get(BASE + "/Batch/Subscription/" + MIXED_SUBSCRIPTION).with(refused))
-					.andExpect(status().isForbidden());
+					.andExpect(EspiErrorResponses.insufficientScope());
 		}
 		assertThat(fetch(MIXED_SUBSCRIPTION, admin()))
 				.contains(ELECTRIC_POINT.toString(), GAS_POINT.toString(), WATER_POINT.toString());
@@ -399,13 +403,14 @@ class BatchSubscriptionIntegrationTest {
 	void other_subscriptions_are_forbidden() throws Exception {
 		RequestPostProcessor tokenA = customer(SUBSCRIPTION_A, "FB=1_3_4_5");
 
+		// The same bare insufficient_scope for another's subscription and an unknown one: nothing to probe (#316).
 		mockMvc.perform(get(BASE + "/Batch/Subscription/" + SUBSCRIPTION_B).with(tokenA))
-				.andExpect(status().isForbidden());
+				.andExpect(EspiErrorResponses.insufficientScope());
 		mockMvc.perform(get(BASE + "/Batch/Subscription/" + UUID.randomUUID()).with(tokenA))
-				.andExpect(status().isForbidden());
+				.andExpect(EspiErrorResponses.insufficientScope());
 		// Access is checked before the query parameters: still 403, not 400.
 		mockMvc.perform(get(BASE + "/Batch/Subscription/" + SUBSCRIPTION_B).param("published-min", "bad").with(tokenA))
-				.andExpect(status().isForbidden());
+				.andExpect(EspiErrorResponses.insufficientScope());
 	}
 
 	@Test
@@ -416,7 +421,7 @@ class BatchSubscriptionIntegrationTest {
 				.authorities(authorities(EspiScopeOpaqueTokenIntrospector.CLIENT_ACCESS_TOKEN, "FB_4", "FB_5"));
 
 		mockMvc.perform(get(BASE + "/Batch/Subscription/" + SUBSCRIPTION_A).with(clientToken))
-				.andExpect(status().isForbidden());
+				.andExpect(EspiErrorResponses.insufficientScope());
 	}
 
 	@Test

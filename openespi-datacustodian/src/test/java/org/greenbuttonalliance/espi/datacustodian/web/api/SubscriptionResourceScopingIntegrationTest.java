@@ -210,8 +210,8 @@ class SubscriptionResourceScopingIntegrationTest {
 				.doesNotContain(SUMMARY_B.toString());
 		assertThat(read(upA + "/ElectricPowerQualitySummary", token)).contains(QUALITY_A.toString());
 
-		expect("/RetailCustomer/" + retailCustomerB + "/UsagePoint/" + USAGE_POINT_B + "/MeterReading", token, 403);
-		expect("/RetailCustomer/" + retailCustomerB + "/UsagePoint/" + USAGE_POINT_B + "/UsageSummary", token, 403);
+		refused("/RetailCustomer/" + retailCustomerB + "/UsagePoint/" + USAGE_POINT_B + "/MeterReading", token);
+		refused("/RetailCustomer/" + retailCustomerB + "/UsagePoint/" + USAGE_POINT_B + "/UsageSummary", token);
 		expect("/RetailCustomer/" + retailCustomerA + "/UsagePoint/" + USAGE_POINT_B + "/MeterReading", token, 404);
 		expect("/RetailCustomer/" + retailCustomerA + "/UsagePoint/" + GAS_POINT_A + "/MeterReading", token, 404);
 		expect(upA + "/MeterReading/" + METER_READING_B + "/IntervalBlock", token, 404);
@@ -342,7 +342,7 @@ class SubscriptionResourceScopingIntegrationTest {
 		UUID any = UUID.randomUUID();
 
 		for (String path : List.of("/Customer", "/Customer/" + any, "/CustomerAccount", "/CustomerAccount/" + any)) {
-			expect(path, token, 403);
+			refused(path, token);
 		}
 	}
 
@@ -359,9 +359,9 @@ class SubscriptionResourceScopingIntegrationTest {
 		RequestPostProcessor noSubscription = opaqueToken().authorities(authorities("FB_4", "FB_5", "FB_16"));
 
 		for (RequestPostProcessor token : List.of(clientToken, noSubscription)) {
-			expect("/UsagePoint", token, 403);
-			expect("/UsagePoint/" + USAGE_POINT_A, token, 403);
-			expect("/UsageSummary", token, 403);
+			for (String path : List.of("/UsagePoint", "/UsagePoint/" + USAGE_POINT_A, "/UsageSummary")) {
+				refused(path, token);
+			}
 		}
 	}
 
@@ -429,6 +429,12 @@ class SubscriptionResourceScopingIntegrationTest {
 	private void expect(String path, RequestPostProcessor token, int status) throws Exception {
 		int actual = mockMvc.perform(get(BASE + path).with(token)).andReturn().getResponse().getStatus();
 		assertThat(actual).as("GET %s", path).isEqualTo(status);
+	}
+
+	/** 403 with the bare {@code Bearer error="insufficient_scope"} challenge (#316). */
+	private void refused(String path, RequestPostProcessor token) throws Exception {
+		mockMvc.perform(get(BASE + path).with(token).accept(MediaType.APPLICATION_ATOM_XML))
+				.andExpect(EspiErrorResponses.insufficientScope());
 	}
 
 	/** Subscription A's customer token: interval metering, electricity, a usage summary and power quality. */
