@@ -65,6 +65,34 @@ class EspiAtomMediaTypeIntegrationTest {
 
 	private static final String RESOURCE = "/espi/1_1/resource/";
 
+	/** Every ESPI resource GET the API docs must list, by name, so a dropped or renamed endpoint fails the docs test. */
+	private static final List<String> DOCUMENTED_RESOURCE_GETS = List.of(
+			RESOURCE + "ApplicationInformation",
+			RESOURCE + "ApplicationInformation/{applicationInformationId}",
+			RESOURCE + "Authorization",
+			RESOURCE + "Authorization/{authorizationId}",
+			RESOURCE + "Batch/Subscription/{subscriptionId}",
+			RESOURCE + "Customer",
+			RESOURCE + "Customer/{customerId}",
+			RESOURCE + "CustomerAccount",
+			RESOURCE + "CustomerAccount/{customerAccountId}",
+			RESOURCE + "ElectricPowerQualitySummary",
+			RESOURCE + "ElectricPowerQualitySummary/{electricPowerQualitySummaryId}",
+			RESOURCE + "IntervalBlock",
+			RESOURCE + "IntervalBlock/{intervalBlockId}",
+			RESOURCE + "MeterReading",
+			RESOURCE + "MeterReading/{meterReadingId}",
+			RESOURCE + "ReadingType",
+			RESOURCE + "ReadingType/{readingTypeId}",
+			RESOURCE + "UsagePoint",
+			RESOURCE + "UsagePoint/{usagePointId}",
+			RESOURCE + "UsageSummary",
+			RESOURCE + "UsageSummary/{usageSummaryId}",
+			RESOURCE + "RetailCustomer/{retailCustomerId}/UsagePoint/{usagePointId}/MeterReading",
+			RESOURCE + "RetailCustomer/{retailCustomerId}/UsagePoint/{usagePointId}/MeterReading/{meterReadingId}/IntervalBlock",
+			RESOURCE + "RetailCustomer/{retailCustomerId}/UsagePoint/{usagePointId}/UsageSummary",
+			RESOURCE + "RetailCustomer/{retailCustomerId}/UsagePoint/{usagePointId}/ElectricPowerQualitySummary");
+
 	@Autowired
 	private MockMvc mockMvc;
 	@Autowired
@@ -115,11 +143,24 @@ class EspiAtomMediaTypeIntegrationTest {
 	}
 
 	@ParameterizedTest(name = "Accept: {0}")
-	@ValueSource(strings = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
+	@ValueSource(strings = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE,
+			MediaType.TEXT_XML_VALUE})
 	@DisplayName("a request that does not accept application/atom+xml is refused (406)")
 	void otherMediaTypesAreNotAcceptable(String accept) throws Exception {
 		mockMvc.perform(get(RESOURCE + "UsagePoint").with(admin()).accept(accept))
 				.andExpect(status().isNotAcceptable());
+	}
+
+	@ParameterizedTest(name = "GET UsagePoint?format={0}")
+	@ValueSource(strings = {"xml", "json"})
+	@DisplayName("a format parameter does not negotiate: without an Accept header the feed is still application/atom+xml")
+	void formatParameterDoesNotNegotiate(String format) throws Exception {
+		MockHttpServletResponse response = mockMvc.perform(get(RESOURCE + "UsagePoint").param("format", format)
+						.with(admin()))
+				.andExpect(status().isOk())
+				.andReturn().getResponse();
+
+		assertThat(mediaType("UsagePoint?format=" + format, response)).isEqualTo(MediaType.APPLICATION_ATOM_XML_VALUE);
 	}
 
 	@Test
@@ -144,7 +185,8 @@ class EspiAtomMediaTypeIntegrationTest {
 				})
 				.toList();
 
-		assertThat(resourceGets).as("ESPI resource GETs in the API docs").hasSizeGreaterThanOrEqualTo(25);
+		assertThat(resourceGets).as("ESPI resource GETs in the API docs").containsExactlyInAnyOrderElementsOf(
+				DOCUMENTED_RESOURCE_GETS);
 		assertThat(notAtomOnly).as("ESPI resource GETs whose 200 response is not application/atom+xml only").isEmpty();
 	}
 

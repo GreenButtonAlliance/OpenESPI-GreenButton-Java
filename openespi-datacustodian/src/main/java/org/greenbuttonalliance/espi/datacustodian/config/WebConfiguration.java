@@ -42,15 +42,14 @@ import java.util.Arrays;
 /**
  * Web configuration for the OpenESPI Data Custodian Resource Server.
  * 
- * This configuration replaces the legacy Spring MVC XML configuration and provides
- * modern Spring Boot 3.5 web configuration with ESPI-specific customizations.
- * 
+ * This configuration replaces the legacy Spring MVC XML configuration with Spring Boot 4
+ * web configuration and ESPI-specific customizations.
+ *
  * Key Features:
  * - JAXB XML marshalling for ESPI Atom feeds
- * - JSON serialization with proper date/time handling
- * - Content negotiation for XML and JSON responses
- * - WebClient for external HTTP communication
- * - CORS and resource handling configuration
+ * - JSON serialization for the internal back-channel
+ * - Content negotiation on the Accept header: ESPI resources are application/atom+xml only (#312)
+ * - CORS and static resource handling
  */
 @Configuration
 @EnableWebMvc
@@ -82,18 +81,16 @@ public class WebConfiguration implements WebMvcConfigurer {
      * <p>A request without an {@code Accept} header accepts {@code application/atom+xml} first, the only type
      * the ESPI resource endpoints produce (#312), then {@code application/json}, which the internal back-channel
      * produces.</p>
+     *
+     * <p>Only the {@code Accept} header negotiates: there is no format parameter and no path extension, so no
+     * extension-to-type mappings are registered.</p>
      */
     @Override
     public void configureContentNegotiation(ContentNegotiationConfigurer configurer) {
         configurer
             .favorParameter(false)
-            //.favorPathExtension(false) // removed, was default
             .ignoreAcceptHeader(false)
-            .useRegisteredExtensionsOnly(false)
-            .defaultContentType(MediaType.APPLICATION_ATOM_XML, MediaType.APPLICATION_JSON)
-            .mediaType("xml", MediaType.APPLICATION_XML)
-            .mediaType("json", MediaType.APPLICATION_JSON)
-            .mediaType("atom", MediaType.APPLICATION_ATOM_XML);
+            .defaultContentType(MediaType.APPLICATION_ATOM_XML, MediaType.APPLICATION_JSON);
     }
 
     /**
@@ -127,7 +124,8 @@ public class WebConfiguration implements WebMvcConfigurer {
         xmlConverter.setMarshaller(jaxb2Marshaller());
         xmlConverter.setUnmarshaller(jaxb2Marshaller());
         
-        // Support both XML and Atom media types
+        // The converter can write all three types, but the ESPI resource endpoints declare
+        // produces = application/atom+xml, so only Atom is negotiated for them (#312)
         xmlConverter.setSupportedMediaTypes(Arrays.asList(
             MediaType.APPLICATION_XML,
             MediaType.APPLICATION_ATOM_XML,

@@ -441,8 +441,10 @@ class BatchSubscriptionIntegrationTest {
 
 	// --- helpers ------------------------------------------------------------------------------------------
 
-	/** GET the subscription's feed, expecting 200; {@code params} are query parameter name/value pairs. */
-	/** Sends no Accept header, as some clients do: the feed must still be application/atom+xml (#312). */
+	/**
+	 * GET the subscription's feed, expecting 200; {@code params} are query parameter name/value pairs. Sends no
+	 * Accept header, as some clients do: the feed must still be application/atom+xml (#312).
+	 */
 	private String fetch(UUID subscriptionId, RequestPostProcessor token, String... params) throws Exception {
 		MockHttpServletRequestBuilder request = get(BASE + "/Batch/Subscription/" + subscriptionId).with(token);
 		for (int i = 0; i + 1 < params.length; i += 2) {
