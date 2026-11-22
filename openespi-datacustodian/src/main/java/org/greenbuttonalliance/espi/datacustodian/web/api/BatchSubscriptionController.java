@@ -99,7 +99,7 @@ public class BatchSubscriptionController {
 					@ApiResponse(responseCode = "400",
 							description = "A query parameter is not a UTC timestamp ending in Z, or a -min is after its -max"),
 					@ApiResponse(responseCode = "401", description = "Unauthorized"),
-					@ApiResponse(responseCode = "403", description = "Not this token's subscription"),
+					@ApiResponse(responseCode = "403", description = "Forbidden - insufficient scope: the token may not read this subscription"),
 					@ApiResponse(responseCode = "404", description = "No such subscription (DataCustodian admin only)")
 			}
 	)

@@ -53,7 +53,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@DisplayName("ESPI rejections say why (#316)")
+@DisplayName("ESPI rejections carry the RFC 6750 code only; the reason is logged (#316)")
 @ExtendWith(OutputCaptureExtension.class)
 class EspiRejectionIntegrationTest {
 

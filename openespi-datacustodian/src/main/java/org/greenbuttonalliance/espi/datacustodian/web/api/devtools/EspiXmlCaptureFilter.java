@@ -147,8 +147,9 @@ public class EspiXmlCaptureFilter extends OncePerRequestFilter {
                 .append("Time:    ").append(LocalDateTime.now()).append('\n')
                 .append("Request: ").append(request.getMethod()).append(' ').append(request.getRequestURI())
                 .append(request.getQueryString() != null ? "?" + request.getQueryString() : "").append('\n')
-                .append("Status:  ").append(failure != null ? "unhandled exception (the container answers 500)"
-                        : String.valueOf(wrapper.getStatus())).append('\n');
+                .append("Status:  ").append(failure == null ? String.valueOf(wrapper.getStatus())
+                        : accessDenied(failure) ? "403 (AccessDeniedException; Spring Security answers it after this filter)"
+                        : "unhandled exception (the container answers 500)").append('\n');
         if (failure != null) {
             report.append("\nException chain:\n");
             for (Throwable t = failure; t != null; t = t.getCause() == t ? null : t.getCause()) {
@@ -162,6 +163,16 @@ public class EspiXmlCaptureFilter extends OncePerRequestFilter {
         }
         write(fileName(request, ".error.txt"),
                 report.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8), "captured ESPI failure");
+    }
+
+    /** A row-level refusal (#286, #316): Spring Security's ExceptionTranslationFilter turns it into a 403. */
+    private static boolean accessDenied(Throwable failure) {
+        for (Throwable t = failure; t != null; t = t.getCause() == t ? null : t.getCause()) {
+            if (t instanceof org.springframework.security.access.AccessDeniedException) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void write(String fileName, byte[] content, String what) {

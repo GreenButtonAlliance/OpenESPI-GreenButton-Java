@@ -35,13 +35,16 @@ import org.springframework.security.oauth2.server.resource.authentication.Bearer
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.AccessDeniedHandler;
 
+import java.util.Set;
+
 /**
  * The {@code WWW-Authenticate} challenge of every 401 and 403 on the ESPI resource API (#316): RFC 6750 §3, adopted
  * by REQ.21.6.1.2 and checked by OpenESPI-GreenButtonCMDTest. It carries the {@code error} code and nothing else.
  * <ul>
  *   <li>No token: 401, {@code Bearer} with no error code (RFC 6750 §3.1).</li>
  *   <li>A token that is missing its value, inactive or otherwise not acceptable: {@code Bearer error="invalid_token"}
- *       (401), or {@code error="invalid_request"} (400) for a malformed request.</li>
+ *       (401), or {@code error="invalid_request"} (400) for a malformed request, such as two tokens. A Spring
+ *       {@code BearerTokenError} keeps its own code and status.</li>
  *   <li>A valid token that may not read the resource: 403, {@code Bearer error="insufficient_scope"}. This is the
  *       same whether a URL rule refused it (a Function Block or token type) or the Data Custodian's row-level
  *       check did (another subscription or retail customer, #286).</li>
@@ -59,18 +62,23 @@ public class EspiBearerChallenge implements AuthenticationEntryPoint, AccessDeni
 
 	static final String NO_TOKEN = "Bearer";
 
+	private static final Set<String> RFC_6750_CODES = Set.of(BearerTokenErrorCodes.INVALID_REQUEST,
+			BearerTokenErrorCodes.INVALID_TOKEN, BearerTokenErrorCodes.INSUFFICIENT_SCOPE);
+
 	private static final Logger log = LoggerFactory.getLogger(EspiBearerChallenge.class);
 
 	@Override
 	public void commence(HttpServletRequest request, HttpServletResponse response,
 			AuthenticationException authException) {
 		if (authException instanceof OAuth2AuthenticationException oauth2) {
-			HttpStatus status = oauth2.getError() instanceof BearerTokenError bearer
-					? bearer.getHttpStatus()
-					: HttpStatus.UNAUTHORIZED;
-			String code = status == HttpStatus.BAD_REQUEST
-					? BearerTokenErrorCodes.INVALID_REQUEST
-					: BearerTokenErrorCodes.INVALID_TOKEN;
+			// A BearerTokenError keeps its own RFC 6750 code and status, so the two always agree; any other
+			// OAuth 2.0 error is an unacceptable token.
+			HttpStatus status = HttpStatus.UNAUTHORIZED;
+			String code = BearerTokenErrorCodes.INVALID_TOKEN;
+			if (oauth2.getError() instanceof BearerTokenError bearer && RFC_6750_CODES.contains(bearer.getErrorCode())) {
+				status = bearer.getHttpStatus();
+				code = bearer.getErrorCode();
+			}
 			log.info("{} {}: {} ({})", request.getMethod(), request.getRequestURI(), code, authException.getMessage());
 			challenge(response, status, "Bearer error=\"" + code + "\"");
 		} else {

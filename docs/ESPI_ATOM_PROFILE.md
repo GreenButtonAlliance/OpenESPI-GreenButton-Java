@@ -18,8 +18,8 @@ Error responses are not Atom (#316):
   - a valid token that may not read the resource: 403, `Bearer error="insufficient_scope"`. This is the same whether a URL rule refused it (a Function Block or token type) or the Data Custodian's row-level check did (another subscription or retail customer).
 
   There is no `error_description`, `error_uri`, `scope` or `resource_metadata`, all optional in RFC 6750 and OAuth 2.1. A specific reason would let a client probing the API learn which subscriptions, retail customers or entries exist. Certified Data Custodians answer the same way. The reason is logged on the Data Custodian instead (`EspiBearerChallenge`, INFO): the method, path, the token's `client_id` on a 403, and the reason. The token itself is never logged.
-- **400** carries the reason as a one-line `text/plain` body, whatever the request's `Accept` header says.
-- **404** has no body. An entry the token may not read is a 404, the same as one that does not exist (#286).
+- **400** for a malformed query or path parameter (a timestamp, a UUID, a `-min` after its `-max`) carries the reason as a one-line `text/plain` body, whatever the request's `Accept` header says. A malformed `Authorization` (for example, two tokens) is a 400 with `Bearer error="invalid_request"` and no body.
+- **404**: an entry the token may not read is a 404, the same as one that does not exist (#286). To an Atom-only `Accept` it has no body. A client that also accepts JSON gets Spring Boot's error body, which repeats only the requested path and id, the same whether the entry is another customer's or does not exist.
 
 This page lists the differences so that they are not "fixed" by mistake. **Do not change the code to follow RFC 4287 where this page says ESPI differs.** Doing so would either reveal which utility the data comes from, or make our feeds differ from every certified feed.
 

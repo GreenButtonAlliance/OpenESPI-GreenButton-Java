@@ -45,6 +45,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.util.Arrays;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.opaqueToken;
 
 /**
@@ -157,10 +158,16 @@ public class AbstractControllerMockTest {
     /**
      * 403 from the controller's row-level check (#286), not from the URL rule: the token's Function Blocks let it
      * reach the endpoint, but it is not the admin (root collections and entries) or does not hold the path's
-     * subscription. Its challenge is the same {@code insufficient_scope} as a URL-rule refusal's (#316).
+     * subscription. Its challenge is the same {@code insufficient_scope} as a URL-rule refusal's (#316), so the
+     * matcher also asserts that the request reached a controller: a URL-rule refusal never reaches the
+     * DispatcherServlet and has no handler.
      */
     public static ResultMatcher refusedByRowScope() {
-        return EspiErrorResponses.insufficientScope();
+        return result -> {
+            EspiErrorResponses.insufficientScope().match(result);
+            assertThat(result.getHandler()).as("the controller that refused the request (null: the URL rule did)")
+                    .isNotNull();
+        };
     }
 
     /** An opaque bearer token with these authorities and no subscription, as a Third Party would send. */
