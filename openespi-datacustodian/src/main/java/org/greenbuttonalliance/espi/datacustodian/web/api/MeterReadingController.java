@@ -73,7 +73,7 @@ public class MeterReadingController {
     private final SubscriptionAccess subscriptionAccess;
     private final UsageEntries usageEntries;
 
-    @GetMapping(value = "/MeterReading", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    @GetMapping(value = "/MeterReading", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
     @Operation(
         summary = "Get Meter Readings",
         description = "The Meter Readings the token may read: its subscription's, or every one for the DataCustodian admin",
@@ -97,7 +97,7 @@ public class MeterReadingController {
                 : reader.meterReadings());
     }
 
-    @GetMapping(value = "/MeterReading/{meterReadingId}", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    @GetMapping(value = "/MeterReading/{meterReadingId}", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
     @Operation(
         summary = "Get Meter Reading by ID",
         description = "One Meter Reading the token may read, with the same Atom links as in its feeds",
@@ -119,10 +119,10 @@ public class MeterReadingController {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         meterReadingExportService.exportDto(meterReadingExportService.buildEntry(
                 usageEntries.meterReading(reader, base, reader.meterReading(meterReadingId))), out);
-        return ResponseEntity.ok().contentType(MediaType.APPLICATION_XML).body(out.toByteArray());
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_ATOM_XML).body(out.toByteArray());
     }
 
-    @GetMapping(value = "/RetailCustomer/{retailCustomerId}/UsagePoint/{usagePointId}/MeterReading", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    @GetMapping(value = "/RetailCustomer/{retailCustomerId}/UsagePoint/{usagePointId}/MeterReading", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
     @Operation(
         summary = "Get a Usage Point's Meter Readings",
         description = "The Meter Readings of one of the retail customer's Usage Points (RetailCustomer XPath collection)",
@@ -152,6 +152,6 @@ public class MeterReadingController {
                 "MeterReading Feed",
                 meterReadings.stream().map(meterReading -> usageEntries.meterReading(reader, base, meterReading)).toList()),
                 out);
-        return ResponseEntity.ok().contentType(MediaType.APPLICATION_XML).body(out.toByteArray());
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_ATOM_XML).body(out.toByteArray());
     }
 }

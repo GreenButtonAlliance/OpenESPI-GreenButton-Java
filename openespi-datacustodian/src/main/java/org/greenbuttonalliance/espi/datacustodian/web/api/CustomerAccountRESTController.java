@@ -71,7 +71,7 @@ public class CustomerAccountRESTController {
     /**
      * Get all Customer Accounts (root collection): every customer's PII, so DataCustodian admin only (#286).
      */
-    @GetMapping(value = "/CustomerAccount", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    @GetMapping(value = "/CustomerAccount", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
     @Operation(
         summary = "Get CustomerAccount Collection",
         description = "Retrieves all authorized CustomerAccount resources.",
@@ -95,14 +95,14 @@ public class CustomerAccountRESTController {
                 "CustomerAccount Feed", customerAccountRepository.findAll(PageRequest.of(offset, limit)).getContent(),
                 customerAccountMapper::toDto, out);
         return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_XML)
+                .contentType(MediaType.APPLICATION_ATOM_XML)
                 .body(out.toByteArray());
     }
 
     /**
      * Get specific Customer Account by ID.
      */
-    @GetMapping(value = "/CustomerAccount/{customerAccountId}", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    @GetMapping(value = "/CustomerAccount/{customerAccountId}", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
     @Operation(
         summary = "Get CustomerAccount by ID",
         description = "Retrieves a specific CustomerAccount resource by its unique identifier.",
@@ -129,7 +129,7 @@ public class CustomerAccountRESTController {
                 ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString()) + "/CustomerAccount", customerAccount,
                 customerAccountMapper::toDto), out);
         return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_XML)
+                .contentType(MediaType.APPLICATION_ATOM_XML)
                 .body(out.toByteArray());
     }
 }

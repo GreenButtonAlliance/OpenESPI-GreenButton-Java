@@ -67,9 +67,9 @@ public class ElectricPowerQualitySummaryRESTControllerTest extends AbstractContr
                     .thenReturn(dto);
 
             mockMvc.perform(get("/espi/1_1/resource/ElectricPowerQualitySummary")
-                            .accept(MediaType.APPLICATION_XML))
+                            .accept(MediaType.APPLICATION_ATOM_XML))
                     .andExpect(status().isOk())
-                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
+                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_ATOM_XML));
         }
 
         @Test
@@ -77,7 +77,7 @@ public class ElectricPowerQualitySummaryRESTControllerTest extends AbstractContr
         @DisplayName("FB_17 passes the URL rule, but the root collection is admin only (#286)")
         void fbTokenIsRefusedOnRootCollection() throws Exception {
             mockMvc.perform(get("/espi/1_1/resource/ElectricPowerQualitySummary")
-                            .accept(MediaType.APPLICATION_XML))
+                            .accept(MediaType.APPLICATION_ATOM_XML))
                     .andExpect(status().isForbidden())
                     .andExpect(refusedByRowScope());
         }
@@ -114,9 +114,9 @@ public class ElectricPowerQualitySummaryRESTControllerTest extends AbstractContr
             when(electricPowerQualitySummaryMapper.toDto(entity)).thenReturn(dto);
 
             mockMvc.perform(get("/espi/1_1/resource/ElectricPowerQualitySummary/" + id)
-                            .accept(MediaType.APPLICATION_XML))
+                            .accept(MediaType.APPLICATION_ATOM_XML))
                     .andExpect(status().isOk())
-                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
+                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_ATOM_XML));
         }
 
         @Test
@@ -147,7 +147,7 @@ public class ElectricPowerQualitySummaryRESTControllerTest extends AbstractContr
         @DisplayName("a token with no subscription gets 403 (#286)")
         void tokenWithoutSubscriptionIsRefused() throws Exception {
             mockMvc.perform(get("/espi/1_1/resource/RetailCustomer/1/UsagePoint/" + UUID.randomUUID() + "/ElectricPowerQualitySummary")
-                            .accept(MediaType.APPLICATION_XML))
+                            .accept(MediaType.APPLICATION_ATOM_XML))
                     .andExpect(status().isForbidden())
                     .andExpect(refusedByRowScope());
         }

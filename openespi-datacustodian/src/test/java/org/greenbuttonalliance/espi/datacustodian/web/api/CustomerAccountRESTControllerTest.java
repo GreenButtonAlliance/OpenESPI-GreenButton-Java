@@ -65,9 +65,9 @@ public class CustomerAccountRESTControllerTest extends AbstractControllerMockTes
                     .thenReturn(dto);
 
             mockMvc.perform(get("/espi/1_1/resource/CustomerAccount")
-                            .accept(MediaType.APPLICATION_XML))
+                            .accept(MediaType.APPLICATION_ATOM_XML))
                     .andExpect(status().isOk())
-                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
+                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_ATOM_XML));
         }
 
         @Test
@@ -102,9 +102,9 @@ public class CustomerAccountRESTControllerTest extends AbstractControllerMockTes
             when(customerAccountMapper.toDto(entity)).thenReturn(dto);
 
             mockMvc.perform(get("/espi/1_1/resource/CustomerAccount/" + id)
-                            .accept(MediaType.APPLICATION_XML))
+                            .accept(MediaType.APPLICATION_ATOM_XML))
                     .andExpect(status().isOk())
-                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
+                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_ATOM_XML));
         }
 
         @Test

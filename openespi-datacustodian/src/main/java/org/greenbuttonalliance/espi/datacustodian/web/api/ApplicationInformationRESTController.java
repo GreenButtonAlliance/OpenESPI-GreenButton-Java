@@ -63,12 +63,12 @@ public class ApplicationInformationRESTController {
     /**
      * Gets all ApplicationInformation resources.
      *
-     * @return XML response body
+     * @return an Atom feed ({@code application/atom+xml}) of the ApplicationInformation entries
      */
-    @GetMapping(produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    @GetMapping(produces = MediaType.APPLICATION_ATOM_XML_VALUE)
     @Operation(
         summary = "Get All ApplicationInformation",
-        description = "Returns a list of all registered applications in XML format"
+        description = "Returns the registered applications as an Atom feed (application/atom+xml)"
     )
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Successfully retrieved ApplicationInformation list",
@@ -88,7 +88,7 @@ public class ApplicationInformationRESTController {
         applicationInformationService.export(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString(),
                 entities, out);
         return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_XML)
+                .contentType(MediaType.APPLICATION_ATOM_XML)
                 .body(out.toByteArray());
     }
 
@@ -96,12 +96,12 @@ public class ApplicationInformationRESTController {
      * Gets a specific ApplicationInformation resource by ID.
      *
      * @param applicationInformationId Unique identifier for the ApplicationInformation
-     * @return XML response body
+     * @return an Atom entry ({@code application/atom+xml}) holding the ApplicationInformation
      */
-    @GetMapping(value = "/{applicationInformationId}", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    @GetMapping(value = "/{applicationInformationId}", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
     @Operation(
         summary = "Get ApplicationInformation by ID",
-        description = "Returns a specific ApplicationInformation resource in XML format"
+        description = "Returns a specific ApplicationInformation resource as an Atom entry (application/atom+xml)"
     )
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Successfully retrieved ApplicationInformation",
@@ -124,7 +124,7 @@ public class ApplicationInformationRESTController {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         applicationInformationService.export(entity, out);
         return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_XML)
+                .contentType(MediaType.APPLICATION_ATOM_XML)
                 .body(out.toByteArray());
     }
 }

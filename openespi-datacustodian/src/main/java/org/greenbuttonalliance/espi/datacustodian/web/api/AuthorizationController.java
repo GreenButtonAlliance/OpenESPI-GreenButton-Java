@@ -76,7 +76,7 @@ public class AuthorizationController {
     /**
      * Get all Authorizations (admin access only).
      */
-    @GetMapping(value = "/Authorization", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    @GetMapping(value = "/Authorization", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
     @Operation(
         summary = "Get all Authorizations",
         description = "Retrieve all OAuth2 Authorizations as an Atom feed (admin access only)",
@@ -108,14 +108,14 @@ public class AuthorizationController {
         usageExportService.exportFeed(ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString(),
                 "Authorization Feed", authorizations, authorizationMapper::toDto, out);
         return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_XML)
+                .contentType(MediaType.APPLICATION_ATOM_XML)
                 .body(out.toByteArray());
     }
 
     /**
      * Get specific Authorization by ID (admin access only).
      */
-    @GetMapping(value = "/Authorization/{authorizationId}", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    @GetMapping(value = "/Authorization/{authorizationId}", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
     @Operation(
         summary = "Get Authorization by ID",
         description = "Retrieve a specific OAuth2 Authorization by its unique identifier",
@@ -150,7 +150,7 @@ public class AuthorizationController {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         usageExportService.exportDto(entry, out);
         return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_XML)
+                .contentType(MediaType.APPLICATION_ATOM_XML)
                 .body(out.toByteArray());
     }
 }

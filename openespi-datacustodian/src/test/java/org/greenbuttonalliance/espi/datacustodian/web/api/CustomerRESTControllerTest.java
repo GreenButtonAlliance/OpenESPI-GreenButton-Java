@@ -65,9 +65,9 @@ public class CustomerRESTControllerTest extends AbstractControllerMockTest {
                     .thenReturn(dto);
 
             mockMvc.perform(get("/espi/1_1/resource/Customer")
-                            .accept(MediaType.APPLICATION_XML))
+                            .accept(MediaType.APPLICATION_ATOM_XML))
                     .andExpect(status().isOk())
-                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
+                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_ATOM_XML));
         }
 
         @Test
@@ -93,7 +93,7 @@ public class CustomerRESTControllerTest extends AbstractControllerMockTest {
         @WithMockUser(authorities = {"FB_53", "FB_54"})
         @DisplayName("FB_53 base + FB_54 (Customer) pass the URL rule; the root collection is admin only (#286)")
         void baseAndCustomerFbPassTheUrlRule() throws Exception {
-            mockMvc.perform(get("/espi/1_1/resource/Customer").accept(MediaType.APPLICATION_XML))
+            mockMvc.perform(get("/espi/1_1/resource/Customer").accept(MediaType.APPLICATION_ATOM_XML))
                     .andExpect(status().isForbidden())
                     .andExpect(refusedByRowScope());
         }
@@ -143,9 +143,9 @@ public class CustomerRESTControllerTest extends AbstractControllerMockTest {
             when(customerMapper.toDto(entity)).thenReturn(dto);
 
             mockMvc.perform(get("/espi/1_1/resource/Customer/" + id)
-                            .accept(MediaType.APPLICATION_XML))
+                            .accept(MediaType.APPLICATION_ATOM_XML))
                     .andExpect(status().isOk())
-                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML));
+                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_ATOM_XML));
         }
 
         @Test

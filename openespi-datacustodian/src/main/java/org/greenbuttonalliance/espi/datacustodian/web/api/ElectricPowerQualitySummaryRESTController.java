@@ -73,7 +73,7 @@ public class ElectricPowerQualitySummaryRESTController {
     private final SubscriptionAccess subscriptionAccess;
     private final UsageEntries usageEntries;
 
-    @GetMapping(value = "/ElectricPowerQualitySummary", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    @GetMapping(value = "/ElectricPowerQualitySummary", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
     @Operation(
         summary = "Get Electric Power Quality Summaries",
         description = "The summaries the token may read: its subscription's within its HistoryLength, or every one for the DataCustodian admin",
@@ -97,7 +97,7 @@ public class ElectricPowerQualitySummaryRESTController {
                 : reader.qualitySummaries());
     }
 
-    @GetMapping(value = "/ElectricPowerQualitySummary/{electricPowerQualitySummaryId}", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    @GetMapping(value = "/ElectricPowerQualitySummary/{electricPowerQualitySummaryId}", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
     @Operation(
         summary = "Get Electric Power Quality Summary by ID",
         description = "One summary the token may read, with the same Atom links as in its feeds",
@@ -119,10 +119,10 @@ public class ElectricPowerQualitySummaryRESTController {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         electricPowerQualitySummaryExportService.exportDto(electricPowerQualitySummaryExportService.buildEntry(
                 usageEntries.qualitySummary(base, reader.qualitySummary(electricPowerQualitySummaryId))), out);
-        return ResponseEntity.ok().contentType(MediaType.APPLICATION_XML).body(out.toByteArray());
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_ATOM_XML).body(out.toByteArray());
     }
 
-    @GetMapping(value = "/RetailCustomer/{retailCustomerId}/UsagePoint/{usagePointId}/ElectricPowerQualitySummary", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    @GetMapping(value = "/RetailCustomer/{retailCustomerId}/UsagePoint/{usagePointId}/ElectricPowerQualitySummary", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
     @Operation(
         summary = "Get a Usage Point's Electric Power Quality Summaries",
         description = "The summaries of one of the retail customer's Usage Points within the token's HistoryLength (RetailCustomer XPath collection)",
@@ -151,6 +151,6 @@ public class ElectricPowerQualitySummaryRESTController {
         electricPowerQualitySummaryExportService.exportDto(electricPowerQualitySummaryExportService.buildFeedOf(
                 feedHref, "ElectricPowerQualitySummary", "ElectricPowerQualitySummary Feed",
                 summaries.stream().map(summary -> usageEntries.qualitySummary(base, summary)).toList()), out);
-        return ResponseEntity.ok().contentType(MediaType.APPLICATION_XML).body(out.toByteArray());
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_ATOM_XML).body(out.toByteArray());
     }
 }

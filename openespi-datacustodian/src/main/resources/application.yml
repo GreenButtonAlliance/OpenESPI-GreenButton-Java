@@ -204,9 +204,13 @@ springdoc:
     enabled: true
     operations-sorter: alpha
     tags-sorter: alpha
-  show-actuator: true
+  # The docs describe only the ESPI resource API a Third Party uses (#312): paths-to-match leaves out
+  # Actuator, the internal AS->DC back-channel and any other endpoint, so the default produces type,
+  # application/atom+xml (the only type an ESPI resource is served as), labels ESPI operations only.
+  show-actuator: false
+  paths-to-match: /espi/1_1/resource/**
   default-consumes-media-type: application/json
-  default-produces-media-type: application/json
+  default-produces-media-type: application/atom+xml
 
 # Server Configuration
 spring.web.error.include-message: always

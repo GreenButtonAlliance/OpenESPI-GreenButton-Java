@@ -73,7 +73,7 @@ public class IntervalBlockRESTController {
     private final SubscriptionAccess subscriptionAccess;
     private final UsageEntries usageEntries;
 
-    @GetMapping(value = "/IntervalBlock", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    @GetMapping(value = "/IntervalBlock", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
     @Operation(
         summary = "Get Interval Blocks",
         description = "The Interval Blocks the token may read: its subscription's within its HistoryLength, or every one for the DataCustodian admin",
@@ -97,7 +97,7 @@ public class IntervalBlockRESTController {
                 : reader.intervalBlocks());
     }
 
-    @GetMapping(value = "/IntervalBlock/{intervalBlockId}", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    @GetMapping(value = "/IntervalBlock/{intervalBlockId}", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
     @Operation(
         summary = "Get Interval Block by ID",
         description = "One Interval Block the token may read, with the same Atom links as in its feeds",
@@ -119,10 +119,10 @@ public class IntervalBlockRESTController {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         intervalBlockExportService.exportDto(intervalBlockExportService.buildEntry(
                 usageEntries.intervalBlock(base, reader.intervalBlock(intervalBlockId))), out);
-        return ResponseEntity.ok().contentType(MediaType.APPLICATION_XML).body(out.toByteArray());
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_ATOM_XML).body(out.toByteArray());
     }
 
-    @GetMapping(value = "/RetailCustomer/{retailCustomerId}/UsagePoint/{usagePointId}/MeterReading/{meterReadingId}/IntervalBlock", produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    @GetMapping(value = "/RetailCustomer/{retailCustomerId}/UsagePoint/{usagePointId}/MeterReading/{meterReadingId}/IntervalBlock", produces = MediaType.APPLICATION_ATOM_XML_VALUE)
     @Operation(
         summary = "Get a Meter Reading's Interval Blocks",
         description = "The Interval Blocks of one of the retail customer's Meter Readings within the token's HistoryLength (RetailCustomer XPath collection)",
@@ -152,6 +152,6 @@ public class IntervalBlockRESTController {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         intervalBlockExportService.exportDto(intervalBlockExportService.buildFeedOf(feedHref, "IntervalBlock",
                 "IntervalBlock Feed", blocks.stream().map(block -> usageEntries.intervalBlock(base, block)).toList()), out);
-        return ResponseEntity.ok().contentType(MediaType.APPLICATION_XML).body(out.toByteArray());
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_ATOM_XML).body(out.toByteArray());
     }
 }
