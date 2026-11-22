@@ -135,7 +135,7 @@ REST controllers are in `openespi-datacustodian/src/main/java/org/greenbuttonall
 - **web/authorize/** - Customer authorization (per-FB consent) screen delegated from the AS
 - **internal/backchannel/** - AS→DC subscription-provisioning back-channel
 
-Current state (see GitHub epic #119 "CANONICAL BUILD PLAN" for the roadmap):
+Current state (see the #255 roadmap for priorities, and epic #119 "Remediation: ESPI REST controller modernization" for the controller work):
 - All write endpoints (POST/PUT/DELETE) were deliberately removed in #166 and are deferred.
 - Not yet implemented: `Batch/Bulk`, `Batch/RetailCustomer`, `Subscription/{id}`, RetailCustomer-scoped URIs, LocalTimeParameters, ReadServiceStatus, and the CustomerAgreement/ServiceSupplier/ServiceLocation/Meter/EndDevice/Statement/ProgramIdMappings endpoints.
 - **No resource is addressed through `/Subscription/{id}/...`** (#290). A Subscription is tied to one access token and Authorization, so such an href would change with every grant, violating REQ.21.6.1.1.6's unique, repeatable identifiers (owner ruling, CMDTest#1036). Usage resources are served and linked only in the ROOT form (`UsagePoint/{id}`, `MeterReading/{id}`, ...) and the RetailCustomer XPath collections (`RetailCustomer/{retailCustomerId}/UsagePoint/{id}/MeterReading`, `.../MeterReading/{id}/IntervalBlock`, `.../UsageSummary`, `.../ElectricPowerQualitySummary`). `Batch/Subscription/{id}` takes nothing after the id.
@@ -279,6 +279,25 @@ ESPI uses Atom XML feeds for data exchange. Key patterns:
   - Bad: Multiple separate `assertThat()` statements for the same object
   - This improves readability and provides better failure messages
 
+### Code Review Requirements
+The same procedure is used in the CMDCertification repository; keep the two in step. It is a written rule, not a CI gate (the `protect-main` ruleset requires only `ci-ok` and `pr-title`).
+
+- **REQUIRED**: every pull request that changes anything under a module's `src/` directory (`src/main` or `src/test`, in any module) gets a `/code-review` before it is merged. PRs that change only docs, CI workflows, root files or `pom.xml` (including Dependabot build-only PRs) rely on the CI checks.
+- **First review: the whole PR, at its risk level.**
+  - `/code-review high <PR>` for security-sensitive code: authentication, authorization, OAuth 2.0 / token handling, the AS↔DC handoff, row-level access, TLS, credential or token logging, or anything a Third Party or the AS can reach that decides what data is released;
+  - `/code-review medium <PR>` for everything else;
+  - `ultra` (billed) only for a large change, such as a framework upgrade, and only when the owner approves it. Never `max`.
+  - **Always name the level**: with none, the skill reuses the last level typed.
+  - Run it after the PR is open; CI can run at the same time.
+- **Every finding** is fixed on the PR branch (with a test where it changes behaviour), answered on the PR with the reason it stands, or filed as an issue and added to the #255 roadmap. The PR description lists each finding and where it went.
+- **Any `src/` change pushed after a review gets its own review before merging**, including the commits that fix review findings, however small. A re-review:
+  - **covers only the commits since the previous review**, not the whole PR again, and says so when it is started;
+  - **is given the findings already ruled on**, so it does not raise them again; if it repeats one anyway, point to the earlier ruling;
+  - **steps down one level from the previous review** (`ultra` → `high` → `medium`), **but never below what its own changes need**: `medium` for any production or test change (`low` does not read test files), `high` for security-sensitive code. `low` only for comments, documentation text or a single configuration value in production code;
+  - **goes one level up instead after a round that found a real correctness or security bug**; a round of nits never raises the level.
+- **Stopping:** the cycle ends when a review leads to no further `src/` change. If a third round still finds a real bug, stop the automated reviews and have the owner review the design.
+- **Merging:** not until the last review is done, its fixes are pushed, and CI is green on the final commit.
+
 ### Common Development Patterns
 
 #### File Modification Best Practices
@@ -360,7 +379,7 @@ Still in progress (logic migration from the original OpenESPI code):
 - Entity field type/length verification against the XSDs (#101 Phases 2-3)
 
 ### Known Issues
-The source of truth for status and roadmap is GitHub epic #119 ("CANONICAL BUILD PLAN") and its sub-issues. The root `PHASE_*.md`, `MULTI_PHASE_SCHEMA_COMPLIANCE_PLAN.md`, `ISSUE_101_*.md`, `openespi-common/Phase_A-Flyway_Migration_Inventory.md`, `openespi-common/PROFILE_MIGRATION_SUMMARY.md`, `openespi-datacustodian/controll-update-status.md`, and `openespi-authserver/MIGRATION_ROADMAP.md` are historical and stale.
+The source of truth for status and priorities is the #255 roadmap ("Roadmap: operational, manually testable AS / DC / TP — prioritized open issues"); epic #119 ("Remediation: ESPI REST controller modernization") and its sub-issues track the REST controller work. The root `PHASE_*.md`, `MULTI_PHASE_SCHEMA_COMPLIANCE_PLAN.md`, `ISSUE_101_*.md`, `openespi-common/Phase_A-Flyway_Migration_Inventory.md`, `openespi-common/PROFILE_MIGRATION_SUMMARY.md`, `openespi-datacustodian/controll-update-status.md`, and `openespi-authserver/MIGRATION_ROADMAP.md` are historical and stale.
 
 Known rule violations / defects to be aware of:
 - `MeterMapper` ignores meter multipliers (silently dropped on export/import)
