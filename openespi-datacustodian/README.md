@@ -125,6 +125,24 @@ This implementation follows **OAuth2 Resource Server** patterns:
 - **Spring Security 6** with modern security configurations
 - **OWASP dependency scanning** integrated in CI/CD
 
+### PKCE: supported, not required by ESPI
+
+**The Data Custodian supports PKCE (RFC 7636), which the ESPI standard (NAESB REQ.21 v4.1) does not require.**
+REQ.21 never mentions PKCE. Its User Authorization section, REQ.21.6.1.2, calls for "OAuth 2.0, as documented in
+IETF RFC 6749, and applicable IETF RFC updates". RFC 9700 (the OAuth 2.0 Security Best Current Practice) updates
+RFC 6749, and its section 2.1.1 says an authorization server must support PKCE and enforce it when a client sends a
+`code_challenge`. It also recommends PKCE for confidential clients.
+
+How the Data Custodian handles it (#274):
+
+- **Who checks it:** the customer signs in and consents on the Data Custodian's Authorization Screen. The codes and
+  tokens come from the Data Custodian's authorization server, `openespi-authserver`, which checks PKCE.
+- **Third Party sends a `code_challenge`:** the challenge (S256) is carried through the Data Custodian's consent.
+  The code is issued with it, and the token request needs the matching `code_verifier`.
+- **Third Party sends none:** the authorization works as before. PKCE is not required of an ESPI Third Party.
+- **A `code_verifier` for a code issued without a challenge** is refused, because RFC 9700 treats it as a downgrade.
+- **Advertised:** `/.well-known/oauth-authorization-server` lists `code_challenge_methods_supported: ["S256"]`.
+
 ## Development
 
 ### IDE Setup

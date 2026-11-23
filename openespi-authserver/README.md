@@ -234,6 +234,25 @@ redirect_uri=http://localhost:9090/callback&
 client_id=third_party
 ```
 
+### PKCE: accepted, not required (#274)
+
+**REQ.21 v4.1 does not require PKCE (RFC 7636) and never mentions it.** Its User Authorization section,
+REQ.21.6.1.2, calls for "OAuth 2.0, as documented in IETF RFC 6749, and applicable IETF RFC updates". RFC 9700
+updates RFC 6749, and its section 2.1.1 says an authorization server must support PKCE and enforce it when a client
+sends a `code_challenge`.
+
+What this server does:
+
+- **Clients are not required to use PKCE.** `third_party`, RFC 7591 registrations and the client-management API all
+  default to `requireProofKey(false)`, so an ESPI Third Party without PKCE still works.
+- **A `code_challenge` (S256) is enforced.** The challenge is carried through the Data Custodian delegation
+  (`/authorize/delegate` → DC → `/oauth2/authorize/continue` → replayed `/oauth2/authorize`). The code is minted with
+  it, and `/oauth2/token` requires the matching `code_verifier`.
+- **A `code_verifier` for a code minted without a challenge** is refused (`invalid_grant`): RFC 9700 4.8.2 calls it
+  a downgrade.
+- **Support is advertised:** `/.well-known/oauth-authorization-server` lists `code_challenge_methods_supported:
+  ["S256"]`.
+
 ### Client Credentials Flow (Admin Access)
 
 ```http

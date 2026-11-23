@@ -34,6 +34,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.core.endpoint.PkceParameterNames;
 import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsent;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsentService;
@@ -201,15 +202,22 @@ public class AuthorizeContinueController {
 		// Redirect back to /oauth2/authorize with the original TP query params. Spring AS finds
 		// the saved authorization request (still in session), sees authenticated user + matching
 		// consent in the store, mints the code, redirects to the TP.
-		String url = UriComponentsBuilder.fromPath(AUTHORIZE_PATH)
+		UriComponentsBuilder replay = UriComponentsBuilder.fromPath(AUTHORIZE_PATH)
 				.queryParam("response_type", "code")
 				.queryParam("client_id", state.clientId())
 				.queryParam("redirect_uri", state.redirectUri())
 				.queryParam("scope", payload.approvedScope())
-				.queryParam("state", state.tpState() != null ? state.tpState() : "")
-				.encode(StandardCharsets.UTF_8)
-				.build()
-				.toUriString();
+				.queryParam("state", state.tpState() != null ? state.tpState() : "");
+		// #274: the TP's PKCE challenge, so the code is minted with it and the TP's code_verifier is checked at
+		// /oauth2/token. Without it Spring AS mints the code without a challenge and refuses the verifier.
+		DelegationStateService.ProofKey proofKey = state.proofKey();
+		if (proofKey != null) {
+			replay.queryParam(PkceParameterNames.CODE_CHALLENGE, proofKey.codeChallenge());
+			if (proofKey.codeChallengeMethod() != null) {
+				replay.queryParam(PkceParameterNames.CODE_CHALLENGE_METHOD, proofKey.codeChallengeMethod());
+			}
+		}
+		String url = replay.encode(StandardCharsets.UTF_8).build().toUriString();
 
 		log.info("Continue: allow path, client_id={}, customer={}, correlation_id={}",
 				state.clientId(), payload.principal(), payload.correlationId());

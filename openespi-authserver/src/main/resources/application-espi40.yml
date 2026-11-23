@@ -110,7 +110,8 @@ espi:
   # Client settings
   client:
     require-authorization-consent: true
-    require-pkce: true  # ESPI 4.0 recommendation
+    # No require-pkce key: nothing read it, and REQ.21 does not recommend PKCE. PKCE is accepted, not required,
+    # per client (ClientSettings.requireProofKey); a code_challenge a client sends is enforced (#274).
     max-redirect-uris: 3
     allowed-grant-types:
       - authorization_code

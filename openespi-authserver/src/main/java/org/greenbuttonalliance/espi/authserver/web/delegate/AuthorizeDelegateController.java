@@ -27,6 +27,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
+import org.springframework.security.oauth2.core.endpoint.PkceParameterNames;
 import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
@@ -96,6 +97,8 @@ public class AuthorizeDelegateController {
 	 *   <li>{@code state} &mdash; the TP's CSRF state, used here as the correlation id so the
 	 *       AS-side and DC-side logs join cleanly</li>
 	 *   <li>{@code redirect_uri} &mdash; the TP's callback, forwarded by {@link DelegateAuthorizationEntryPoint}</li>
+	 *   <li>{@code code_challenge}, {@code code_challenge_method} &mdash; the TP's PKCE challenge, when it sent one,
+	 *       forwarded the same way and replayed by {@link AuthorizeContinueController} (#274)</li>
 	 * </ul>
 	 *
 	 * <p>Spring AS's consent-page redirect is different: it carries Spring's own consent {@code state} and no
@@ -111,21 +114,29 @@ public class AuthorizeDelegateController {
 						   @RequestParam("client_id") String clientId,
 						   @RequestParam(value = "state", required = false) String state,
 						   @RequestParam(value = "redirect_uri", required = false) String redirectUri,
+						   @RequestParam(value = PkceParameterNames.CODE_CHALLENGE, required = false) String codeChallenge,
+						   @RequestParam(value = PkceParameterNames.CODE_CHALLENGE_METHOD, required = false)
+						   String codeChallengeMethod,
 						   HttpServletRequest request) {
 
 		String tpState = state;
 		String requestedScope = scope;
 		String resolvedRedirectUri = redirectUri;
 		String pendingAuthorizationId = null;
+		DelegationStateService.ProofKey proofKey = DelegationStateService.ProofKey.of(codeChallenge, codeChallengeMethod);
 		if (redirectUri == null || redirectUri.isBlank()) {
 			OAuth2Authorization pending = pendingConsentAuthorization(clientId, state);
 			if (pending != null) {
-				// The consent-page redirect: state, redirect_uri and scope all come from the TP's saved request.
+				// The consent-page redirect: state, redirect_uri, scope and any PKCE challenge (#274) all come from
+				// the TP's saved request.
 				OAuth2AuthorizationRequest original = pending.getAttribute(OAuth2AuthorizationRequest.class.getName());
 				tpState = original.getState();
 				resolvedRedirectUri = original.getRedirectUri();
 				requestedScope = String.join(" ", original.getScopes());
 				pendingAuthorizationId = pending.getId();
+				proofKey = DelegationStateService.ProofKey.of(
+						(String) original.getAdditionalParameters().get(PkceParameterNames.CODE_CHALLENGE),
+						(String) original.getAdditionalParameters().get(PkceParameterNames.CODE_CHALLENGE_METHOD));
 			} else if (TRUST_RESOLVER.isAuthenticated(SecurityContextHolder.getContext().getAuthentication())) {
 				// Spring AS sends a signed-in customer here only from its consent page, so this state is Spring's
 				// consent state and must never reach the TP as its own (#299): the request is unknown or expired.
@@ -142,10 +153,11 @@ public class AuthorizeDelegateController {
 		}
 		String correlationId = tpState != null && !tpState.isBlank() ? tpState : UUID.randomUUID().toString();
 
-		// Saved so AuthorizeContinueController replays /oauth2/authorize with the TP's redirect_uri and state,
-		// and removes the pending consent-page authorization, which a reload of this page still needs until then.
+		// Saved so AuthorizeContinueController replays /oauth2/authorize with the TP's redirect_uri, state and PKCE
+		// challenge (#274), and removes the pending consent-page authorization, which a reload of this page still
+		// needs until then.
 		delegationStateService.save(correlationId, clientId, resolvedRedirectUri, tpState, requestedScope,
-				pendingAuthorizationId);
+				pendingAuthorizationId, proofKey);
 
 		String signedToken = handoffBuilder.buildSignedToken(clientId, requestedScope, correlationId);
 

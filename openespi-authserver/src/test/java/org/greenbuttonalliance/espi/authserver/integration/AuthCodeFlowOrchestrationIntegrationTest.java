@@ -447,6 +447,118 @@ class AuthCodeFlowOrchestrationIntegrationTest extends AbstractAuthserverIntegra
 	}
 
 	/**
+	 * PKCE through the Data Custodian delegation (#274). REQ.21 does not require PKCE, but a Third Party that
+	 * sends a {@code code_challenge} must have it enforced at the token endpoint (RFC 9700 2.1.1, which updates
+	 * RFC 6749): the challenge travels from the original {@code /oauth2/authorize} through
+	 * {@code /authorize/delegate} and {@code /oauth2/authorize/continue} into the replayed request, so the code
+	 * is minted with it. The client does not require PKCE ({@code requireProofKey(false)}).
+	 */
+	@ParameterizedTest(name = "code_verifier {0}: {1}")
+	@CsvSource({"matching, 200", "wrong, 400", "missing, 400"})
+	@DisplayName("PKCE (#274): code_challenge survives the DC delegation; only the matching code_verifier gets a token")
+	void proofKeyIsCarriedThroughTheDelegation(String verifierCase, int expectedStatus) throws Exception {
+		String suffix = UUID.randomUUID().toString().substring(0, 8);
+		String clientId = "pr-274-tp-" + suffix;
+		String clientSecret = "pr-274-secret-" + suffix;
+		String tpState = "tp-state-274-" + suffix;
+		registerClient(clientId, clientSecret);
+		String verifier = "verifier-" + UUID.randomUUID() + "-" + UUID.randomUUID();
+		String challenge = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(
+				java.security.MessageDigest.getInstance("SHA-256")
+						.digest(verifier.getBytes(java.nio.charset.StandardCharsets.US_ASCII)));
+		when(backchannelClient.provision(any())).thenReturn(new BackchannelResponse(UUID.randomUUID(),
+				UUID.randomUUID(), UUID.randomUUID(), "https://dc.example/Subscription/1",
+				"https://dc.example/Authorization/1", "https://dc.example/RetailCustomer/42/Customer/1"));
+
+		// 1) Outbound: the Third Party's request, with its S256 challenge, is delegated with the challenge.
+		java.net.URI authorizeUri = org.springframework.web.util.UriComponentsBuilder.fromPath("/oauth2/authorize")
+				.queryParam("response_type", "code")
+				.queryParam("client_id", clientId)
+				.queryParam("scope", SCOPE)
+				.queryParam("redirect_uri", REDIRECT_URI)
+				.queryParam("state", tpState)
+				.queryParam("code_challenge", challenge)
+				.queryParam("code_challenge_method", "S256")
+				.encode()
+				.build()
+				.toUri();
+		String delegateUrl = mockMvc.perform(get(authorizeUri).accept(org.springframework.http.MediaType.TEXT_HTML))
+				.andExpect(status().is3xxRedirection())
+				.andReturn().getResponse().getHeader("Location");
+		assertThat(new String[] {extractQueryParam(delegateUrl, "code_challenge"),
+				extractQueryParam(delegateUrl, "code_challenge_method")})
+				.as("the entry point forwards the challenge to the delegate")
+				.containsExactly(challenge, "S256");
+		mockMvc.perform(get(java.net.URI.create(delegateUrl))).andExpect(status().is3xxRedirection());
+
+		// 2) Return from the DC: /continue replays /oauth2/authorize with the challenge; the code is minted with it.
+		Instant now = Instant.now();
+		String handoff = codec.encode(SignedHandoff.Return.of(tpState, now, now.plusSeconds(300),
+				UUID.randomUUID().toString().replace("-", ""), CUSTOMER_ID, List.of(UUID.randomUUID()),
+				SignedHandoff.Return.CONSENT_ALLOW, SCOPE));
+		MvcResult continueResult = mockMvc.perform(get("/oauth2/authorize/continue").param("handoff", handoff))
+				.andExpect(status().is3xxRedirection())
+				.andReturn();
+		String replay = continueResult.getResponse().getHeader("Location");
+		assertThat(extractQueryParam(replay, "code_challenge")).as("the replay carries the challenge").isEqualTo(challenge);
+		MockHttpSession session = (MockHttpSession) continueResult.getRequest().getSession(false);
+		String callback = mockMvc.perform(get(java.net.URI.create(replay)).session(session))
+				.andExpect(status().is3xxRedirection())
+				.andReturn().getResponse().getHeader("Location");
+		assertThat(callback).startsWith(REDIRECT_URI).contains("code=", "state=" + tpState);
+
+		// 3) The token endpoint checks the code_verifier against the challenge the code was minted with.
+		org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder token = post("/oauth2/token")
+				.with(httpBasic(clientId, clientSecret))
+				.param("grant_type", "authorization_code")
+				.param("code", extractQueryParam(callback, "code"))
+				.param("redirect_uri", REDIRECT_URI);
+		switch (verifierCase) {
+			case "matching" -> token.param("code_verifier", verifier);
+			case "wrong" -> token.param("code_verifier", verifier + "-not-it");
+			default -> { }
+		}
+		org.springframework.test.web.servlet.ResultActions result = mockMvc.perform(token)
+				.andExpect(status().is(expectedStatus));
+		if (expectedStatus == 200) {
+			result.andExpect(jsonPath("$.access_token").isNotEmpty());
+		} else {
+			result.andExpect(jsonPath("$.error").value("invalid_grant"));
+		}
+	}
+
+	@Test
+	@DisplayName("PKCE downgrade (#274, RFC 9700 4.8.2): a code_verifier for a code minted without a challenge is refused")
+	void codeVerifierWithoutChallengeIsRefused() throws Exception {
+		String suffix = UUID.randomUUID().toString().substring(0, 8);
+		String clientId = "pr-274-dg-" + suffix;
+		String clientSecret = "pr-274-dg-secret-" + suffix;
+		String correlationId = "corr-274-dg-" + suffix;
+		registerClient(clientId, clientSecret);
+		delegationStateService.save(correlationId, clientId, REDIRECT_URI, "tp-state-" + suffix, SCOPE);
+
+		String code = obtainAuthorizationCode(correlationId, UUID.randomUUID());
+
+		mockMvc.perform(post("/oauth2/token")
+						.with(httpBasic(clientId, clientSecret))
+						.param("grant_type", "authorization_code")
+						.param("code", code)
+						.param("redirect_uri", REDIRECT_URI)
+						.param("code_verifier", "verifier-" + UUID.randomUUID() + "-" + UUID.randomUUID()))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error").value("invalid_grant"));
+	}
+
+	@Test
+	@DisplayName("PKCE support is advertised (#274, RFC 9700 2.1.1): code_challenge_methods_supported is S256")
+	void metadataAdvertisesPkce() throws Exception {
+		mockMvc.perform(get("/.well-known/oauth-authorization-server"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.code_challenge_methods_supported").value(
+						org.hamcrest.Matchers.contains("S256")));
+	}
+
+	/**
 	 * A customer who has just authorized one registration starts another in the same browser session
 	 * (#299: a different scope; #276: the same scope again). The second request must be delegated to the
 	 * Data Custodian like the first, through the entry point and carrying the Third Party's own
@@ -537,14 +649,14 @@ class AuthCodeFlowOrchestrationIntegrationTest extends AbstractAuthserverIntegra
 	}
 
 	@Test
-	@DisplayName("seeded third_party client has PKCE disabled (ESPI does not support PKCE)")
+	@DisplayName("seeded third_party client does not require PKCE (REQ.21 does not; a challenge sent is enforced, #274)")
 	void seededThirdPartyClientDoesNotRequireProofKey() {
 		RegisteredClient thirdParty = registeredClientRepository.findByClientId("third_party");
 		assertThat(thirdParty)
 				.as("default third_party client must be seeded")
 				.isNotNull();
 		assertThat(thirdParty.getClientSettings().isRequireProofKey())
-				.as("ESPI does not support PKCE; the customer-flow client must not require code_challenge")
+				.as("REQ.21 does not require PKCE; the customer-flow client must not require code_challenge")
 				.isFalse();
 	}
 

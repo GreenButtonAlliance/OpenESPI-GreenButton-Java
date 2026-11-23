@@ -61,6 +61,23 @@ The `local` profile listens on `127.0.0.1` only: it seeds published DEV ONLY acc
 `customer`/`customer`) and enables the H2 console. To reach the Third Party from another machine or
 from outside a container, use `dev-mysql` or `dev-postgresql`.
 
+## PKCE: supported, not required by ESPI
+
+**The Third Party supports and uses PKCE (RFC 7636), which the ESPI standard (NAESB REQ.21 v4.1) does not
+require.** REQ.21 never mentions PKCE. Its User Authorization section, REQ.21.6.1.2, calls for "OAuth 2.0, as
+documented in IETF RFC 6749, and applicable IETF RFC updates". RFC 9700 (the OAuth 2.0 Security Best Current
+Practice) updates RFC 6749, and its section 2.1.1 recommends PKCE for confidential clients such as this one.
+
+How the Third Party uses it (#274):
+
+- **Authorization request:** every request to a Data Custodian sends an S256 `code_challenge`; this is Spring
+  Security 7's default.
+- **Code exchange:** the token request sends the matching `code_verifier`.
+- **Data Custodian side:** `openespi-authserver` carries the challenge through the Data Custodian's consent and
+  checks the verifier.
+- **Other Data Custodians:** one whose authorization server does not support PKCE should ignore the extra parameters,
+  as RFC 6749 section 3.1 requires for unrecognized request parameters. One that supports it enforces it.
+
 
 ## IDE Setup
 

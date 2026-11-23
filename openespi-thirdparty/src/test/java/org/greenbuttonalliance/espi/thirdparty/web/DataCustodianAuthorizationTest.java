@@ -217,8 +217,10 @@ class DataCustodianAuthorizationTest {
 						.containsEntry("client_id", "third_party")
 						.containsEntry("response_type", "code")
 						.containsKey("state")
-						// No PKCE until the AS keeps code_challenge through the DC delegation (#274)
-						.doesNotContainKeys("nonce", "code_challenge", "code_challenge_method"))
+						// PKCE (#274): an S256 challenge, which the AS carries through the DC delegation
+						.containsEntry("code_challenge_method", "S256")
+						.containsKey("code_challenge")
+						.doesNotContainKey("nonce"))
 				.satisfies(params -> assertThat(decode(params.get("redirect_uri"))).isEqualTo(TP_BASE + CALLBACK))
 				.satisfies(params -> assertThat(decode(params.get("scope"))).isEqualTo(MONTHLY_SCOPE));
 	}
@@ -256,8 +258,8 @@ class DataCustodianAuthorizationTest {
 				.andReturn();
 
 		assertThat(tokenRequests.get("authorization_code"))
-				.contains("code=the-code", "redirect_uri=" + encode(TP_BASE + CALLBACK))
-				.doesNotContain("code_verifier");
+				// PKCE (#274): the verifier for the challenge sent on the authorization request
+				.contains("code=the-code", "redirect_uri=" + encode(TP_BASE + CALLBACK), "code_verifier=");
 		assertThat(authorizationRepository.findFirstByClientRegistrationIdAndRetailCustomer_UsernameOrderByUpdatedDesc(
 						DataCustodianRegistrations.MONTHLY, CUSTOMER))
 				.hasValueSatisfying(authorization -> assertThat(authorization)

@@ -350,7 +350,7 @@ public class AuthorizationServerConfig {
     /**
      * Wraps Spring's default RFC 7591 metadata&rarr;RegisteredClient converter so that a registered client
      * (already validated by {@link #espiRegistrationValidator}) gets opaque (REFERENCE) access tokens and no
-     * PKCE requirement.
+     * PKCE requirement: PKCE is accepted, not required (#274).
      */
     static Converter<OAuth2ClientRegistration, RegisteredClient> espiRegisteredClientConverter() {
         OAuth2ClientRegistrationRegisteredClientConverter delegate = new OAuth2ClientRegistrationRegisteredClientConverter();
@@ -362,7 +362,9 @@ public class AuthorizationServerConfig {
                             .accessTokenTimeToLive(Duration.ofMinutes(360))
                             .build())
                     .clientSettings(ClientSettings.withSettings(client.getClientSettings().getSettings())
-                            .requireProofKey(false) // ESPI does not use PKCE (see #148)
+                            // PKCE accepted, not required (#274): REQ.21 does not require it; a client that
+                            // sends a code_challenge has it enforced (RFC 9700 2.1.1). See #148.
+                            .requireProofKey(false)
                             .build())
                     .build();
         };
@@ -805,11 +807,11 @@ public class AuthorizationServerConfig {
                     .build())
                 .clientSettings(ClientSettings.builder()
                     .requireAuthorizationConsent(true)
-                    // ESPI does not support PKCE. Spring Authorization Server 7.x requires
-                    // code_challenge for the authorization_code grant unless requireProofKey is
-                    // explicitly false, so the ESPI customer flow (which sends no code_challenge)
-                    // fails with "OAuth 2.0 Parameter: code_challenge" without this. Surfaced by the
-                    // Phase 2.0 end-to-end orchestration test (#148).
+                    // PKCE accepted, not required (#274). REQ.21 v4.1 does not mention PKCE, so an ESPI
+                    // Third Party may send no code_challenge; Spring Authorization Server 7.x would refuse
+                    // it ("OAuth 2.0 Parameter: code_challenge") unless requireProofKey is false (#148).
+                    // A Third Party that does send one has it carried through the DC delegation and its
+                    // code_verifier checked, as RFC 9700 2.1.1 (which updates RFC 6749) requires.
                     .requireProofKey(false)
                     .build())
                 .build();
