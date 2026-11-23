@@ -223,33 +223,6 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/oauth2/clients/{clientId}/metrics:
-    get:
-      tags:
-        - OAuth2 Client Management
-      summary: Get client metrics
-      description: Retrieve usage metrics for a specific client
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: clientId
-          in: path
-          required: true
-          description: Client identifier
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ClientMetricsResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
   # DataCustodian Integration API
   /api/v1/datacustodian/verify-user:
     post:
@@ -762,14 +735,6 @@ components:
         reuseRefreshTokens:
           type: boolean
           default: false
-
-    ClientMetricsResponse:
-      type: object
-      properties:
-        clientId:
-          type: string
-        metrics:
-          $ref: '#/components/schemas/UsageMetrics'
 
     UsageMetrics:
       type: object

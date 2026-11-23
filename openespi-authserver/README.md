@@ -89,7 +89,7 @@ This module provides OAuth2 Authorization Server capabilities as part of the Ope
 ├─────────────────────────────────────────────────────────────┤
 │  ESPI Components:                                           │
 │  • EspiTokenCustomizer         (JWT token enhancement)     │
-│  • ConsentController           (ESPI-aware consent flow)   │
+│  • AuthorizeDelegateController (consent delegated to DC)   │
 │  • OAuthAdminController        (Administrative APIs)       │
 │  • JdbcRegisteredClientRepository (Database-backed clients) │
 └─────────────────────────────────────────────────────────────┘

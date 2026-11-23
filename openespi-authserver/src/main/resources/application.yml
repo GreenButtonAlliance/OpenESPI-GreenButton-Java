@@ -32,7 +32,7 @@ spring:
           token-revocation-uri: /oauth2/revoke
           token-introspection-uri: /oauth2/introspect
   
-  # Thymeleaf Configuration for OAuth2 consent pages
+  # Thymeleaf configuration for the AS's own pages (login, admin). Consent is the Data Custodian's (#234).
   thymeleaf:
     cache: false
     prefix: classpath:/templates/
