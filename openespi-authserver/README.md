@@ -244,7 +244,9 @@ sends a `code_challenge`.
 What this server does:
 
 - **Clients are not required to use PKCE.** `third_party`, RFC 7591 registrations and the client-management API all
-  default to `requireProofKey(false)`, so an ESPI Third Party without PKCE still works.
+  default to `requireProofKey(false)`, so an ESPI Third Party without PKCE still works. The exception is a public
+  client: one created through the client-management API with `none` among its authentication methods always
+  requires PKCE (RFC 9700 section 2.1.1), whatever `require_proof_key` says.
 - **A `code_challenge` (S256) is enforced.** The challenge is carried through the Data Custodian delegation
   (`/authorize/delegate` → DC → `/oauth2/authorize/continue` → replayed `/oauth2/authorize`). The code is minted with
   it, and `/oauth2/token` requires the matching `code_verifier`.

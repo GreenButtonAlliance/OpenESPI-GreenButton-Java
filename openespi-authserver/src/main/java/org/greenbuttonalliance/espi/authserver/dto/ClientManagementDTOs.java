@@ -73,6 +73,7 @@ public class ClientManagementDTOs {
 
         // false by default, like the seeded and RFC 7591 clients (#274): REQ.21 does not require PKCE, and a
         // client that sends a code_challenge has it enforced anyway. true refuses requests without one.
+        // Ignored for a public client (authentication methods include "none"): it always requires PKCE.
         @JsonProperty("require_proof_key")
         private boolean requireProofKey = false;
 

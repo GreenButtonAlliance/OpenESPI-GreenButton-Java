@@ -722,7 +722,8 @@ components:
           default: false
           description: >-
             Refuse authorization requests without a PKCE code_challenge. REQ.21 does not require PKCE;
-            a code_challenge a client sends is enforced either way (#274).
+            a code_challenge a client sends is enforced either way (#274). Ignored for a public client
+            (authentication methods include none), which always requires PKCE (RFC 9700 2.1.1).
 
     TokenSettings:
       type: object

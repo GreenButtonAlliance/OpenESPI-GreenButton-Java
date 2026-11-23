@@ -32,7 +32,8 @@ class OAuth2ClientManagementControllerProofKeyTest {
 				Arguments.of("confidential, asked for", List.of("client_secret_basic"), true, true),
 				Arguments.of("no methods given (client_secret_basic)", null, false, false),
 				Arguments.of("public, not asked for", List.of("none"), false, true),
-				Arguments.of("public, asked for", List.of("none"), true, true));
+				Arguments.of("public, asked for", List.of("none"), true, true),
+				Arguments.of("secret and none, not asked for", List.of("client_secret_basic", "none"), false, true));
 	}
 
 	@ParameterizedTest(name = "{0} -> requireProofKey {3}")
