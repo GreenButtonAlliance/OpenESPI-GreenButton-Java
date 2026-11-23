@@ -19,6 +19,7 @@ package org.greenbuttonalliance.espi.authserver.web.delegate;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.oauth2.core.endpoint.PkceParameterNames;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -42,7 +43,10 @@ public class DelegateAuthorizationEntryPoint extends LoginUrlAuthenticationEntry
 	static final String DELEGATE_PATH = "/authorize/delegate";
 
 	/** The authorization request parameters the delegate reads, in the order they are forwarded. */
-	static final List<String> FORWARDED_PARAMETERS = List.of("client_id", "scope", "state", "redirect_uri");
+	static final List<String> FORWARDED_PARAMETERS = List.of("client_id", "scope", "state", "redirect_uri",
+			// #274: a Third Party's PKCE challenge (RFC 7636), carried to the replayed /oauth2/authorize. REQ.21
+			// does not require PKCE; RFC 9700 2.1.1 (which updates RFC 6749) has the AS enforce it when sent.
+			PkceParameterNames.CODE_CHALLENGE, PkceParameterNames.CODE_CHALLENGE_METHOD);
 
 	public DelegateAuthorizationEntryPoint() {
 		super(DELEGATE_PATH);

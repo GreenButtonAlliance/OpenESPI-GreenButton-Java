@@ -29,7 +29,6 @@ import org.springframework.security.oauth2.client.web.DefaultOAuth2Authorization
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
-import org.springframework.security.oauth2.core.endpoint.PkceParameterNames;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
@@ -61,17 +60,9 @@ public class TpCustomerAuthorizationRequestResolver implements OAuth2Authorizati
 	public TpCustomerAuthorizationRequestResolver(ClientRegistrationRepository clientRegistrationRepository) {
 		this.clientRegistrationRepository = clientRegistrationRepository;
 		this.delegate = new DefaultOAuth2AuthorizationRequestResolver(clientRegistrationRepository, AUTHORIZATION_BASE_URI);
-		// No PKCE for now. Spring Security 7 adds it by default (a ClientRegistration's requireProofKey
-		// defaults to true for authorization_code), but the AS replays /oauth2/authorize after the Data
-		// Custodian's consent without code_challenge, so the code exchange then fails with invalid_grant;
-		// the AS registers third_party with requireProofKey(false) ("ESPI does not use PKCE", #148).
-		// Restore PKCE once the AS carries code_challenge through the delegation (#274).
-		this.delegate.setAuthorizationRequestCustomizer(builder -> builder
-				.attributes(attributes -> attributes.remove(PkceParameterNames.CODE_VERIFIER))
-				.additionalParameters(parameters -> {
-					parameters.remove(PkceParameterNames.CODE_CHALLENGE);
-					parameters.remove(PkceParameterNames.CODE_CHALLENGE_METHOD);
-				}));
+		// PKCE (#274): Spring Security 7 sends an S256 code_challenge by default and the code_verifier at the
+		// token endpoint. REQ.21 does not require PKCE, but it protects the code (RFC 9700 2.1.1), and the AS
+		// carries the challenge through the Data Custodian's consent and checks the verifier.
 	}
 
 	@Override

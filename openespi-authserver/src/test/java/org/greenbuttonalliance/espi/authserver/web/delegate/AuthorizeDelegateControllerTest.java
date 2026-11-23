@@ -118,13 +118,57 @@ class AuthorizeDelegateControllerTest {
 		assertThat(saved).isNotNull()
 				.extracting(DelegationStateService.Entry::clientId,
 						DelegationStateService.Entry::redirectUri,
-						DelegationStateService.Entry::tpState)
-				.containsExactly("tp-1", "https://tp.example/cb", "tp-state-abc");
+						DelegationStateService.Entry::tpState,
+						DelegationStateService.Entry::proofKey)
+				.containsExactly("tp-1", "https://tp.example/cb", "tp-state-abc", null);
 
 		// Builder was called with the matching correlation id
 		ArgumentCaptor<String> cidCap = ArgumentCaptor.forClass(String.class);
 		verify(handoffBuilder).buildSignedToken(eq("tp-1"), eq("FB_1;FB_4_5"), cidCap.capture());
 		assertThat(cidCap.getValue()).isEqualTo("tp-state-abc");
+	}
+
+	@Test
+	@DisplayName("PKCE (#274): the Third Party's code_challenge and method are saved for the replay")
+	void delegateSavesTheThirdPartysProofKey() throws Exception {
+		mockMvc.perform(get("/authorize/delegate")
+						.param("scope", "FB_1;FB_4_5")
+						.param("client_id", "tp-1")
+						.param("state", "tp-state-pkce")
+						.param("redirect_uri", "https://tp.example/cb")
+						.param("code_challenge", "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM")
+						.param("code_challenge_method", "S256"))
+				.andExpect(status().is3xxRedirection());
+
+		assertThat(delegationStateService.consume("tp-state-pkce"))
+				.isNotNull()
+				.extracting(DelegationStateService.Entry::proofKey)
+				.isEqualTo(new DelegationStateService.ProofKey("E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM", "S256"));
+	}
+
+	@Test
+	@DisplayName("PKCE on the consent-page entry (#274): the challenge comes from the pending authorization's request")
+	void consentPageEntryUsesTheThirdPartysProofKey() throws Exception {
+		OAuth2Authorization withoutChallenge = pendingConsent("tp-2", "spring-consent-state", "tp-state-xyz",
+				"https://tp2.example/daily-cb");
+		OAuth2AuthorizationRequest original = withoutChallenge.getAttribute(OAuth2AuthorizationRequest.class.getName());
+		OAuth2Authorization pending = OAuth2Authorization.from(withoutChallenge)
+				.attribute(OAuth2AuthorizationRequest.class.getName(), OAuth2AuthorizationRequest.from(original)
+						.additionalParameters(java.util.Map.of(
+								"code_challenge", "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
+								"code_challenge_method", "S256"))
+						.build())
+				.build();
+		when(authorizationService.findByToken("spring-consent-state", new OAuth2TokenType(OAuth2ParameterNames.STATE)))
+				.thenReturn(pending);
+		signedIn("42");
+
+		consentPageRedirect("spring-consent-state");
+
+		assertThat(delegationStateService.consume("tp-state-xyz"))
+				.isNotNull()
+				.extracting(DelegationStateService.Entry::proofKey)
+				.isEqualTo(new DelegationStateService.ProofKey("E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM", "S256"));
 	}
 
 	/** A pending authorization as Spring AS saves it before redirecting to the consent page. */

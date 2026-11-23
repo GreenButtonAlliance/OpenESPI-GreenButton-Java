@@ -155,6 +155,23 @@ class AuthorizeContinueControllerTest {
 		}
 
 		@Test
+		@DisplayName("PKCE (#274): the Third Party's code_challenge and method are replayed to /oauth2/authorize")
+		void allowReplaysTheThirdPartysProofKey() throws Exception {
+			String cid = "corr-allow-pkce";
+			String challenge = "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM";
+			delegationStateService.save(cid, "tp-1", "https://tp.example/cb", "tp-state-1", ESPI_SCOPE, null,
+					DelegationStateService.ProofKey.of(challenge, "S256"));
+			when(registeredClientRepository.findByClientId("tp-1")).thenReturn(client(ESPI_SCOPE));
+
+			mockMvc.perform(get("/oauth2/authorize/continue").param("handoff", codec.encode(allowReturn(cid, ESPI_SCOPE))))
+					.andExpect(status().is3xxRedirection())
+					.andExpect(redirectedUrl(
+							"/oauth2/authorize?response_type=code&client_id=tp-1&redirect_uri=https://tp.example/cb"
+									+ "&scope=FB%3D4_5_15;IntervalDuration%3D3600;BlockDuration%3Dmonthly;HistoryLength%3D34128000"
+									+ "&state=tp-state-1&code_challenge=" + challenge + "&code_challenge_method=S256"));
+		}
+
+		@Test
 		@DisplayName("space-separated scopes: each ESPI scope string is stored whole as its own consent scope")
 		void spaceSeparatedScopesAreSeparateConsentScopes() throws Exception {
 			String cid = "corr-allow-3";

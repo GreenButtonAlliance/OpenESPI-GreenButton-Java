@@ -719,7 +719,13 @@ components:
           default: true
         requireProofKey:
           type: boolean
-          default: true
+          default: false
+          description: >-
+            Refuse authorization requests without a PKCE code_challenge. REQ.21 does not require PKCE;
+            a code_challenge a client sends is enforced either way (#274). The server also accepts the
+            authentication method none, which this schema does not list; a client with it is public and
+            always requires PKCE (RFC 9700 2.1.1), whatever this says. This schema does not yet match the
+            server's request fields (see #332).
 
     TokenSettings:
       type: object

@@ -61,8 +61,17 @@ public class DelegationStateService {
 	 */
 	public void save(String correlationId, String clientId, String redirectUri, String tpState,
 					 String requestedScope, String pendingAuthorizationId) {
+		save(correlationId, clientId, redirectUri, tpState, requestedScope, pendingAuthorizationId, null);
+	}
+
+	/**
+	 * As {@link #save(String, String, String, String, String, String)}, also keeping the Third Party's PKCE
+	 * challenge (#274), or null when it sent none.
+	 */
+	public void save(String correlationId, String clientId, String redirectUri, String tpState,
+					 String requestedScope, String pendingAuthorizationId, ProofKey proofKey) {
 		states.put(correlationId, new Entry(clientId, redirectUri, tpState, requestedScope,
-				pendingAuthorizationId, Instant.now().plus(TTL)));
+				pendingAuthorizationId, proofKey, Instant.now().plus(TTL)));
 		// Lazy reaping: drop expired entries on each save call.
 		Instant now = Instant.now();
 		states.entrySet().removeIf(e -> e.getValue().expiresAt.isBefore(now));
@@ -102,8 +111,29 @@ public class DelegationStateService {
 	 *                    must narrow it, never widen it (#211)
 	 * @param pendingAuthorizationId the id of the pending authorization Spring AS saved before its
 	 *                    consent-page redirect, when the delegation came from there (#299); otherwise null
+	 * @param proofKey    the Third Party's PKCE challenge from its original request (#274); null when it sent
+	 *                    none
 	 * @param expiresAt   when this entry should be considered stale
 	 */
 	public record Entry(String clientId, String redirectUri, String tpState, String requestedScope,
-						String pendingAuthorizationId, Instant expiresAt) {}
+						String pendingAuthorizationId, ProofKey proofKey, Instant expiresAt) {}
+
+	/**
+	 * A Third Party's PKCE challenge (RFC 7636) from its original {@code /oauth2/authorize} request, replayed
+	 * verbatim after the Data Custodian's consent so the code is minted with it (#274). REQ.21 does not require
+	 * PKCE; RFC 9700 2.1.1, which updates RFC 6749, has an AS support it and enforce it when a client sends it.
+	 *
+	 * @param codeChallenge       the {@code code_challenge}
+	 * @param codeChallengeMethod the {@code code_challenge_method}, or null when the request had none (Spring AS
+	 *                            validates the pair, on the original request and again on the replay)
+	 */
+	public record ProofKey(String codeChallenge, String codeChallengeMethod) {
+
+		/** The proof key, or null when there is no {@code code_challenge}. */
+		public static ProofKey of(String codeChallenge, String codeChallengeMethod) {
+			return codeChallenge == null || codeChallenge.isBlank()
+					? null
+					: new ProofKey(codeChallenge, codeChallengeMethod);
+		}
+	}
 }

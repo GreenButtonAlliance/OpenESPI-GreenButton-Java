@@ -234,6 +234,20 @@ public class OAuth2ClientManagementController {
     }
 
     /**
+     * Whether a new client must send PKCE. A confidential client may (#274: accepted, not required),
+     * but a public client ({@code none} authentication) always must: RFC 9700 section 2.1.1, and Spring
+     * Authorization Server authenticates a public client at the token endpoint only by its code_verifier.
+     * A client whose methods include {@code none} next to a secret method counts as public: PKCE is a
+     * per-client setting, and such a client may authenticate as public, so it must always send PKCE.
+     */
+    static boolean requiresProofKey(CreateClientRequest request) {
+        List<String> methods = request.getAuthenticationMethods();
+        boolean publicClient = methods != null
+                && methods.contains(ClientAuthenticationMethod.NONE.getValue());
+        return publicClient || request.isRequireProofKey();
+    }
+
+    /**
      * Create new OAuth2 client with ESPI 4.0 compliance
      * 
      * POST /api/v1/oauth2/clients
@@ -303,7 +317,7 @@ public class OAuth2ClientManagementController {
 
             // Configure client settings
             ClientSettings.Builder clientSettingsBuilder = ClientSettings.builder()
-                    .requireProofKey(request.isRequireProofKey())
+                    .requireProofKey(requiresProofKey(request))
                     .requireAuthorizationConsent(request.isRequireAuthorizationConsent());
             clientBuilder.clientSettings(clientSettingsBuilder.build());
 
