@@ -542,6 +542,10 @@ public class AuthorizationServerConfig {
                 .csrf(csrf -> csrf.ignoringRequestMatchers(endpointsMatcher))
                 .with(authorizationServerConfigurer, Customizer.withDefaults())
                 .exceptionHandling(exceptions -> exceptions
+                        // Registered first, so it is also the fallback for a request neither mapping matches:
+                        // an OAuth error rather than a login redirect. Every other endpoint on this chain
+                        // (metadata) needs no authentication, and the device authorization and PAR endpoints,
+                        // which would also authenticate clients, are not enabled.
                         .defaultAuthenticationEntryPointFor(clientChallenge, clientEndpoints)
                         // The customer's browser at the authorization endpoint: the same delegate endpoint is
                         // the login page. A static login URL would arrive without parameters (#232), so the

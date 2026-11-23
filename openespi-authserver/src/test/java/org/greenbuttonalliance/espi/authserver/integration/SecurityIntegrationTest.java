@@ -141,7 +141,8 @@ class SecurityIntegrationTest extends AbstractAuthserverIntegrationTest {
 
         static Stream<Arguments> unauthenticatedClientCalls() {
             return Stream.of("/oauth2/token", "/oauth2/introspect", "/oauth2/revoke")
-                    .flatMap(path -> Stream.of((String) null, "*/*", MediaType.TEXT_HTML_VALUE)
+                    .flatMap(path -> Stream.of((String) null, "*/*", MediaType.APPLICATION_JSON_VALUE,
+                                    MediaType.TEXT_HTML_VALUE)
                             .map(accept -> Arguments.of(path, accept)));
         }
 
