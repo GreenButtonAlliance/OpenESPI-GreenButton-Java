@@ -164,9 +164,12 @@ public class SecurityConfiguration {
                     "/error",
                     "/api-docs/**",
                     "/swagger-ui/**",
-                    "/swagger-ui.html",
-                    "/h2-console/**"
+                    "/swagger-ui.html"
                 ).permitAll()
+
+                // #271: no H2 console. The DC does not ship spring-boot-h2console, and if it ever did, a
+                // console that runs any SQL against customer data must not be reachable through this chain.
+                .requestMatchers("/h2-console/**").denyAll()
 
                 // --- Admin-only resources (OAuth2 metadata, not energy/PII) ---
                 .requestMatchers(HttpMethod.GET, "/espi/1_1/resource/ApplicationInformation/**")

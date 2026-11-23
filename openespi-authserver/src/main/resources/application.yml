@@ -5,6 +5,13 @@ server:
   port: 9999
   servlet:
     context-path: /
+    session:
+      cookie:
+        # Every profile, not left to browser defaults: cross-site POSTs carry no session cookie.
+        # Not Strict (#271): the Data Custodian sends the customer back to /oauth2/authorize/continue
+        # (a cross-site top-level GET), which signs the customer in and redirects to /oauth2/authorize.
+        # A Strict cookie is not sent in that redirect chain, so the AS delegates to the DC again, in a loop.
+        same-site: lax
   ssl:
     enabled: false
 

@@ -5,6 +5,14 @@ server:
   port: ${SERVER_PORT:8443}
   servlet:
     context-path: /
+    # Session Configuration - Secure cookies (one server: block: duplicate YAML keys stop the profile loading, #271)
+    session:
+      cookie:
+        secure: true
+        http-only: true
+        # Not strict (#271): the customer's return from the Data Custodian is cross-site. See application.yml.
+        same-site: lax
+      timeout: ${SESSION_TIMEOUT:PT30M}
   # SSL Configuration for HTTPS - NAESB ESPI 4.0 Compliance (TLS 1.3 Only)
   ssl:
     enabled: ${SSL_ENABLED:true}
@@ -150,16 +158,6 @@ espi:
     allowed-origins: ${ALLOWED_ORIGINS:https://*.greenbuttonalliance.org,https://localhost:*}
     max-redirect-uris: ${MAX_REDIRECT_URIS:5}
     require-https-redirect-uris: true
-
-# Session Configuration - Secure cookies
-server:
-  servlet:
-    session:
-      cookie:
-        secure: true
-        http-only: true
-        same-site: strict
-      timeout: ${SESSION_TIMEOUT:PT30M}
 
 # Application Information
 info:

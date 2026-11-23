@@ -97,7 +97,8 @@ server:
         name: ESPI_SESSION
         http-only: true
         secure: false  # Set to true when using HTTPS
-        same-site: strict
+        # Not strict (#271): the customer's return from the Data Custodian is cross-site. See application.yml.
+        same-site: lax
         max-age: 1800
   shutdown: graceful
   
@@ -215,9 +216,9 @@ espi:
       default-lock-duration-minutes: 60
       enable-automatic-cleanup: true
       enable-security-monitoring: true
-      
-# External URLs (for production deployment)
-espi:
+
+  # External URLs (for production deployment). Part of the one espi: block: duplicate YAML keys
+  # stop the profile loading (#271).
   external-urls:
     authorization-server: ${AUTHORIZATION_SERVER_URL:http://localhost:8080}
     data-custodian: ${DATACUSTODIAN_URL:http://localhost:8082}

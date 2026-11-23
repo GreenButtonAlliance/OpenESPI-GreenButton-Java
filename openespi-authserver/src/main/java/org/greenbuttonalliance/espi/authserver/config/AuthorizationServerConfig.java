@@ -690,6 +690,10 @@ public class AuthorizationServerConfig {
                                 "/authorize/delegate",
                                 "/oauth2/authorize/continue"
                         ).permitAll()
+                        // #271: no H2 console. The AS does not ship spring-boot-h2console, and if it ever
+                        // did, a console that runs any SQL against client secrets and tokens must not be
+                        // reachable by any session, admin or customer.
+                        .requestMatchers("/h2-console/**").denyAll()
                         // GHSA-mh65-6r98-p6q8: the admin APIs must never be reachable by an
                         // arbitrary authenticated session (e.g. the ROLE_CUSTOMER session written
                         // by AuthorizeContinueController). URL-level rule mirrors the controllers'
