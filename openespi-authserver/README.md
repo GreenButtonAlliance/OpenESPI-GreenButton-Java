@@ -77,7 +77,7 @@ This module provides OAuth2 Authorization Server capabilities as part of the Ope
 │  • /oauth2/authorize  (Authorization endpoint)              │
 │  • /oauth2/token      (Token endpoint)                      │
 │  • /oauth2/jwks       (JSON Web Key Set)                    │
-│  • /oauth2/consent    (User consent page)                   │
+│  • /authorize/delegate (customer login + consent at the DC) │
 │                                                             │
 │  Client Registration:                                       │
 │  • /oauth2/register            (RFC 7591 client registration)│
@@ -288,8 +288,8 @@ scope=DataCustodian_Admin_Access
 
 ### ESPI Custom Endpoints
 
-- `GET /oauth2/consent` - User consent page
-- `POST /oauth2/consent` - Process consent
+- `GET /authorize/delegate` - Delegates the customer's login and per-Function-Block consent to the Data Custodian (signed handoff); the AS has no consent page of its own (#234)
+- `GET /oauth2/authorize/continue` - Receives the Data Custodian's signed return handoff and resumes the authorization request
 
 ### Administrative APIs
 

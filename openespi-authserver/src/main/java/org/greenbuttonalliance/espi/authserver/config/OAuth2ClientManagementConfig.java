@@ -23,7 +23,6 @@ package org.greenbuttonalliance.espi.authserver.config;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.annotation.Validated;
@@ -36,7 +35,6 @@ import jakarta.validation.constraints.NotNull;
  * Configuration for OAuth2 Client Management features
  * 
  * Enables and configures:
- * - Scheduled tasks for metrics calculation
  * - Password encoding for client secrets
  * - Client management security settings
  * - Rate limiting and session management defaults
@@ -46,7 +44,6 @@ import jakarta.validation.constraints.NotNull;
  * @since Spring Boot 3.5
  */
 @Configuration
-@EnableScheduling
 @ConfigurationProperties(prefix = "espi.oauth2.client-management")
 @Validated
 public class OAuth2ClientManagementConfig {
@@ -71,12 +68,6 @@ public class OAuth2ClientManagementConfig {
     @Max(43200) // 30 days in minutes
     private Integer defaultLockDurationMinutes = 60;
 
-    @NotNull
-    @Min(1)
-    @Max(3650) // 10 years
-    private Integer metricsRetentionDays = 365;
-
-    private boolean enableAutomaticMetricsCalculation = true;
     private boolean enableAutomaticCleanup = true;
     private boolean enableSecurityMonitoring = true;
 
@@ -127,22 +118,6 @@ public class OAuth2ClientManagementConfig {
 
     public void setDefaultLockDurationMinutes(Integer defaultLockDurationMinutes) {
         this.defaultLockDurationMinutes = defaultLockDurationMinutes;
-    }
-
-    public Integer getMetricsRetentionDays() {
-        return metricsRetentionDays;
-    }
-
-    public void setMetricsRetentionDays(Integer metricsRetentionDays) {
-        this.metricsRetentionDays = metricsRetentionDays;
-    }
-
-    public boolean isEnableAutomaticMetricsCalculation() {
-        return enableAutomaticMetricsCalculation;
-    }
-
-    public void setEnableAutomaticMetricsCalculation(boolean enableAutomaticMetricsCalculation) {
-        this.enableAutomaticMetricsCalculation = enableAutomaticMetricsCalculation;
     }
 
     public boolean isEnableAutomaticCleanup() {
