@@ -30,7 +30,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.greenbuttonalliance.espi.authserver.service.ClientMetricsService;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
@@ -63,7 +62,6 @@ import java.util.stream.Collectors;
  * Provides comprehensive CRUD operations for OAuth2 client management with ESPI 4.0 compliance:
  * - RESTful client management (GET, POST, PUT, DELETE)
  * - Bulk operations for enterprise deployments
- * - Client metrics and usage analytics
  * - NAESB ESPI 4.0 specific features
  * - Security level management and certificate handling
  * - Rate limiting and session management
@@ -75,7 +73,6 @@ import java.util.stream.Collectors;
  * - PUT /api/v1/oauth2/clients/{clientId}: Update client
  * - DELETE /api/v1/oauth2/clients/{clientId}: Delete client
  * - PUT /api/v1/oauth2/clients/{clientId}/status: Update client status
- * - GET /api/v1/oauth2/clients/{clientId}/metrics: Get client metrics
  * - POST /api/v1/oauth2/clients/bulk: Bulk operations
  * 
  * @author Green Button Alliance
@@ -93,7 +90,6 @@ public class OAuth2ClientManagementController {
     private final RegisteredClientRepository registeredClientRepository;
     private final JdbcTemplate jdbcTemplate;
     private final PasswordEncoder passwordEncoder;
-    private final ClientMetricsService clientMetricsService;
     private final SecureRandom secureRandom = new SecureRandom();
 
     // ESPI 4.0 compliant scopes. HistoryLength is in seconds (REQ.21.6.1.2.1):
@@ -114,12 +110,10 @@ public class OAuth2ClientManagementController {
     public OAuth2ClientManagementController(
             RegisteredClientRepository registeredClientRepository,
             JdbcTemplate jdbcTemplate,
-            PasswordEncoder passwordEncoder,
-            ClientMetricsService clientMetricsService) {
+            PasswordEncoder passwordEncoder) {
         this.registeredClientRepository = registeredClientRepository;
         this.jdbcTemplate = jdbcTemplate;
         this.passwordEncoder = passwordEncoder;
-        this.clientMetricsService = clientMetricsService;
     }
 
     /**
@@ -506,64 +500,6 @@ public class OAuth2ClientManagementController {
     }
 
     /**
-     * Get client metrics and usage analytics
-     * 
-     * GET /api/v1/oauth2/clients/{clientId}/metrics
-     */
-    @GetMapping("/{clientId}/metrics")
-    public ResponseEntity<?> getClientMetrics(
-            @PathVariable @NotBlank String clientId,
-            @RequestParam(defaultValue = "30") int days) {
-        
-        logger.debug("Getting metrics for client: {} (last {} days)", clientId, days);
-
-        try {
-            // Get recent metrics
-            String sql = """
-                SELECT metric_date, total_requests, successful_requests, failed_requests,
-                       total_tokens_issued, avg_response_time_ms, unique_users_served,
-                       espi_data_requests, consent_grants, consent_withdrawals
-                FROM oauth2_client_metrics 
-                WHERE client_id = ? AND metric_date >= CURRENT_DATE - INTERVAL ? DAY
-                ORDER BY metric_date DESC
-                """;
-
-            List<ClientMetrics> metrics = jdbcTemplate.query(sql, 
-                new Object[]{clientId, days},
-                (rs, rowNum) -> {
-                    ClientMetrics metric = new ClientMetrics();
-                    metric.setDate(rs.getDate("metric_date").toLocalDate());
-                    metric.setTotalRequests(rs.getLong("total_requests"));
-                    metric.setSuccessfulRequests(rs.getLong("successful_requests"));
-                    metric.setFailedRequests(rs.getLong("failed_requests"));
-                    metric.setTotalTokensIssued(rs.getLong("total_tokens_issued"));
-                    metric.setAvgResponseTimeMs(rs.getDouble("avg_response_time_ms"));
-                    metric.setUniqueUsersServed(rs.getInt("unique_users_served"));
-                    metric.setEspiDataRequests(rs.getLong("espi_data_requests"));
-                    metric.setConsentGrants(rs.getInt("consent_grants"));
-                    metric.setConsentWithdrawals(rs.getInt("consent_withdrawals"));
-                    return metric;
-                });
-
-            // Calculate summary statistics
-            ClientMetricsSummary summary = calculateMetricsSummary(metrics);
-
-            ClientMetricsResponse response = new ClientMetricsResponse();
-            response.setClientId(clientId);
-            response.setPeriodDays(days);
-            response.setSummary(summary);
-            response.setDailyMetrics(metrics);
-
-            return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
-            logger.error("Error getting client metrics", e);
-            return ResponseEntity.internalServerError()
-                    .body(new ErrorResponse("server_error", "Failed to retrieve client metrics"));
-        }
-    }
-
-    /**
      * Bulk operations for enterprise client management
      * 
      * POST /api/v1/oauth2/clients/bulk
@@ -781,26 +717,6 @@ public class OAuth2ClientManagementController {
         }
 
         return details;
-    }
-
-    private ClientMetricsSummary calculateMetricsSummary(List<ClientMetrics> metrics) {
-        if (metrics.isEmpty()) {
-            return new ClientMetricsSummary();
-        }
-
-        ClientMetricsSummary summary = new ClientMetricsSummary();
-        summary.setTotalRequests(metrics.stream().mapToLong(ClientMetrics::getTotalRequests).sum());
-        summary.setTotalSuccessfulRequests(metrics.stream().mapToLong(ClientMetrics::getSuccessfulRequests).sum());
-        summary.setTotalFailedRequests(metrics.stream().mapToLong(ClientMetrics::getFailedRequests).sum());
-        summary.setTotalTokensIssued(metrics.stream().mapToLong(ClientMetrics::getTotalTokensIssued).sum());
-        summary.setAverageResponseTime(metrics.stream().mapToDouble(ClientMetrics::getAvgResponseTimeMs).average().orElse(0.0));
-        summary.setTotalUniqueUsers(metrics.stream().mapToInt(ClientMetrics::getUniqueUsersServed).max().orElse(0));
-        
-        if (summary.getTotalRequests() > 0) {
-            summary.setSuccessRate((double) summary.getTotalSuccessfulRequests() / summary.getTotalRequests() * 100);
-        }
-
-        return summary;
     }
 
     private void suspendClient(String clientId, String reason) {

@@ -85,7 +85,6 @@ spring:
     cache-names:
       - clientCertificates
       - userInfo
-      - clientMetrics
       
 # Server Configuration
 server:
@@ -214,8 +213,6 @@ espi:
       default-max-concurrent-sessions: 5
       max-failures-before-lock: 10
       default-lock-duration-minutes: 60
-      metrics-retention-days: 365
-      enable-automatic-metrics-calculation: true
       enable-automatic-cleanup: true
       enable-security-monitoring: true
       

@@ -57,7 +57,7 @@ This module provides OAuth2 Authorization Server capabilities as part of the Ope
 #### 🛠️ **Enterprise Management**
 - **OAuth2 Client Management API**: Comprehensive CRUD operations with pagination
 - **DataCustodian Integration**: Seamless integration with OpenESPI-DataCustodian-java
-- **Admin APIs**: Token and client management with metrics and analytics
+- **Admin APIs**: Token and client management (client metrics are planned in #322)
 - **Database-Backed Storage**: JDBC repository with MySQL, PostgreSQL, H2 support
 - **Flyway Migrations**: Database schema management with ESPI 4.0 enhancements
 
@@ -77,7 +77,7 @@ This module provides OAuth2 Authorization Server capabilities as part of the Ope
 │  • /oauth2/authorize  (Authorization endpoint)              │
 │  • /oauth2/token      (Token endpoint)                      │
 │  • /oauth2/jwks       (JSON Web Key Set)                    │
-│  • /oauth2/consent    (User consent page)                   │
+│  • /authorize/delegate (customer login + consent at the DC) │
 │                                                             │
 │  Client Registration:                                       │
 │  • /oauth2/register            (RFC 7591 client registration)│
@@ -89,7 +89,7 @@ This module provides OAuth2 Authorization Server capabilities as part of the Ope
 ├─────────────────────────────────────────────────────────────┤
 │  ESPI Components:                                           │
 │  • EspiTokenCustomizer         (JWT token enhancement)     │
-│  • ConsentController           (ESPI-aware consent flow)   │
+│  • AuthorizeDelegateController (consent delegated to DC)   │
 │  • OAuthAdminController        (Administrative APIs)       │
 │  • JdbcRegisteredClientRepository (Database-backed clients) │
 └─────────────────────────────────────────────────────────────┘
@@ -104,7 +104,7 @@ This module provides OAuth2 Authorization Server capabilities as part of the Ope
 | **OAuth2 Client Management** | ✅ Complete | RESTful CRUD API with pagination and bulk operations |
 | **DataCustodian Integration** | ✅ Complete | User verification, scope validation, authorization grants |
 | **OIDC UserInfo Endpoint** | ✅ Complete | ESPI claims, Green Button extensions, consent-aware release |
-| **OAuth2 Consent Pages** | ✅ Complete | Professional UI with granular permissions and mobile support |
+| **Customer Consent** | ✅ Delegated | Per-Function-Block consent is the Data Custodian's Authorization Screen, reached through `/authorize/delegate`; the AS has no consent page (#234) |
 | **API Documentation** | ✅ Complete | OpenAPI 3.0, integration guides, Postman collections |
 | **Certificate Authentication** | ✅ Complete | X.509 client certificates with trust store management |
 | **Deployment Infrastructure** | ✅ Complete | Docker, Kubernetes, monitoring, CI/CD pipeline |
@@ -288,8 +288,8 @@ scope=DataCustodian_Admin_Access
 
 ### ESPI Custom Endpoints
 
-- `GET /oauth2/consent` - User consent page
-- `POST /oauth2/consent` - Process consent
+- `GET /authorize/delegate` - Delegates the customer's login and per-Function-Block consent to the Data Custodian (signed handoff); the AS has no consent page of its own (#234)
+- `GET /oauth2/authorize/continue` - Receives the Data Custodian's signed return handoff and resumes the authorization request
 
 ### Administrative APIs
 

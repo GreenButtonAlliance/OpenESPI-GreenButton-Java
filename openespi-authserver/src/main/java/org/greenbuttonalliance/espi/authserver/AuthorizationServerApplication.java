@@ -35,7 +35,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
  * - JWT token issuance and validation
  * - Client registration and management
  * - ESPI-specific token enhancement
- * - User consent management
+ * - Customer login and consent delegated to the Data Custodian
  * 
  * Communicates with:
  * - OpenESPI-DataCustodian-java (Resource Server)

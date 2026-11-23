@@ -2,7 +2,7 @@
 
 ## Overview
 
-The OAuth2 Client Management API provides comprehensive CRUD operations for managing OAuth2 clients in the ESPI 4.0 Authorization Server. This API is designed for enterprise-grade deployments with support for bulk operations, metrics analytics, and NAESB ESPI 4.0 compliance.
+The OAuth2 Client Management API provides comprehensive CRUD operations for managing OAuth2 clients in the ESPI 4.0 Authorization Server. This API is designed for enterprise-grade deployments with support for bulk operations and NAESB ESPI 4.0 compliance.
 
 ## Authentication
 
@@ -216,47 +216,7 @@ Update a client's status (activate, suspend, revoke).
 }
 ```
 
-### 6. Get Client Metrics
-
-Retrieve usage analytics and metrics for a specific client.
-
-**Endpoint:** `GET /api/v1/oauth2/clients/{clientId}/metrics`
-
-**Parameters:**
-- `days` (optional): Number of days to retrieve metrics for (default: 30, max: 365)
-
-**Example Response:**
-```json
-{
-  "client_id": "gbconnect_1703505000_a1b2c3d4",
-  "period_days": 30,
-  "summary": {
-    "total_requests": 15420,
-    "total_successful_requests": 15275,
-    "total_failed_requests": 145,
-    "total_tokens_issued": 1850,
-    "success_rate": 99.06,
-    "average_response_time": 85.5,
-    "total_unique_users": 342
-  },
-  "daily_metrics": [
-    {
-      "date": "2024-01-15",
-      "total_requests": 150,
-      "successful_requests": 145,
-      "failed_requests": 5,
-      "total_tokens_issued": 25,
-      "avg_response_time_ms": 85.5,
-      "unique_users_served": 12,
-      "espi_data_requests": 120,
-      "consent_grants": 3,
-      "consent_withdrawals": 0
-    }
-  ]
-}
-```
-
-### 7. Bulk Operations
+### 6. Bulk Operations
 
 Perform operations on multiple clients simultaneously.
 
@@ -384,9 +344,8 @@ Concurrent session limits:
 - Implement exponential backoff for retries
 
 ### 3. Monitoring
-- Use the metrics endpoints for monitoring
+- Per-client metrics, such as success rates and response times, are planned with Micrometer and the audit log (#322); the earlier metrics endpoint was removed in #234
 - Set up alerts for security violations
-- Track success rates and response times
 
 ### 4. Bulk Operations
 - Use bulk operations for efficiency
@@ -410,8 +369,6 @@ espi:
       default-max-concurrent-sessions: 5
       max-failures-before-lock: 10
       default-lock-duration-minutes: 60
-      metrics-retention-days: 365
-      enable-automatic-metrics-calculation: true
       enable-automatic-cleanup: true
       enable-security-monitoring: true
 ```
@@ -421,9 +378,6 @@ espi:
 The API requires the following database tables:
 - `oauth2_registered_client` (enhanced with ESPI 4.0 columns)
 - `oauth2_audit_log`
-- `oauth2_client_metrics`
-- `oauth2_consent_details`
-- `oauth2_token_usage`
 - `espi_application_info`
 
 Refer to the Flyway migration scripts for complete schema definitions.

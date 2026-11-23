@@ -152,12 +152,7 @@ Accept: application/json
   "certificationStatus": "CERTIFIED",
   "createdAt": "2024-01-15T10:00:00Z",
   "updatedAt": "2024-01-15T10:00:00Z",
-  "lastUsed": "2024-01-16T14:30:00Z",
-  "usageMetrics": {
-    "totalTokensIssued": 1250,
-    "totalAuthorizationsGranted": 45,
-    "averageTokenLifetime": 3600
-  }
+  "lastUsed": "2024-01-16T14:30:00Z"
 }
 ```
 
@@ -262,38 +257,7 @@ Accept: application/json
 }
 ```
 
-#### 6. Client Metrics
-
-**Endpoint**: `GET /api/v1/oauth2/clients/{clientId}/metrics`
-
-**Description**: Get usage metrics for a specific client
-
-**Response Example**:
-```json
-{
-  "clientId": "espi-third-party-001",
-  "metrics": {
-    "totalTokensIssued": 1250,
-    "totalAuthorizationsGranted": 45,
-    "totalRefreshTokensUsed": 234,
-    "averageTokenLifetime": 3600,
-    "lastTokenIssuedAt": "2024-01-16T14:30:00Z",
-    "peakUsageHour": 14,
-    "weeklyStats": {
-      "currentWeek": {
-        "authorizationsGranted": 8,
-        "tokensIssued": 45
-      },
-      "previousWeek": {
-        "authorizationsGranted": 12,
-        "tokensIssued": 67
-      }
-    }
-  }
-}
-```
-
-#### 7. Bulk Operations
+#### 6. Bulk Operations
 
 **Endpoint**: `POST /api/v1/oauth2/clients/bulk`
 

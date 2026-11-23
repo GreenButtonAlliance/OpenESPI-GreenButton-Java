@@ -54,6 +54,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.greenbuttonalliance.espi.authserver.integration.AdminMfaTestSupport.adminWithBothFactors;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -257,6 +258,36 @@ class SecurityIntegrationTest extends AbstractAuthserverIntegrationTest {
     @Nested
     @DisplayName("Authorization Tests")
     class AuthorizationTests {
+
+        /*
+         * #234: the AS's own consent page is gone. Consent is the Data Custodian's (consentPage is
+         * /authorize/delegate); the old page wrote Spring consent records outside that flow.
+         */
+        @Test
+        @DisplayName("#234: there is no AS consent page, even for an authenticated customer session")
+        void noAsConsentPage() throws Exception {
+            mockMvc.perform(get("/oauth2/consent")
+                            .with(user("customer-234").roles("CUSTOMER"))
+                            .queryParam("client_id", authCodeClientId)
+                            .queryParam("scope", ESPI_SCOPE_HOURLY)
+                            .queryParam("state", "s"))
+                    .andExpect(status().isNotFound());
+            mockMvc.perform(post("/oauth2/consent")
+                            .with(user("customer-234").roles("CUSTOMER"))
+                            .with(csrf())
+                            .param("client_id", authCodeClientId)
+                            .param("state", "s")
+                            .param("scope." + ESPI_SCOPE_HOURLY, "on"))
+                    .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("#234: the client metrics endpoint is gone (its table was never populated)")
+        void noClientMetricsEndpoint() throws Exception {
+            mockMvc.perform(get("/api/v1/oauth2/clients/" + authCodeClientId + "/metrics")
+                            .with(adminWithBothFactors("admin-234", "ROLE_ADMIN")))
+                    .andExpect(status().isNotFound());
+        }
 
         @Test
         @DisplayName("Should enforce scope-based authorization")
