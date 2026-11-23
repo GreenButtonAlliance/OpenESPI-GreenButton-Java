@@ -125,7 +125,9 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus,flyway,env
+        # Only the endpoints application.yml grants access to (#271). prometheus also needs the
+        # micrometer-registry-prometheus dependency and an access grant: #328.
+        include: health,info,metrics
       base-path: /actuator
       cors:
         allowed-origins: "*"
