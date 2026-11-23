@@ -85,7 +85,6 @@ spring:
     cache-names:
       - clientCertificates
       - userInfo
-      - clientMetrics
       
 # Server Configuration
 server:

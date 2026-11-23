@@ -344,9 +344,8 @@ Concurrent session limits:
 - Implement exponential backoff for retries
 
 ### 3. Monitoring
-- Per-client metrics are planned with Micrometer and the audit log (#322); the earlier metrics endpoint was removed in #234
+- Per-client metrics, such as success rates and response times, are planned with Micrometer and the audit log (#322); the earlier metrics endpoint was removed in #234
 - Set up alerts for security violations
-- Track success rates and response times
 
 ### 4. Bulk Operations
 - Use bulk operations for efficiency

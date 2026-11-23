@@ -57,7 +57,7 @@ This module provides OAuth2 Authorization Server capabilities as part of the Ope
 #### 🛠️ **Enterprise Management**
 - **OAuth2 Client Management API**: Comprehensive CRUD operations with pagination
 - **DataCustodian Integration**: Seamless integration with OpenESPI-DataCustodian-java
-- **Admin APIs**: Token and client management with metrics and analytics
+- **Admin APIs**: Token and client management (client metrics are planned in #322)
 - **Database-Backed Storage**: JDBC repository with MySQL, PostgreSQL, H2 support
 - **Flyway Migrations**: Database schema management with ESPI 4.0 enhancements
 
@@ -104,7 +104,7 @@ This module provides OAuth2 Authorization Server capabilities as part of the Ope
 | **OAuth2 Client Management** | ✅ Complete | RESTful CRUD API with pagination and bulk operations |
 | **DataCustodian Integration** | ✅ Complete | User verification, scope validation, authorization grants |
 | **OIDC UserInfo Endpoint** | ✅ Complete | ESPI claims, Green Button extensions, consent-aware release |
-| **OAuth2 Consent Pages** | ✅ Complete | Professional UI with granular permissions and mobile support |
+| **Customer Consent** | ✅ Delegated | Per-Function-Block consent is the Data Custodian's Authorization Screen, reached through `/authorize/delegate`; the AS has no consent page (#234) |
 | **API Documentation** | ✅ Complete | OpenAPI 3.0, integration guides, Postman collections |
 | **Certificate Authentication** | ✅ Complete | X.509 client certificates with trust store management |
 | **Deployment Infrastructure** | ✅ Complete | Docker, Kubernetes, monitoring, CI/CD pipeline |
