@@ -20,53 +20,39 @@
 package org.greenbuttonalliance.espi.datacustodian.config;
 
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.config.YamlPropertiesFactoryBean;
-import org.springframework.core.io.FileSystemResource;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.boot.bootstrap.DefaultBootstrapContext;
+import org.springframework.boot.context.config.ConfigDataEnvironmentPostProcessor;
+import org.springframework.core.env.MapPropertySource;
+import org.springframework.core.env.StandardEnvironment;
+import org.springframework.core.io.DefaultResourceLoader;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Map;
-import java.util.Properties;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * The DC session cookie is SameSite=Lax in every profile (#271): the Authorization Server sends the customer to
  * {@code /oauth/authorize-screen}, a cross-site navigation that must carry the customer's DC sign-in, so Strict
- * would break the customer flow.
+ * would break the customer flow. Each profile's configuration is resolved the way Spring Boot resolves it at
+ * startup, so the profile files the DC takes from openespi-common ({@code prod}, {@code docker},
+ * {@code aws-sandbox}) are covered too.
  */
 @DisplayName("DC session cookie is SameSite=Lax in every profile (#271)")
 class SessionCookieSameSiteTest {
 
-	private static final String KEY = "server.servlet.session.cookie.same-site";
+	@ParameterizedTest(name = "{0}")
+	@ValueSource(strings = {"dev-mysql", "dev-postgresql", "local", "prod", "docker", "aws-sandbox"})
+	@DisplayName("server.servlet.session.cookie.same-site resolves to lax")
+	void laxInEveryProfile(String profile) {
+		StandardEnvironment environment = new StandardEnvironment();
+		environment.getPropertySources().addFirst(
+				new MapPropertySource("profile under test", Map.of("spring.profiles.active", profile)));
 
-	/** This module's own profile files; surefire runs with the module directory as the working directory. */
-	private static final Path RESOURCES = Path.of("src", "main", "resources");
+		ConfigDataEnvironmentPostProcessor.applyTo(environment, new DefaultResourceLoader(),
+				new DefaultBootstrapContext());
 
-	@Test
-	@DisplayName("application.yml sets lax, and no profile file sets anything else")
-	void laxInEveryProfile() throws IOException {
-		Map<String, String> sameSiteByFile;
-		try (Stream<Path> files = Files.list(RESOURCES)) {
-			sameSiteByFile = files
-					.filter(file -> file.getFileName().toString().matches("application.*\\.ya?ml"))
-					.collect(Collectors.toMap(file -> file.getFileName().toString(), SessionCookieSameSiteTest::sameSite));
-		}
-
-		assertThat(sameSiteByFile)
-				.as("same-site per profile file (\"\" = not set)")
-				.containsEntry("application.yml", "lax")
-				.allSatisfy((file, value) -> assertThat(value).as(file).isIn("", "lax"));
-	}
-
-	private static String sameSite(Path file) {
-		YamlPropertiesFactoryBean yaml = new YamlPropertiesFactoryBean();
-		yaml.setResources(new FileSystemResource(file));
-		Properties properties = yaml.getObject();
-		return properties == null ? "" : properties.getProperty(KEY, "").toLowerCase();
+		assertThat(environment.getProperty("server.servlet.session.cookie.same-site")).isEqualToIgnoringCase("lax");
 	}
 }

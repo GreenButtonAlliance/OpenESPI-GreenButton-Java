@@ -257,7 +257,8 @@ public class SecurityConfiguration {
             
             // Security headers configuration
             .headers(headers -> headers
-                    .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin) // Allow H2 console in development
+                    // DENY (#271): SAMEORIGIN was only for the H2 console, which the DC no longer has.
+                    .frameOptions(HeadersConfigurer.FrameOptionsConfig::deny)
                     .contentTypeOptions(contentTypeOptions -> {})
                     .httpStrictTransportSecurity(hstsConfig -> hstsConfig
                             .maxAgeInSeconds(31536000)

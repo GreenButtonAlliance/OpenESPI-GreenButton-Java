@@ -2,11 +2,10 @@
 # This configuration is optimized for containerized deployment
 
 spring:
-  profiles:
-    active: docker
-    include:
-      - espi40  # Include ESPI 4.0 configuration
-  
+  # No spring.profiles.* here: Spring Boot refuses it in a profile-specific file and the AS would not start (#271).
+  # The image sets SPRING_PROFILES_ACTIVE=docker. espi40 is no longer included: its TLS-only port and MySQL
+  # settings would override this file's plain-HTTP container settings.
+
   # Application Configuration
   application:
     name: OpenESPI Authorization Server

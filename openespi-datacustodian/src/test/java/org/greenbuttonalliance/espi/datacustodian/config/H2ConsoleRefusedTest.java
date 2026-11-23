@@ -20,6 +20,7 @@
 package org.greenbuttonalliance.espi.datacustodian.config;
 
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +32,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.opaqueToken;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -60,5 +62,13 @@ class H2ConsoleRefusedTest {
 		mockMvc.perform(get(path).with(opaqueToken()
 						.authorities(new SimpleGrantedAuthority("SCOPE_DataCustodian_Admin_Access"))))
 				.andExpect(status().isForbidden());
+	}
+
+	@Test
+	@DisplayName("no page may be framed, same origin included: X-Frame-Options DENY (SAMEORIGIN was for the console)")
+	void framingDenied() throws Exception {
+		mockMvc.perform(get("/about"))
+				.andExpect(status().isOk())
+				.andExpect(header().string("X-Frame-Options", "DENY"));
 	}
 }

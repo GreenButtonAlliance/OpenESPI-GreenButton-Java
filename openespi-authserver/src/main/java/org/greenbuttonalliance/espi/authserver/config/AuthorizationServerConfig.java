@@ -662,8 +662,8 @@ public class AuthorizationServerConfig {
 
     /**
      * Default Security Filter Chain for everything NOT claimed by the
-     * authorization-server endpoints matcher: login form, static resources,
-     * H2 console (in dev), and any custom controllers.
+     * authorization-server endpoints matcher: login form, static resources
+     * and any custom controllers. It refuses the H2 console path (#271).
      */
     @Bean
     @Order(3)
