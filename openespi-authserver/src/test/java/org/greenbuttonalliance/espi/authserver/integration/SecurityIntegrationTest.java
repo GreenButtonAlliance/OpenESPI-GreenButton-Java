@@ -24,6 +24,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -44,6 +47,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -135,28 +139,63 @@ class SecurityIntegrationTest extends AbstractAuthserverIntegrationTest {
     @DisplayName("Authentication Tests")
     class AuthenticationTests {
 
-        /*
-         * Accept: application/json is sent explicitly. The protocol chain's login entry point matches
-         * text/html, and a request with no Accept header (or a wildcard Accept) is treated as compatible
-         * with text/html, so such a request is redirected to /authorize/delegate instead of getting a 401.
-         */
+        static Stream<Arguments> unauthenticatedClientCalls() {
+            return Stream.of("/oauth2/token", "/oauth2/introspect", "/oauth2/revoke")
+                    .flatMap(path -> Stream.of((String) null, "*/*", MediaType.TEXT_HTML_VALUE)
+                            .map(accept -> Arguments.of(path, accept)));
+        }
+
+        // #225: no Accept header and a wildcard Accept are what curl and most HTTP client libraries send. They used
+        // to match the browser entry point and got a 302 to /authorize/delegate. Even Accept: text/html gets the
+        // OAuth error: these endpoints are never a browser's.
+        @ParameterizedTest(name = "{0}, Accept: {1}")
+        @MethodSource("unauthenticatedClientCalls")
+        @DisplayName("#225: a client call without credentials gets 401 invalid_client with a Basic challenge, never a redirect")
+        void shouldRequireAuthenticationForProtectedEndpoints(String path, String accept) throws Exception {
+            MockHttpServletRequestBuilder request = post(path)
+                    .param("grant_type", "client_credentials")
+                    .param("token", "anything");
+            if (accept != null) {
+                request.header("Accept", accept);
+            }
+
+            MockHttpServletResponse response = mockMvc.perform(request).andReturn().getResponse();
+
+            assertThat(response).satisfies(
+                    r -> assertThat(r.getStatus()).as("status").isEqualTo(401),
+                    r -> assertThat(r.getHeader("Location")).as("Location").isNull(),
+                    r -> assertThat(r.getHeaders("WWW-Authenticate")).as("WWW-Authenticate")
+                            .containsExactly("Basic realm=\"oauth2\""),
+                    r -> assertThat(r.getContentType()).as("Content-Type").startsWith(MediaType.APPLICATION_JSON_VALUE),
+                    r -> assertThat(objectMapper.readTree(r.getContentAsString()).path("error").asString())
+                            .as("error").isEqualTo("invalid_client"));
+        }
+
         @Test
-        @DisplayName("Should require client authentication on token, introspection and revocation endpoints")
-        void shouldRequireAuthenticationForProtectedEndpoints() throws Exception {
-            mockMvc.perform(post("/oauth2/token")
-                            .accept(MediaType.APPLICATION_JSON)
-                            .param("grant_type", "client_credentials"))
-                    .andExpect(status().isUnauthorized());
+        @DisplayName("#225: wrong client credentials without an Accept header get 401 invalid_client with a Basic challenge")
+        void wrongCredentialsWithoutAcceptGetInvalidClient() throws Exception {
+            MockHttpServletResponse response = mockMvc.perform(clientCredentials(ADMIN_CLIENT_ID, "wrong-password",
+                    ADMIN_SCOPE)).andReturn().getResponse();
 
-            mockMvc.perform(post("/oauth2/introspect")
-                            .accept(MediaType.APPLICATION_JSON)
-                            .param("token", "anything"))
-                    .andExpect(status().isUnauthorized());
+            assertThat(response).satisfies(
+                    r -> assertThat(r.getStatus()).as("status").isEqualTo(401),
+                    r -> assertThat(r.getHeaders("WWW-Authenticate")).as("WWW-Authenticate")
+                            .containsExactly("Basic realm=\"oauth2\""),
+                    r -> assertThat(objectMapper.readTree(r.getContentAsString()).path("error").asString())
+                            .as("error").isEqualTo("invalid_client"));
+        }
 
-            mockMvc.perform(post("/oauth2/revoke")
-                            .accept(MediaType.APPLICATION_JSON)
-                            .param("token", "anything"))
-                    .andExpect(status().isUnauthorized());
+        @Test
+        @DisplayName("#225: an unauthenticated /oauth2/authorize from a client sending Accept: */* still goes to the delegate")
+        void unauthenticatedAuthorizeWithWildcardAcceptIsDelegated() throws Exception {
+            mockMvc.perform(get("/oauth2/authorize")
+                            .header("Accept", "*/*")
+                            .queryParam("response_type", "code")
+                            .queryParam("client_id", authCodeClientId)
+                            .queryParam("scope", ESPI_SCOPE_HOURLY)
+                            .queryParam("redirect_uri", REDIRECT_URI))
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(header().string("Location", containsString("/authorize/delegate")));
         }
 
         @Test
