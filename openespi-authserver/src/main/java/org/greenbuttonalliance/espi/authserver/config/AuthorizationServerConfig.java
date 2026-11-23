@@ -26,7 +26,6 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.boot.security.autoconfigure.actuate.web.servlet.EndpointRequest;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
-import org.springframework.http.MediaType;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -55,7 +54,6 @@ import org.springframework.security.oauth2.server.authorization.token.OAuth2Toke
 import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector;
 import org.springframework.security.oauth2.server.resource.introspection.SpringOpaqueTokenIntrospector;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 import org.greenbuttonalliance.espi.authserver.grant.EspiGrantScopePolicy;
 import org.greenbuttonalliance.espi.authserver.service.EspiTokenCustomizer;
 import org.greenbuttonalliance.espi.authserver.web.delegate.DelegateAuthorizationEntryPoint;
@@ -527,19 +525,36 @@ public class AuthorizationServerConfig {
                         new org.greenbuttonalliance.espi.authserver.service
                                 .EspiTokenResponseSuccessHandler(authorizationServiceForHandler)));
 
+        // #225: a client the token, introspection or revocation endpoint cannot authenticate gets 401
+        // invalid_client with a Basic challenge (RFC 6749 §5.2), whether it sent no credentials or wrong ones.
+        OAuth2ClientChallenge clientChallenge = new OAuth2ClientChallenge();
+        authorizationServerConfigurer.clientAuthentication(clientAuthentication -> clientAuthentication
+                .errorResponseHandler(clientChallenge));
+        AuthorizationServerSettings settings = context.getBean(AuthorizationServerSettings.class);
+        RequestMatcher clientEndpoints = new OrRequestMatcher(
+                PathPatternRequestMatcher.withDefaults().matcher(settings.getTokenEndpoint()),
+                PathPatternRequestMatcher.withDefaults().matcher(settings.getTokenIntrospectionEndpoint()),
+                PathPatternRequestMatcher.withDefaults().matcher(settings.getTokenRevocationEndpoint()));
+
         http
                 .securityMatcher(endpointsMatcher)
                 .authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated())
                 .csrf(csrf -> csrf.ignoringRequestMatchers(endpointsMatcher))
                 .with(authorizationServerConfigurer, Customizer.withDefaults())
-                // For non-consent unauthenticated cases, the same delegate endpoint is the
-                // login page. A static login URL would arrive without parameters (#232), so the
-                // entry point forwards the validated client_id, scope, state and redirect_uri
-                // the delegate needs to build the outbound handoff.
                 .exceptionHandling(exceptions -> exceptions
+                        // Registered first, so it is also the fallback for a request neither mapping matches:
+                        // an OAuth error rather than a login redirect. Every other endpoint on this chain
+                        // (metadata) needs no authentication, and the device authorization and PAR endpoints,
+                        // which would also authenticate clients, are not enabled.
+                        .defaultAuthenticationEntryPointFor(clientChallenge, clientEndpoints)
+                        // The customer's browser at the authorization endpoint: the same delegate endpoint is
+                        // the login page. A static login URL would arrive without parameters (#232), so the
+                        // entry point forwards the validated client_id, scope, state and redirect_uri the
+                        // delegate needs to build the outbound handoff. Matched by path, not by an Accept of
+                        // text/html, which a wildcard or missing Accept also matches (#225).
                         .defaultAuthenticationEntryPointFor(
                                 new DelegateAuthorizationEntryPoint(),
-                                new MediaTypeRequestMatcher(MediaType.TEXT_HTML)
+                                PathPatternRequestMatcher.withDefaults().matcher(settings.getAuthorizationEndpoint())
                         )
                 );
         // No .oauth2ResourceServer(): the auth-server issues opaque tokens and does not
