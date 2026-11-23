@@ -21,37 +21,34 @@ package org.greenbuttonalliance.espi.thirdparty.config;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.boot.bootstrap.DefaultBootstrapContext;
-import org.springframework.boot.context.config.ConfigDataEnvironmentPostProcessor;
-import org.springframework.core.env.MapPropertySource;
-import org.springframework.core.env.StandardEnvironment;
-import org.springframework.core.io.DefaultResourceLoader;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.Map;
+import java.io.IOException;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Every TP profile's configuration loads the way Spring Boot loads it at startup (#271). The TP has no
- * {@code prod}, {@code docker} or {@code aws-sandbox} file of its own, so those come from openespi-common, which used
- * to set {@code spring.profiles.active} in them: the config-data loader refuses that in a profile-specific file, and
- * the TP did not start. Uses the default config locations, so the classpath (openespi-common included) decides.
+ * Every TP profile's configuration loads the way Spring Boot loads it at startup (#271): no duplicate YAML key, no
+ * {@code spring.profiles.active} or {@code include} in a profile-specific file, and no actuator endpoint with both
+ * the removed {@code enabled} key and the {@code access} key. Each stops the TP before it serves a request. The TP
+ * has no {@code prod}, {@code docker} or {@code aws-sandbox} file of its own; those come from openespi-common, which
+ * used to set {@code spring.profiles.active} in them.
  */
 @DisplayName("Every TP profile's configuration loads (#271)")
 class ProfileConfigLoadsTest {
 
+	static List<String> profiles() throws IOException {
+		List<String> profiles = ProfileConfig.profiles();
+		assertThat(profiles).as("profile files on the classpath, openespi-common's included")
+				.contains("dev-mysql", "local", "prod", "docker", "aws-sandbox");
+		return profiles;
+	}
+
 	@ParameterizedTest(name = "{0}")
-	@ValueSource(strings = {"dev-mysql", "dev-postgresql", "local", "prod", "docker", "aws-sandbox"})
-	@DisplayName("the profile loads as SPRING_PROFILES_ACTIVE would load it")
+	@MethodSource("profiles")
+	@DisplayName("the profile loads as SPRING_PROFILES_ACTIVE would load it, actuator endpoint access included")
 	void profileLoads(String profile) {
-		StandardEnvironment environment = new StandardEnvironment();
-		environment.getPropertySources().addFirst(
-				new MapPropertySource("profile under test", Map.of("spring.profiles.active", profile)));
-
-		ConfigDataEnvironmentPostProcessor.applyTo(environment, new DefaultResourceLoader(),
-				new DefaultBootstrapContext());
-
-		assertThat(environment.getActiveProfiles()).containsExactly(profile);
+		assertThat(ProfileConfig.load(profile).getActiveProfiles()).containsExactly(profile);
 	}
 }

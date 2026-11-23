@@ -21,38 +21,31 @@ package org.greenbuttonalliance.espi.datacustodian.config;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.boot.bootstrap.DefaultBootstrapContext;
-import org.springframework.boot.context.config.ConfigDataEnvironmentPostProcessor;
-import org.springframework.core.env.MapPropertySource;
-import org.springframework.core.env.StandardEnvironment;
-import org.springframework.core.io.DefaultResourceLoader;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.Map;
+import java.io.IOException;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * The DC session cookie is SameSite=Lax in every profile (#271): the Authorization Server sends the customer to
  * {@code /oauth/authorize-screen}, a cross-site navigation that must carry the customer's DC sign-in, so Strict
- * would break the customer flow. Each profile's configuration is resolved the way Spring Boot resolves it at
- * startup, so the profile files the DC takes from openespi-common ({@code prod}, {@code docker},
- * {@code aws-sandbox}) are covered too.
+ * would break the customer flow. Each profile's configuration is resolved the way startup resolves it, so the
+ * profile files the DC takes from openespi-common are covered, and so is any new profile file.
  */
 @DisplayName("DC session cookie is SameSite=Lax in every profile (#271)")
 class SessionCookieSameSiteTest {
 
+	static List<String> profiles() throws IOException {
+		return ProfileConfig.profiles();
+	}
+
 	@ParameterizedTest(name = "{0}")
-	@ValueSource(strings = {"dev-mysql", "dev-postgresql", "local", "prod", "docker", "aws-sandbox"})
+	@MethodSource("profiles")
 	@DisplayName("server.servlet.session.cookie.same-site resolves to lax")
 	void laxInEveryProfile(String profile) {
-		StandardEnvironment environment = new StandardEnvironment();
-		environment.getPropertySources().addFirst(
-				new MapPropertySource("profile under test", Map.of("spring.profiles.active", profile)));
-
-		ConfigDataEnvironmentPostProcessor.applyTo(environment, new DefaultResourceLoader(),
-				new DefaultBootstrapContext());
-
-		assertThat(environment.getProperty("server.servlet.session.cookie.same-site")).isEqualToIgnoringCase("lax");
+		assertThat(ProfileConfig.load(profile).getProperty("server.servlet.session.cookie.same-site"))
+				.isEqualToIgnoringCase("lax");
 	}
 }

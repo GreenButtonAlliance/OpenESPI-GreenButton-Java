@@ -65,10 +65,14 @@ class H2ConsoleRefusedTest {
 	}
 
 	@Test
-	@DisplayName("no page may be framed, same origin included: X-Frame-Options DENY (SAMEORIGIN was for the console)")
+	@DisplayName("this chain's responses may not be framed, same origin included: X-Frame-Options DENY (SAMEORIGIN was for the console)")
 	void framingDenied() throws Exception {
-		mockMvc.perform(get("/about"))
-				.andExpect(status().isOk())
+		// Paths SecurityConfiguration's chain serves (not /about, which the customer-login chain serves).
+		mockMvc.perform(get("/h2-console/"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(header().string("X-Frame-Options", "DENY"));
+		mockMvc.perform(get("/espi/1_1/resource/UsagePoint").with(opaqueToken()
+						.authorities(new SimpleGrantedAuthority("SCOPE_DataCustodian_Admin_Access"))))
 				.andExpect(header().string("X-Frame-Options", "DENY"));
 	}
 }
