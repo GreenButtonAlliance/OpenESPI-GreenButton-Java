@@ -121,7 +121,7 @@ class AuthCodeFlowOrchestrationIntegrationTest extends AbstractAuthserverIntegra
 				.scope(SCOPE)
 				.clientSettings(ClientSettings.builder()
 						.requireAuthorizationConsent(true)
-						.requireProofKey(false) // ESPI does not use PKCE
+						.requireProofKey(false) // PKCE accepted, not required (#274)
 						.build())
 				.tokenSettings(TokenSettings.builder()
 						.accessTokenFormat(OAuth2TokenFormat.REFERENCE) // ESPI: opaque

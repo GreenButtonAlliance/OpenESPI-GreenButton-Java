@@ -77,6 +77,10 @@ How the Third Party uses it (#274):
   checks the verifier.
 - **Other Data Custodians:** one whose authorization server does not support PKCE should ignore the extra parameters,
   as RFC 6749 section 3.1 requires for unrecognized request parameters. One that supports it enforces it.
+- **Deploy with a matching authorization server:** an authorization server that supports PKCE but loses the
+  challenge before it issues the code refuses the `code_verifier` (RFC 9700 treats it as a downgrade), and every
+  customer authorization then fails at the callback. `openespi-authserver` from before #274 did this, so upgrade
+  the Data Custodian's authorization server together with the Third Party.
 
 
 ## IDE Setup
