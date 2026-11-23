@@ -139,10 +139,8 @@ mvn clean install
 # Run the AuthServer module with local H2 profile
 cd openespi-authserver && mvn spring-boot:run -P local
 
-# Access H2 Console: http://localhost:9999/h2-console
-# JDBC URL: jdbc:h2:mem:oauth2_authserver
-# Username: sa
-# Password: (empty)
+# No H2 console (#271): the AS database holds client secrets and tokens. To inspect data,
+# run the dev-mysql or dev-postgresql profile and use a database client.
 ```
 
 ### MySQL Development

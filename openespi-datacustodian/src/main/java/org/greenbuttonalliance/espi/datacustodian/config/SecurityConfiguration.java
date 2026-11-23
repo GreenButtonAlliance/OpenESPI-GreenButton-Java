@@ -164,9 +164,12 @@ public class SecurityConfiguration {
                     "/error",
                     "/api-docs/**",
                     "/swagger-ui/**",
-                    "/swagger-ui.html",
-                    "/h2-console/**"
+                    "/swagger-ui.html"
                 ).permitAll()
+
+                // #271: no H2 console. The DC does not ship spring-boot-h2console, and if it ever did, a
+                // console that runs any SQL against customer data must not be reachable through this chain.
+                .requestMatchers("/h2-console/**").denyAll()
 
                 // --- Admin-only resources (OAuth2 metadata, not energy/PII) ---
                 .requestMatchers(HttpMethod.GET, "/espi/1_1/resource/ApplicationInformation/**")
@@ -254,7 +257,8 @@ public class SecurityConfiguration {
             
             // Security headers configuration
             .headers(headers -> headers
-                    .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin) // Allow H2 console in development
+                    // DENY (#271): SAMEORIGIN was only for the H2 console, which the DC no longer has.
+                    .frameOptions(HeadersConfigurer.FrameOptionsConfig::deny)
                     .contentTypeOptions(contentTypeOptions -> {})
                     .httpStrictTransportSecurity(hstsConfig -> hstsConfig
                             .maxAgeInSeconds(31536000)

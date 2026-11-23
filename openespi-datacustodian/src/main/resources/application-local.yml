@@ -11,15 +11,10 @@ spring:
       pool-name: DataCustodianHikariCP
       auto-commit: false
   
-  h2:
-    console:
-      enabled: ${H2_CONSOLE_ENABLED:true}  # Set to false in production
-      path: /h2-console
-      settings:
-        web-allow-others: false  # Security: Never allow remote access
-        trace: false
-        web-admin-password: ${H2_ADMIN_PASSWORD:}  # Require password for admin access
-  
+  # No H2 console (#271): this database holds customer usage data and PII, and the console runs
+  # any SQL (and Java, through CREATE ALIAS). Inspect data with the dev-mysql or dev-postgresql
+  # profile and a database client instead.
+
   jpa:
     show-sql: true
     hibernate:

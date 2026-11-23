@@ -5,6 +5,17 @@ server:
   port: ${SERVER_PORT:8443}
   servlet:
     context-path: /
+    # Session Configuration - Enhanced Security (one server: block: duplicate YAML keys stop the profile loading, #271)
+    session:
+      cookie:
+        secure: true
+        http-only: true
+        # Not strict (#271): the customer's return from the Data Custodian is cross-site. See application.yml.
+        same-site: lax
+        max-age: PT30M  # 30 minutes
+      timeout: PT30M
+      # Enhanced session security
+      tracking-modes: cookie  # No URL rewriting
   # NAESB ESPI 4.0 Mandatory TLS 1.3 Configuration
   ssl:
     enabled: true
@@ -28,10 +39,10 @@ server:
 spring:
   application:
     name: openespi-authorization-server-espi40
-  
-  profiles:
-    active: espi40
-  
+
+  # No spring.profiles.* here: Spring Boot refuses it in a profile-specific file and the AS would not start (#271).
+  # Select the profile with SPRING_PROFILES_ACTIVE=espi40.
+
   # Security Configuration - NAESB ESPI 4.0 Compliance
   security:
     oauth2:
@@ -173,19 +184,6 @@ external:
     tls-version: TLSv1.3
     certificate-validation: required
 
-# Session Configuration - Enhanced Security
-server:
-  servlet:
-    session:
-      cookie:
-        secure: true
-        http-only: true
-        same-site: strict
-        max-age: PT30M  # 30 minutes
-      timeout: PT30M
-      # Enhanced session security
-      tracking-modes: cookie  # No URL rewriting
-      
 # NAESB ESPI 4.0 Specific Validation Rules
 validation:
   redirect-uris:

@@ -2,8 +2,7 @@
 # Copyright (c) 2018-2026 Green Button Alliance, Inc.
 
 spring:
-  profiles:
-    active: prod
+  # No spring.profiles.* here: Spring Boot refuses it in a profile-specific file and the app would not start (#271).
   
   # Production Database Configuration (environment-specific)
   datasource:

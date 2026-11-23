@@ -282,6 +282,14 @@ class SecurityIntegrationTest extends AbstractAuthserverIntegrationTest {
         }
 
         @Test
+        @DisplayName("#271: there is no H2 console, even for an admin with both factors")
+        void noH2Console() throws Exception {
+            mockMvc.perform(get("/h2-console/")
+                            .with(adminWithBothFactors("admin-271", "ROLE_ADMIN")))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
         @DisplayName("#234: the client metrics endpoint is gone (its table was never populated)")
         void noClientMetricsEndpoint() throws Exception {
             mockMvc.perform(get("/api/v1/oauth2/clients/" + authCodeClientId + "/metrics")

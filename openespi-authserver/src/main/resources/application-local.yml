@@ -13,14 +13,10 @@ spring:
       maximum-pool-size: 10
       minimum-idle: 2
   
-  # H2 Console for Development
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
-      settings:
-        web-allow-others: true
-  
+  # No H2 console (#271): this database holds client secrets, authorizations and tokens, and the
+  # console runs any SQL (and Java, through CREATE ALIAS). Inspect data with the dev-mysql or
+  # dev-postgresql profile and a database client instead.
+
   # JPA/Hibernate Configuration for H2
   # Flyway (db/vendor/h2) owns the schema; Hibernate only validates it. The dialect must be set via
   # properties.hibernate.dialect, because application.yml sets MySQLDialect there and that key
