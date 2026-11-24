@@ -41,6 +41,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
@@ -157,28 +158,35 @@ public class AuthorizeContinueController {
 				payload.selectedUsagePointIds(),
 				Instant.now().plus(GrantContextSessionStore.TTL)));
 
-		// Redirect back to /oauth2/authorize with the original TP query params and the delegation's id.
-		UriComponentsBuilder replay = UriComponentsBuilder.fromPath(AUTHORIZE_PATH)
-				.queryParam("response_type", "code")
-				.queryParam("client_id", state.clientId())
-				.queryParam("redirect_uri", state.redirectUri())
-				.queryParam("scope", payload.approvedScope())
-				.queryParam("state", state.tpState() != null ? state.tpState() : "")
-				.queryParam(GrantContextSessionStore.DELEGATION_PARAMETER, payload.correlationId());
+		// Redirect back to /oauth2/authorize with the original TP query params and the delegation's id. Each value
+		// is form-encoded (#305 review): UriComponentsBuilder.encode() leaves '+' as is, which the container reads
+		// back as a space, so a state or redirect_uri with '+' would not be the replay the filter expects.
+		UriComponentsBuilder replay = UriComponentsBuilder.fromPath(AUTHORIZE_PATH);
+		queryParam(replay, "response_type", "code");
+		queryParam(replay, "client_id", state.clientId());
+		queryParam(replay, "redirect_uri", state.redirectUri());
+		queryParam(replay, "scope", payload.approvedScope());
+		queryParam(replay, "state", state.tpState() != null ? state.tpState() : "");
+		queryParam(replay, GrantContextSessionStore.DELEGATION_PARAMETER, payload.correlationId());
 		// #274: the TP's PKCE challenge, so the code is minted with it and the TP's code_verifier is checked at
 		// /oauth2/token. Without it Spring AS mints the code without a challenge and refuses the verifier.
 		if (proofKey != null) {
-			replay.queryParam(PkceParameterNames.CODE_CHALLENGE, proofKey.codeChallenge());
+			queryParam(replay, PkceParameterNames.CODE_CHALLENGE, proofKey.codeChallenge());
 			if (proofKey.codeChallengeMethod() != null) {
-				replay.queryParam(PkceParameterNames.CODE_CHALLENGE_METHOD, proofKey.codeChallengeMethod());
+				queryParam(replay, PkceParameterNames.CODE_CHALLENGE_METHOD, proofKey.codeChallengeMethod());
 			}
 		}
-		String url = replay.encode(StandardCharsets.UTF_8).build().toUriString();
+		String url = replay.build(true).toUriString();
 
 		log.info("Continue: allow path, client_id={}, customer={}, correlation_id={}",
 				state.clientId(), payload.principal(), payload.correlationId());
 
 		return "redirect:" + url;
+	}
+
+	/** Adds {@code name=value}, the value form-encoded, as {@link DelegateAuthorizationEntryPoint} does. */
+	private static void queryParam(UriComponentsBuilder uri, String name, String value) {
+		uri.queryParam(name, URLEncoder.encode(value, StandardCharsets.UTF_8));
 	}
 
 	private String handleDeny(DelegationStateService.Entry state) {

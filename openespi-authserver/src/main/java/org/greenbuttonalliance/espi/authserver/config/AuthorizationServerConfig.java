@@ -644,7 +644,7 @@ public class AuthorizationServerConfig {
      * {@code FACTOR_WEBAUTHN} authorities (Spring Security 7 {@link AllRequiredFactorsAuthorizationManager}).
      *
      * <p>The role is evaluated first ({@link AuthorizationManagers#allOf} stops at the first denial).
-     * A session without an admin role, such as a delegated ROLE_CUSTOMER session, therefore gets a
+     * A session without an admin role, such as a ROLE_CUSTOMER one (which the AS no longer writes, #305), gets a
      * plain 403 and is never sent through the passkey step. An admin missing a factor gets a
      * {@code FactorAuthorizationDecision}. Spring's {@code DelegatingMissingAuthorityAccessDeniedHandler}
      * turns that into a redirect to the login page for the missing factor.</p>

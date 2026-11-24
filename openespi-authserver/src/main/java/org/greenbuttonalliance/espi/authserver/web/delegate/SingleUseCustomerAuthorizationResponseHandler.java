@@ -39,8 +39,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Sends the authorization response of {@code /oauth2/authorize}, a code or an error, and ends the delegation
- * the request named (#299, #276, #305).
+ * Sends the authorization response of {@code /oauth2/authorize}, a code or an error (#299, #276, #305). It clears
+ * nothing: the replay took its delegation's grant context out of the session when it started.
  *
  * <p>Since #305 the customer is signed in and has consented only on the replayed {@code /oauth2/authorize} of a
  * delegation, from its {@link org.greenbuttonalliance.espi.authserver.grant.GrantContext}

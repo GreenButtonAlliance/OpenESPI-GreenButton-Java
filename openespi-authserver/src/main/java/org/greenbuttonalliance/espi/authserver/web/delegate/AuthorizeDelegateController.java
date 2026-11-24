@@ -67,8 +67,9 @@ import java.util.UUID;
  *       selections, submits.</li>
  *   <li>DC redirects user-agent to AS's {@code /oauth2/authorize/continue?handoff=<signed-return>}
  *       (the return URL embedded in the outbound handoff).</li>
- *   <li>The {@code /continue} endpoint (PR C3.3) verifies the return, sets SecurityContext,
- *       resumes the {@code /oauth2/authorize} flow with the customer's effective approved scope.</li>
+ *   <li>The {@code /continue} endpoint (PR C3.3) verifies the return, keeps the delegation's grant context,
+ *       and resumes the {@code /oauth2/authorize} flow with the customer's effective approved scope; the
+ *       customer is signed in only on that replay (#305, {@link DelegatedCustomerAuthenticationFilter}).</li>
  * </ol>
  */
 @Slf4j

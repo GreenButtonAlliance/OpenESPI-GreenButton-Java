@@ -128,6 +128,25 @@ class DelegatedCustomerAuthenticationFilterTest {
 	}
 
 	@Test
+	@DisplayName("#305 review: the replay's parameters plus a request_uri are not the replay")
+	void requestUriIsNotTheReplay() throws Exception {
+		delegation(session);
+		MockHttpServletRequest request = replay();
+		request.setParameter("request_uri", "urn:ietf:params:oauth:request_uri:some-stored-request");
+
+		assertThat(during(request)).isEqualTo(new Seen(null, null));
+	}
+
+	@Test
+	@DisplayName("#305 review: a context without replay parameters (an earlier version's) matches nothing, no error")
+	void contextWithoutReplayParametersMatchesNothing() throws Exception {
+		grantContexts.put(session, new GrantContext("cid", "tp", "reg-tp", "42", null, 42L, SCOPE, List.of(),
+				Instant.now().plusSeconds(300)));
+
+		assertThat(during(replay())).isEqualTo(new Seen(null, null));
+	}
+
+	@Test
 	@DisplayName("a request that differs from the replay uses up the delegation: the replay itself is then delegated again")
 	void differingRequestUsesUpTheDelegation() throws Exception {
 		delegation(session);

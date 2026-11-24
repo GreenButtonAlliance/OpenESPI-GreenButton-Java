@@ -17,6 +17,9 @@
 package org.greenbuttonalliance.espi.authserver.grant;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
 import org.springframework.security.oauth2.core.OAuth2Token;
 import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationCode;
@@ -117,9 +120,12 @@ public class GrantContextEnrichingAuthorizationService implements OAuth2Authoriz
 		}
 		if (!ctx.registeredClientId().equals(authorization.getRegisteredClientId())
 				|| !ctx.principal().equals(authorization.getPrincipalName())) {
-			// Never mint a code without its delegation's grant context: the provider turns this into an error.
-			throw new IllegalStateException("grant context of correlation_id=" + ctx.correlationId()
-					+ " is another client's or customer's");
+			// Never mint a code without its delegation's grant context. An OAuth2AuthenticationException reaches the
+			// authorization endpoint's error response handler; without the authorization request it cannot redirect
+			// to the Third Party, so it answers 400 server_error (Spring's default), not a bare 500.
+			log.warn("Code refused: grant context of correlation_id={} is another client's or customer's",
+					ctx.correlationId());
+			throw new OAuth2AuthenticationException(new OAuth2Error(OAuth2ErrorCodes.SERVER_ERROR));
 		}
 
 		log.info("Stamping grant context on OAuth2Authorization id={}, correlation_id={}",

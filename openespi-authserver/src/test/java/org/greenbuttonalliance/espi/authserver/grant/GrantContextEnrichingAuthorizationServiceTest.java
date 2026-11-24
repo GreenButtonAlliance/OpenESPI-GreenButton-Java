@@ -144,8 +144,11 @@ class GrantContextEnrichingAuthorizationServiceTest {
 	void anotherCustomersContextFailsTheRequest() {
 		replayOf(context("corr-6", "77", "FB_1", List.of()));
 
+		// An OAuth2AuthenticationException, so the authorization endpoint's error handler answers (#305 review),
+		// not a bare 500.
 		assertThatThrownBy(() -> service.save(codeAuthorization("auth-6")))
-				.isInstanceOf(IllegalStateException.class);
+				.isInstanceOfSatisfying(org.springframework.security.oauth2.core.OAuth2AuthenticationException.class,
+						e -> assertThat(e.getError().getErrorCode()).isEqualTo("server_error"));
 		verifyNoInteractions(delegate);
 	}
 

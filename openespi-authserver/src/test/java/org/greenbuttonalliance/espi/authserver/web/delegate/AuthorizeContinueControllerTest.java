@@ -78,8 +78,11 @@ class AuthorizeContinueControllerTest {
 	private static final String SIGNING_KEY = "test-signing-key-must-be-at-least-32-chars-long";
 	private static final String ESPI_SCOPE =
 			"FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000";
+	/** Each replay value is form-encoded (#305 review), so ';' and ':' and '/' are encoded too. */
 	private static final String ESPI_SCOPE_IN_URL =
-			"FB%3D4_5_15;IntervalDuration%3D3600;BlockDuration%3Dmonthly;HistoryLength%3D34128000";
+			"FB%3D4_5_15%3BIntervalDuration%3D3600%3BBlockDuration%3Dmonthly%3BHistoryLength%3D34128000";
+	private static final String REPLAY_PREFIX =
+			"/oauth2/authorize?response_type=code&client_id=tp-1&redirect_uri=https%3A%2F%2Ftp.example%2Fcb";
 
 	@Mock
 	private HandoffNonceService nonceService;
@@ -129,10 +132,9 @@ class AuthorizeContinueControllerTest {
 
 			mockMvc.perform(get("/oauth2/authorize/continue").session(session).param("handoff", token))
 					.andExpect(status().is3xxRedirection())
-					.andExpect(redirectedUrl(
-							"/oauth2/authorize?response_type=code&client_id=tp-1&redirect_uri=https://tp.example/cb"
-									+ "&scope=" + ESPI_SCOPE_IN_URL
-									+ "&state=tp-state-1&espi_delegation=" + cid));
+					.andExpect(redirectedUrl(REPLAY_PREFIX
+							+ "&scope=" + ESPI_SCOPE_IN_URL
+							+ "&state=tp-state-1&espi_delegation=" + cid));
 
 			verify(nonceService).consume(any(), any());
 
@@ -181,11 +183,10 @@ class AuthorizeContinueControllerTest {
 			mockMvc.perform(get("/oauth2/authorize/continue").session(session)
 							.param("handoff", codec.encode(allowReturn(cid, ESPI_SCOPE, List.of()))))
 					.andExpect(status().is3xxRedirection())
-					.andExpect(redirectedUrl(
-							"/oauth2/authorize?response_type=code&client_id=tp-1&redirect_uri=https://tp.example/cb"
-									+ "&scope=" + ESPI_SCOPE_IN_URL
-									+ "&state=tp-state-1&espi_delegation=" + cid
-									+ "&code_challenge=" + challenge + "&code_challenge_method=S256"));
+					.andExpect(redirectedUrl(REPLAY_PREFIX
+							+ "&scope=" + ESPI_SCOPE_IN_URL
+							+ "&state=tp-state-1&espi_delegation=" + cid
+							+ "&code_challenge=" + challenge + "&code_challenge_method=S256"));
 
 			// Only a request with this challenge is the delegation's replay (#305 review).
 			assertThat(grantContextSessionStore.peek(session, cid).replay())
@@ -203,12 +204,27 @@ class AuthorizeContinueControllerTest {
 			mockMvc.perform(get("/oauth2/authorize/continue").session(session)
 							.param("handoff", codec.encode(allowReturn(cid, narrowed, List.of()))))
 					.andExpect(status().is3xxRedirection())
-					.andExpect(redirectedUrl(
-							"/oauth2/authorize?response_type=code&client_id=tp-1&redirect_uri=https://tp.example/cb"
-									+ "&scope=FB%3D4_5;IntervalDuration%3D3600;BlockDuration%3Dmonthly;HistoryLength%3D34128000"
-									+ "&state=tp-state-1&espi_delegation=" + cid));
+					.andExpect(redirectedUrl(REPLAY_PREFIX
+							+ "&scope=FB%3D4_5%3BIntervalDuration%3D3600%3BBlockDuration%3Dmonthly%3BHistoryLength%3D34128000"
+							+ "&state=tp-state-1&espi_delegation=" + cid));
 
 			assertThat(grantContextSessionStore.peek(session, cid).approvedScope()).isEqualTo(narrowed);
+		}
+
+		@Test
+		@DisplayName("#305 review: a state and redirect_uri with '+', '/' and '=' are replayed form-encoded, never as spaces")
+		void reservedCharactersAreFormEncodedInTheReplay() throws Exception {
+			String cid = "corr-allow-plus";
+			delegationStateService.save(cid, "tp-1", "https://tp.example/cb+x", "a+b/c==", ESPI_SCOPE);
+			when(registeredClientRepository.findByClientId("tp-1")).thenReturn(client(ESPI_SCOPE));
+
+			mockMvc.perform(get("/oauth2/authorize/continue").session(session)
+							.param("handoff", codec.encode(allowReturn(cid, ESPI_SCOPE, List.of()))))
+					.andExpect(status().is3xxRedirection())
+					.andExpect(redirectedUrl("/oauth2/authorize?response_type=code&client_id=tp-1"
+							+ "&redirect_uri=https%3A%2F%2Ftp.example%2Fcb%2Bx"
+							+ "&scope=" + ESPI_SCOPE_IN_URL
+							+ "&state=a%2Bb%2Fc%3D%3D&espi_delegation=" + cid));
 		}
 
 		@ParameterizedTest

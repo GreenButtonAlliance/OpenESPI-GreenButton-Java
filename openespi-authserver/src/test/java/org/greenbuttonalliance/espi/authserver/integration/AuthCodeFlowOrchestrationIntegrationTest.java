@@ -793,6 +793,33 @@ class AuthCodeFlowOrchestrationIntegrationTest extends AbstractAuthserverIntegra
 				.accept(org.springframework.http.MediaType.TEXT_HTML)).andReturn());
 	}
 
+	/**
+	 * #305 review: a Third Party {@code state} with {@code +}, {@code /} and {@code =} (standard Base64) must survive
+	 * the replay. A raw {@code +} is read back as a space, so the replay would not match its delegation, the
+	 * customer would be sent through the DC again, and the TP would get a state it never issued.
+	 */
+	@Test
+	@DisplayName("#305 review: a state with '+', '/' and '=' gets a code on the first replay and comes back unchanged")
+	void stateWithReservedCharactersComesBackUnchanged() throws Exception {
+		String suffix = UUID.randomUUID().toString().substring(0, 8);
+		String clientId = "pr-305-p-" + suffix;
+		registerClient(clientId, "pr-305-p-secret-" + suffix);
+		String correlationId = "corr-305-p-" + suffix;
+		String tpState = "a+b/c==" + suffix;
+		delegationStateService.save(correlationId, clientId, REDIRECT_URI, tpState, SCOPE);
+
+		MvcResult continueResult = mockMvc.perform(get("/oauth2/authorize/continue")
+						.param("handoff", allowHandoff(correlationId, SCOPE, UUID.randomUUID())))
+				.andExpect(status().is3xxRedirection())
+				.andReturn();
+		String callback = followReplay(continueResult.getResponse().getHeader("Location"),
+				(MockHttpSession) continueResult.getRequest().getSession(false));
+
+		assertThat(callback).startsWith(REDIRECT_URI).contains("code=")
+				.satisfies(url -> assertThat(java.net.URLDecoder.decode(extractQueryParam(url, "state"),
+						java.nio.charset.StandardCharsets.UTF_8)).isEqualTo(tpState));
+	}
+
 	private static void assertDelegated(MvcResult result) {
 		assertThat(result.getResponse())
 				.satisfies(r -> assertThat(r.getStatus()).isBetween(300, 399))

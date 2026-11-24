@@ -41,7 +41,8 @@ import java.util.Objects;
  * in that browser. Now the customer the DC returned is signed in only on a {@code GET /oauth2/authorize} that
  * names a live delegation of this session ({@link GrantContextSessionStore#DELEGATION_PARAMETER}) and whose
  * {@code client_id}, {@code redirect_uri}, {@code scope} (the approved scope), {@code state} and PKCE challenge
- * are exactly the replay {@code /continue} built. The sign-in is never saved to the session.</p>
+ * are those of the replay {@code /continue} built, and that carries no {@code request_uri}. The sign-in is never
+ * saved to the session.</p>
  *
  * <p>The context is taken out of the session here, once, and kept on the request
  * ({@link GrantContextSessionStore#DELEGATED_CONTEXT_ATTRIBUTE}) for the consent and the enricher. A second request
@@ -53,6 +54,8 @@ import java.util.Objects;
 public class DelegatedCustomerAuthenticationFilter extends OncePerRequestFilter {
 
 	static final String AUTHORIZE_PATH = "/oauth2/authorize";
+	/** RFC 9126 (pushed authorization requests): a reference to a stored authorization request. */
+	static final String REQUEST_URI = "request_uri";
 
 	private final GrantContextSessionStore grantContexts;
 	private final SecurityContextHolderStrategy holder = SecurityContextHolder.getContextHolderStrategy();
@@ -93,10 +96,17 @@ public class DelegatedCustomerAuthenticationFilter extends OncePerRequestFilter 
 		}
 	}
 
-	/** The request's parameters are exactly those of the replay {@code /continue} built for this delegation. */
+	/**
+	 * The request's parameters are those of the replay {@code /continue} built for this delegation. A request with
+	 * {@code request_uri} is never one (#305 review): Spring AS would then take the redirect URI, scope, state and
+	 * PKCE challenge from the stored request it names instead of the parameters checked here. A context without
+	 * replay parameters (saved by an earlier version) matches nothing.
+	 */
 	private static boolean isReplayOf(HttpServletRequest request, GrantContext ctx) {
 		GrantContext.Replay replay = ctx.replay();
-		return same(request.getParameter(OAuth2ParameterNames.CLIENT_ID), ctx.clientId())
+		return replay != null
+				&& request.getParameter(REQUEST_URI) == null
+				&& same(request.getParameter(OAuth2ParameterNames.CLIENT_ID), ctx.clientId())
 				&& same(request.getParameter(OAuth2ParameterNames.SCOPE), ctx.approvedScope())
 				&& same(request.getParameter(OAuth2ParameterNames.REDIRECT_URI), replay.redirectUri())
 				&& same(request.getParameter(OAuth2ParameterNames.STATE), replay.state())

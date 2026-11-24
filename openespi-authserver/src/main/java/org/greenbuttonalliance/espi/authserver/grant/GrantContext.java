@@ -38,7 +38,8 @@ import java.util.UUID;
  * its id is signed in
  * ({@link org.greenbuttonalliance.espi.authserver.web.delegate.DelegatedCustomerAuthenticationFilter}) and consented
  * ({@link DelegatedConsentService}) from it. The filter takes it from the session, once, and only for a request
- * whose parameters are exactly the replay {@code /continue} built ({@link #replay()}).</p>
+ * whose parameters are those of the replay {@code /continue} built ({@link #replay()}), with no
+ * {@code request_uri}.</p>
  *
  * @param correlationId         the AS-generated id of the delegation (#331); ties the outbound, return, and
  *                              back-channel calls together and keys this context
