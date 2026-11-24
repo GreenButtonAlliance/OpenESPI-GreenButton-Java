@@ -102,7 +102,7 @@
         <mysql.connector.version>26.10.0</mysql.connector.version>
         <postgres.version>42.7.8</postgres.version>
         <commons-io.version>2.22.0</commons-io.version>
-        <swagger-annotations.version>2.2.55</swagger-annotations.version>
+        <swagger-annotations.version>2.2.56</swagger-annotations.version>
         <datafaker.version>2.7.0</datafaker.version>
         <jetbrains-annotations.version>26.1.0</jetbrains-annotations.version>
     </properties>
