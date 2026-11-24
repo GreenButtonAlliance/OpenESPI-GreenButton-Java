@@ -486,14 +486,12 @@ public class AuthorizationServerConfig {
                 .errorResponseHandler(singleUseResponseHandler)
                 // #251: customer authorization never yields an administrative scope.
                 // #211: the Third Party and the customer may each narrow the registered scope, never widen it.
-                .authenticationProviders(providers -> providers.forEach(provider -> {
-                    if (provider instanceof org.springframework.security.oauth2.server.authorization.authentication
-                            .OAuth2AuthorizationCodeRequestAuthenticationProvider codeRequest) {
-                        codeRequest.setAuthenticationValidator(
-                                org.greenbuttonalliance.espi.authserver.grant.EspiGrantScopePolicy
-                                        .authorizationCodeValidator());
-                    }
-                })));
+                // #336: set on the configurer (Spring Security >= 7.2), which gives it both to the code-request
+                // provider and to the pre-validation filter that checks redirect_uri and scope before the customer
+                // is authenticated. Setting it on the provider alone leaves that filter on Spring's default scope
+                // check: a narrowed scope is refused and an administrative scope is delegated to the customer.
+                .authorizationCodeRequestAuthenticationValidator(
+                        org.greenbuttonalliance.espi.authserver.grant.EspiGrantScopePolicy.authorizationCodeValidator()));
 
         // Advertise the RFC 7591 endpoint (wired on its own chain, see clientRegistrationSecurityFilterChain)
         // in /.well-known/oauth-authorization-server. The stock clientRegistrationEndpoint(...) configurer
