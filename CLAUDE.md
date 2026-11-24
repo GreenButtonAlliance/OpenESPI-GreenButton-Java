@@ -283,19 +283,21 @@ ESPI uses Atom XML feeds for data exchange. Key patterns:
 The same procedure is used in the CMDCertification repository; keep the two in step. It is a written rule, not a CI gate (the `protect-main` ruleset requires only `ci-ok` and `pr-title`).
 
 - **REQUIRED**: every pull request that changes anything under a module's `src/` directory (`src/main` or `src/test`, in any module) gets a `/code-review` before it is merged. PRs that change only docs, CI workflows, root files or `pom.xml` (including Dependabot build-only PRs) rely on the CI checks.
+- **Levels**, lowest to highest: `low`, `medium`, `high`, `xhigh`, `ultra` (billed, multi-agent in the cloud). Never `max`.
 - **First review: the whole PR, at its risk level.**
   - `/code-review high <PR>` for security-sensitive code: authentication, authorization, OAuth 2.0 / token handling, the AS↔DC handoff, row-level access, TLS, credential or token logging, or anything a Third Party or the AS can reach that decides what data is released;
   - `/code-review medium <PR>` for everything else;
   - `ultra` (billed) only for a large change, such as a framework upgrade, and only when the owner approves it. Never `max`.
   - **Always name the level**: with none, the skill reuses the last level typed.
   - Run it after the PR is open; CI can run at the same time.
+- **Owner approval first:** when a review round reports, summarize every finding with a recommended resolution (fix, answer, or file) and get the owner's approval before changing code, filing issues or answering on the PR.
 - **Every finding** is fixed on the PR branch (with a test where it changes behaviour), answered on the PR with the reason it stands, or filed as an issue and added to the #255 roadmap, before merging. The PR description lists each finding and where it went.
 - **Any `src/` change pushed after a review gets its own review before merging**, including the commits that fix review findings, however small. A re-review:
   - **covers only the commits since the previous review**, not the whole PR again, and says so when it is started;
   - **is given the findings already ruled on**, so it does not raise them again; if it repeats one anyway, point to the earlier ruling;
-  - **steps down one level from the previous review** (`ultra` → `high` → `medium`), **but never below what its own changes need**: `medium` for any production or test change (`low` does not read test files), `high` for security-sensitive code. `low` only for comments, documentation text or a single configuration value in production code. Each round on a PR finding less and nothing blocking is why: repeating the full level costs more than it finds and never ends;
+  - **steps down one level from the previous review** (`ultra` → `xhigh` → `high` → `medium`), **but never below what its own changes need**: `medium` for any production or test change (`low` does not read test files), `high` for security-sensitive code. `low` only for comments, documentation text or a single configuration value in production code. Each round on a PR finding less and nothing blocking is why: repeating the full level costs more than it finds and never ends;
   - **goes one level up instead after a round that found a real correctness or security bug in the PR's own changes**. A bug that was already there before the PR, which the review uncovers, is fixed or filed like any finding but does not raise the level, and neither does a round of nits;
-  - **from `high`, going up means asking the owner whether to run `ultra`** (billed); without that approval the next round stays at `high`.
+  - **from `high`, going up means `xhigh`; from `xhigh`, it means asking the owner whether to run `ultra`** (billed), and without that approval the next round stays at `xhigh`.
 - **Stopping:** the cycle ends when a review leads to no further `src/` change. Rounds are counted from the first review (round 1). If a third round still finds a real bug (in the PR's own changes or not), stop the automated reviews and have the owner review the design.
 - **Merging:** not until the last review is done, its fixes are pushed, and CI is green on the final commit.
 
