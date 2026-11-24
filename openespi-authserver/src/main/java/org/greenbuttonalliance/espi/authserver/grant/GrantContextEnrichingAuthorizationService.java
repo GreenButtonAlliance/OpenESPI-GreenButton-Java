@@ -16,16 +16,15 @@
 
 package org.greenbuttonalliance.espi.authserver.grant;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
 import org.springframework.security.oauth2.core.OAuth2Token;
 import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
+import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationCode;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
-import org.springframework.web.context.request.RequestAttributes;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationCodeRequestAuthenticationException;
 
 import java.util.List;
 import java.util.UUID;
@@ -43,9 +42,11 @@ import java.util.stream.Collectors;
  *   <li>Spring AS's {@code OAuth2AuthorizationCodeRequestAuthenticationProvider} runs inside that
  *       request, builds an {@link OAuth2Authorization} carrying the freshly-minted authorization
  *       code, and calls {@link #save(OAuth2Authorization)}.</li>
- *   <li>This wrapper sees the save, pulls the {@link GrantContext} out of the session, and
- *       rebuilds the authorization with the grant context as attributes before delegating to the
- *       underlying JDBC service.</li>
+ *   <li>This wrapper sees the save of the authorization carrying the code, takes the {@link GrantContext}
+ *       the replay of its delegation took from the session
+ *       ({@link GrantContextSessionStore#DELEGATED_CONTEXT_ATTRIBUTE}, #305), checks it is this client's and
+ *       customer's (or fails the request), and rebuilds the authorization with the grant context as attributes
+ *       before delegating to the underlying JDBC service.</li>
  * </ol>
  *
  * <h2>Why attributes?</h2>
@@ -62,8 +63,8 @@ import java.util.stream.Collectors;
  *
  * <h2>Idempotency</h2>
  * Spring AS calls {@code save()} repeatedly across the authorization lifecycle (code issue, token
- * exchange, token use). The session is consumed single-use on the first save that finds it; later
- * saves see no context and pass through.
+ * exchange, token use). Only the replay request carries the context, and an authorization already stamped is
+ * left alone; later saves (token exchange, token use) see no context and pass through.
  */
 @Slf4j
 public class GrantContextEnrichingAuthorizationService implements OAuth2AuthorizationService {
@@ -74,12 +75,9 @@ public class GrantContextEnrichingAuthorizationService implements OAuth2Authoriz
 	public static final String ATTR_CORRELATION_ID = "espi.correlation_id";
 
 	private final OAuth2AuthorizationService delegate;
-	private final GrantContextSessionStore sessionStore;
 
-	public GrantContextEnrichingAuthorizationService(OAuth2AuthorizationService delegate,
-													 GrantContextSessionStore sessionStore) {
+	public GrantContextEnrichingAuthorizationService(OAuth2AuthorizationService delegate) {
 		this.delegate = delegate;
-		this.sessionStore = sessionStore;
 	}
 
 	@Override
@@ -108,18 +106,28 @@ public class GrantContextEnrichingAuthorizationService implements OAuth2Authoriz
 			return authorization;
 		}
 
-		HttpServletRequest request = currentRequest();
-		if (request == null) {
-			return authorization;
-		}
-		HttpSession session = request.getSession(false);
-		if (session == null) {
+		// Only the authorization that carries the code: Spring AS also saves a state-only one before a
+		// consent-page redirect, which must not take the context.
+		if (authorization.getToken(OAuth2AuthorizationCode.class) == null) {
 			return authorization;
 		}
 
-		GrantContext ctx = sessionStore.consume(session);
+		// #305: the context the replay of its delegation took (DelegatedCustomerAuthenticationFilter), on this
+		// request only. A customer is signed in only on such a replay, so a customer's code always has one.
+		GrantContext ctx = GrantContextSessionStore.delegated(GrantContextSessionStore.currentRequest());
 		if (ctx == null) {
 			return authorization;
+		}
+		if (!ctx.registeredClientId().equals(authorization.getRegisteredClientId())
+				|| !ctx.principal().equals(authorization.getPrincipalName())) {
+			// Never mint a code without its delegation's grant context. The authorization endpoint's error response
+			// handler (ours, and Spring's default alike) answers an OAuth2AuthorizationCodeRequestAuthenticationException
+			// without an authorization request with 400 server_error, as Spring's own provider does; it cannot redirect
+			// to the Third Party without that request. Not a bare 500.
+			log.warn("Code refused: grant context of correlation_id={} is another client's or customer's",
+					ctx.correlationId());
+			throw new OAuth2AuthorizationCodeRequestAuthenticationException(
+					new OAuth2Error(OAuth2ErrorCodes.SERVER_ERROR), null);
 		}
 
 		log.info("Stamping grant context on OAuth2Authorization id={}, correlation_id={}",
@@ -154,8 +162,4 @@ public class GrantContextEnrichingAuthorizationService implements OAuth2Authoriz
 				.toList();
 	}
 
-	private static HttpServletRequest currentRequest() {
-		RequestAttributes attrs = RequestContextHolder.getRequestAttributes();
-		return (attrs instanceof ServletRequestAttributes sra) ? sra.getRequest() : null;
-	}
 }

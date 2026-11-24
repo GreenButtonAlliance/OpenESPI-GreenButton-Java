@@ -70,8 +70,12 @@ public class DelegationStateService {
 	 */
 	public void save(String correlationId, String clientId, String redirectUri, String tpState,
 					 String requestedScope, String pendingAuthorizationId, ProofKey proofKey) {
-		states.put(correlationId, new Entry(clientId, redirectUri, tpState, requestedScope,
+		// #331: never replace a pending delegation's entry (its client, redirect URI or PKCE challenge).
+		Entry previous = states.putIfAbsent(correlationId, new Entry(clientId, redirectUri, tpState, requestedScope,
 				pendingAuthorizationId, proofKey, Instant.now().plus(TTL)));
+		if (previous != null) {
+			throw new IllegalStateException("delegation state already exists for correlation_id " + correlationId);
+		}
 		// Lazy reaping: drop expired entries on each save call.
 		Instant now = Instant.now();
 		states.entrySet().removeIf(e -> e.getValue().expiresAt.isBefore(now));

@@ -435,12 +435,14 @@ class AuthCodeFlowOrchestrationIntegrationTest extends AbstractAuthserverIntegra
 		assertThat(java.net.URI.create(dcUrl).getPath()).endsWith("/oauth/authorize-screen");
 		SignedHandoff.Outbound outbound = codec.decodeOutbound(extractQueryParam(dcUrl, "handoff"));
 		assertThat(outbound)
-				.extracting(SignedHandoff.Outbound::clientId, SignedHandoff.Outbound::grantedScope,
-						SignedHandoff.Outbound::correlationId)
-				.containsExactly(clientId, SCOPE, tpState);
+				.satisfies(o -> assertThat(o.clientId()).isEqualTo(clientId))
+				.satisfies(o -> assertThat(o.grantedScope()).isEqualTo(SCOPE))
+				.satisfies(o -> assertThat(o.correlationId()).as("#331: the AS's own id, never the TP's state")
+						.isNotEqualTo(tpState));
 
-		// 3) The delegation state the return leg needs was saved under the TP state.
-		assertThat(delegationStateService.consume(tpState))
+		// 3) The delegation state the return leg needs was saved under the correlation id, with the TP's state.
+		assertThat(delegationStateService.consume(tpState)).isNull();
+		assertThat(delegationStateService.consume(outbound.correlationId()))
 				.extracting(DelegationStateService.Entry::clientId, DelegationStateService.Entry::redirectUri,
 						DelegationStateService.Entry::tpState)
 				.containsExactly(clientId, REDIRECT_URI, tpState);
@@ -489,11 +491,11 @@ class AuthCodeFlowOrchestrationIntegrationTest extends AbstractAuthserverIntegra
 				extractQueryParam(delegateUrl, "code_challenge_method")})
 				.as("the entry point forwards the challenge to the delegate")
 				.containsExactly(challenge, "S256");
-		mockMvc.perform(get(java.net.URI.create(delegateUrl))).andExpect(status().is3xxRedirection());
+		String correlationId = delegateToTheDataCustodian(delegateUrl, null);
 
 		// 2) Return from the DC: /continue replays /oauth2/authorize with the challenge; the code is minted with it.
 		Instant now = Instant.now();
-		String handoff = codec.encode(SignedHandoff.Return.of(tpState, now, now.plusSeconds(300),
+		String handoff = codec.encode(SignedHandoff.Return.of(correlationId, now, now.plusSeconds(300),
 				UUID.randomUUID().toString().replace("-", ""), CUSTOMER_ID, List.of(UUID.randomUUID()),
 				SignedHandoff.Return.CONSENT_ALLOW, SCOPE));
 		MvcResult continueResult = mockMvc.perform(get("/oauth2/authorize/continue").param("handoff", handoff))
@@ -638,10 +640,8 @@ class AuthCodeFlowOrchestrationIntegrationTest extends AbstractAuthserverIntegra
 						.containsExactly(java.net.URLEncoder.encode(secondState, java.nio.charset.StandardCharsets.UTF_8),
 								java.net.URLEncoder.encode(secondCallback, java.nio.charset.StandardCharsets.UTF_8)));
 
-		// 3) The delegate saves the return leg under the Third Party's state, with the callback it asked for.
-		mockMvc.perform(get(java.net.URI.create(delegateUrl)).session(session))
-				.andExpect(status().is3xxRedirection());
-		assertThat(delegationStateService.consume(secondState))
+		// 3) The delegate saves the return leg with the Third Party's state and the callback it asked for.
+		assertThat(delegationStateService.consume(delegateToTheDataCustodian(delegateUrl, session)))
 				.isNotNull()
 				.extracting(DelegationStateService.Entry::redirectUri, DelegationStateService.Entry::tpState,
 						DelegationStateService.Entry::requestedScope)
@@ -658,6 +658,194 @@ class AuthCodeFlowOrchestrationIntegrationTest extends AbstractAuthserverIntegra
 		assertThat(thirdParty.getClientSettings().isRequireProofKey())
 				.as("REQ.21 does not require PKCE; the customer-flow client must not require code_challenge")
 				.isFalse();
+	}
+
+	/** Follows the redirect to {@code /authorize/delegate}; returns the correlation id of the DC handoff. */
+	private String delegateToTheDataCustodian(String delegateUrl, MockHttpSession session) throws Exception {
+		org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder delegate =
+				get(java.net.URI.create(delegateUrl));
+		if (session != null) {
+			delegate.session(session);
+		}
+		String dcUrl = mockMvc.perform(delegate)
+				.andExpect(status().is3xxRedirection())
+				.andReturn().getResponse().getHeader("Location");
+		return codec.decodeOutbound(extractQueryParam(dcUrl, "handoff")).correlationId();
+	}
+
+	/**
+	 * #305: two authorizations of one customer run at once in one browser session (Monthly in one tab, Daily in
+	 * another). Both reach {@code /oauth2/authorize/continue} before either replay is followed, which is when
+	 * one slot of grant context and one shared consent mixed them up. Each replay must get a code (neither is
+	 * sent back to the DC), and each token its own approved scope and UsagePoints.
+	 */
+	@Test
+	@DisplayName("#305: two delegations at once in one session: each token gets its own scope and UsagePoints")
+	void concurrentDelegationsInOneSessionEachGetTheirOwnGrant() throws Exception {
+		String daily = "FB=4_5_15;IntervalDuration=900;BlockDuration=monthly;HistoryLength=34128000";
+		String suffix = UUID.randomUUID().toString().substring(0, 8);
+		String clientId = "pr-305-tp-" + suffix;
+		String clientSecret = "pr-305-secret-" + suffix;
+		registeredClientRepository.save(RegisteredClient.withId(UUID.randomUUID().toString())
+				.clientId(clientId)
+				.clientName("#305 Test ThirdParty")
+				.clientSecret("{noop}" + clientSecret)
+				.clientIdIssuedAt(Instant.now())
+				.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+				.authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+				.redirectUri(REDIRECT_URI)
+				.scope(SCOPE)
+				.scope(daily)
+				.clientSettings(ClientSettings.builder().requireAuthorizationConsent(true).requireProofKey(false).build())
+				.tokenSettings(TokenSettings.builder().accessTokenFormat(OAuth2TokenFormat.REFERENCE).build())
+				.build());
+		String monthlyId = "corr-305-m-" + suffix;
+		String dailyId = "corr-305-d-" + suffix;
+		UUID monthlyUsagePoint = UUID.randomUUID();
+		UUID dailyUsagePoint = UUID.randomUUID();
+		delegationStateService.save(monthlyId, clientId, REDIRECT_URI, "tp-m-" + suffix, SCOPE);
+		delegationStateService.save(dailyId, clientId, REDIRECT_URI, "tp-d-" + suffix, daily);
+		when(backchannelClient.provision(any())).thenReturn(new BackchannelResponse(UUID.randomUUID(),
+				UUID.randomUUID(), UUID.randomUUID(), "https://dc.example/Subscription/1",
+				"https://dc.example/Authorization/1", "https://dc.example/RetailCustomer/42/Customer/1"));
+
+		// Both tabs return from the DC before either follows its replay.
+		MvcResult monthlyContinue = mockMvc.perform(get("/oauth2/authorize/continue")
+						.param("handoff", allowHandoff(monthlyId, SCOPE, monthlyUsagePoint)))
+				.andExpect(status().is3xxRedirection())
+				.andReturn();
+		MockHttpSession session = (MockHttpSession) monthlyContinue.getRequest().getSession(false);
+		String dailyReplay = mockMvc.perform(get("/oauth2/authorize/continue").session(session)
+						.param("handoff", allowHandoff(dailyId, daily, dailyUsagePoint)))
+				.andExpect(status().is3xxRedirection())
+				.andReturn().getResponse().getHeader("Location");
+		String monthlyReplay = monthlyContinue.getResponse().getHeader("Location");
+
+		// Monthly's replay first, then Daily's: each mints a code at the TP callback, with its own state.
+		String monthlyCallback = followReplay(monthlyReplay, session);
+		String dailyCallback = followReplay(dailyReplay, session);
+		assertThat(monthlyCallback).startsWith(REDIRECT_URI).contains("code=", "state=tp-m-" + suffix);
+		assertThat(dailyCallback).as("Daily's replay is not sent back to the DC")
+				.startsWith(REDIRECT_URI).contains("code=", "state=tp-d-" + suffix);
+
+		// Each code is provisioned with its own delegation's scope and UsagePoints.
+		for (String callback : List.of(monthlyCallback, dailyCallback)) {
+			mockMvc.perform(post("/oauth2/token")
+							.with(httpBasic(clientId, clientSecret))
+							.param("grant_type", "authorization_code")
+							.param("code", extractQueryParam(callback, "code"))
+							.param("redirect_uri", REDIRECT_URI))
+					.andExpect(status().isOk());
+		}
+		ArgumentCaptor<BackchannelRequest> captor = ArgumentCaptor.forClass(BackchannelRequest.class);
+		verify(backchannelClient, org.mockito.Mockito.times(2)).provision(captor.capture());
+		assertThat(captor.getAllValues())
+				.extracting(BackchannelRequest::correlationId, BackchannelRequest::grantedScope,
+						BackchannelRequest::selectedUsagePointIds)
+				.containsExactly(
+						org.assertj.core.groups.Tuple.tuple(monthlyId, SCOPE, List.of(monthlyUsagePoint)),
+						org.assertj.core.groups.Tuple.tuple(dailyId, daily, List.of(dailyUsagePoint)));
+	}
+
+	/**
+	 * #305: the browser never follows {@code /continue}'s replay (the tab is closed). Nothing it left may let a
+	 * later authorization in that session skip the DC: no sign-in, no consent, and a grant context only its own
+	 * replay can use.
+	 */
+	@Test
+	@DisplayName("#305: a replay never followed lets no later authorization in the session skip the DC")
+	void unfollowedReplayLetsNoLaterAuthorizationSkipTheDataCustodian() throws Exception {
+		String suffix = UUID.randomUUID().toString().substring(0, 8);
+		String clientId = "pr-305-u-" + suffix;
+		registerClient(clientId, "pr-305-u-secret-" + suffix);
+		String correlationId = "corr-305-u-" + suffix;
+		delegationStateService.save(correlationId, clientId, REDIRECT_URI, "tp-u-" + suffix, SCOPE);
+		MvcResult continueResult = mockMvc.perform(get("/oauth2/authorize/continue")
+						.param("handoff", allowHandoff(correlationId, SCOPE, UUID.randomUUID())))
+				.andExpect(status().is3xxRedirection())
+				.andReturn();
+		MockHttpSession session = (MockHttpSession) continueResult.getRequest().getSession(false);
+		String replay = continueResult.getResponse().getHeader("Location");
+
+		// A new authorization with the same scope in the same session: delegated, not answered with a code.
+		java.net.URI later = org.springframework.web.util.UriComponentsBuilder.fromPath("/oauth2/authorize")
+				.queryParam("response_type", "code")
+				.queryParam("client_id", clientId)
+				.queryParam("scope", SCOPE)
+				.queryParam("redirect_uri", REDIRECT_URI)
+				.queryParam("state", "tp-later-" + suffix)
+				.encode()
+				.build()
+				.toUri();
+		assertDelegated(mockMvc.perform(get(later).session(session).accept(org.springframework.http.MediaType.TEXT_HTML))
+				.andReturn());
+
+		// The replay URL with another delegation's id, or in another browser session: delegated, no code.
+		String forged = replay.replace(correlationId, "corr-305-unknown-" + suffix);
+		assertDelegated(mockMvc.perform(get(java.net.URI.create(forged)).session(session)
+				.accept(org.springframework.http.MediaType.TEXT_HTML)).andReturn());
+		assertDelegated(mockMvc.perform(get(java.net.URI.create(replay))
+				.accept(org.springframework.http.MediaType.TEXT_HTML)).andReturn());
+
+		// Its own replay still completes, once.
+		assertThat(followReplay(replay, session)).startsWith(REDIRECT_URI).contains("code=");
+		assertDelegated(mockMvc.perform(get(java.net.URI.create(replay)).session(session)
+				.accept(org.springframework.http.MediaType.TEXT_HTML)).andReturn());
+	}
+
+	/**
+	 * #305 review: a Third Party {@code state} with {@code +}, {@code /} and {@code =} (standard Base64) must survive
+	 * the replay. A raw {@code +} is read back as a space, so the replay would not match its delegation, the
+	 * customer would be sent through the DC again, and the TP would get a state it never issued.
+	 */
+	@Test
+	@DisplayName("#305 review: a state with '+', '/' and '=' gets a code on the first replay and comes back unchanged")
+	void stateWithReservedCharactersComesBackUnchanged() throws Exception {
+		String suffix = UUID.randomUUID().toString().substring(0, 8);
+		String clientId = "pr-305-p-" + suffix;
+		registerClient(clientId, "pr-305-p-secret-" + suffix);
+		String correlationId = "corr-305-p-" + suffix;
+		String tpState = "a+b/c==" + suffix;
+		delegationStateService.save(correlationId, clientId, REDIRECT_URI, tpState, SCOPE);
+
+		MvcResult continueResult = mockMvc.perform(get("/oauth2/authorize/continue")
+						.param("handoff", allowHandoff(correlationId, SCOPE, UUID.randomUUID())))
+				.andExpect(status().is3xxRedirection())
+				.andReturn();
+		String replay = continueResult.getResponse().getHeader("Location");
+		// MockMvc decodes '+' in a query as '+', not as Tomcat's space, so following the replay alone would not
+		// catch a raw '+'; the replay must carry the state form-encoded.
+		assertThat(java.net.URI.create(replay).getRawQuery())
+				.contains("&state=" + java.net.URLEncoder.encode(tpState, java.nio.charset.StandardCharsets.UTF_8) + "&")
+				.contains("state=a%2Bb%2Fc%3D%3D");
+		String callback = followReplay(replay, (MockHttpSession) continueResult.getRequest().getSession(false));
+
+		assertThat(callback).startsWith(REDIRECT_URI).contains("code=")
+				.satisfies(url -> assertThat(java.net.URLDecoder.decode(extractQueryParam(url, "state"),
+						java.nio.charset.StandardCharsets.UTF_8)).isEqualTo(tpState));
+	}
+
+	private static void assertDelegated(MvcResult result) {
+		assertThat(result.getResponse())
+				.satisfies(r -> assertThat(r.getStatus()).isBetween(300, 399))
+				.satisfies(r -> assertThat(r.getHeader("Location"))
+						.as("delegated to the DC, not answered with a code")
+						.doesNotContain("code=")
+						.satisfies(url -> assertThat(java.net.URI.create(url).getPath()).isEqualTo("/authorize/delegate")));
+	}
+
+	private String allowHandoff(String correlationId, String approvedScope, UUID usagePoint) {
+		Instant now = Instant.now();
+		return codec.encode(SignedHandoff.Return.of(correlationId, now, now.plusSeconds(300),
+				UUID.randomUUID().toString().replace("-", ""), CUSTOMER_ID, List.of(usagePoint),
+				SignedHandoff.Return.CONSENT_ALLOW, approvedScope));
+	}
+
+	/** Follows a /continue replay in {@code session}; returns where it redirects. */
+	private String followReplay(String replay, MockHttpSession session) throws Exception {
+		return mockMvc.perform(get(java.net.URI.create(replay)).session(session))
+				.andExpect(status().is3xxRedirection())
+				.andReturn().getResponse().getHeader("Location");
 	}
 
 	/** Registers a confidential ESPI test client (auth-code + refresh, opaque tokens, no PKCE). */

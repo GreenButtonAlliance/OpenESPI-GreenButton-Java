@@ -40,8 +40,6 @@ import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
-import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsent;
-import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsentService;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.settings.OAuth2TokenFormat;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -99,9 +97,6 @@ class OAuth2DynamicClientRegistrationIntegrationTest extends AbstractAuthserverI
 
     @Autowired
     private SignedHandoffCodec codec;
-
-    @Autowired
-    private OAuth2AuthorizationConsentService consentService;
 
     @MockitoBean
     private DataCustodianBackchannelClient backchannelClient;
@@ -305,15 +300,6 @@ class OAuth2DynamicClientRegistrationIntegrationTest extends AbstractAuthserverI
                 .andExpect(header().string("Location", org.hamcrest.Matchers.startsWith("/oauth2/authorize")))
                 .andReturn();
         MockHttpSession session = (MockHttpSession) continueResult.getRequest().getSession(false);
-
-        // Workaround for a separate, pre-existing issue (not #196): AuthorizeContinueController stores the
-        // approved scope in the consent store split on ';' (FB=4_5_15 / IntervalDuration=3600 / ...), while
-        // Spring AS parses the replayed scope parameter on spaces, so a full ESPI scope string never matches
-        // the stored consent. Re-save the consent with the scope token Spring AS will compare against.
-        consentService.save(OAuth2AuthorizationConsent
-                .withId(registeredClientRepository.findByClientId(clientId).getId(), "42")
-                .scope(ESPI_SCOPE)
-                .build());
 
         // URI (not a String template) so MockMvc does not re-encode the already-encoded ESPI scope (%3D).
         String location = mockMvc.perform(get(URI.create(continueResult.getResponse().getHeader("Location")))

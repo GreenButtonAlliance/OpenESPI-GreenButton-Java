@@ -17,6 +17,7 @@
 package org.greenbuttonalliance.espi.authserver.grant;
 
 import java.io.Serializable;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -32,8 +33,21 @@ import java.util.UUID;
  * <p>Implements {@link Serializable} because {@link jakarta.servlet.http.HttpSession} requires it
  * for replication/persistence.</p>
  *
- * @param correlationId         the AS-supplied trace id that ties the outbound, return, and
- *                              back-channel calls together in logs
+ * <p>Since #305 it also stands in for the customer's AS sign-in and consent: it is kept per delegation
+ * (keyed by {@code correlationId}) with an expiry, and only the replayed {@code /oauth2/authorize} that carries
+ * its id is signed in
+ * ({@link org.greenbuttonalliance.espi.authserver.web.delegate.DelegatedCustomerAuthenticationFilter}) and consented
+ * ({@link DelegatedConsentService}) from it. The filter takes it from the session, once, and only for a request
+ * whose parameters are those of the replay {@code /continue} built ({@link #replay()}), with no
+ * {@code request_uri}.</p>
+ *
+ * @param correlationId         the AS-generated id of the delegation (#331); ties the outbound, return, and
+ *                              back-channel calls together and keys this context
+ * @param clientId              the Third Party's {@code client_id}
+ * @param registeredClientId    the Third Party's {@code RegisteredClient} id (the consent key)
+ * @param principal             the customer identity the DC returned (the authorization's principal name)
+ * @param replay                the request parameters of the replayed {@code /oauth2/authorize} besides
+ *                              {@code client_id} and {@code scope} (the approved scope)
  * @param retailCustomerId      DC primary key of the authenticated customer; numeric per DC's
  *                              {@code SubscriptionProvisionRequest} contract. The AS parses the
  *                              return handoff's opaque {@code principal} into this Long at
@@ -42,11 +56,29 @@ import java.util.UUID;
  *                              narrowing); {@code ;}-delimited ESPI tokens
  * @param selectedUsagePointIds usage points the customer chose to share with the TP; may be empty
  *                              for grants that include only Customer/PII scope
+ * @param expiresAt             after this the context is ignored and discarded
  */
 public record GrantContext(
 		String correlationId,
+		String clientId,
+		String registeredClientId,
+		String principal,
+		Replay replay,
 		Long retailCustomerId,
 		String approvedScope,
-		List<UUID> selectedUsagePointIds
+		List<UUID> selectedUsagePointIds,
+		Instant expiresAt
 ) implements Serializable {
+
+	boolean isExpired(Instant now) {
+		return !now.isBefore(expiresAt);
+	}
+
+	/**
+	 * The Third Party's {@code redirect_uri}, {@code state} and PKCE challenge, as replayed (#305 review): a request
+	 * naming the delegation with any other value is not its replay. Blank and missing values are the same.
+	 */
+	public record Replay(String redirectUri, String state, String codeChallenge, String codeChallengeMethod)
+			implements Serializable {
+	}
 }
