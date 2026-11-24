@@ -138,9 +138,11 @@ class AuthorizeContinueControllerTest {
 
 			assertThat(grantContextSessionStore.peek(session, cid))
 					.extracting(GrantContext::clientId, GrantContext::registeredClientId, GrantContext::principal,
-							GrantContext::retailCustomerId, GrantContext::approvedScope,
+							GrantContext::replay, GrantContext::retailCustomerId, GrantContext::approvedScope,
 							GrantContext::selectedUsagePointIds)
-					.containsExactly("tp-1", "client-internal-id-1", "42", 42L, ESPI_SCOPE, List.of(usagePoint));
+					.containsExactly("tp-1", "client-internal-id-1", "42",
+							new GrantContext.Replay("https://tp.example/cb", "tp-state-1", null, null),
+							42L, ESPI_SCOPE, List.of(usagePoint));
 			// #305: the customer is signed in only on the replay, never in the session.
 			assertThat(session.getAttribute(SECURITY_CONTEXT_KEY)).isNull();
 
@@ -176,7 +178,7 @@ class AuthorizeContinueControllerTest {
 					DelegationStateService.ProofKey.of(challenge, "S256"));
 			when(registeredClientRepository.findByClientId("tp-1")).thenReturn(client(ESPI_SCOPE));
 
-			mockMvc.perform(get("/oauth2/authorize/continue")
+			mockMvc.perform(get("/oauth2/authorize/continue").session(session)
 							.param("handoff", codec.encode(allowReturn(cid, ESPI_SCOPE, List.of()))))
 					.andExpect(status().is3xxRedirection())
 					.andExpect(redirectedUrl(
@@ -184,6 +186,10 @@ class AuthorizeContinueControllerTest {
 									+ "&scope=" + ESPI_SCOPE_IN_URL
 									+ "&state=tp-state-1&espi_delegation=" + cid
 									+ "&code_challenge=" + challenge + "&code_challenge_method=S256"));
+
+			// Only a request with this challenge is the delegation's replay (#305 review).
+			assertThat(grantContextSessionStore.peek(session, cid).replay())
+					.isEqualTo(new GrantContext.Replay("https://tp.example/cb", "tp-state-1", challenge, "S256"));
 		}
 
 		@Test

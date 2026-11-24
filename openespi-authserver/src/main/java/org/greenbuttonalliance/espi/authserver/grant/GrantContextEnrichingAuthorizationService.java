@@ -40,9 +40,10 @@ import java.util.stream.Collectors;
  *       request, builds an {@link OAuth2Authorization} carrying the freshly-minted authorization
  *       code, and calls {@link #save(OAuth2Authorization)}.</li>
  *   <li>This wrapper sees the save of the authorization carrying the code, takes the {@link GrantContext}
- *       of the delegation the request names ({@link GrantContextSessionStore#DELEGATION_PARAMETER}, #305)
- *       out of the session, checks it is this client's and customer's, and rebuilds the authorization
- *       with the grant context as attributes before delegating to the underlying JDBC service.</li>
+ *       the replay of its delegation took from the session
+ *       ({@link GrantContextSessionStore#DELEGATED_CONTEXT_ATTRIBUTE}, #305), checks it is this client's and
+ *       customer's (or fails the request), and rebuilds the authorization with the grant context as attributes
+ *       before delegating to the underlying JDBC service.</li>
  * </ol>
  *
  * <h2>Why attributes?</h2>
@@ -59,8 +60,8 @@ import java.util.stream.Collectors;
  *
  * <h2>Idempotency</h2>
  * Spring AS calls {@code save()} repeatedly across the authorization lifecycle (code issue, token
- * exchange, token use). The session is consumed single-use on the first save that finds it; later
- * saves see no context and pass through.
+ * exchange, token use). Only the replay request carries the context, and an authorization already stamped is
+ * left alone; later saves (token exchange, token use) see no context and pass through.
  */
 @Slf4j
 public class GrantContextEnrichingAuthorizationService implements OAuth2AuthorizationService {
@@ -71,12 +72,9 @@ public class GrantContextEnrichingAuthorizationService implements OAuth2Authoriz
 	public static final String ATTR_CORRELATION_ID = "espi.correlation_id";
 
 	private final OAuth2AuthorizationService delegate;
-	private final GrantContextSessionStore sessionStore;
 
-	public GrantContextEnrichingAuthorizationService(OAuth2AuthorizationService delegate,
-													 GrantContextSessionStore sessionStore) {
+	public GrantContextEnrichingAuthorizationService(OAuth2AuthorizationService delegate) {
 		this.delegate = delegate;
-		this.sessionStore = sessionStore;
 	}
 
 	@Override
@@ -111,16 +109,17 @@ public class GrantContextEnrichingAuthorizationService implements OAuth2Authoriz
 			return authorization;
 		}
 
-		// #305: the context of the delegation this replay names, not the session's latest.
-		GrantContext ctx = sessionStore.consume(GrantContextSessionStore.currentRequest());
+		// #305: the context the replay of its delegation took (DelegatedCustomerAuthenticationFilter), on this
+		// request only. A customer is signed in only on such a replay, so a customer's code always has one.
+		GrantContext ctx = GrantContextSessionStore.delegated(GrantContextSessionStore.currentRequest());
 		if (ctx == null) {
 			return authorization;
 		}
 		if (!ctx.registeredClientId().equals(authorization.getRegisteredClientId())
 				|| !ctx.principal().equals(authorization.getPrincipalName())) {
-			log.warn("Grant context of correlation_id={} not stamped: it is another client's or customer's",
-					ctx.correlationId());
-			return authorization;
+			// Never mint a code without its delegation's grant context: the provider turns this into an error.
+			throw new IllegalStateException("grant context of correlation_id=" + ctx.correlationId()
+					+ " is another client's or customer's");
 		}
 
 		log.info("Stamping grant context on OAuth2Authorization id={}, correlation_id={}",

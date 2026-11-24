@@ -38,8 +38,9 @@ import java.util.Map;
  * <p>#305: one context per delegation, keyed by its correlation id, never one slot per session, so two
  * authorizations running at once in one browser (two tabs) cannot take each other's context. The replay names
  * its delegation with {@link #DELEGATION_PARAMETER}; a request without it, or with an unknown or expired one,
- * finds nothing. Each context expires after {@link #TTL}, so a replay the browser never follows leaves nothing
- * a later authorization can use.</p>
+ * finds nothing. The replay takes the context out of the session once (a second request for it finds nothing)
+ * and keeps it on the request ({@link #DELEGATED_CONTEXT_ATTRIBUTE}). Each context expires after {@link #TTL},
+ * so a replay the browser never follows leaves nothing a later authorization can use.</p>
  *
  * <p>Being in the session also binds it to the browser that completed the delegation: the id alone, without
  * that session, finds nothing.</p>
@@ -51,6 +52,12 @@ public class GrantContextSessionStore {
 
 	/** The replayed {@code /oauth2/authorize} parameter naming its delegation (the correlation id). */
 	public static final String DELEGATION_PARAMETER = "espi_delegation";
+
+	/**
+	 * Request attribute holding the context the replay took from the session
+	 * ({@code DelegatedCustomerAuthenticationFilter}), for the consent and the enricher on that request only.
+	 */
+	public static final String DELEGATED_CONTEXT_ATTRIBUTE = GrantContextSessionStore.class.getName() + ".DELEGATED";
 
 	/** As long as the delegation state ({@code DelegationStateService}). */
 	public static final Duration TTL = Duration.ofMinutes(5);
@@ -91,16 +98,19 @@ public class GrantContextSessionStore {
 		}
 	}
 
-	/** {@link #peek(HttpSession, String)} for the delegation the request names; null if it names none. */
-	public GrantContext peek(HttpServletRequest request) {
-		return request == null ? null
-				: peek(request.getSession(false), request.getParameter(DELEGATION_PARAMETER));
-	}
-
 	/** {@link #consume(HttpSession, String)} for the delegation the request names; null if it names none. */
 	public GrantContext consume(HttpServletRequest request) {
 		return request == null ? null
 				: consume(request.getSession(false), request.getParameter(DELEGATION_PARAMETER));
+	}
+
+	/**
+	 * The context taken for this request, the replay of its delegation
+	 * ({@link #DELEGATED_CONTEXT_ATTRIBUTE}); null on any other request.
+	 */
+	public static GrantContext delegated(HttpServletRequest request) {
+		return request != null && request.getAttribute(DELEGATED_CONTEXT_ATTRIBUTE) instanceof GrantContext ctx
+				? ctx : null;
 	}
 
 	/** The request being served on this thread, or null outside one. */

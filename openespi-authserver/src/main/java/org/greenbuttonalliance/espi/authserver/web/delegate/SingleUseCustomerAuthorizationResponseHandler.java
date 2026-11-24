@@ -18,8 +18,6 @@ package org.greenbuttonalliance.espi.authserver.web.delegate;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.extern.slf4j.Slf4j;
-import org.greenbuttonalliance.espi.authserver.grant.GrantContextSessionStore;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -47,38 +45,30 @@ import java.nio.charset.StandardCharsets;
  * <p>Since #305 the customer is signed in and has consented only on the replayed {@code /oauth2/authorize} of a
  * delegation, from its {@link org.greenbuttonalliance.espi.authserver.grant.GrantContext}
  * ({@link DelegatedCustomerAuthenticationFilter},
- * {@link org.greenbuttonalliance.espi.authserver.grant.DelegatedConsentService}); no sign-in or consent is saved.
- * When a code is minted, {@code GrantContextEnrichingAuthorizationService} has already taken the context. When
- * the replay ends in an error (e.g. {@code invalid_scope}), nothing else would, so it is removed here: the
- * delegation cannot be replayed again. Every customer authorization thus goes through
- * {@link DelegateAuthorizationEntryPoint} and the Data Custodian's Authorization Screen with the Third Party's
- * own {@code state} and {@code redirect_uri}. A replay the browser never follows leaves a context that only
- * its own replay can use, and only until it expires.</p>
+ * {@link org.greenbuttonalliance.espi.authserver.grant.DelegatedConsentService}); no sign-in or consent is saved,
+ * and the replay has already taken its context out of the session, so whether it ends in a code or an error
+ * (e.g. {@code invalid_scope}) the delegation cannot be replayed again and nothing is left to clear here. Every
+ * customer authorization thus goes through {@link DelegateAuthorizationEntryPoint} and the Data Custodian's
+ * Authorization Screen with the Third Party's own {@code state} and {@code redirect_uri}. A replay the browser
+ * never follows leaves a context that only its own replay can use, and only until it expires.</p>
  *
  * <p>The responses themselves are Spring's defaults ({@code OAuth2AuthorizationEndpointFilter}'s
  * {@code sendAuthorizationResponse} and {@code sendErrorResponse}): a redirect to the request's
  * {@code redirect_uri} with {@code code}, or with {@code error}, {@code error_description} and
  * {@code error_uri}, and, when present, {@code state}; an error without a {@code redirect_uri} is a 400.</p>
  */
-@Slf4j
 public class SingleUseCustomerAuthorizationResponseHandler
 		implements AuthenticationSuccessHandler, AuthenticationFailureHandler {
 
 	static final String CUSTOMER_AUTHORITY = "ROLE_CUSTOMER";
 
-	private final GrantContextSessionStore grantContextSessionStore;
 	private final RedirectStrategy redirectStrategy = new DefaultRedirectStrategy();
-
-	public SingleUseCustomerAuthorizationResponseHandler(GrantContextSessionStore grantContextSessionStore) {
-		this.grantContextSessionStore = grantContextSessionStore;
-	}
 
 	@Override
 	public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
 										Authentication authentication) throws IOException {
 		OAuth2AuthorizationCodeRequestAuthenticationToken codeRequest =
 				(OAuth2AuthorizationCodeRequestAuthenticationToken) authentication;
-		grantContextSessionStore.consume(request);
 		UriComponentsBuilder uri = UriComponentsBuilder.fromUriString(codeRequest.getRedirectUri())
 				.queryParam(OAuth2ParameterNames.CODE, codeRequest.getAuthorizationCode().getTokenValue());
 		sendRedirect(request, response, uri, codeRequest.getState());
@@ -87,9 +77,6 @@ public class SingleUseCustomerAuthorizationResponseHandler
 	@Override
 	public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
 										AuthenticationException exception) throws IOException {
-		if (grantContextSessionStore.consume(request) != null) {
-			log.debug("Delegation ended by an authorization error response: {}", exception.getMessage());
-		}
 		OAuth2AuthorizationCodeRequestAuthenticationToken codeRequest =
 				exception instanceof OAuth2AuthorizationCodeRequestAuthenticationException codeRequestException
 						? codeRequestException.getAuthorizationCodeRequestAuthentication()

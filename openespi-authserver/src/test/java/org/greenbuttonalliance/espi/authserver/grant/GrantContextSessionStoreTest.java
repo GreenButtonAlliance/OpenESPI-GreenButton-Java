@@ -90,7 +90,7 @@ class GrantContextSessionStoreTest {
 	}
 
 	@Test
-	@DisplayName("#305: the request form looks up the delegation the request names, and only that")
+	@DisplayName("#305: the request form takes the delegation the request names, once, and only in its session")
 	void requestNamesItsDelegation() {
 		GrantContext ctx = GrantContexts.of("corr-r", "FB_1", List.of());
 		store.put(session, ctx);
@@ -102,10 +102,21 @@ class GrantContextSessionStoreTest {
 		MockHttpServletRequest otherSession = new MockHttpServletRequest();
 		otherSession.setParameter(GrantContextSessionStore.DELEGATION_PARAMETER, "corr-r");
 
-		assertThat(store.peek(unnamed)).isNull();
-		assertThat(store.peek(otherSession)).isNull();
-		assertThat(store.peek(named)).isEqualTo(ctx);
+		assertThat(store.consume(unnamed)).isNull();
+		assertThat(store.consume(otherSession)).isNull();
 		assertThat(store.consume(named)).isEqualTo(ctx);
-		assertThat(store.peek(named)).isNull();
+		assertThat(store.consume(named)).as("a second request for it").isNull();
+	}
+
+	@Test
+	@DisplayName("#305: the delegated context is the one kept on the request, and only there")
+	void delegatedIsTheRequestAttribute() {
+		GrantContext ctx = GrantContexts.of("corr-d", "FB_1", List.of());
+		MockHttpServletRequest request = new MockHttpServletRequest();
+
+		assertThat(GrantContextSessionStore.delegated(request)).isNull();
+		assertThat(GrantContextSessionStore.delegated(null)).isNull();
+		request.setAttribute(GrantContextSessionStore.DELEGATED_CONTEXT_ATTRIBUTE, ctx);
+		assertThat(GrantContextSessionStore.delegated(request)).isEqualTo(ctx);
 	}
 }

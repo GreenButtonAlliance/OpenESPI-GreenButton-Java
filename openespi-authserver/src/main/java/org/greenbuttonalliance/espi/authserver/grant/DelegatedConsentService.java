@@ -21,20 +21,19 @@ import org.springframework.util.StringUtils;
  * <p>Before #305, {@code /oauth2/authorize/continue} saved the consent for (client, customer), and it was removed
  * after the authorization response. Two authorizations at once in one browser then shared it: one's removal sent
  * the other's replay back to the DC, and a replay the browser never followed left it in place for the next
- * authorization (#276). Now nothing is saved: for a request naming a live delegation
- * ({@link GrantContextSessionStore#DELEGATION_PARAMETER}) of this client and customer, the consent is the scope the
- * customer approved on the DC Authorization Screen. Every other lookup goes to the stored consents, which only
+ * authorization (#276). Now nothing is saved: on the replay of a delegation (the request whose context
+ * {@link org.greenbuttonalliance.espi.authserver.web.delegate.DelegatedCustomerAuthenticationFilter} took,
+ * {@link GrantContextSessionStore#DELEGATED_CONTEXT_ATTRIBUTE}), for that delegation's client and customer, the
+ * consent is the scope the customer approved on the DC Authorization Screen. Every other lookup goes to the stored consents, which only
  * a principal other than a delegated customer can reach: a customer is signed in only on such a replay
  * ({@link org.greenbuttonalliance.espi.authserver.web.delegate.DelegatedCustomerAuthenticationFilter}).</p>
  */
 public class DelegatedConsentService implements OAuth2AuthorizationConsentService {
 
 	private final OAuth2AuthorizationConsentService delegate;
-	private final GrantContextSessionStore grantContexts;
 
-	public DelegatedConsentService(OAuth2AuthorizationConsentService delegate, GrantContextSessionStore grantContexts) {
+	public DelegatedConsentService(OAuth2AuthorizationConsentService delegate) {
 		this.delegate = delegate;
-		this.grantContexts = grantContexts;
 	}
 
 	@Override
@@ -49,7 +48,7 @@ public class DelegatedConsentService implements OAuth2AuthorizationConsentServic
 
 	@Override
 	public OAuth2AuthorizationConsent findById(String registeredClientId, String principalName) {
-		GrantContext ctx = grantContexts.peek(GrantContextSessionStore.currentRequest());
+		GrantContext ctx = GrantContextSessionStore.delegated(GrantContextSessionStore.currentRequest());
 		if (ctx != null && ctx.registeredClientId().equals(registeredClientId)
 				&& ctx.principal().equals(principalName)) {
 			OAuth2AuthorizationConsent.Builder consent = OAuth2AuthorizationConsent.withId(registeredClientId, principalName);

@@ -435,9 +435,10 @@ class AuthCodeFlowOrchestrationIntegrationTest extends AbstractAuthserverIntegra
 		assertThat(java.net.URI.create(dcUrl).getPath()).endsWith("/oauth/authorize-screen");
 		SignedHandoff.Outbound outbound = codec.decodeOutbound(extractQueryParam(dcUrl, "handoff"));
 		assertThat(outbound)
-				.extracting(SignedHandoff.Outbound::clientId, SignedHandoff.Outbound::grantedScope)
-				.containsExactly(clientId, SCOPE);
-		assertThat(outbound.correlationId()).as("#331: the AS's own id, never the TP's state").isNotEqualTo(tpState);
+				.satisfies(o -> assertThat(o.clientId()).isEqualTo(clientId))
+				.satisfies(o -> assertThat(o.grantedScope()).isEqualTo(SCOPE))
+				.satisfies(o -> assertThat(o.correlationId()).as("#331: the AS's own id, never the TP's state")
+						.isNotEqualTo(tpState));
 
 		// 3) The delegation state the return leg needs was saved under the correlation id, with the TP's state.
 		assertThat(delegationStateService.consume(tpState)).isNull();
@@ -793,11 +794,12 @@ class AuthCodeFlowOrchestrationIntegrationTest extends AbstractAuthserverIntegra
 	}
 
 	private static void assertDelegated(MvcResult result) {
-		assertThat(result.getResponse().getStatus()).isBetween(300, 399);
-		assertThat(result.getResponse().getHeader("Location"))
-				.as("delegated to the DC, not answered with a code")
-				.doesNotContain("code=")
-				.satisfies(url -> assertThat(java.net.URI.create(url).getPath()).isEqualTo("/authorize/delegate"));
+		assertThat(result.getResponse())
+				.satisfies(r -> assertThat(r.getStatus()).isBetween(300, 399))
+				.satisfies(r -> assertThat(r.getHeader("Location"))
+						.as("delegated to the DC, not answered with a code")
+						.doesNotContain("code=")
+						.satisfies(url -> assertThat(java.net.URI.create(url).getPath()).isEqualTo("/authorize/delegate")));
 	}
 
 	private String allowHandoff(String correlationId, String approvedScope, UUID usagePoint) {

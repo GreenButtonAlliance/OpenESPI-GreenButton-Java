@@ -345,10 +345,10 @@ class AdminEndpointAuthorizationIntegrationTest extends AbstractAuthserverIntegr
 		MvcResult continueResult = continueDelegatedFlow();
 		MockHttpSession session = (MockHttpSession) continueResult.getRequest().getSession(false);
 
-		assertThat(session).isNotNull();
-		assertThat(session.getAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY))
-				.as("#305: the customer is signed in only on the replay, never in the session")
-				.isNull();
+		assertThat(session).isNotNull()
+				.satisfies(s -> assertThat(s.getAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY))
+						.as("#305: the customer is signed in only on the replay, never in the session")
+						.isNull());
 		String location = mockMvc.perform(get(java.net.URI.create(continueResult.getResponse().getHeader("Location")))
 						.session(session))
 				.andExpect(status().is3xxRedirection())

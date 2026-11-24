@@ -16,13 +16,10 @@
 
 package org.greenbuttonalliance.espi.authserver.web.delegate;
 
-import org.greenbuttonalliance.espi.authserver.grant.GrantContextSessionStore;
-import org.greenbuttonalliance.espi.authserver.grant.GrantContexts;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
-import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -45,10 +42,7 @@ class SingleUseCustomerAuthorizationResponseHandlerTest {
 
 	private static final String SCOPE = "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000";
 
-	private final GrantContextSessionStore grantContexts = new GrantContextSessionStore();
-	private final SingleUseCustomerAuthorizationResponseHandler handler =
-			new SingleUseCustomerAuthorizationResponseHandler(grantContexts);
-	private final MockHttpSession session = new MockHttpSession();
+	private final SingleUseCustomerAuthorizationResponseHandler handler = new SingleUseCustomerAuthorizationResponseHandler();
 	private final Authentication customer = UsernamePasswordAuthenticationToken.authenticated("42", null,
 			List.of(new SimpleGrantedAuthority("ROLE_CUSTOMER")));
 
@@ -58,24 +52,14 @@ class SingleUseCustomerAuthorizationResponseHandlerTest {
 				principal, code, "https://tp.example/cb", state, Set.of(SCOPE));
 	}
 
-	/** The replay of delegation {@code correlationId}, whose grant context is in the session. */
-	private MockHttpServletRequest replayOf(String correlationId) {
-		grantContexts.put(session, GrantContexts.of(correlationId, SCOPE, List.of()));
-		MockHttpServletRequest request = new MockHttpServletRequest("GET", "/oauth2/authorize");
-		request.setSession(session);
-		request.setParameter(GrantContextSessionStore.DELEGATION_PARAMETER, correlationId);
-		return request;
-	}
-
 	@Test
-	@DisplayName("a code goes to the Third Party with its state, and the delegation's context is gone")
+	@DisplayName("a code goes to the Third Party with its state")
 	void codeGoesToTheThirdParty() throws Exception {
 		MockHttpServletResponse response = new MockHttpServletResponse();
 
-		handler.onAuthenticationSuccess(replayOf("cid"), response, minted(customer, "tp state+&="));
+		handler.onAuthenticationSuccess(new MockHttpServletRequest(), response, minted(customer, "tp state+&="));
 
 		assertThat(response.getRedirectedUrl()).isEqualTo("https://tp.example/cb?code=the-code&state=tp%20state%2B%26%3D");
-		assertThat(grantContexts.peek(session, "cid")).isNull();
 	}
 
 	@Test
@@ -83,7 +67,7 @@ class SingleUseCustomerAuthorizationResponseHandlerTest {
 	void noStateNoStateParameter() throws Exception {
 		MockHttpServletResponse response = new MockHttpServletResponse();
 
-		handler.onAuthenticationSuccess(replayOf("cid"), response, minted(customer, null));
+		handler.onAuthenticationSuccess(new MockHttpServletRequest(), response, minted(customer, null));
 
 		assertThat(response.getRedirectedUrl()).isEqualTo("https://tp.example/cb?code=the-code");
 	}
@@ -98,18 +82,14 @@ class SingleUseCustomerAuthorizationResponseHandlerTest {
 	}
 
 	@Test
-	@DisplayName("a replay ending in an error: the delegation's context is removed, the error goes to the Third Party")
-	void errorRemovesTheDelegationsContext() throws Exception {
-		grantContexts.put(session, GrantContexts.of("other", SCOPE, List.of()));
-		MockHttpServletRequest request = replayOf("cid");
+	@DisplayName("a replay ending in an error: the error goes to the Third Party with its state")
+	void errorGoesToTheThirdParty() throws Exception {
 		MockHttpServletResponse response = new MockHttpServletResponse();
 
-		handler.onAuthenticationFailure(request, response, refused(customer, "https://tp.example/cb"));
+		handler.onAuthenticationFailure(new MockHttpServletRequest(), response, refused(customer, "https://tp.example/cb"));
 
 		assertThat(response.getRedirectedUrl()).isEqualTo(
 				"https://tp.example/cb?error=invalid_scope&error_description=scope%20not%20allowed&state=tp%20state");
-		assertThat(grantContexts.peek(session, "cid")).isNull();
-		assertThat(grantContexts.peek(session, "other")).as("another delegation's context is kept").isNotNull();
 	}
 
 	@Test

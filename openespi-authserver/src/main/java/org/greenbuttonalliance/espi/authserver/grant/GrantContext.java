@@ -37,13 +37,16 @@ import java.util.UUID;
  * (keyed by {@code correlationId}) with an expiry, and only the replayed {@code /oauth2/authorize} that carries
  * its id is signed in
  * ({@link org.greenbuttonalliance.espi.authserver.web.delegate.DelegatedCustomerAuthenticationFilter}) and consented
- * ({@link DelegatedConsentService}) from it.</p>
+ * ({@link DelegatedConsentService}) from it. The filter takes it from the session, once, and only for a request
+ * whose parameters are exactly the replay {@code /continue} built ({@link #replay()}).</p>
  *
  * @param correlationId         the AS-generated id of the delegation (#331); ties the outbound, return, and
  *                              back-channel calls together and keys this context
  * @param clientId              the Third Party's {@code client_id}
  * @param registeredClientId    the Third Party's {@code RegisteredClient} id (the consent key)
  * @param principal             the customer identity the DC returned (the authorization's principal name)
+ * @param replay                the request parameters of the replayed {@code /oauth2/authorize} besides
+ *                              {@code client_id} and {@code scope} (the approved scope)
  * @param retailCustomerId      DC primary key of the authenticated customer; numeric per DC's
  *                              {@code SubscriptionProvisionRequest} contract. The AS parses the
  *                              return handoff's opaque {@code principal} into this Long at
@@ -59,6 +62,7 @@ public record GrantContext(
 		String clientId,
 		String registeredClientId,
 		String principal,
+		Replay replay,
 		Long retailCustomerId,
 		String approvedScope,
 		List<UUID> selectedUsagePointIds,
@@ -67,5 +71,13 @@ public record GrantContext(
 
 	boolean isExpired(Instant now) {
 		return !now.isBefore(expiresAt);
+	}
+
+	/**
+	 * The Third Party's {@code redirect_uri}, {@code state} and PKCE challenge, as replayed (#305 review): a request
+	 * naming the delegation with any other value is not its replay. Blank and missing values are the same.
+	 */
+	public record Replay(String redirectUri, String state, String codeChallenge, String codeChallengeMethod)
+			implements Serializable {
 	}
 }

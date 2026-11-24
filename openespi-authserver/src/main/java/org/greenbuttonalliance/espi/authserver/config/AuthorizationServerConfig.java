@@ -470,7 +470,7 @@ public class AuthorizationServerConfig {
                 http.getSharedObject(org.springframework.context.ApplicationContext.class);
         var grantContexts = context.getBean(org.greenbuttonalliance.espi.authserver.grant.GrantContextSessionStore.class);
         var singleUseResponseHandler = new org.greenbuttonalliance.espi.authserver.web.delegate
-                .SingleUseCustomerAuthorizationResponseHandler(grantContexts);
+                .SingleUseCustomerAuthorizationResponseHandler();
         // #305: the customer is signed in only on the replayed /oauth2/authorize that names a live delegation of
         // this session, and only for that request (never saved to the session). After the SecurityContextHolder
         // filter, so the session's context is loaded first and restored afterwards.
@@ -678,8 +678,9 @@ public class AuthorizationServerConfig {
             AdminLoginSuccessHandler adminLoginSuccessHandler) throws Exception {
         http
                 // #205: form login (password factor) and WebAuthn (passkey factor) authenticate
-                // administrators from admin_users ONLY. Retail customers never log in here; their
-                // ROLE_CUSTOMER session is written by AuthorizeContinueController from the DC handoff.
+                // administrators from admin_users ONLY. Retail customers never log in here: since #305 a
+                // customer is signed in (ROLE_CUSTOMER) only for the replayed /oauth2/authorize of a DC
+                // delegation, by DelegatedCustomerAuthenticationFilter, and never in the session.
                 .userDetailsService(adminUserDetailsService)
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(
@@ -690,8 +691,8 @@ public class AuthorizationServerConfig {
                                 // PR C3 — AS↔DC delegation handoff endpoints. Both must be reachable
                                 // without prior authentication: /authorize/delegate is hit BEFORE
                                 // the customer authenticates anywhere (its job is to delegate auth
-                                // to DC); /oauth2/authorize/continue receives the return handoff
-                                // and writes the SecurityContext itself.
+                                // to DC); /oauth2/authorize/continue receives the signed return handoff
+                                // and keeps the delegation's grant context for its replay (#305).
                                 "/authorize/delegate",
                                 "/oauth2/authorize/continue"
                         ).permitAll()
@@ -700,8 +701,8 @@ public class AuthorizationServerConfig {
                         // reachable by any session, admin or customer.
                         .requestMatchers("/h2-console/**").denyAll()
                         // GHSA-mh65-6r98-p6q8: the admin APIs must never be reachable by an
-                        // arbitrary authenticated session (e.g. the ROLE_CUSTOMER session written
-                        // by AuthorizeContinueController). URL-level rule mirrors the controllers'
+                        // arbitrary authenticated session (e.g. a ROLE_CUSTOMER session, as
+                        // AuthorizeContinueController wrote before #305). URL-level rule mirrors the controllers'
                         // class-level @PreAuthorize("hasRole('ADMIN') or hasRole('DC_ADMIN')"),
                         // which is now also enforced via @EnableMethodSecurity (defense in depth).
                         // #205: on THIS (session) chain the admin paths additionally require both
@@ -1121,26 +1122,22 @@ public class AuthorizationServerConfig {
     @Bean
     public OAuth2AuthorizationService authorizationService(
             JdbcTemplate jdbcTemplate,
-            RegisteredClientRepository registeredClientRepository,
-            org.greenbuttonalliance.espi.authserver.grant.GrantContextSessionStore grantContextSessionStore) {
-        // Wrap the standard JDBC service so the customer-selection context written into the HTTP
-        // session at /oauth2/authorize/continue (per delegation, #305) gets stamped onto OAuth2Authorization.attributes
+            RegisteredClientRepository registeredClientRepository) {
+        // Wrap the standard JDBC service so the customer-selection context kept at /oauth2/authorize/continue
+        // (per delegation, taken by its replay, #305) gets stamped onto OAuth2Authorization.attributes
         // at code-issue time. The wrapper is transparent for token-exchange (M2M, no session) and
         // idempotent for repeated saves on the same authorization.
         org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService delegate =
                 new JdbcOAuth2AuthorizationService(jdbcTemplate, registeredClientRepository);
-        return new org.greenbuttonalliance.espi.authserver.grant.GrantContextEnrichingAuthorizationService(
-                delegate, grantContextSessionStore);
+        return new org.greenbuttonalliance.espi.authserver.grant.GrantContextEnrichingAuthorizationService(delegate);
     }
 
     @Bean
     public OAuth2AuthorizationConsentService authorizationConsentService(JdbcTemplate jdbcTemplate,
-            RegisteredClientRepository registeredClientRepository,
-            org.greenbuttonalliance.espi.authserver.grant.GrantContextSessionStore grantContextSessionStore) {
+            RegisteredClientRepository registeredClientRepository) {
         // #305: a delegated customer's consent is the scope approved at the DC, for its own replay only.
         return new org.greenbuttonalliance.espi.authserver.grant.DelegatedConsentService(
-                new JdbcOAuth2AuthorizationConsentService(jdbcTemplate, registeredClientRepository),
-                grantContextSessionStore);
+                new JdbcOAuth2AuthorizationConsentService(jdbcTemplate, registeredClientRepository));
     }
 
     /**

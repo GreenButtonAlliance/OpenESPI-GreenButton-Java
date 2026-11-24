@@ -15,13 +15,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.oauth2.server.authorization.InMemoryOAuth2AuthorizationConsentService;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsent;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-import java.time.Instant;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,15 +31,12 @@ class DelegatedConsentServiceTest {
 	private static final String SECOND = "FB=1_3_4_5_13_14_39;IntervalDuration=900;BlockDuration=daily;HistoryLength=604800";
 
 	private final InMemoryOAuth2AuthorizationConsentService stored = new InMemoryOAuth2AuthorizationConsentService();
-	private final GrantContextSessionStore grantContexts = new GrantContextSessionStore();
-	private final DelegatedConsentService consents = new DelegatedConsentService(stored, grantContexts);
-	private final MockHttpSession session = new MockHttpSession();
+	private final DelegatedConsentService consents = new DelegatedConsentService(stored);
 	private MockHttpServletRequest request;
 
 	@BeforeEach
 	void setUp() {
 		request = new MockHttpServletRequest("GET", "/oauth2/authorize");
-		request.setSession(session);
 		RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
 	}
 
@@ -50,16 +45,15 @@ class DelegatedConsentServiceTest {
 		RequestContextHolder.resetRequestAttributes();
 	}
 
-	private void delegation(String correlationId, String scope) {
-		grantContexts.put(session, GrantContexts.of(correlationId, "tp", "reg-tp", "42", scope, List.of(),
-				Instant.now().plusSeconds(300)));
+	/** This request is the replay of a delegation: the filter took its context. */
+	private void replayOf(String scope) {
+		request.setAttribute(GrantContextSessionStore.DELEGATED_CONTEXT_ATTRIBUTE, GrantContexts.of("cid", scope, List.of()));
 	}
 
 	@Test
 	@DisplayName("the replay of a delegation: the consent is the approved scope, each ESPI scope string whole (#210)")
 	void replayGetsTheApprovedScope() {
-		delegation("cid", SCOPE + "  " + SECOND);
-		request.setParameter(GrantContextSessionStore.DELEGATION_PARAMETER, "cid");
+		replayOf(SCOPE + "  " + SECOND);
 
 		assertThat(consents.findById("reg-tp", "42"))
 				.extracting(OAuth2AuthorizationConsent::getRegisteredClientId, OAuth2AuthorizationConsent::getPrincipalName,
@@ -68,10 +62,8 @@ class DelegatedConsentServiceTest {
 	}
 
 	@Test
-	@DisplayName("a request naming no delegation gets no delegated consent, and nothing is ever stored")
+	@DisplayName("any other request gets no delegated consent, and nothing is ever stored")
 	void noDelegationNoConsent() {
-		delegation("cid", SCOPE);
-
 		assertThat(consents.findById("reg-tp", "42")).isNull();
 		assertThat(stored.findById("reg-tp", "42")).isNull();
 	}
@@ -79,21 +71,10 @@ class DelegatedConsentServiceTest {
 	@Test
 	@DisplayName("another client's or customer's lookup on the replay is not given the delegation's consent")
 	void otherClientOrCustomerGetsNoConsent() {
-		delegation("cid", SCOPE);
-		request.setParameter(GrantContextSessionStore.DELEGATION_PARAMETER, "cid");
+		replayOf(SCOPE);
 
 		assertThat(consents.findById("reg-other", "42")).isNull();
 		assertThat(consents.findById("reg-tp", "77")).isNull();
-	}
-
-	@Test
-	@DisplayName("an expired delegation gives no consent")
-	void expiredDelegationGivesNoConsent() {
-		grantContexts.put(session, GrantContexts.of("cid", "tp", "reg-tp", "42", SCOPE, List.of(),
-				Instant.now().minusSeconds(1)));
-		request.setParameter(GrantContextSessionStore.DELEGATION_PARAMETER, "cid");
-
-		assertThat(consents.findById("reg-tp", "42")).isNull();
 	}
 
 	@Test

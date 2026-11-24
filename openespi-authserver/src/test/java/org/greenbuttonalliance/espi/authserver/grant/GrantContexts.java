@@ -17,6 +17,10 @@ import java.util.UUID;
 /** Test {@link GrantContext}s. */
 public final class GrantContexts {
 
+	public static final String REDIRECT_URI = "https://tp.example/cb";
+	public static final String STATE = "tp-state";
+	public static final GrantContext.Replay REPLAY = new GrantContext.Replay(REDIRECT_URI, STATE, null, null);
+
 	private GrantContexts() {
 	}
 
@@ -27,7 +31,7 @@ public final class GrantContexts {
 
 	public static GrantContext of(String correlationId, String clientId, String registeredClientId, String principal,
 								  String approvedScope, List<UUID> usagePoints, Instant expiresAt) {
-		return new GrantContext(correlationId, clientId, registeredClientId, principal, Long.valueOf(principal),
-				approvedScope, usagePoints, expiresAt);
+		return new GrantContext(correlationId, clientId, registeredClientId, principal, REPLAY,
+				Long.valueOf(principal), approvedScope, usagePoints, expiresAt);
 	}
 }

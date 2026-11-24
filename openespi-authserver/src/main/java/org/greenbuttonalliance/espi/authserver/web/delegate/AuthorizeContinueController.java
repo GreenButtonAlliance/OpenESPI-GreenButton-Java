@@ -141,13 +141,17 @@ public class AuthorizeContinueController {
 		Long retailCustomerId = parseRetailCustomerId(payload.principal());
 
 		// #305: the delegation's own context, under its correlation id. It signs the customer in and is the
-		// consent on the replay below only, and GrantContextEnrichingAuthorizationService stamps it onto the
-		// OAuth2Authorization Spring AS creates there.
+		// consent on the replay below only (a request with exactly these parameters), and
+		// GrantContextEnrichingAuthorizationService stamps it onto the OAuth2Authorization Spring AS creates there.
+		DelegationStateService.ProofKey proofKey = state.proofKey();
 		grantContextSessionStore.put(request.getSession(true), new GrantContext(
 				payload.correlationId(),
 				client.getClientId(),
 				client.getId(),
 				payload.principal(),
+				new GrantContext.Replay(state.redirectUri(), state.tpState(),
+						proofKey != null ? proofKey.codeChallenge() : null,
+						proofKey != null ? proofKey.codeChallengeMethod() : null),
 				retailCustomerId,
 				payload.approvedScope(),
 				payload.selectedUsagePointIds(),
@@ -163,7 +167,6 @@ public class AuthorizeContinueController {
 				.queryParam(GrantContextSessionStore.DELEGATION_PARAMETER, payload.correlationId());
 		// #274: the TP's PKCE challenge, so the code is minted with it and the TP's code_verifier is checked at
 		// /oauth2/token. Without it Spring AS mints the code without a challenge and refuses the verifier.
-		DelegationStateService.ProofKey proofKey = state.proofKey();
 		if (proofKey != null) {
 			replay.queryParam(PkceParameterNames.CODE_CHALLENGE, proofKey.codeChallenge());
 			if (proofKey.codeChallengeMethod() != null) {
