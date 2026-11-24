@@ -83,11 +83,11 @@
 
         <!-- Plugin Versions -->
         <jacoco.version>0.8.16</jacoco.version>
-        <sonar-maven-plugin.version>5.8.0.7211</sonar-maven-plugin.version>
+        <sonar-maven-plugin.version>5.9.0.7382</sonar-maven-plugin.version>
         <maven-compiler-plugin.version>3.16.0</maven-compiler-plugin.version>
         <maven-release-plugin.version>3.3.1</maven-release-plugin.version>
         <maven-site-plugin.version>3.22.0</maven-site-plugin.version>
-        <versions-maven-plugin.version>2.25.1</versions-maven-plugin.version>
+        <versions-maven-plugin.version>2.25.2</versions-maven-plugin.version>
         <spotbugs-plugin.version>4.10.5.0</spotbugs-plugin.version>
         <!-- Used by .github/workflows/security.yml (mvn org.owasp:dependency-check-maven:aggregate) -->
         <owasp-dependency-check.version>13.0.0</owasp-dependency-check.version>
