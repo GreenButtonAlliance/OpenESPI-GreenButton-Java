@@ -248,6 +248,21 @@ class AuthorizeContinueControllerTest {
 		}
 
 		@Test
+		@DisplayName("#305 review: an allow for a delegation without redirect_uri is a 400, nothing kept")
+		void allowWithoutRedirectUriIs400() throws Exception {
+			String cid = "corr-allow-no-uri";
+			delegationStateService.save(cid, "tp-1", null, "tp-state-1", ESPI_SCOPE);
+			when(registeredClientRepository.findByClientId("tp-1")).thenReturn(client(ESPI_SCOPE));
+
+			mockMvc.perform(get("/oauth2/authorize/continue").session(session)
+							.param("handoff", codec.encode(allowReturn(cid, ESPI_SCOPE, List.of()))))
+					.andExpect(status().isBadRequest())
+					.andExpect(view().name("error/400"));
+
+			assertThat(grantContextSessionStore.peek(session, cid)).isNull();
+		}
+
+		@Test
 		@DisplayName("registered client missing at /continue: 400, nothing kept")
 		void clientGoneAtContinueIs400() throws Exception {
 			String cid = "corr-allow-2";
@@ -315,6 +330,19 @@ class AuthorizeContinueControllerTest {
 
 			verify(nonceService).consume(any(), any());
 			assertThat(grantContextSessionStore.peek(session, cid)).isNull();
+		}
+
+		@ParameterizedTest(name = "state ''{0}'' -> {1}")
+		@org.junit.jupiter.params.provider.CsvSource({"a+b/c==, a%2Bb%2Fc%3D%3D", "'{x}', %7Bx%7D", "a b, a%20b"})
+		@DisplayName("#305 review: deny sends the TP's state strictly encoded: '+' is never read back as a space, '{' is no template")
+		void denyEncodesTheStateStrictly(String tpState, String encoded) throws Exception {
+			String cid = "corr-deny-encoded";
+			delegationStateService.save(cid, "tp-1", "https://tp.example/cb", tpState, ESPI_SCOPE);
+
+			mockMvc.perform(get("/oauth2/authorize/continue").param("handoff", codec.encode(denyReturn(cid))))
+					.andExpect(status().is3xxRedirection())
+					.andExpect(redirectedUrl("https://tp.example/cb?error=access_denied"
+							+ "&error_description=The%20customer%20did%20not%20authorize%20the%20request.&state=" + encoded));
 		}
 
 		@Test

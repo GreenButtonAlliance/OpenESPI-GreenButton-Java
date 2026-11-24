@@ -40,6 +40,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.util.UriComponentsBuilder;
+import org.springframework.web.util.UriUtils;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -140,6 +141,10 @@ public class AuthorizeContinueController {
 		}
 		requireNarrowingOfRequest(payload.approvedScope(), state.requestedScope());
 		Long retailCustomerId = parseRetailCustomerId(payload.principal());
+		// /authorize/delegate always resolves one; refuse (400) before anything is kept rather than fail later.
+		if (!StringUtils.hasText(state.redirectUri())) {
+			throw new InvalidHandoffException("no redirect_uri for client " + state.clientId());
+		}
 
 		// #305: the delegation's own context, under its correlation id. It signs the customer in and is the
 		// consent on the replay below only (a request with exactly these parameters), and
@@ -184,9 +189,14 @@ public class AuthorizeContinueController {
 		return "redirect:" + url;
 	}
 
-	/** Adds {@code name=value}, the value form-encoded, as {@link DelegateAuthorizationEntryPoint} does. */
+	/**
+	 * Adds {@code name=value}, the value form-encoded, as {@link DelegateAuthorizationEntryPoint} does; a null value
+	 * is left out, as there.
+	 */
 	private static void queryParam(UriComponentsBuilder uri, String name, String value) {
-		uri.queryParam(name, URLEncoder.encode(value, StandardCharsets.UTF_8));
+		if (value != null) {
+			uri.queryParam(name, URLEncoder.encode(value, StandardCharsets.UTF_8));
+		}
 	}
 
 	private String handleDeny(DelegationStateService.Entry state) {
@@ -194,15 +204,17 @@ public class AuthorizeContinueController {
 			throw new InvalidHandoffException("cannot deliver access_denied: no redirect_uri for client " + state.clientId());
 		}
 
-		String url = UriComponentsBuilder.fromUriString(state.redirectUri())
+		// Each value strictly encoded (#305 review), as SingleUseCustomerAuthorizationResponseHandler does for its
+		// error responses: encode() would leave a '+' in the TP's state raw (read back as a space) and a '{...}' as
+		// a URI template variable, which the redirect then fails to expand.
+		UriComponentsBuilder uri = UriComponentsBuilder.fromUriString(state.redirectUri())
 				.queryParam("error", "access_denied")
-				.queryParam("error_description", "The customer did not authorize the request.")
-				.queryParamIfPresent("state", state.tpState() != null && !state.tpState().isBlank()
-						? java.util.Optional.of(state.tpState())
-						: java.util.Optional.empty())
-				.encode(StandardCharsets.UTF_8)
-				.build()
-				.toUriString();
+				.queryParam("error_description",
+						UriUtils.encode("The customer did not authorize the request.", StandardCharsets.UTF_8));
+		if (StringUtils.hasText(state.tpState())) {
+			uri.queryParam("state", UriUtils.encode(state.tpState(), StandardCharsets.UTF_8));
+		}
+		String url = uri.build(true).toUriString();
 
 		log.info("Continue: deny path, client_id={}, redirecting TP to {} with access_denied",
 				state.clientId(), state.redirectUri());

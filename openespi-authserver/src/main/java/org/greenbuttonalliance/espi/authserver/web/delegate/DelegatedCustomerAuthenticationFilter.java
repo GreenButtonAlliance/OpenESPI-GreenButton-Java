@@ -75,10 +75,10 @@ public class DelegatedCustomerAuthenticationFilter extends OncePerRequestFilter 
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
 			throws ServletException, IOException {
 		GrantContext ctx = grantContexts.consume(request);
-		if (ctx == null || !isReplayOf(request, ctx)) {
+		String refusal = ctx == null ? null : refusal(request, ctx);
+		if (ctx == null || refusal != null) {
 			if (ctx != null) {
-				log.warn("Replay of correlation_id={} refused: its parameters differ from the delegation's",
-						ctx.correlationId());
+				log.warn("Replay of correlation_id={} refused: {}", ctx.correlationId(), refusal);
 			}
 			chain.doFilter(request, response);
 			return;
@@ -97,16 +97,24 @@ public class DelegatedCustomerAuthenticationFilter extends OncePerRequestFilter 
 	}
 
 	/**
-	 * The request's parameters are those of the replay {@code /continue} built for this delegation. A request with
-	 * {@code request_uri} is never one (#305 review): Spring AS would then take the redirect URI, scope, state and
-	 * PKCE challenge from the stored request it names instead of the parameters checked here. A context without
-	 * replay parameters (saved by an earlier version) matches nothing.
+	 * Why the request is not the replay {@code /continue} built for this delegation, or null if it is. A request
+	 * with {@code request_uri} is never one (#305 review): Spring AS would then take the redirect URI, scope, state
+	 * and PKCE challenge from the stored request it names instead of the parameters checked here. A context without
+	 * replay parameters (saved by an earlier version) matches nothing. The reason is only logged.
 	 */
-	private static boolean isReplayOf(HttpServletRequest request, GrantContext ctx) {
+	private static String refusal(HttpServletRequest request, GrantContext ctx) {
 		GrantContext.Replay replay = ctx.replay();
-		return replay != null
-				&& request.getParameter(REQUEST_URI) == null
-				&& same(request.getParameter(OAuth2ParameterNames.CLIENT_ID), ctx.clientId())
+		if (replay == null) {
+			return "the context has no replay parameters (saved by an earlier version)";
+		}
+		if (request.getParameter(REQUEST_URI) != null) {
+			return "the request carries request_uri";
+		}
+		return isReplayOf(request, ctx, replay) ? null : "its parameters differ from the delegation's";
+	}
+
+	private static boolean isReplayOf(HttpServletRequest request, GrantContext ctx, GrantContext.Replay replay) {
+		return same(request.getParameter(OAuth2ParameterNames.CLIENT_ID), ctx.clientId())
 				&& same(request.getParameter(OAuth2ParameterNames.SCOPE), ctx.approvedScope())
 				&& same(request.getParameter(OAuth2ParameterNames.REDIRECT_URI), replay.redirectUri())
 				&& same(request.getParameter(OAuth2ParameterNames.STATE), replay.state())

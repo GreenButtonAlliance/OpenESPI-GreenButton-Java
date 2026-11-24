@@ -812,8 +812,13 @@ class AuthCodeFlowOrchestrationIntegrationTest extends AbstractAuthserverIntegra
 						.param("handoff", allowHandoff(correlationId, SCOPE, UUID.randomUUID())))
 				.andExpect(status().is3xxRedirection())
 				.andReturn();
-		String callback = followReplay(continueResult.getResponse().getHeader("Location"),
-				(MockHttpSession) continueResult.getRequest().getSession(false));
+		String replay = continueResult.getResponse().getHeader("Location");
+		// MockMvc decodes '+' in a query as '+', not as Tomcat's space, so following the replay alone would not
+		// catch a raw '+'; the replay must carry the state form-encoded.
+		assertThat(java.net.URI.create(replay).getRawQuery())
+				.contains("&state=" + java.net.URLEncoder.encode(tpState, java.nio.charset.StandardCharsets.UTF_8) + "&")
+				.contains("state=a%2Bb%2Fc%3D%3D");
+		String callback = followReplay(replay, (MockHttpSession) continueResult.getRequest().getSession(false));
 
 		assertThat(callback).startsWith(REDIRECT_URI).contains("code=")
 				.satisfies(url -> assertThat(java.net.URLDecoder.decode(extractQueryParam(url, "state"),

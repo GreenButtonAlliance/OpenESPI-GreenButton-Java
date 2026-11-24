@@ -17,7 +17,6 @@
 package org.greenbuttonalliance.espi.authserver.grant;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
 import org.springframework.security.oauth2.core.OAuth2Token;
@@ -25,6 +24,7 @@ import org.springframework.security.oauth2.server.authorization.OAuth2Authorizat
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationCode;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationCodeRequestAuthenticationException;
 
 import java.util.List;
 import java.util.UUID;
@@ -120,12 +120,14 @@ public class GrantContextEnrichingAuthorizationService implements OAuth2Authoriz
 		}
 		if (!ctx.registeredClientId().equals(authorization.getRegisteredClientId())
 				|| !ctx.principal().equals(authorization.getPrincipalName())) {
-			// Never mint a code without its delegation's grant context. An OAuth2AuthenticationException reaches the
-			// authorization endpoint's error response handler; without the authorization request it cannot redirect
-			// to the Third Party, so it answers 400 server_error (Spring's default), not a bare 500.
+			// Never mint a code without its delegation's grant context. The authorization endpoint's error response
+			// handler (ours, and Spring's default alike) answers an OAuth2AuthorizationCodeRequestAuthenticationException
+			// without an authorization request with 400 server_error, as Spring's own provider does; it cannot redirect
+			// to the Third Party without that request. Not a bare 500.
 			log.warn("Code refused: grant context of correlation_id={} is another client's or customer's",
 					ctx.correlationId());
-			throw new OAuth2AuthenticationException(new OAuth2Error(OAuth2ErrorCodes.SERVER_ERROR));
+			throw new OAuth2AuthorizationCodeRequestAuthenticationException(
+					new OAuth2Error(OAuth2ErrorCodes.SERVER_ERROR), null);
 		}
 
 		log.info("Stamping grant context on OAuth2Authorization id={}, correlation_id={}",
