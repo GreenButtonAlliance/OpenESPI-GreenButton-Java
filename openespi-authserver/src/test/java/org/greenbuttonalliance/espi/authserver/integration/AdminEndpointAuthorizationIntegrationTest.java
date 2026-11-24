@@ -341,7 +341,8 @@ class AdminEndpointAuthorizationIntegrationTest extends AbstractAuthserverIntegr
 	}
 
 	@Test
-	@DisplayName("the delegated customer flow resumes /oauth2/authorize and leaves no customer sign-in in the session (#305)")
+	@DisplayName("the delegated customer flow resumes /oauth2/authorize, whose replay signs the customer in and gets a code, "
+			+ "and leaves no customer sign-in in the session (#305, #338)")
 	void delegatedCustomerFlowStillWorks() throws Exception {
 		MvcResult continueResult = continueDelegatedFlow();
 		MockHttpSession session = (MockHttpSession) continueResult.getRequest().getSession(false);
@@ -359,6 +360,9 @@ class AdminEndpointAuthorizationIntegrationTest extends AbstractAuthserverIntegr
 		assertThat(location).startsWith(REDIRECT_URI + "?")
 				.contains("code=", "state=tp-state")
 				.doesNotContain("error=", "/authorize/delegate");
+		assertThat(session.getAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY))
+				.as("#305: the replay's sign-in is not saved to the session either")
+				.isNull();
 	}
 
 	@Test
