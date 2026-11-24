@@ -86,7 +86,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class AdminEndpointAuthorizationIntegrationTest extends AbstractAuthserverIntegrationTest {
 
 	private static final String REDIRECT_URI = "https://tp.example/cb";
-	private static final String SCOPE = "FB_1";
+	/** A customer data scope (#251), so the delegated flow's replay can end in a code (#338). */
+	private static final String SCOPE = "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000";
 	/** client_credentials yields only administrative scopes (#251, EspiGrantScopePolicy). */
 	private static final String CLIENT_CREDENTIALS_SCOPE = "ThirdParty_Admin_Access";
 
@@ -353,10 +354,11 @@ class AdminEndpointAuthorizationIntegrationTest extends AbstractAuthserverIntegr
 						.session(session))
 				.andExpect(status().is3xxRedirection())
 				.andReturn().getResponse().getHeader("Location");
-		// Signed in and consented on the replay, so Spring AS answers the Third Party itself instead of delegating
-		// to the DC again. FB_1 is not a customer data scope (#251), so that answer is invalid_scope; the code
-		// itself is covered by AuthCodeFlowOrchestrationIntegrationTest.
-		assertThat(location).startsWith(REDIRECT_URI).contains("error=invalid_scope", "state=tp-state");
+		// #338: a code at the Third Party's redirect_uri proves the replay signed the customer in and consented:
+		// an anonymous request would be delegated to the DC again (/authorize/delegate) instead.
+		assertThat(location).startsWith(REDIRECT_URI + "?")
+				.contains("code=", "state=tp-state")
+				.doesNotContain("error=", "/authorize/delegate");
 	}
 
 	@Test
