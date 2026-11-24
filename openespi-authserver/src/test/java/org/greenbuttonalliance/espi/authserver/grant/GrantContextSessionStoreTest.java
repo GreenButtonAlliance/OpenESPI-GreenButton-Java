@@ -13,8 +13,10 @@ package org.greenbuttonalliance.espi.authserver.grant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpSession;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -35,31 +37,75 @@ class GrantContextSessionStoreTest {
 	@Test
 	@DisplayName("put + consume round-trip returns the exact context once")
 	void putThenConsumeReturnsContextOnce() {
-		GrantContext ctx = new GrantContext(
-				"corr-1", 42L, "FB_1;FB_4_5",
+		GrantContext ctx = GrantContexts.of("corr-1", "FB_1;FB_4_5",
 				List.of(UUID.fromString("00000000-0000-5000-8000-000000000001")));
 		store.put(session, ctx);
 
-		assertThat(store.consume(session)).isEqualTo(ctx);
+		assertThat(store.consume(session, "corr-1")).isEqualTo(ctx);
 		// Single-use: a second consume returns null
-		assertThat(store.consume(session)).isNull();
+		assertThat(store.consume(session, "corr-1")).isNull();
 	}
 
 	@Test
-	@DisplayName("consume on a fresh session returns null")
+	@DisplayName("consume on a fresh session, or without an id, returns null")
 	void consumeFreshSessionReturnsNull() {
-		assertThat(store.consume(session)).isNull();
+		assertThat(store.consume(session, "corr-1")).isNull();
+		assertThat(store.consume(null, "corr-1")).isNull();
+		assertThat(store.consume(session, null)).isNull();
 	}
 
 	@Test
 	@DisplayName("peek does not remove the entry")
 	void peekDoesNotRemove() {
-		GrantContext ctx = new GrantContext("corr-2", 99L, "FB_1", List.of());
+		GrantContext ctx = GrantContexts.of("corr-2", "FB_1", List.of());
 		store.put(session, ctx);
 
-		assertThat(store.peek(session)).isEqualTo(ctx);
+		assertThat(store.peek(session, "corr-2")).isEqualTo(ctx);
 		// Still consumable after peek
-		assertThat(store.consume(session)).isEqualTo(ctx);
-		assertThat(store.consume(session)).isNull();
+		assertThat(store.consume(session, "corr-2")).isEqualTo(ctx);
+		assertThat(store.consume(session, "corr-2")).isNull();
+	}
+
+	@Test
+	@DisplayName("#305: two delegations in one session each keep their own context")
+	void twoDelegationsKeepTheirOwnContexts() {
+		GrantContext monthly = GrantContexts.of("corr-a", "FB_4_5_15", List.of(UUID.randomUUID()));
+		GrantContext daily = GrantContexts.of("corr-b", "FB_4_5_16", List.of(UUID.randomUUID()));
+		store.put(session, monthly);
+		store.put(session, daily);
+
+		assertThat(store.consume(session, "corr-a")).isEqualTo(monthly);
+		assertThat(store.consume(session, "corr-b")).isEqualTo(daily);
+	}
+
+	@Test
+	@DisplayName("#305: an expired context is never returned, and is dropped by the next put")
+	void expiredContextIsIgnored() {
+		store.put(session, GrantContexts.of("corr-old", "tp", "reg-tp", "42", "FB_1", List.of(),
+				Instant.now().minusSeconds(1)));
+
+		assertThat(store.peek(session, "corr-old")).isNull();
+		store.put(session, GrantContexts.of("corr-new", "FB_1", List.of()));
+		assertThat(store.consume(session, "corr-old")).isNull();
+	}
+
+	@Test
+	@DisplayName("#305: the request form looks up the delegation the request names, and only that")
+	void requestNamesItsDelegation() {
+		GrantContext ctx = GrantContexts.of("corr-r", "FB_1", List.of());
+		store.put(session, ctx);
+		MockHttpServletRequest named = new MockHttpServletRequest();
+		named.setSession(session);
+		named.setParameter(GrantContextSessionStore.DELEGATION_PARAMETER, "corr-r");
+		MockHttpServletRequest unnamed = new MockHttpServletRequest();
+		unnamed.setSession(session);
+		MockHttpServletRequest otherSession = new MockHttpServletRequest();
+		otherSession.setParameter(GrantContextSessionStore.DELEGATION_PARAMETER, "corr-r");
+
+		assertThat(store.peek(unnamed)).isNull();
+		assertThat(store.peek(otherSession)).isNull();
+		assertThat(store.peek(named)).isEqualTo(ctx);
+		assertThat(store.consume(named)).isEqualTo(ctx);
+		assertThat(store.peek(named)).isNull();
 	}
 }

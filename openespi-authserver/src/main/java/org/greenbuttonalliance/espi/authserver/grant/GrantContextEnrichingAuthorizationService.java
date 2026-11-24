@@ -16,16 +16,12 @@
 
 package org.greenbuttonalliance.espi.authserver.grant;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.oauth2.core.OAuth2Token;
 import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
+import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationCode;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
-import org.springframework.web.context.request.RequestAttributes;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.List;
 import java.util.UUID;
@@ -43,9 +39,10 @@ import java.util.stream.Collectors;
  *   <li>Spring AS's {@code OAuth2AuthorizationCodeRequestAuthenticationProvider} runs inside that
  *       request, builds an {@link OAuth2Authorization} carrying the freshly-minted authorization
  *       code, and calls {@link #save(OAuth2Authorization)}.</li>
- *   <li>This wrapper sees the save, pulls the {@link GrantContext} out of the session, and
- *       rebuilds the authorization with the grant context as attributes before delegating to the
- *       underlying JDBC service.</li>
+ *   <li>This wrapper sees the save of the authorization carrying the code, takes the {@link GrantContext}
+ *       of the delegation the request names ({@link GrantContextSessionStore#DELEGATION_PARAMETER}, #305)
+ *       out of the session, checks it is this client's and customer's, and rebuilds the authorization
+ *       with the grant context as attributes before delegating to the underlying JDBC service.</li>
  * </ol>
  *
  * <h2>Why attributes?</h2>
@@ -108,17 +105,21 @@ public class GrantContextEnrichingAuthorizationService implements OAuth2Authoriz
 			return authorization;
 		}
 
-		HttpServletRequest request = currentRequest();
-		if (request == null) {
-			return authorization;
-		}
-		HttpSession session = request.getSession(false);
-		if (session == null) {
+		// Only the authorization that carries the code: Spring AS also saves a state-only one before a
+		// consent-page redirect, which must not take the context.
+		if (authorization.getToken(OAuth2AuthorizationCode.class) == null) {
 			return authorization;
 		}
 
-		GrantContext ctx = sessionStore.consume(session);
+		// #305: the context of the delegation this replay names, not the session's latest.
+		GrantContext ctx = sessionStore.consume(GrantContextSessionStore.currentRequest());
 		if (ctx == null) {
+			return authorization;
+		}
+		if (!ctx.registeredClientId().equals(authorization.getRegisteredClientId())
+				|| !ctx.principal().equals(authorization.getPrincipalName())) {
+			log.warn("Grant context of correlation_id={} not stamped: it is another client's or customer's",
+					ctx.correlationId());
 			return authorization;
 		}
 
@@ -154,8 +155,4 @@ public class GrantContextEnrichingAuthorizationService implements OAuth2Authoriz
 				.toList();
 	}
 
-	private static HttpServletRequest currentRequest() {
-		RequestAttributes attrs = RequestContextHolder.getRequestAttributes();
-		return (attrs instanceof ServletRequestAttributes sra) ? sra.getRequest() : null;
-	}
 }

@@ -94,8 +94,9 @@ public class AuthorizeDelegateController {
 	 * <ul>
 	 *   <li>{@code scope} &mdash; the TP-requested scope</li>
 	 *   <li>{@code client_id} &mdash; the requesting TP's client_id</li>
-	 *   <li>{@code state} &mdash; the TP's CSRF state, used here as the correlation id so the
-	 *       AS-side and DC-side logs join cleanly</li>
+	 *   <li>{@code state} &mdash; the TP's CSRF state, echoed back to the TP. It is not the correlation id: that
+	 *       is always a random id of the AS's own (#331), so no other request can name or replace this
+	 *       delegation's state</li>
 	 *   <li>{@code redirect_uri} &mdash; the TP's callback, forwarded by {@link DelegateAuthorizationEntryPoint}</li>
 	 *   <li>{@code code_challenge}, {@code code_challenge_method} &mdash; the TP's PKCE challenge, when it sent one,
 	 *       forwarded the same way and replayed by {@link AuthorizeContinueController} (#274)</li>
@@ -105,9 +106,9 @@ public class AuthorizeDelegateController {
 	 * {@code redirect_uri}. Taken as the TP's, that state made the TP ignore the callback (#299). The TP's
 	 * {@code state}, {@code redirect_uri} and {@code scope} are then read from the original request that Spring
 	 * AS saved with the pending authorization under its consent state, if that authorization is the signed-in
-	 * customer's; a signed-in request without one is refused (400). Since #299 the customer's AS sign-in no
-	 * longer outlives an authorization response ({@link SingleUseCustomerAuthorizationResponseHandler}), so this
-	 * path is only reached when a delegation was left unfinished.</p>
+	 * customer's; a signed-in request without one is refused (400). Since #305 a customer is signed in only on
+	 * the replay of a delegation, whose consent is the approved scope ({@link DelegatedCustomerAuthenticationFilter}),
+	 * so this path is kept only as a safeguard.</p>
 	 */
 	@GetMapping("/authorize/delegate")
 	public String delegate(@RequestParam("scope") String scope,
@@ -151,7 +152,9 @@ public class AuthorizeDelegateController {
 				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "redirect_uri cannot be determined");
 			}
 		}
-		String correlationId = tpState != null && !tpState.isBlank() ? tpState : UUID.randomUUID().toString();
+		// #331: always the AS's own random id, never the TP's state. Delegation state is global, and this endpoint
+		// is reachable unauthenticated, so a state another TP reuses, or anyone learns, must not name an entry.
+		String correlationId = UUID.randomUUID().toString();
 
 		// Saved so AuthorizeContinueController replays /oauth2/authorize with the TP's redirect_uri, state and PKCE
 		// challenge (#274), and removes the pending consent-page authorization, which a reload of this page still

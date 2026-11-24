@@ -17,10 +17,9 @@
 package org.greenbuttonalliance.espi.authserver.web.delegate;
 
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.greenbuttonalliance.espi.authserver.grant.DelegatedConsentService;
 import org.greenbuttonalliance.espi.authserver.grant.EspiGrantScopePolicy;
 import org.greenbuttonalliance.espi.authserver.grant.GrantContext;
 import org.greenbuttonalliance.espi.authserver.grant.GrantContextSessionStore;
@@ -29,20 +28,11 @@ import org.greenbuttonalliance.espi.handoff.InvalidHandoffException;
 import org.greenbuttonalliance.espi.handoff.SignedHandoff;
 import org.greenbuttonalliance.espi.handoff.SignedHandoffCodec;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.endpoint.PkceParameterNames;
 import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
-import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsent;
-import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsentService;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
-import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -52,6 +42,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -64,19 +55,17 @@ import java.util.List;
  * <ol>
  *   <li>Decode + verify the signed return handoff (signature, expiry, direction, nonce).</li>
  *   <li>Consume the nonce single-use (replay protection).</li>
- *   <li>Authenticate the customer in the AS session: write a {@link UsernamePasswordAuthenticationToken}
- *       to the SecurityContext and save to the HTTP session via
- *       {@link HttpSessionSecurityContextRepository}.</li>
- *   <li>Pre-populate {@link OAuth2AuthorizationConsentService} with the customer's effective
- *       approved scope so Spring Authorization Server's downstream consent check passes
- *       transparently.</li>
+ *   <li>Keep the delegation's {@link GrantContext} (client, customer, approved scope, selected UsagePoints) in
+ *       the session under its correlation id, for {@link GrantContextSessionStore#TTL} (#305).</li>
  *   <li>Redirect to {@code /oauth2/authorize} with the original third-party request parameters
- *       (looked up from {@link DelegationStateService}). Spring AS sees an authenticated user
- *       with pre-existing consent, mints the authorization code, and redirects to the third
- *       party's {@code redirect_uri}.</li>
- *   <li>The sign-in and the consent serve that one replay only:
- *       {@link SingleUseCustomerAuthorizationResponseHandler} clears both once the code is minted, so
- *       the customer's next authorization is delegated to the DC again (#299, #276).</li>
+ *       (looked up from {@link DelegationStateService}) and the delegation's id
+ *       ({@link GrantContextSessionStore#DELEGATION_PARAMETER}). On that request only, the customer is signed
+ *       in ({@link DelegatedCustomerAuthenticationFilter}) and has consented to the approved scope
+ *       ({@link DelegatedConsentService}); Spring AS mints the code and redirects to the third party's
+ *       {@code redirect_uri}.</li>
+ *   <li>Nothing is saved that another authorization could use: no AS sign-in in the session and no stored
+ *       consent (#305; before, both were saved and cleared after the response, #299, #276). Each authorization
+ *       in the browser is delegated to the DC.</li>
  * </ol>
  *
  * <h2>Deny path</h2>
@@ -104,17 +93,13 @@ public class AuthorizeContinueController {
 	private final SignedHandoffCodec codec;
 	private final HandoffNonceService nonceService;
 	private final DelegationStateService delegationStateService;
-	private final OAuth2AuthorizationConsentService consentService;
 	private final RegisteredClientRepository registeredClientRepository;
 	private final GrantContextSessionStore grantContextSessionStore;
 	private final OAuth2AuthorizationService authorizationService;
-	private final SecurityContextRepository securityContextRepository =
-			new HttpSessionSecurityContextRepository();
 
 	@GetMapping("/oauth2/authorize/continue")
 	public String continueAfterDelegation(@RequestParam("handoff") String handoffToken,
-										  HttpServletRequest request,
-										  HttpServletResponse response) {
+										  HttpServletRequest request) {
 		SignedHandoff.Return payload = codec.decodeReturn(handoffToken);
 		nonceService.consume(payload.nonce(), payload.expiresAt());
 
@@ -126,28 +111,9 @@ public class AuthorizeContinueController {
 
 		if (SignedHandoff.Return.CONSENT_ALLOW.equals(payload.consent())
 				&& payload.approvedScope() != null && !payload.approvedScope().isBlank()) {
-			return handleAllow(payload, state, request, response);
+			return handleAllow(payload, state, request);
 		}
-		clearCustomerSignIn(request, response);
 		return handleDeny(state);
-	}
-
-	/**
-	 * Clears a customer's AS sign-in, and the grant context stashed for it, when no authorization response
-	 * will (#299): only {@link SingleUseCustomerAuthorizationResponseHandler} clears them otherwise.
-	 */
-	private void clearCustomerSignIn(HttpServletRequest request, HttpServletResponse response) {
-		Authentication signedIn = SecurityContextHolder.getContext().getAuthentication();
-		if (signedIn == null || signedIn.getAuthorities().stream()
-				.noneMatch(a -> SingleUseCustomerAuthorizationResponseHandler.CUSTOMER_AUTHORITY.equals(a.getAuthority()))) {
-			return;
-		}
-		SecurityContextHolder.clearContext();
-		securityContextRepository.saveContext(SecurityContextHolder.createEmptyContext(), request, response);
-		HttpSession session = request.getSession(false);
-		if (session != null) {
-			grantContextSessionStore.consume(session);
-		}
 	}
 
 	/**
@@ -166,8 +132,7 @@ public class AuthorizeContinueController {
 
 	private String handleAllow(SignedHandoff.Return payload,
 							   DelegationStateService.Entry state,
-							   HttpServletRequest request,
-							   HttpServletResponse response) {
+							   HttpServletRequest request) {
 		RegisteredClient client = registeredClientRepository.findByClientId(state.clientId());
 		if (client == null) {
 			throw new InvalidHandoffException("registered client disappeared: " + state.clientId());
@@ -175,39 +140,27 @@ public class AuthorizeContinueController {
 		requireNarrowingOfRequest(payload.approvedScope(), state.requestedScope());
 		Long retailCustomerId = parseRetailCustomerId(payload.principal());
 
-		// Only once the handoff is accepted: a sign-in left by a rejected one would send the customer's next
-		// authorization through Spring's consent page instead of the delegation (#299).
-		authenticateCustomer(payload.principal(), request, response);
-
-		// Pre-populate the consent store with the customer's effective approved scope so Spring
-		// AS's consent check passes when /oauth2/authorize is replayed.
-		OAuth2AuthorizationConsent.Builder consentBuilder = OAuth2AuthorizationConsent
-				.withId(client.getId(), payload.principal());
-		for (String fbTerm : parseScopes(payload.approvedScope())) {
-			consentBuilder.scope(fbTerm);
-		}
-		consentService.save(consentBuilder.build());
-
-		// Stash the grant context in the HTTP session so GrantContextEnrichingAuthorizationService
-		// can stamp it onto the OAuth2Authorization Spring AS creates when /oauth2/authorize is
-		// replayed below. Lifetime is the brief window between this redirect and Spring AS's
-		// auth-code persistence; consumed single-use by the enricher.
-		HttpSession session = request.getSession(true);
-		grantContextSessionStore.put(session, new GrantContext(
+		// #305: the delegation's own context, under its correlation id. It signs the customer in and is the
+		// consent on the replay below only, and GrantContextEnrichingAuthorizationService stamps it onto the
+		// OAuth2Authorization Spring AS creates there.
+		grantContextSessionStore.put(request.getSession(true), new GrantContext(
 				payload.correlationId(),
+				client.getClientId(),
+				client.getId(),
+				payload.principal(),
 				retailCustomerId,
 				payload.approvedScope(),
-				payload.selectedUsagePointIds()));
+				payload.selectedUsagePointIds(),
+				Instant.now().plus(GrantContextSessionStore.TTL)));
 
-		// Redirect back to /oauth2/authorize with the original TP query params. Spring AS finds
-		// the saved authorization request (still in session), sees authenticated user + matching
-		// consent in the store, mints the code, redirects to the TP.
+		// Redirect back to /oauth2/authorize with the original TP query params and the delegation's id.
 		UriComponentsBuilder replay = UriComponentsBuilder.fromPath(AUTHORIZE_PATH)
 				.queryParam("response_type", "code")
 				.queryParam("client_id", state.clientId())
 				.queryParam("redirect_uri", state.redirectUri())
 				.queryParam("scope", payload.approvedScope())
-				.queryParam("state", state.tpState() != null ? state.tpState() : "");
+				.queryParam("state", state.tpState() != null ? state.tpState() : "")
+				.queryParam(GrantContextSessionStore.DELEGATION_PARAMETER, payload.correlationId());
 		// #274: the TP's PKCE challenge, so the code is minted with it and the TP's code_verifier is checked at
 		// /oauth2/token. Without it Spring AS mints the code without a challenge and refuses the verifier.
 		DelegationStateService.ProofKey proofKey = state.proofKey();
@@ -247,29 +200,11 @@ public class AuthorizeContinueController {
 	}
 
 	/**
-	 * Establish the AS-side {@link SecurityContext} from the customer identity DC just verified.
-	 *
-	 * <p>Note: this principal is opaque to the AS (a string id assigned by DC). The AS does not
-	 * have a {@code UserDetailsService} for retail customers and does not need one &mdash; the AS
-	 * only needs the user to be authenticated for Spring AS's code-mint logic. The principal
-	 * value will appear in {@code OAuth2Authorization.principalName} and downstream
-	 * introspection responses.</p>
-	 */
-	private void authenticateCustomer(String principal, HttpServletRequest request, HttpServletResponse response) {
-		Authentication auth = UsernamePasswordAuthenticationToken.authenticated(
-				principal, null, List.of(new SimpleGrantedAuthority("ROLE_CUSTOMER")));
-		SecurityContext context = SecurityContextHolder.createEmptyContext();
-		context.setAuthentication(auth);
-		SecurityContextHolder.setContext(context);
-		securityContextRepository.saveContext(context, request, response);
-	}
-
-	/**
 	 * Split the approved scope into Spring AS scope tokens using the same rule Spring AS applies to
 	 * the replayed {@code scope} parameter: space-delimited per RFC 6749 &sect;3.3. An ESPI scope
 	 * string such as {@code FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000}
 	 * is a <em>single</em> scope token &mdash; its {@code ;} separates that scope's parameters, not
-	 * scopes &mdash; so it must be stored whole. Splitting on {@code ;} made the consent set
+	 * scopes &mdash; so it must be kept whole. Splitting on {@code ;} made the consent set
 	 * disjoint from the requested set, and Spring AS looped back to {@code /authorize/delegate}
 	 * (#210).
 	 */
@@ -281,7 +216,7 @@ public class AuthorizeContinueController {
 	 * The customer may narrow the scope the third party requested, never widen it (#211): every
 	 * approved scope must be one of the requested scopes or an
 	 * {@linkplain EspiGrantScopePolicy#isNarrowingOf ESPI narrowing} of one. A Return handoff that
-	 * widens the request is a DC contract violation, rejected before any consent is recorded.
+	 * widens the request is a DC contract violation, rejected before any grant context is kept.
 	 */
 	private static void requireNarrowingOfRequest(String approvedScope, String requestedScope) {
 		List<String> requested = List.of(parseScopes(requestedScope != null ? requestedScope : ""));
@@ -313,9 +248,7 @@ public class AuthorizeContinueController {
 
 	@ExceptionHandler(InvalidHandoffException.class)
 	@ResponseStatus(HttpStatus.BAD_REQUEST)
-	public String handleInvalidHandoff(InvalidHandoffException e, HttpServletRequest request,
-									   HttpServletResponse response) {
-		clearCustomerSignIn(request, response);
+	public String handleInvalidHandoff(InvalidHandoffException e, HttpServletRequest request) {
 		log.warn("/oauth2/authorize/continue handoff rejected: cause='{}', remoteAddr={}, userAgent='{}'",
 				e.getMessage(), request.getRemoteAddr(), request.getHeader("User-Agent"));
 		return "error/400";

@@ -468,17 +468,20 @@ public class AuthorizationServerConfig {
         // login step is handled transparently inside DC.
         org.springframework.context.ApplicationContext context =
                 http.getSharedObject(org.springframework.context.ApplicationContext.class);
+        var grantContexts = context.getBean(org.greenbuttonalliance.espi.authserver.grant.GrantContextSessionStore.class);
         var singleUseResponseHandler = new org.greenbuttonalliance.espi.authserver.web.delegate
-                .SingleUseCustomerAuthorizationResponseHandler(
-                        context.getBean(OAuth2AuthorizationConsentService.class),
-                        context.getBean(RegisteredClientRepository.class),
-                        context.getBean(org.greenbuttonalliance.espi.authserver.grant.GrantContextSessionStore.class));
+                .SingleUseCustomerAuthorizationResponseHandler(grantContexts);
+        // #305: the customer is signed in only on the replayed /oauth2/authorize that names a live delegation of
+        // this session, and only for that request (never saved to the session). After the SecurityContextHolder
+        // filter, so the session's context is loaded first and restored afterwards.
+        http.addFilterAfter(
+                new org.greenbuttonalliance.espi.authserver.web.delegate.DelegatedCustomerAuthenticationFilter(grantContexts),
+                org.springframework.security.web.context.SecurityContextHolderFilter.class);
         authorizationServerConfigurer.authorizationEndpoint(authorize -> authorize
                 .consentPage("/authorize/delegate")
-                // #299, #276: once the code is minted, or the replay ends in an error, the consent and the
-                // customer's AS sign-in that /oauth2/authorize/continue set up for it are cleared, so the next
-                // authorization in the same browser is delegated again, with the Third Party's own state and
-                // redirect_uri.
+                // #299, #276, #305: once the code is minted, or the replay ends in an error, the delegation's grant
+                // context is gone, so it cannot be replayed again and the next authorization in the same browser
+                // is delegated again, with the Third Party's own state and redirect_uri.
                 .authorizationResponseHandler(singleUseResponseHandler)
                 .errorResponseHandler(singleUseResponseHandler)
                 // #251: customer authorization never yields an administrative scope.
@@ -1121,7 +1124,7 @@ public class AuthorizationServerConfig {
             RegisteredClientRepository registeredClientRepository,
             org.greenbuttonalliance.espi.authserver.grant.GrantContextSessionStore grantContextSessionStore) {
         // Wrap the standard JDBC service so the customer-selection context written into the HTTP
-        // session at /oauth2/authorize/continue gets stamped onto OAuth2Authorization.attributes
+        // session at /oauth2/authorize/continue (per delegation, #305) gets stamped onto OAuth2Authorization.attributes
         // at code-issue time. The wrapper is transparent for token-exchange (M2M, no session) and
         // idempotent for repeated saves on the same authorization.
         org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService delegate =
@@ -1131,8 +1134,13 @@ public class AuthorizationServerConfig {
     }
 
     @Bean
-    public OAuth2AuthorizationConsentService authorizationConsentService(JdbcTemplate jdbcTemplate, RegisteredClientRepository registeredClientRepository) {
-        return new JdbcOAuth2AuthorizationConsentService(jdbcTemplate, registeredClientRepository);
+    public OAuth2AuthorizationConsentService authorizationConsentService(JdbcTemplate jdbcTemplate,
+            RegisteredClientRepository registeredClientRepository,
+            org.greenbuttonalliance.espi.authserver.grant.GrantContextSessionStore grantContextSessionStore) {
+        // #305: a delegated customer's consent is the scope approved at the DC, for its own replay only.
+        return new org.greenbuttonalliance.espi.authserver.grant.DelegatedConsentService(
+                new JdbcOAuth2AuthorizationConsentService(jdbcTemplate, registeredClientRepository),
+                grantContextSessionStore);
     }
 
     /**

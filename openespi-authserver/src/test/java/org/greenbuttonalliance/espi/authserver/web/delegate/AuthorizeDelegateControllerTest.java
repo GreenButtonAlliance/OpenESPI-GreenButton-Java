@@ -41,6 +41,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -59,7 +60,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *   <li>Builds a signed outbound handoff and 302s to {@code {dc.baseUrl}/oauth/authorize-screen}
  *       with the signed token as a query param.</li>
  *   <li>Saves delegation state (clientId, redirectUri, tpState) in {@link DelegationStateService}
- *       under the correlation id so {@link AuthorizeContinueController} can later look it up.</li>
+ *       under the correlation id so {@link AuthorizeContinueController} can later look it up. The correlation
+ *       id is always the AS's own random id, never the TP's state, and a pending entry is never replaced
+ *       (#331).</li>
  *   <li>Spring AS's consent-page redirect carries Spring's own consent {@code state} and no
  *       {@code redirect_uri} (#299): the Third Party's {@code state}, {@code redirect_uri} and scope are
  *       taken from the original request saved with the signed-in customer's pending authorization under
@@ -101,8 +104,21 @@ class AuthorizeDelegateControllerTest {
 		SecurityContextHolder.clearContext();
 	}
 
+	/** The correlation ids the outbound handoffs were built with, in order. */
+	private List<String> correlationIds() {
+		ArgumentCaptor<String> cid = ArgumentCaptor.forClass(String.class);
+		verify(handoffBuilder, atLeastOnce()).buildSignedToken(anyString(), anyString(), cid.capture());
+		return cid.getAllValues();
+	}
+
+	/** The state saved for the last delegation, under its correlation id. */
+	private DelegationStateService.Entry savedState() {
+		List<String> ids = correlationIds();
+		return delegationStateService.consume(ids.get(ids.size() - 1));
+	}
+
 	@Test
-	@DisplayName("delegate with full params redirects to DC and saves state under TP state as correlation id")
+	@DisplayName("delegate with full params redirects to DC and saves state under the AS's own correlation id (#331)")
 	void delegateRedirectsAndSavesState() throws Exception {
 		mockMvc.perform(get("/authorize/delegate")
 						.param("scope", "FB_1;FB_4_5")
@@ -113,19 +129,44 @@ class AuthorizeDelegateControllerTest {
 				.andExpect(redirectedUrlPattern(
 						"https://dc.example/DataCustodian/oauth/authorize-screen?handoff=*"));
 
-		// State was saved under the TP state value (= correlation id)
-		DelegationStateService.Entry saved = delegationStateService.consume("tp-state-abc");
-		assertThat(saved).isNotNull()
+		// #331: the correlation id is a random UUID of the AS's own, never the TP's state.
+		assertThat(correlationIds()).singleElement()
+				.satisfies(cid -> assertThat(UUID.fromString(cid)).isNotNull())
+				.isNotEqualTo("tp-state-abc");
+		assertThat(delegationStateService.consume("tp-state-abc")).isNull();
+		assertThat(savedState()).isNotNull()
 				.extracting(DelegationStateService.Entry::clientId,
 						DelegationStateService.Entry::redirectUri,
 						DelegationStateService.Entry::tpState,
 						DelegationStateService.Entry::proofKey)
 				.containsExactly("tp-1", "https://tp.example/cb", "tp-state-abc", null);
+	}
 
-		// Builder was called with the matching correlation id
-		ArgumentCaptor<String> cidCap = ArgumentCaptor.forClass(String.class);
-		verify(handoffBuilder).buildSignedToken(eq("tp-1"), eq("FB_1;FB_4_5"), cidCap.capture());
-		assertThat(cidCap.getValue()).isEqualTo("tp-state-abc");
+	@Test
+	@DisplayName("#331: a second delegation with the same Third Party state does not replace the first")
+	void sameStateDoesNotReplaceAPendingDelegation() throws Exception {
+		mockMvc.perform(get("/authorize/delegate")
+						.param("scope", "FB_1")
+						.param("client_id", "tp-1")
+						.param("state", "shared-state")
+						.param("redirect_uri", "https://tp.example/cb")
+						.param("code_challenge", "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM")
+						.param("code_challenge_method", "S256"))
+				.andExpect(status().is3xxRedirection());
+		mockMvc.perform(get("/authorize/delegate")
+						.param("scope", "FB_1")
+						.param("client_id", "tp-other")
+						.param("state", "shared-state")
+						.param("redirect_uri", "https://attacker.example/cb"))
+				.andExpect(status().is3xxRedirection());
+
+		List<String> ids = correlationIds();
+		assertThat(ids).hasSize(2).doesNotHaveDuplicates();
+		assertThat(delegationStateService.consume(ids.get(0)))
+				.extracting(DelegationStateService.Entry::clientId, DelegationStateService.Entry::redirectUri,
+						DelegationStateService.Entry::proofKey)
+				.containsExactly("tp-1", "https://tp.example/cb",
+						new DelegationStateService.ProofKey("E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM", "S256"));
 	}
 
 	@Test
@@ -140,7 +181,7 @@ class AuthorizeDelegateControllerTest {
 						.param("code_challenge_method", "S256"))
 				.andExpect(status().is3xxRedirection());
 
-		assertThat(delegationStateService.consume("tp-state-pkce"))
+		assertThat(savedState())
 				.isNotNull()
 				.extracting(DelegationStateService.Entry::proofKey)
 				.isEqualTo(new DelegationStateService.ProofKey("E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM", "S256"));
@@ -165,7 +206,7 @@ class AuthorizeDelegateControllerTest {
 
 		consentPageRedirect("spring-consent-state");
 
-		assertThat(delegationStateService.consume("tp-state-xyz"))
+		assertThat(savedState())
 				.isNotNull()
 				.extracting(DelegationStateService.Entry::proofKey)
 				.isEqualTo(new DelegationStateService.ProofKey("E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM", "S256"));
@@ -225,13 +266,13 @@ class AuthorizeDelegateControllerTest {
 
 		consentPageRedirect("spring-consent-state");
 
-		assertThat(delegationStateService.consume("tp-state-xyz"))
+		assertThat(savedState())
 				.isNotNull()
 				.extracting(DelegationStateService.Entry::clientId, DelegationStateService.Entry::redirectUri,
 						DelegationStateService.Entry::tpState, DelegationStateService.Entry::requestedScope,
 						DelegationStateService.Entry::pendingAuthorizationId)
 				.containsExactly("tp-2", "https://tp2.example/daily-cb", "tp-state-xyz", "FB_1", pending.getId());
-		verify(handoffBuilder).buildSignedToken("tp-2", "FB_1", "tp-state-xyz");
+		verify(handoffBuilder).buildSignedToken(eq("tp-2"), eq("FB_1"), anyString());
 		// kept for a reload of this page; /oauth2/authorize/continue removes it
 		verify(authorizationService, never()).remove(any());
 	}
@@ -246,8 +287,10 @@ class AuthorizeDelegateControllerTest {
 		consentPageRedirect("spring-consent-state");
 		consentPageRedirect("spring-consent-state");
 
-		verify(handoffBuilder, times(2)).buildSignedToken("tp-2", "FB_1", "tp-state-xyz");
-		assertThat(delegationStateService.consume("spring-consent-state")).isNull();
+		verify(handoffBuilder, times(2)).buildSignedToken(eq("tp-2"), eq("FB_1"), anyString());
+		assertThat(correlationIds()).doesNotContain("spring-consent-state", "tp-state-xyz")
+				.allSatisfy(cid -> assertThat(delegationStateService.consume(cid))
+						.extracting(DelegationStateService.Entry::tpState).isEqualTo("tp-state-xyz"));
 	}
 
 	@Test
@@ -308,7 +351,7 @@ class AuthorizeDelegateControllerTest {
 						.param("state", "tp-state-xyz"))
 				.andExpect(status().is3xxRedirection());
 
-		assertThat(delegationStateService.consume("tp-state-xyz"))
+		assertThat(savedState())
 				.isNotNull()
 				.extracting(DelegationStateService.Entry::redirectUri, DelegationStateService.Entry::tpState)
 				.containsExactly("https://tp2.example/registered-cb", "tp-state-xyz");

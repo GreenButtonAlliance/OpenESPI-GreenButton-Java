@@ -74,9 +74,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * GHSA-mh65-6r98-p6q8: the authorization-server admin APIs must only be reachable by an
  * ADMIN / DC_ADMIN principal.
  *
- * <p>The customer session is obtained exactly the way a real retail customer gets one: a signed
- * Return handoff from the Data Custodian is replayed at {@code /oauth2/authorize/continue}, which
- * writes a {@code ROLE_CUSTOMER} SecurityContext into the HTTP session. Before the fix, that session
+ * <p>The customer session holds a {@code ROLE_CUSTOMER} SecurityContext, as
+ * {@code /oauth2/authorize/continue} wrote into the HTTP session before #305 (since #305 a customer is signed
+ * in only on the replay of a delegation, never in the session). Before the fix, that session
  * reached every admin controller (the class-level {@code @PreAuthorize} checks were inert because
  * method security was never enabled, and the session chain only required {@code authenticated()}).</p>
  *
@@ -340,18 +340,23 @@ class AdminEndpointAuthorizationIntegrationTest extends AbstractAuthserverIntegr
 	}
 
 	@Test
-	@DisplayName("the delegated customer flow still authenticates the session and resumes /oauth2/authorize")
+	@DisplayName("the delegated customer flow resumes /oauth2/authorize and leaves no customer sign-in in the session (#305)")
 	void delegatedCustomerFlowStillWorks() throws Exception {
-		MockHttpSession session = establishCustomerSession();
+		MvcResult continueResult = continueDelegatedFlow();
+		MockHttpSession session = (MockHttpSession) continueResult.getRequest().getSession(false);
 
-		SecurityContext context = (SecurityContext) session.getAttribute(
-				HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY);
-		assertThat(context)
-				.isNotNull()
-				.extracting(SecurityContext::getAuthentication)
-				.satisfies(auth -> assertThat(auth.getAuthorities())
-						.extracting(Object::toString)
-						.containsExactly("ROLE_CUSTOMER"));
+		assertThat(session).isNotNull();
+		assertThat(session.getAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY))
+				.as("#305: the customer is signed in only on the replay, never in the session")
+				.isNull();
+		String location = mockMvc.perform(get(java.net.URI.create(continueResult.getResponse().getHeader("Location")))
+						.session(session))
+				.andExpect(status().is3xxRedirection())
+				.andReturn().getResponse().getHeader("Location");
+		// Signed in and consented on the replay, so Spring AS answers the Third Party itself instead of delegating
+		// to the DC again. FB_1 is not a customer data scope (#251), so that answer is invalid_scope; the code
+		// itself is covered by AuthCodeFlowOrchestrationIntegrationTest.
+		assertThat(location).startsWith(REDIRECT_URI).contains("error=invalid_scope", "state=tp-state");
 	}
 
 	@Test
@@ -375,10 +380,22 @@ class AdminEndpointAuthorizationIntegrationTest extends AbstractAuthserverIntegr
 	}
 
 	/**
-	 * Replay a signed DC Return handoff at {@code /oauth2/authorize/continue}; the controller writes a
-	 * ROLE_CUSTOMER SecurityContext into the session (AuthorizeContinueController#authenticateCustomer).
+	 * A session holding a retail customer's sign-in ({@code ROLE_CUSTOMER}). Before #305,
+	 * {@code /oauth2/authorize/continue} wrote one into the session; since #305 a customer is signed in only on
+	 * the replay of a delegation and never in the session, so the session is built directly. The admin APIs must
+	 * stay closed to such a session whatever produces it.
 	 */
-	private MockHttpSession establishCustomerSession() throws Exception {
+	private MockHttpSession establishCustomerSession() {
+		MockHttpSession session = new MockHttpSession();
+		session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
+				new org.springframework.security.core.context.SecurityContextImpl(
+						UsernamePasswordAuthenticationToken.authenticated("42", null,
+								List.of(new SimpleGrantedAuthority("ROLE_CUSTOMER")))));
+		return session;
+	}
+
+	/** Replays a signed DC Return handoff for the victim client at {@code /oauth2/authorize/continue}. */
+	private MvcResult continueDelegatedFlow() throws Exception {
 		String correlationId = "corr-" + UUID.randomUUID();
 		delegationStateService.save(correlationId, victimClientId, REDIRECT_URI, "tp-state", SCOPE);
 		Instant now = Instant.now();
@@ -390,11 +407,8 @@ class AdminEndpointAuthorizationIntegrationTest extends AbstractAuthserverIntegr
 				SignedHandoff.Return.CONSENT_ALLOW,
 				SCOPE));
 
-		MvcResult result = mockMvc.perform(get("/oauth2/authorize/continue").param("handoff", handoff))
+		return mockMvc.perform(get("/oauth2/authorize/continue").param("handoff", handoff))
 				.andExpect(status().is3xxRedirection())
 				.andReturn();
-		MockHttpSession session = (MockHttpSession) result.getRequest().getSession(false);
-		assertThat(session).isNotNull();
-		return session;
 	}
 }

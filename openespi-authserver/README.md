@@ -308,7 +308,7 @@ scope=DataCustodian_Admin_Access
 ### ESPI Custom Endpoints
 
 - `GET /authorize/delegate` - Delegates the customer's login and per-Function-Block consent to the Data Custodian (signed handoff); the AS has no consent page of its own (#234)
-- `GET /oauth2/authorize/continue` - Receives the Data Custodian's signed return handoff and resumes the authorization request
+- `GET /oauth2/authorize/continue` - Receives the Data Custodian's signed return handoff and resumes the authorization request. Each delegation has its own AS-generated correlation id (never the Third Party's `state`, #331); the customer's approval is kept in the session under it for 5 minutes, and only the resumed `/oauth2/authorize` naming it (`espi_delegation`) is signed in and consented from it. No AS sign-in or consent is saved, so two authorizations in one browser cannot mix, and every authorization goes through the Data Custodian (#305)
 
 ### Administrative APIs
 

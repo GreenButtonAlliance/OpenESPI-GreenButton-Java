@@ -16,47 +16,106 @@
 
 package org.greenbuttonalliance.espi.authserver.grant;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.util.WebUtils;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * Thin wrapper over {@link HttpSession} for stashing the {@link GrantContext} between
- * {@code /oauth2/authorize/continue} and the subsequent {@code /oauth2/authorize} call where
- * Spring Authorization Server creates the {@code OAuth2Authorization} aggregate.
+ * Keeps each delegation's {@link GrantContext} in the browser session between
+ * {@code /oauth2/authorize/continue} and the replayed {@code /oauth2/authorize} on which Spring Authorization
+ * Server mints the code.
  *
- * <p>The browser session is the natural carrier here: both {@code /continue} and {@code /authorize}
- * are GET requests made by the same user-agent in the same session, and the
- * {@link GrantContextEnrichingAuthorizationService} runs inside the {@code /authorize} request
- * processing so it has access to the same session.</p>
+ * <p>#305: one context per delegation, keyed by its correlation id, never one slot per session, so two
+ * authorizations running at once in one browser (two tabs) cannot take each other's context. The replay names
+ * its delegation with {@link #DELEGATION_PARAMETER}; a request without it, or with an unknown or expired one,
+ * finds nothing. Each context expires after {@link #TTL}, so a replay the browser never follows leaves nothing
+ * a later authorization can use.</p>
  *
- * <p>Single-use: {@link #consume} reads then removes. The session itself only carries this
- * attribute for the brief window between the two GETs.</p>
+ * <p>Being in the session also binds it to the browser that completed the delegation: the id alone, without
+ * that session, finds nothing.</p>
  */
 @Service
 public class GrantContextSessionStore {
 
-	static final String SESSION_KEY = "espi.grant_context";
+	static final String SESSION_KEY = "espi.grant_contexts";
 
-	/** Stash the context for the upcoming Spring AS authorization flow. */
+	/** The replayed {@code /oauth2/authorize} parameter naming its delegation (the correlation id). */
+	public static final String DELEGATION_PARAMETER = "espi_delegation";
+
+	/** As long as the delegation state ({@code DelegationStateService}). */
+	public static final Duration TTL = Duration.ofMinutes(5);
+
+	/** Keep the context for its replay; expired contexts in the session are dropped. */
 	public void put(HttpSession session, GrantContext ctx) {
-		session.setAttribute(SESSION_KEY, ctx);
-	}
-
-	/**
-	 * Read and remove the context. Single-use: a second consume returns {@code null}. Returns
-	 * {@code null} when the session is missing the attribute (e.g. M2M token-exchange requests
-	 * that arrive on a fresh session without going through {@code /continue}).
-	 */
-	public GrantContext consume(HttpSession session) {
-		GrantContext ctx = (GrantContext) session.getAttribute(SESSION_KEY);
-		if (ctx != null) {
-			session.removeAttribute(SESSION_KEY);
+		synchronized (lock(session)) {
+			Map<String, GrantContext> contexts = contexts(session);
+			Instant now = Instant.now();
+			contexts.values().removeIf(c -> c.isExpired(now));
+			contexts.put(ctx.correlationId(), ctx);
+			// Set again so a session store that persists attributes (not only in memory) sees the change.
+			session.setAttribute(SESSION_KEY, contexts);
 		}
-		return ctx;
 	}
 
-	/** Read without remove — for inspection / debugging. */
-	public GrantContext peek(HttpSession session) {
-		return (GrantContext) session.getAttribute(SESSION_KEY);
+	/** The unexpired context of this delegation, left in place; null if none. */
+	public GrantContext peek(HttpSession session, String correlationId) {
+		if (session == null || !StringUtils.hasText(correlationId)) {
+			return null;
+		}
+		synchronized (lock(session)) {
+			GrantContext ctx = contexts(session).get(correlationId);
+			return ctx == null || ctx.isExpired(Instant.now()) ? null : ctx;
+		}
+	}
+
+	/** Removes this delegation's context and returns it if it had not expired; null otherwise. Single use. */
+	public GrantContext consume(HttpSession session, String correlationId) {
+		if (session == null || !StringUtils.hasText(correlationId)) {
+			return null;
+		}
+		synchronized (lock(session)) {
+			Map<String, GrantContext> contexts = contexts(session);
+			GrantContext ctx = contexts.remove(correlationId);
+			session.setAttribute(SESSION_KEY, contexts);
+			return ctx == null || ctx.isExpired(Instant.now()) ? null : ctx;
+		}
+	}
+
+	/** {@link #peek(HttpSession, String)} for the delegation the request names; null if it names none. */
+	public GrantContext peek(HttpServletRequest request) {
+		return request == null ? null
+				: peek(request.getSession(false), request.getParameter(DELEGATION_PARAMETER));
+	}
+
+	/** {@link #consume(HttpSession, String)} for the delegation the request names; null if it names none. */
+	public GrantContext consume(HttpServletRequest request) {
+		return request == null ? null
+				: consume(request.getSession(false), request.getParameter(DELEGATION_PARAMETER));
+	}
+
+	/** The request being served on this thread, or null outside one. */
+	public static HttpServletRequest currentRequest() {
+		RequestAttributes attrs = RequestContextHolder.getRequestAttributes();
+		return attrs instanceof ServletRequestAttributes sra ? sra.getRequest() : null;
+	}
+
+	@SuppressWarnings("unchecked")
+	private static Map<String, GrantContext> contexts(HttpSession session) {
+		Object value = session.getAttribute(SESSION_KEY);
+		return value instanceof Map<?, ?> map ? (Map<String, GrantContext>) map : new HashMap<>();
+	}
+
+	private static Object lock(HttpSession session) {
+		return WebUtils.getSessionMutex(session);
 	}
 }

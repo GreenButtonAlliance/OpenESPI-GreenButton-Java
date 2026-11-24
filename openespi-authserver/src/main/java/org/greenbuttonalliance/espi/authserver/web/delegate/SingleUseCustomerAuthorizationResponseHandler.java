@@ -18,29 +18,21 @@ package org.greenbuttonalliance.espi.authserver.web.delegate;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import org.greenbuttonalliance.espi.authserver.grant.GrantContextSessionStore;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
 import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
-import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsent;
-import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsentService;
 import org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationCodeRequestAuthenticationException;
 import org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationCodeRequestAuthenticationToken;
-import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
-import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.web.DefaultRedirectStrategy;
 import org.springframework.security.web.RedirectStrategy;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
-import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.util.StringUtils;
 import org.springframework.web.util.UriComponentsBuilder;
 import org.springframework.web.util.UriUtils;
@@ -49,24 +41,19 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Sends the authorization response of {@code /oauth2/authorize}, a code or an error, after making the
- * customer's authorization single use (#299, #276).
+ * Sends the authorization response of {@code /oauth2/authorize}, a code or an error, and ends the delegation
+ * the request named (#299, #276, #305).
  *
- * <p>{@link AuthorizeContinueController} signs the customer in at the AS and saves a consent for the scope
- * the customer approved at the Data Custodian, only so that its replayed {@code /oauth2/authorize} mints the
- * code. Both outlived that replay. The next authorization in the same browser then skipped the delegation:
- * with the same scope, the stored consent satisfied Spring Authorization Server and a code was minted with no
- * ESPI provisioning (#276); with another scope, Spring's consent page was used, which reaches
- * {@code /authorize/delegate} with Spring's own {@code state} and no {@code redirect_uri}, so the Third Party
- * could not match the callback (#299).</p>
- *
- * <p>Here, whether the replay mints a code or ends in an error (e.g. {@code invalid_scope}), a customer's
- * consent is removed and the customer's sign-in and grant context are cleared from the session, so every
- * customer authorization
- * goes through {@link DelegateAuthorizationEntryPoint} and the Data Custodian's Authorization Screen with the
- * Third Party's own {@code state} and {@code redirect_uri}. The customer's consent to a Subscription is held
- * by the Data Custodian, not here. A non-customer's (an AS administrator's) sign-in and consent are left as
- * they are. A replay whose redirect the browser never follows is not cleaned up here.</p>
+ * <p>Since #305 the customer is signed in and has consented only on the replayed {@code /oauth2/authorize} of a
+ * delegation, from its {@link org.greenbuttonalliance.espi.authserver.grant.GrantContext}
+ * ({@link DelegatedCustomerAuthenticationFilter},
+ * {@link org.greenbuttonalliance.espi.authserver.grant.DelegatedConsentService}); no sign-in or consent is saved.
+ * When a code is minted, {@code GrantContextEnrichingAuthorizationService} has already taken the context. When
+ * the replay ends in an error (e.g. {@code invalid_scope}), nothing else would, so it is removed here: the
+ * delegation cannot be replayed again. Every customer authorization thus goes through
+ * {@link DelegateAuthorizationEntryPoint} and the Data Custodian's Authorization Screen with the Third Party's
+ * own {@code state} and {@code redirect_uri}. A replay the browser never follows leaves a context that only
+ * its own replay can use, and only until it expires.</p>
  *
  * <p>The responses themselves are Spring's defaults ({@code OAuth2AuthorizationEndpointFilter}'s
  * {@code sendAuthorizationResponse} and {@code sendErrorResponse}): a redirect to the request's
@@ -79,17 +66,10 @@ public class SingleUseCustomerAuthorizationResponseHandler
 
 	static final String CUSTOMER_AUTHORITY = "ROLE_CUSTOMER";
 
-	private final OAuth2AuthorizationConsentService consentService;
-	private final RegisteredClientRepository registeredClientRepository;
 	private final GrantContextSessionStore grantContextSessionStore;
-	private final SecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
 	private final RedirectStrategy redirectStrategy = new DefaultRedirectStrategy();
 
-	public SingleUseCustomerAuthorizationResponseHandler(OAuth2AuthorizationConsentService consentService,
-														  RegisteredClientRepository registeredClientRepository,
-														  GrantContextSessionStore grantContextSessionStore) {
-		this.consentService = consentService;
-		this.registeredClientRepository = registeredClientRepository;
+	public SingleUseCustomerAuthorizationResponseHandler(GrantContextSessionStore grantContextSessionStore) {
 		this.grantContextSessionStore = grantContextSessionStore;
 	}
 
@@ -98,9 +78,7 @@ public class SingleUseCustomerAuthorizationResponseHandler
 										Authentication authentication) throws IOException {
 		OAuth2AuthorizationCodeRequestAuthenticationToken codeRequest =
 				(OAuth2AuthorizationCodeRequestAuthenticationToken) authentication;
-		endCustomerAuthorization(codeRequest.getClientId(), (Authentication) codeRequest.getPrincipal(),
-				request, response);
-
+		grantContextSessionStore.consume(request);
 		UriComponentsBuilder uri = UriComponentsBuilder.fromUriString(codeRequest.getRedirectUri())
 				.queryParam(OAuth2ParameterNames.CODE, codeRequest.getAuthorizationCode().getTokenValue());
 		sendRedirect(request, response, uri, codeRequest.getState());
@@ -109,17 +87,13 @@ public class SingleUseCustomerAuthorizationResponseHandler
 	@Override
 	public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
 										AuthenticationException exception) throws IOException {
+		if (grantContextSessionStore.consume(request) != null) {
+			log.debug("Delegation ended by an authorization error response: {}", exception.getMessage());
+		}
 		OAuth2AuthorizationCodeRequestAuthenticationToken codeRequest =
 				exception instanceof OAuth2AuthorizationCodeRequestAuthenticationException codeRequestException
 						? codeRequestException.getAuthorizationCodeRequestAuthentication()
 						: null;
-		Authentication principal = codeRequest != null && codeRequest.getPrincipal() instanceof Authentication a
-				? a
-				: SecurityContextHolder.getContext().getAuthentication();
-		if (codeRequest != null) {
-			endCustomerAuthorization(codeRequest.getClientId(), principal, request, response);
-		}
-
 		OAuth2Error error = exception instanceof OAuth2AuthenticationException oauth2
 				? oauth2.getError()
 				: new OAuth2Error(OAuth2ErrorCodes.SERVER_ERROR);
@@ -137,41 +111,6 @@ public class SingleUseCustomerAuthorizationResponseHandler
 			uri.queryParam(OAuth2ParameterNames.ERROR_URI, UriUtils.encode(error.getUri(), StandardCharsets.UTF_8));
 		}
 		sendRedirect(request, response, uri, codeRequest.getState());
-	}
-
-	/**
-	 * A customer's consent, AS sign-in and grant context serve one authorization response only. The grant
-	 * context is already consumed when a code was minted; after an error nothing else would consume it.
-	 */
-	private void endCustomerAuthorization(String clientId, Authentication principal,
-										  HttpServletRequest request, HttpServletResponse response) {
-		if (!isCustomer(principal)) {
-			return;
-		}
-		removeConsent(clientId, principal.getName());
-		SecurityContextHolder.clearContext();
-		securityContextRepository.saveContext(SecurityContextHolder.createEmptyContext(), request, response);
-		HttpSession session = request.getSession(false);
-		if (session != null) {
-			grantContextSessionStore.consume(session);
-		}
-	}
-
-	private void removeConsent(String clientId, String principalName) {
-		RegisteredClient client = registeredClientRepository.findByClientId(clientId);
-		if (client == null) {
-			return;
-		}
-		OAuth2AuthorizationConsent consent = consentService.findById(client.getId(), principalName);
-		if (consent != null) {
-			consentService.remove(consent);
-			log.debug("Removed the single-use consent of {} for client_id={}", principalName, clientId);
-		}
-	}
-
-	private static boolean isCustomer(Authentication principal) {
-		return principal != null
-				&& principal.getAuthorities().stream().anyMatch(a -> CUSTOMER_AUTHORITY.equals(a.getAuthority()));
 	}
 
 	/** Adds {@code state} when present; {@code build(true)}: the components are explicitly encoded. */
