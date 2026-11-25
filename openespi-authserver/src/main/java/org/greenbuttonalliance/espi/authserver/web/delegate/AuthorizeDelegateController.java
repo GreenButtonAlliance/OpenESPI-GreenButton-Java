@@ -34,6 +34,7 @@ import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.stereotype.Controller;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.server.ResponseStatusException;
@@ -124,6 +125,8 @@ public class AuthorizeDelegateController {
 		String tpState = state;
 		String requestedScope = scope;
 		String resolvedRedirectUri = redirectUri;
+		// #335: whether the TP itself sent redirect_uri; when it did not, the replay leaves it out too.
+		boolean redirectUriSent = StringUtils.hasText(redirectUri);
 		String pendingAuthorizationId = null;
 		DelegationStateService.ProofKey proofKey = DelegationStateService.ProofKey.of(codeChallenge, codeChallengeMethod);
 		if (redirectUri == null || redirectUri.isBlank()) {
@@ -134,6 +137,7 @@ public class AuthorizeDelegateController {
 				OAuth2AuthorizationRequest original = pending.getAttribute(OAuth2AuthorizationRequest.class.getName());
 				tpState = original.getState();
 				resolvedRedirectUri = original.getRedirectUri();
+				redirectUriSent = StringUtils.hasText(resolvedRedirectUri);
 				requestedScope = String.join(" ", original.getScopes());
 				pendingAuthorizationId = pending.getId();
 				proofKey = DelegationStateService.ProofKey.of(
@@ -157,11 +161,11 @@ public class AuthorizeDelegateController {
 		// is reachable unauthenticated, so a state another TP reuses, or anyone learns, must not name an entry.
 		String correlationId = UUID.randomUUID().toString();
 
-		// Saved so AuthorizeContinueController replays /oauth2/authorize with the TP's redirect_uri, state and PKCE
-		// challenge (#274), and removes the pending consent-page authorization, which a reload of this page still
-		// needs until then.
+		// Saved so AuthorizeContinueController replays /oauth2/authorize with the TP's redirect_uri (when it sent one,
+		// #335), state and PKCE challenge (#274), and removes the pending consent-page authorization, which a reload
+		// of this page still needs until then.
 		delegationStateService.save(correlationId, clientId, resolvedRedirectUri, tpState, requestedScope,
-				pendingAuthorizationId, proofKey);
+				pendingAuthorizationId, proofKey, redirectUriSent);
 
 		String signedToken = handoffBuilder.buildSignedToken(clientId, requestedScope, correlationId);
 

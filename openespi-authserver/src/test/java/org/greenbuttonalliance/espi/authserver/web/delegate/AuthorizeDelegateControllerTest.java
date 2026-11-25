@@ -138,8 +138,9 @@ class AuthorizeDelegateControllerTest {
 				.extracting(DelegationStateService.Entry::clientId,
 						DelegationStateService.Entry::redirectUri,
 						DelegationStateService.Entry::tpState,
-						DelegationStateService.Entry::proofKey)
-				.containsExactly("tp-1", "https://tp.example/cb", "tp-state-abc", null);
+						DelegationStateService.Entry::proofKey,
+						DelegationStateService.Entry::redirectUriSent)
+				.containsExactly("tp-1", "https://tp.example/cb", "tp-state-abc", null, true);
 	}
 
 	@Test
@@ -270,8 +271,8 @@ class AuthorizeDelegateControllerTest {
 				.isNotNull()
 				.extracting(DelegationStateService.Entry::clientId, DelegationStateService.Entry::redirectUri,
 						DelegationStateService.Entry::tpState, DelegationStateService.Entry::requestedScope,
-						DelegationStateService.Entry::pendingAuthorizationId)
-				.containsExactly("tp-2", "https://tp2.example/daily-cb", "tp-state-xyz", "FB_1", pending.getId());
+						DelegationStateService.Entry::pendingAuthorizationId, DelegationStateService.Entry::redirectUriSent)
+				.containsExactly("tp-2", "https://tp2.example/daily-cb", "tp-state-xyz", "FB_1", pending.getId(), true);
 		verify(handoffBuilder).buildSignedToken(eq("tp-2"), eq("FB_1"), anyString());
 		// kept for a reload of this page; /oauth2/authorize/continue removes it
 		verify(authorizationService, never()).remove(any());
@@ -353,8 +354,28 @@ class AuthorizeDelegateControllerTest {
 
 		assertThat(savedState())
 				.isNotNull()
-				.extracting(DelegationStateService.Entry::redirectUri, DelegationStateService.Entry::tpState)
-				.containsExactly("https://tp2.example/registered-cb", "tp-state-xyz");
+				.extracting(DelegationStateService.Entry::redirectUri, DelegationStateService.Entry::tpState,
+						DelegationStateService.Entry::redirectUriSent)
+				.as("#335: kept for access_denied, but recorded as not sent, so the replay leaves it out")
+				.containsExactly("https://tp2.example/registered-cb", "tp-state-xyz", false);
+	}
+
+	@Test
+	@DisplayName("#335: a consent-page entry whose original request had no redirect_uri uses the sole registered one, recorded as not sent")
+	void consentPageEntryWithoutRedirectUriRecordsItAsNotSent() throws Exception {
+		when(authorizationService.findByToken("spring-consent-state", new OAuth2TokenType(OAuth2ParameterNames.STATE)))
+				.thenReturn(pendingConsent("tp-2", "spring-consent-state", "tp-state-xyz", null));
+		when(registeredClientRepository.findByClientId("tp-2"))
+				.thenReturn(clientWithCallbacks("tp-2", "https://tp2.example/registered-cb"));
+		signedIn("42");
+
+		consentPageRedirect("spring-consent-state");
+
+		assertThat(savedState())
+				.isNotNull()
+				.extracting(DelegationStateService.Entry::redirectUri, DelegationStateService.Entry::tpState,
+						DelegationStateService.Entry::redirectUriSent)
+				.containsExactly("https://tp2.example/registered-cb", "tp-state-xyz", false);
 	}
 
 	@Test

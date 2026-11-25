@@ -212,6 +212,26 @@ class AuthorizeContinueControllerTest {
 		}
 
 		@Test
+		@DisplayName("#335: a Third Party that left redirect_uri out gets a replay without it (RFC 6749 3.1.2.3, 4.1.3)")
+		void omittedRedirectUriIsLeftOutOfTheReplay() throws Exception {
+			String cid = "corr-allow-no-redirect";
+			delegationStateService.save(cid, "tp-1", "https://tp.example/cb", "tp-state-1", ESPI_SCOPE, null, null,
+					false);
+			when(registeredClientRepository.findByClientId("tp-1")).thenReturn(client(ESPI_SCOPE));
+
+			mockMvc.perform(get("/oauth2/authorize/continue").session(session)
+							.param("handoff", codec.encode(allowReturn(cid, ESPI_SCOPE, List.of()))))
+					.andExpect(status().is3xxRedirection())
+					.andExpect(redirectedUrl("/oauth2/authorize?response_type=code&client_id=tp-1"
+							+ "&scope=" + ESPI_SCOPE_IN_URL
+							+ "&state=tp-state-1&espi_delegation=" + cid));
+
+			// Only a request without redirect_uri is the delegation's replay.
+			assertThat(grantContextSessionStore.peek(session, cid).replay())
+					.isEqualTo(new GrantContext.Replay(null, "tp-state-1", null, null));
+		}
+
+		@Test
 		@DisplayName("#305 review: a state and redirect_uri with '+', '/' and '=' are replayed form-encoded, never as spaces")
 		void reservedCharactersAreFormEncodedInTheReplay() throws Exception {
 			String cid = "corr-allow-plus";
@@ -330,6 +350,20 @@ class AuthorizeContinueControllerTest {
 
 			verify(nonceService).consume(any(), any());
 			assertThat(grantContextSessionStore.peek(session, cid)).isNull();
+		}
+
+		@Test
+		@DisplayName("#335: a deny for a Third Party that left redirect_uri out goes to its sole registered one")
+		void denyWithOmittedRedirectUriGoesToTheRegisteredOne() throws Exception {
+			String cid = "corr-deny-no-redirect";
+			delegationStateService.save(cid, "tp-1", "https://tp.example/cb", "tp-state-1", ESPI_SCOPE, null, null,
+					false);
+
+			mockMvc.perform(get("/oauth2/authorize/continue").session(session)
+							.param("handoff", codec.encode(denyReturn(cid))))
+					.andExpect(status().is3xxRedirection())
+					.andExpect(redirectedUrlPattern(
+							"https://tp.example/cb?error=access_denied&error_description=*&state=tp-state-1"));
 		}
 
 		@ParameterizedTest(name = "state ''{0}'' -> {1}")
