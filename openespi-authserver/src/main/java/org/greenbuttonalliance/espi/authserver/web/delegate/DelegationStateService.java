@@ -48,7 +48,8 @@ public class DelegationStateService {
 
 	/**
 	 * Save the original third-party request context so it can be retrieved when the customer
-	 * returns from DC via {@link #consume(String)}.
+	 * returns from DC via {@link #consume(String)}. Records {@code redirectUri} as sent by the Third Party: see
+	 * {@link #save(String, String, String, String, String, String, ProofKey)}.
 	 */
 	public void save(String correlationId, String clientId, String redirectUri, String tpState,
 					 String requestedScope) {
@@ -67,6 +68,12 @@ public class DelegationStateService {
 	/**
 	 * As {@link #save(String, String, String, String, String, String)}, also keeping the Third Party's PKCE
 	 * challenge (#274), or null when it sent none.
+	 * <p>
+	 * This and the shorter overloads record {@code redirectUri} as sent by the Third Party
+	 * ({@code redirectUriSent = true}), so the replay carries it. Production code saves through
+	 * {@link #save(String, String, String, String, String, String, ProofKey, boolean)}: a {@code redirectUri}
+	 * the AS filled in itself, when the Third Party left it out, saved through these would be replayed as if
+	 * sent and the token request would then fail (#335).
 	 */
 	public void save(String correlationId, String clientId, String redirectUri, String tpState,
 					 String requestedScope, String pendingAuthorizationId, ProofKey proofKey) {
