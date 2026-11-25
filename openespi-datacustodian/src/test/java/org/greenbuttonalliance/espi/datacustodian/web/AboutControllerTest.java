@@ -16,7 +16,10 @@
 
 package org.greenbuttonalliance.espi.datacustodian.web;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootVersion;
@@ -55,23 +58,37 @@ class AboutControllerTest {
 
 		assertThat(html)
 				.contains(AboutController.IMPLEMENTATION, AboutController.ESPI_STANDARD, "Status", "SECURITY.md")
-				.doesNotContain("Java version", "Spring Boot version");
-		assertThat(visibleText(html))
+				.doesNotContain("Java version", "Spring Boot version")
 				.doesNotContainPattern(standalone(System.getProperty("java.version")))
 				.doesNotContainPattern(standalone(SpringBootVersion.getVersion()));
 	}
 
-	/** The page without its markup, so a class such as Bootstrap's {@code w-25} is not read as a version (#277). */
-	private static String visibleText(String html) {
-		return html.replaceAll("<[^>]*>", " ");
-	}
-
 	/**
-	 * {@code version} as a token of its own (#277): a bare {@code 25} must not match inside the build time
-	 * ({@code 2026-11-25 10:25 UTC}) or another number.
+	 * {@code version} as a number of its own anywhere in the page, markup and comments included (#277), so that a
+	 * {@code java.version} of exactly {@code 25} matches neither a class such as Bootstrap's {@code w-25} nor the
+	 * build time ({@code 2026-11-25 10:25 UTC}), while {@code Java 25.} or {@code Java:25} still match. Not before
+	 * it: a letter or digit, a {@code -} after a letter or digit, a {@code .} or {@code :} after a digit; not after
+	 * it: a letter or digit, or a {@code .}, {@code :} or {@code -} before a digit. A hyphenated {@code Java-25} is
+	 * therefore not caught. The same helper is in openespi-thirdparty's {@code AboutControllerTest}: change both.
 	 */
 	private static Pattern standalone(String version) {
-		return Pattern.compile("(?<![\\w.:-])" + Pattern.quote(version) + "(?![\\w.:-])");
+		return Pattern.compile("(?<!\\w|\\w-|\\d[.:])" + Pattern.quote(version) + "(?!\\w|[.:-]\\d)");
+	}
+
+	@ParameterizedTest(name = "\"{0}\" shows version {1}: {2}")
+	@CsvSource(delimiter = '|', value = {
+			"<th class=\"w-25\">Key</th>             | 25    | false",
+			"2026-11-25 10:25 UTC                    | 25    | false",
+			"Version 4.0.0-SNAPSHOT 125 25.0.1       | 25    | false",
+			"Running on Java 25.                     | 25    | true",
+			"Java:25                                 | 25    | true",
+			"<!-- built with Java 25 -->             | 25    | true",
+			"<meta content=\"Spring Boot 4.2.0\">    | 4.2.0 | true",
+			"Spring Boot 4.2.0.                      | 4.2.0 | true",
+			"Spring Boot 4.2.0.1                     | 4.2.0 | false"})
+	@DisplayName("#277: a version is found as a number of its own, in text, markup and comments")
+	void standaloneVersionPattern(String page, String version, boolean found) {
+		assertThat(standalone(version).matcher(page).find()).isEqualTo(found);
 	}
 
 	@Test
