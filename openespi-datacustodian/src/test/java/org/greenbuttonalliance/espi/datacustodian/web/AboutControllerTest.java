@@ -58,7 +58,10 @@ class AboutControllerTest {
 
 		assertThat(html)
 				.contains(AboutController.IMPLEMENTATION, AboutController.ESPI_STANDARD, "Status", "SECURITY.md")
-				.doesNotContain("Java version", "Spring Boot version")
+				.doesNotContain("Java version")
+				// The framework is not named at all (#240), not only its version: "Java" cannot be checked this
+				// way, since the repository URL (OpenESPI-GreenButton-Java) contains it.
+				.doesNotContainIgnoringCase("Spring Boot", "spring-boot", "springboot")
 				.doesNotContainPattern(standalone(System.getProperty("java.version")))
 				.doesNotContainPattern(standalone(SpringBootVersion.getVersion()));
 	}
@@ -66,13 +69,15 @@ class AboutControllerTest {
 	/**
 	 * {@code version} as a number of its own anywhere in the page, markup and comments included (#277), so that a
 	 * {@code java.version} of exactly {@code 25} matches neither a class such as Bootstrap's {@code w-25} nor the
-	 * build time ({@code 2026-11-25 10:25 UTC}), while {@code Java 25.} or {@code Java:25} still match. Not before
-	 * it: a letter or digit, a {@code -} after a letter or digit, a {@code .} or {@code :} after a digit; not after
-	 * it: a letter or digit, or a {@code .}, {@code :} or {@code -} before a digit. A hyphenated {@code Java-25} is
-	 * therefore not caught. The same helper is in openespi-thirdparty's {@code AboutControllerTest}: change both.
+	 * build time ({@code 2026-11-25 10:25 UTC}) nor the product's own version ({@code 4.2.0-SNAPSHOT} when Spring
+	 * Boot is {@code 4.2.0}), while {@code Java 25.}, {@code Java:25}, {@code Java25} or {@code v4.2.0} still match.
+	 * Not before it: a digit, a {@code -} after a letter or digit, a {@code .} or {@code :} after a digit; not after
+	 * it: a letter or digit, a {@code .} or {@code :} before a digit, or a {@code -} before a letter or digit. A
+	 * hyphenated {@code Java-25} is therefore not caught. The same helper is in openespi-thirdparty's
+	 * {@code AboutControllerTest}: change both.
 	 */
 	private static Pattern standalone(String version) {
-		return Pattern.compile("(?<!\\w|\\w-|\\d[.:])" + Pattern.quote(version) + "(?!\\w|[.:-]\\d)");
+		return Pattern.compile("(?<!\\d|\\w-|\\d[.:])" + Pattern.quote(version) + "(?!\\w|[.:]\\d|-\\w)");
 	}
 
 	@ParameterizedTest(name = "\"{0}\" shows version {1}: {2}")
@@ -82,6 +87,9 @@ class AboutControllerTest {
 			"Version 4.0.0-SNAPSHOT 125 25.0.1       | 25    | false",
 			"Running on Java 25.                     | 25    | true",
 			"Java:25                                 | 25    | true",
+			"Java25 v25                              | 25    | true",
+			"Spring Boot v4.2.0                      | 4.2.0 | true",
+			"Version 4.2.0-SNAPSHOT 4.2.0-RC1        | 4.2.0 | false",
 			"<!-- built with Java 25 -->             | 25    | true",
 			"<meta content=\"Spring Boot 4.2.0\">    | 4.2.0 | true",
 			"Spring Boot 4.2.0.                      | 4.2.0 | true",
