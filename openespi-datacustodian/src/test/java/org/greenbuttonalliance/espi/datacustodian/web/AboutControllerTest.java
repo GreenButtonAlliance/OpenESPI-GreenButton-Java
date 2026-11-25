@@ -26,6 +26,8 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.regex.Pattern;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -53,8 +55,23 @@ class AboutControllerTest {
 
 		assertThat(html)
 				.contains(AboutController.IMPLEMENTATION, AboutController.ESPI_STANDARD, "Status", "SECURITY.md")
-				.doesNotContain("Java version", System.getProperty("java.version"))
-				.doesNotContain("Spring Boot version", SpringBootVersion.getVersion());
+				.doesNotContain("Java version", "Spring Boot version");
+		assertThat(visibleText(html))
+				.doesNotContainPattern(standalone(System.getProperty("java.version")))
+				.doesNotContainPattern(standalone(SpringBootVersion.getVersion()));
+	}
+
+	/** The page without its markup, so a class such as Bootstrap's {@code w-25} is not read as a version (#277). */
+	private static String visibleText(String html) {
+		return html.replaceAll("<[^>]*>", " ");
+	}
+
+	/**
+	 * {@code version} as a token of its own (#277): a bare {@code 25} must not match inside the build time
+	 * ({@code 2026-11-25 10:25 UTC}) or another number.
+	 */
+	private static Pattern standalone(String version) {
+		return Pattern.compile("(?<![\\w.:-])" + Pattern.quote(version) + "(?![\\w.:-])");
 	}
 
 	@Test
