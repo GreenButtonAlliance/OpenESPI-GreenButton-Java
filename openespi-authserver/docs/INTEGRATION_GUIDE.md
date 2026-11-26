@@ -87,7 +87,8 @@ code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk
 
 ### 2. Certificate-based Authentication (ESPI 4.0)
 
-For ESPI 4.0 compliance, client authentication can use X.509 certificates:
+For ESPI 4.0 compliance, client authentication can use X.509 certificates. Such a client cannot yet be created
+through the Client Management API (see "Certificate-based Client Registration" below):
 
 #### Client Configuration
 ```json
@@ -118,36 +119,28 @@ Submit a client registration request with the following information:
 
 ```json
 {
-  "clientName": "My Energy App",
-  "redirectUris": [
+  "client_name": "My Energy App",
+  "redirect_uris": [
     "https://myapp.example.com/oauth/callback"
   ],
   "scopes": [
-    "openid",
-    "profile",
-    "email",
     "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000"
   ],
-  "authorizationGrantTypes": [
+  "grant_types": [
     "authorization_code",
     "refresh_token"
   ],
-  "clientAuthenticationMethods": [
+  "authentication_methods": [
     "client_secret_basic"
   ],
-  "espiCompliant": true,
-  "securityLevel": "HIGH",
-  "clientSettings": {
-    "requireAuthorizationConsent": true,
-    "requireProofKey": true
-  },
-  "tokenSettings": {
-    "accessTokenTimeToLive": "PT1H",
-    "refreshTokenTimeToLive": "P30D",
-    "reuseRefreshTokens": false
-  }
+  "require_proof_key": false,
+  "require_authorization_consent": true,
+  "security_level": "high"
 }
 ```
+
+The fields are those of `CreateClientRequest` in `docs/openapi.yaml`; a request naming any other field is refused
+with 400 `invalid_request`.
 
 ### 2. API-based Registration (Production)
 
@@ -159,29 +152,18 @@ Authorization: Bearer your-admin-token
 Content-Type: application/json
 
 {
-  "clientName": "Production Energy App",
-  "redirectUris": ["https://app.example.com/callback"],
-  "scopes": ["openid", "profile", "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000"],
-  "espiCompliant": true,
-  "securityLevel": "HIGH"
+  "client_name": "Production Energy App",
+  "redirect_uris": ["https://app.example.com/callback"],
+  "scopes": ["FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000"],
+  "security_level": "high"
 }
 ```
 
 ### 3. Certificate-based Client Registration
 
-For ESPI 4.0 compliance with certificate authentication:
-
-```json
-{
-  "clientName": "ESPI Certified App",
-  "clientAuthenticationMethods": ["tls_client_auth"],
-  "certificateSubjectDN": "CN=espi-app,OU=Energy,O=Utility Corp",
-  "certificateSerialNumber": "123456789ABCDEF",
-  "certificateIssuerDN": "CN=ESPI CA,O=Green Button Alliance",
-  "espiCompliant": true,
-  "securityLevel": "HIGH"
-}
-```
+Not yet available. The Client Management API accepts only `client_secret_basic`, `client_secret_post` and `none`
+as `authentication_methods`: `tls_client_auth` needs the client's certificate subject DN in its settings, which
+the API does not take, so a request for it is refused with 400 `invalid_request` (#332).
 
 ## ESPI Scope Implementation
 

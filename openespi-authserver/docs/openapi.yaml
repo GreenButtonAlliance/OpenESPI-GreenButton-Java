@@ -126,7 +126,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientResponse'
+                $ref: '#/components/schemas/CreateClientResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -188,7 +188,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientResponse'
+                $ref: '#/components/schemas/SuccessResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -629,60 +629,55 @@ components:
         usageMetrics:
           $ref: '#/components/schemas/UsageMetrics'
 
+    # The client-management request and response schemas below use the JSON names the server reads and
+    # writes (ClientManagementDTOs); ClientManagementOpenApiTest keeps them in step (#332). A request naming
+    # any other field is refused with 400 invalid_request, not ignored.
     CreateClientRequest:
       type: object
+      additionalProperties: false
       required:
-        - clientName
-        - redirectUris
-        - scopes
+        - client_name
       properties:
-        clientName:
+        client_name:
           type: string
           minLength: 1
-          maxLength: 100
-        redirectUris:
+          maxLength: 200
+        client_name_prefix:
+          type: string
+          nullable: true
+          pattern: '^[A-Za-z0-9_-]{1,41}$'
+          description: >-
+            Prefix of the generated client_id: letters, digits, '_' and '-', short enough that the client_id
+            (the prefix, '_', 13 digits of milliseconds, '_', 8 hex digits) stays within ESPI's 64 characters.
+            Absent or null gives the default espi_client; an empty or blank value is refused.
+        client_description:
+          type: string
+          maxLength: 1000
+        authentication_methods:
           type: array
-          minItems: 1
+          description: >-
+            How the client authenticates at the token endpoint. A client whose only method is none is public:
+            it gets no client_secret, always requires PKCE (RFC 9700 2.1.1) and cannot use client_credentials.
           items:
             type: string
-            format: uri
-        scopes:
-          type: array
-          minItems: 1
-          items:
-            type: string
-        authorizationGrantTypes:
-          type: array
-          items:
-            type: string
-            enum: [authorization_code, refresh_token, client_credentials]
-          default: [authorization_code, refresh_token]
-        clientAuthenticationMethods:
-          type: array
-          items:
-            type: string
-            enum: [client_secret_basic, client_secret_post, tls_client_auth]
+            enum: [client_secret_basic, client_secret_post, none]
           default: [client_secret_basic]
-        espiCompliant:
-          type: boolean
-          default: false
-        securityLevel:
-          type: string
-          enum: [LOW, MEDIUM, HIGH]
-          default: MEDIUM
-        clientSettings:
-          $ref: '#/components/schemas/ClientSettings'
-        tokenSettings:
-          $ref: '#/components/schemas/TokenSettings'
-
-    UpdateClientRequest:
-      type: object
-      properties:
-        clientName:
-          type: string
-          minLength: 1
-          maxLength: 100
-        redirectUris:
+        grant_types:
+          type: array
+          items:
+            type: string
+            enum: [authorization_code, client_credentials, refresh_token]
+          default: [authorization_code, refresh_token]
+        redirect_uris:
+          type: array
+          description: >-
+            Required (at least one) when grant_types includes authorization_code, which it does by default;
+            otherwise the request is refused with 400 invalid_request. Each must be an http or https URI.
+          items:
+            type: string
+            format: uri
+            pattern: '^https?://.*'
+        post_logout_redirect_uris:
           type: array
           items:
             type: string
@@ -691,56 +686,122 @@ components:
           type: array
           items:
             type: string
-        authorizationGrantTypes:
-          type: array
-          items:
-            type: string
-            enum: [authorization_code, refresh_token, client_credentials]
-        clientAuthenticationMethods:
-          type: array
-          items:
-            type: string
-            enum: [client_secret_basic, client_secret_post, tls_client_auth]
-        espiCompliant:
-          type: boolean
-        securityLevel:
-          type: string
-          enum: [LOW, MEDIUM, HIGH]
-        clientSettings:
-          $ref: '#/components/schemas/ClientSettings'
-        tokenSettings:
-          $ref: '#/components/schemas/TokenSettings'
-
-    ClientSettings:
-      type: object
-      properties:
-        requireAuthorizationConsent:
-          type: boolean
-          default: true
-        requireProofKey:
+          default:
+            - openid
+            - profile
+            - FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000
+        require_proof_key:
           type: boolean
           default: false
           description: >-
-            Refuse authorization requests without a PKCE code_challenge. REQ.21 does not require PKCE;
-            a code_challenge a client sends is enforced either way (#274). The server also accepts the
-            authentication method none, which this schema does not list; a client with it is public and
-            always requires PKCE (RFC 9700 2.1.1), whatever this says. This schema does not yet match the
-            server's request fields (see #332).
+            Refuse authorization requests without a PKCE code_challenge. REQ.21 does not require PKCE; a
+            code_challenge a client sends is enforced either way (#274). Always true for a client with the
+            authentication method none.
+        require_authorization_consent:
+          type: boolean
+          default: true
+        application_type:
+          type: string
+          enum: [WEB, NATIVE, ADMIN]
+          default: WEB
+        security_level:
+          type: string
+          enum: [standard, high, maximum]
+          default: standard
+        security_classification:
+          type: string
+          enum: [public, internal, confidential, restricted]
+          default: internal
+        certification_status:
+          type: string
+          enum: [self_certified, third_party_certified, gba_certified]
+          default: self_certified
+        business_category:
+          type: string
+          maxLength: 100
+        service_territory:
+          type: string
+          maxLength: 200
+        rate_limit_per_minute:
+          type: integer
+          minimum: 1
+          maximum: 10000
+          default: 100
+        max_concurrent_sessions:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          default: 5
+        created_by:
+          type: string
+          maxLength: 100
 
-    TokenSettings:
+    CreateClientResponse:
       type: object
       properties:
-        accessTokenTimeToLive:
+        client_id:
           type: string
-          description: ISO 8601 duration (e.g., PT1H)
-          default: PT1H
-        refreshTokenTimeToLive:
+        client_secret:
           type: string
-          description: ISO 8601 duration (e.g., P30D)
-          default: P30D
-        reuseRefreshTokens:
-          type: boolean
-          default: false
+          description: >-
+            [PROTECTED] Returned only here, on creation, and stored only encoded. Absent for a public client
+            (authentication method none only).
+        client_name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        espi_version:
+          type: string
+
+    UpdateClientRequest:
+      type: object
+      additionalProperties: false
+      description: >-
+        The fields an update applies; each one given replaces the client's value. Client settings (PKCE,
+        consent), authentication methods and grant types cannot be changed here.
+      properties:
+        client_name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Must not be blank.
+        redirect_uris:
+          type: array
+          description: >-
+            Replaces the client's redirect URIs. Each must be an http or https URI; a client with the
+            authorization_code grant must keep at least one.
+          items:
+            type: string
+            format: uri
+            pattern: '^https?://.*'
+        scopes:
+          type: array
+          items:
+            type: string
+        security_level:
+          type: string
+          enum: [standard, high, maximum]
+        rate_limit_per_minute:
+          type: integer
+          minimum: 1
+          maximum: 10000
+        max_concurrent_sessions:
+          type: integer
+          minimum: 1
+          maximum: 1000
+        updated_by:
+          type: string
+          maxLength: 100
+
+    SuccessResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success]
+        message:
+          type: string
 
     UsageMetrics:
       type: object

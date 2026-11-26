@@ -106,6 +106,17 @@ public class OAuth2ClientManagementController {
         "ThirdParty_Admin_Access"
     );
 
+    /**
+     * The client authentication methods a client created through this API can use at the token endpoint (#332).
+     * {@code tls_client_auth} needs the client's certificate subject DN in its settings, and
+     * {@code client_secret_jwt} / {@code private_key_jwt} a JWK Set, none of which this API sets; any other
+     * value is not a method at all.
+     */
+    static final Set<String> SUPPORTED_AUTHENTICATION_METHODS = Set.of(
+        ClientAuthenticationMethod.CLIENT_SECRET_BASIC.getValue(),
+        ClientAuthenticationMethod.CLIENT_SECRET_POST.getValue(),
+        ClientAuthenticationMethod.NONE.getValue());
+
     @Autowired
     public OAuth2ClientManagementController(
             RegisteredClientRepository registeredClientRepository,
@@ -248,31 +259,110 @@ public class OAuth2ClientManagementController {
     }
 
     /**
+     * Whether a new client is public only: its sole authentication method is {@code none} (#332). It gets no
+     * secret, since it could never use one. A client with {@code none} next to a secret method still gets one.
+     */
+    static boolean isPublicOnly(CreateClientRequest request) {
+        List<String> methods = request.getAuthenticationMethods();
+        return methods != null && !methods.isEmpty()
+                && methods.stream().allMatch(ClientAuthenticationMethod.NONE.getValue()::equals);
+    }
+
+    /** Refuse a request naming fields it does not have (#332), rather than silently dropping them. */
+    private static void refuseUnknownFields(RefusesUnknownFields request) {
+        if (!request.getUnknownFields().isEmpty()) {
+            throw new IllegalArgumentException("Unknown field(s): " + request.getUnknownFields().stream()
+                    .map(OAuth2ClientManagementController::printable)
+                    .collect(Collectors.joining(", ")));
+        }
+    }
+
+    /** A request-supplied name as it may appear in an error message and the log: printable ASCII, at most 64 chars. */
+    private static String printable(String name) {
+        return printable(name, 64);
+    }
+
+    private static String printable(String text, int maxLength) {
+        if (text == null) {
+            return "null";
+        }
+        String safe = text.replaceAll("[^\\x20-\\x7E]", "?");
+        return safe.length() > maxLength ? safe.substring(0, maxLength) + "..." : safe;
+    }
+
+    /** The longest validation message that is logged and returned. */
+    static final int MAX_MESSAGE_LENGTH = 500;
+
+    /** How much of its start a longer validation message keeps; the rest of the room goes to its end. */
+    private static final int MESSAGE_HEAD_LENGTH = 200;
+
+    /**
+     * A validation failure's message as it may appear in the log and the 400 body (#332 review): printable ASCII,
+     * at most {@value #MAX_MESSAGE_LENGTH} characters, or "Invalid request" when the exception has none. It may quote
+     * request values: this controller's own messages already pass them through {@link #printable(String)}, but
+     * Spring's {@code RegisteredClient.Builder} quotes a refused scope or redirect URI as it was sent, before the
+     * reason. A longer message keeps its start and its end, with "..." between, so the reason survives whatever the
+     * quoted value contains.
+     */
+    static String safeMessage(IllegalArgumentException e) {
+        if (!StringUtils.hasText(e.getMessage())) {
+            return "Invalid request";
+        }
+        String safe = e.getMessage().replaceAll("[^\\x20-\\x7E]", "?");
+        if (safe.length() <= MAX_MESSAGE_LENGTH) {
+            return safe;
+        }
+        int tailLength = MAX_MESSAGE_LENGTH - MESSAGE_HEAD_LENGTH - "...".length();
+        return safe.substring(0, MESSAGE_HEAD_LENGTH) + "..." + safe.substring(safe.length() - tailLength);
+    }
+
+    /** The longest client_id: ESPI's ApplicationInformation.client_id is a String64 (#332 review). */
+    static final int CLIENT_ID_MAX_LENGTH = 64;
+
+    /** The length of what {@link #clientIdSuffix} adds to the prefix: "_", 13 digits of milliseconds, "_", 8 hex digits. */
+    static final int CLIENT_ID_SUFFIX_LENGTH = 23;
+
+    /** The longest client_name_prefix, so the client_id stays within {@value #CLIENT_ID_MAX_LENGTH}. */
+    static final int CLIENT_ID_PREFIX_MAX_LENGTH = CLIENT_ID_MAX_LENGTH - CLIENT_ID_SUFFIX_LENGTH;
+
+    /**
+     * What a client_name_prefix may contain (#332 review): it becomes part of the client_id, which is saved, returned
+     * and logged, so only letters, digits, '_' and '-', at most {@value #CLIENT_ID_PREFIX_MAX_LENGTH} of them.
+     */
+    static final java.util.regex.Pattern CLIENT_ID_PREFIX =
+            java.util.regex.Pattern.compile("[A-Za-z0-9_-]{1," + CLIENT_ID_PREFIX_MAX_LENGTH + "}");
+
+    /** The prefix of a client_id when the request gives none. */
+    private static final String DEFAULT_CLIENT_ID_PREFIX = "espi_client";
+
+    /**
      * Create new OAuth2 client with ESPI 4.0 compliance
      * 
      * POST /api/v1/oauth2/clients
      */
     @PostMapping
     public ResponseEntity<?> createClient(@Valid @RequestBody CreateClientRequest request) {
-        logger.info("Creating new client: {}", request.getClientName());
+        logger.info("Creating new client: {}", printable(request.getClientName()));
 
         try {
             // Validate ESPI compliance
             validateEspiCompliance(request);
 
-            // Generate client credentials
+            // Generate client credentials: no secret for a public client (#332)
             String clientId = generateClientId(request.getClientNamePrefix());
-            String clientSecret = generateClientSecret();
+            String clientSecret = isPublicOnly(request) ? null : generateClientSecret();
 
             // Build RegisteredClient
             RegisteredClient.Builder clientBuilder = RegisteredClient.withId(UUID.randomUUID().toString())
                     .clientId(clientId)
-                    .clientSecret(passwordEncoder.encode(clientSecret))
                     .clientName(request.getClientName())
                     .clientIdIssuedAt(Instant.now());
+            if (clientSecret != null) {
+                clientBuilder.clientSecret(passwordEncoder.encode(clientSecret));
+            }
 
             // Configure authentication methods
-            if (request.getAuthenticationMethods() != null) {
+            if (request.getAuthenticationMethods() != null && !request.getAuthenticationMethods().isEmpty()) {
                 for (String method : request.getAuthenticationMethods()) {
                     clientBuilder.clientAuthenticationMethod(new ClientAuthenticationMethod(method));
                 }
@@ -340,7 +430,7 @@ public class OAuth2ClientManagementController {
             // Insert ESPI 4.0 compliance data
             insertEspi40ComplianceData(registeredClient, request);
 
-            logger.info("Successfully created client: {} with client_id: {}", request.getClientName(), clientId);
+            logger.info("Successfully created client: {} with client_id: {}", printable(request.getClientName()), clientId);
 
             // Build response
             CreateClientResponse response = new CreateClientResponse();
@@ -353,8 +443,9 @@ public class OAuth2ClientManagementController {
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
         } catch (IllegalArgumentException e) {
-            logger.warn("Client creation validation failed: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(new ErrorResponse("invalid_request", e.getMessage()));
+            String message = safeMessage(e);
+            logger.warn("Client creation validation failed: {}", message);
+            return ResponseEntity.badRequest().body(new ErrorResponse("invalid_request", message));
         } catch (Exception e) {
             logger.error("Client creation failed", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -428,10 +519,24 @@ public class OAuth2ClientManagementController {
                 return ResponseEntity.notFound().build();
             }
 
+            // #332: refuse what this update would not apply, rather than answering 200 for it
+            refuseUnknownFields(request);
+            if (request.getClientName() != null && !StringUtils.hasText(request.getClientName())) {
+                throw new IllegalArgumentException("client_name must not be blank");
+            }
+            // #332 review: the same redirect URI check as create, so an update cannot set one create would refuse
+            if (request.getRedirectUris() != null) {
+                for (String uri : request.getRedirectUris()) {
+                    if (!isValidRedirectUri(uri)) {
+                        throw new IllegalArgumentException("Invalid redirect_uri: " + printable(uri));
+                    }
+                }
+            }
+
             // Build updated client
             RegisteredClient.Builder clientBuilder = RegisteredClient.from(existingClient);
 
-            if (StringUtils.hasText(request.getClientName())) {
+            if (request.getClientName() != null) {
                 clientBuilder.clientName(request.getClientName());
             }
 
@@ -452,15 +557,20 @@ public class OAuth2ClientManagementController {
             RegisteredClient updatedClient = clientBuilder.build();
             registeredClientRepository.save(updatedClient);
 
-            // Update ESPI 4.0 compliance data
+            // Update ESPI 4.0 compliance data and who updated the client (#332 review: also when updated_by is
+            // the only one given). Not written otherwise: the H2 schema has none of these columns (#145).
             if (request.getSecurityLevel() != null || request.getRateLimitPerMinute() != null ||
-                request.getMaxConcurrentSessions() != null) {
+                request.getMaxConcurrentSessions() != null || request.getUpdatedBy() != null) {
                 updateEspi40ComplianceData(clientId, request);
             }
 
             logger.info("Successfully updated client: {}", clientId);
             return ResponseEntity.ok(new SuccessResponse("Client updated successfully"));
 
+        } catch (IllegalArgumentException e) {
+            String message = safeMessage(e);
+            logger.warn("Client update validation failed: {}", message);
+            return ResponseEntity.badRequest().body(new ErrorResponse("invalid_request", message));
         } catch (Exception e) {
             logger.error("Error updating client", e);
             return ResponseEntity.internalServerError()
@@ -569,33 +679,76 @@ public class OAuth2ClientManagementController {
     // Helper methods
 
     private void validateEspiCompliance(CreateClientRequest request) {
+        refuseUnknownFields(request);
+
+        // #332 review (rounds 3-5): the prefix becomes part of the client_id. A prefix that is given, even empty or
+        // blank, must match; null means absent (as for every optional field here) and gets the default.
+        String prefix = request.getClientNamePrefix();
+        if (prefix != null && !CLIENT_ID_PREFIX.matcher(prefix).matches()) {
+            throw new IllegalArgumentException("client_name_prefix must be 1-" + CLIENT_ID_PREFIX_MAX_LENGTH
+                    + " letters, digits, '_' or '-': \"" + printable(prefix) + "\"");
+        }
+
+        // #332: only the authentication methods a client created here can use
+        if (request.getAuthenticationMethods() != null) {
+            for (String method : request.getAuthenticationMethods()) {
+                if (method == null || !SUPPORTED_AUTHENTICATION_METHODS.contains(method)) {
+                    throw new IllegalArgumentException("Unsupported authentication_methods value: "
+                            + (method == null ? "null" : printable(method)) + " (supported: "
+                            + String.join(", ", new TreeSet<>(SUPPORTED_AUTHENTICATION_METHODS)) + ")");
+                }
+            }
+        }
+
+        // A public client has no credentials, so it cannot use client_credentials
+        if (isPublicOnly(request) && request.getGrantTypes() != null
+                && request.getGrantTypes().contains(AuthorizationGrantType.CLIENT_CREDENTIALS.getValue())) {
+            throw new IllegalArgumentException(
+                    "A public client (authentication method none only) cannot use the client_credentials grant");
+        }
+
         // Validate scopes are ESPI-compliant
         if (request.getScopes() != null) {
             for (String scope : request.getScopes()) {
-                if (!ESPI_SCOPES.contains(scope)) {
-                    logger.warn("Non-ESPI scope requested: {}", scope);
+                if (scope == null || !ESPI_SCOPES.contains(scope)) {
+                    logger.warn("Non-ESPI scope requested: {}", printable(scope));
                 }
             }
         }
 
-        // Validate grant types
+        // Validate grant types (#332 review: request values reach the log and the response only as printable())
         if (request.getGrantTypes() != null) {
             Set<String> allowedGrantTypes = Set.of("authorization_code", "client_credentials", "refresh_token");
             for (String grantType : request.getGrantTypes()) {
-                if (!allowedGrantTypes.contains(grantType)) {
-                    throw new IllegalArgumentException("Unsupported grant_type for ESPI: " + grantType);
+                if (grantType == null || !allowedGrantTypes.contains(grantType)) {
+                    throw new IllegalArgumentException("Unsupported grant_type for ESPI: " + printable(grantType));
                 }
             }
         }
 
-        // Validate redirect URIs for HTTPS in production
+        // Validate redirect URIs: http or https. Plain http is still accepted for any host, in every profile;
+        // refusing it outside local/dev (except loopback) is part of #298.
         if (request.getRedirectUris() != null) {
             for (String uri : request.getRedirectUris()) {
                 if (!isValidRedirectUri(uri)) {
-                    throw new IllegalArgumentException("Invalid redirect_uri: " + uri);
+                    throw new IllegalArgumentException("Invalid redirect_uri: " + printable(uri));
                 }
             }
         }
+    }
+
+    /**
+     * The method recorded in {@code espi_application_info.token_endpoint_auth_method} (#332 review): the client's
+     * secret method when it has one (the first in name order if several), otherwise {@code none}. The methods are
+     * an unordered set, so taking whichever comes first could record {@code none} for a client that has a secret.
+     */
+    static String recordedAuthenticationMethod(RegisteredClient client) {
+        return client.getClientAuthenticationMethods().stream()
+                .map(ClientAuthenticationMethod::getValue)
+                .filter(method -> !ClientAuthenticationMethod.NONE.getValue().equals(method))
+                .sorted()
+                .findFirst()
+                .orElse(ClientAuthenticationMethod.NONE.getValue());
     }
 
     private boolean isValidRedirectUri(String uri) {
@@ -612,9 +765,30 @@ public class OAuth2ClientManagementController {
     }
 
     private String generateClientId(String prefix) {
-        String basePrefix = StringUtils.hasText(prefix) ? prefix : "espi_client";
-        return basePrefix + "_" + System.currentTimeMillis() + "_" + 
-               Integer.toHexString(secureRandom.nextInt());
+        return clientId(prefix, System.currentTimeMillis(), secureRandom.nextInt());
+    }
+
+    /**
+     * A client_id: the prefix ({@value #DEFAULT_CLIENT_ID_PREFIX} when null) and {@link #clientIdSuffix}. The limits
+     * are enforced here as well as in the request validation (#332 review), so no caller can build a client_id with
+     * an unsafe prefix or longer than {@value #CLIENT_ID_MAX_LENGTH}.
+     */
+    static String clientId(String prefix, long millis, int random) {
+        String basePrefix = prefix != null ? prefix : DEFAULT_CLIENT_ID_PREFIX;
+        if (!CLIENT_ID_PREFIX.matcher(basePrefix).matches()) {
+            throw new IllegalStateException("client_id prefix not validated");
+        }
+        String clientId = basePrefix + clientIdSuffix(millis, random);
+        if (clientId.length() > CLIENT_ID_MAX_LENGTH) {
+            throw new IllegalStateException("client_id longer than " + CLIENT_ID_MAX_LENGTH + " characters");
+        }
+        return clientId;
+    }
+
+    /** "_", the milliseconds as 13 digits, "_", the random value as 8 hex digits: {@value #CLIENT_ID_SUFFIX_LENGTH} characters. */
+    static String clientIdSuffix(long millis, int random) {
+        // Locale.ROOT: a default locale could otherwise format the digits in another script
+        return String.format(java.util.Locale.ROOT, "_%013d_%08x", millis, random);
     }
 
     private String generateClientSecret() {
@@ -641,7 +815,7 @@ public class OAuth2ClientManagementController {
             client.getAuthorizationGrantTypes().stream()
                 .map(AuthorizationGrantType::getValue)
                 .collect(Collectors.joining(",")),
-            client.getClientAuthenticationMethods().iterator().next().getValue(),
+            recordedAuthenticationMethod(client),
             request.getApplicationType() != null ? request.getApplicationType() : "WEB",
             "4.0", // ESPI version
             request.getSecurityClassification() != null ? request.getSecurityClassification() : "internal",
@@ -689,16 +863,15 @@ public class OAuth2ClientManagementController {
             params.add(request.getMaxConcurrentSessions());
         }
 
-        if (!setParts.isEmpty()) {
-            setParts.add("updated_by = ?");
-            params.add(request.getUpdatedBy() != null ? request.getUpdatedBy() : "system");
-            params.add(clientId);
+        // Records who made the change (updated_by, or "system"); called only when one of these fields is given
+        setParts.add("updated_by = ?");
+        params.add(request.getUpdatedBy() != null ? request.getUpdatedBy() : "system");
+        params.add(clientId);
 
-            String sql = "UPDATE oauth2_registered_client SET " + 
-                        String.join(", ", setParts) + " WHERE client_id = ?";
-            
-            jdbcTemplate.update(sql, params.toArray());
-        }
+        String sql = "UPDATE oauth2_registered_client SET " +
+                    String.join(", ", setParts) + " WHERE client_id = ?";
+
+        jdbcTemplate.update(sql, params.toArray());
     }
 
     private ClientDetails mapToClientDetails(RegisteredClient client, 

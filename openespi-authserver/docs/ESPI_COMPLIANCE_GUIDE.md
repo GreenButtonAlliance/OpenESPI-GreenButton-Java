@@ -183,16 +183,10 @@ server:
 
 #### Client Registration for Certificate Auth
 
-```json
-{
-  "clientId": "espi-cert-client-001",
-  "clientName": "Certificate-based Client",
-  "clientAuthenticationMethods": ["tls_client_auth"],
-  "certificateSubjectDN": "CN=client-001,OU=ESPI,O=Green Button Alliance",
-  "certificateSerialNumber": "123456789ABCDEF",
-  "certificateIssuerDN": "CN=ESPI CA,O=Green Button Alliance"
-}
-```
+Not yet available. The Client Management API (`POST /api/v1/oauth2/clients`) accepts only `client_secret_basic`,
+`client_secret_post` and `none` as `authentication_methods`: `tls_client_auth` needs the client's certificate
+subject DN in its settings, which the API does not take, so a request for it is refused with 400
+`invalid_request` (#332).
 
 #### Authentication Flow
 

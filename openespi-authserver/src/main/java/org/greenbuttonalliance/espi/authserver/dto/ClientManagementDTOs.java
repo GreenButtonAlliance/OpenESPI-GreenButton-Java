@@ -20,13 +20,18 @@
 
 package org.greenbuttonalliance.espi.authserver.dto;
 
+import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.validation.constraints.*;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * Data Transfer Objects for OAuth2 Client Management API
@@ -42,8 +47,29 @@ public class ClientManagementDTOs {
 
     // Request DTOs
 
+    /**
+     * A request that records the JSON fields it does not have, for the controller to refuse (#332). Jackson would
+     * otherwise drop them silently, so a client sending a setting the server does not apply (for example the
+     * camelCase names docs/openapi.yaml once showed) would get a success response and no effect.
+     */
+    public abstract static class RefusesUnknownFields {
+        @JsonIgnore
+        private final Set<String> unknownFields = new TreeSet<>();
+
+        @JsonAnySetter
+        public void unknownField(String name, Object value) {
+            unknownFields.add(name);
+        }
+
+        /** The names of the fields the request had but this class does not, sorted. */
+        @JsonIgnore
+        public Set<String> getUnknownFields() {
+            return Collections.unmodifiableSet(unknownFields);
+        }
+    }
+
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public static class CreateClientRequest {
+    public static class CreateClientRequest extends RefusesUnknownFields {
         @NotBlank(message = "Client name is required")
         @Size(max = 200, message = "Client name must not exceed 200 characters")
         @JsonProperty("client_name")
@@ -56,6 +82,8 @@ public class ClientManagementDTOs {
         @JsonProperty("client_description")
         private String clientDescription;
 
+        // client_secret_basic (the default), client_secret_post or none (#332). A client whose only method is
+        // none is public: it gets no secret and always requires PKCE.
         @JsonProperty("authentication_methods")
         private List<String> authenticationMethods;
 
@@ -179,12 +207,18 @@ public class ClientManagementDTOs {
         public void setCreatedBy(String createdBy) { this.createdBy = createdBy; }
     }
 
+    /**
+     * The fields {@code PUT /api/v1/oauth2/clients/{clientId}} applies. Client settings (PKCE, consent),
+     * authentication methods and grant types are not updatable here: a request naming them is refused (#332).
+     */
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public static class UpdateClientRequest {
+    public static class UpdateClientRequest extends RefusesUnknownFields {
         @Size(max = 200, message = "Client name must not exceed 200 characters")
         @JsonProperty("client_name")
         private String clientName;
 
+        // Checked by the controller after the client is found (#332 review): an update cannot set a redirect URI
+        // create refuses. Not a @Pattern here, which would answer 400 before the 404 for an unknown client.
         @JsonProperty("redirect_uris")
         private List<String> redirectUris;
 
@@ -300,6 +334,7 @@ public class ClientManagementDTOs {
         @JsonProperty("client_id")
         private String clientId;
 
+        // Returned once, on creation; absent for a public client (authentication method none only), which has none.
         @JsonProperty("client_secret")
         private String clientSecret;
 
