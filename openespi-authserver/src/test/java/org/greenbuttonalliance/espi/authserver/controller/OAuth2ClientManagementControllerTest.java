@@ -10,6 +10,10 @@
 
 package org.greenbuttonalliance.espi.authserver.controller;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,6 +21,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -32,6 +37,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.InstanceOfAssertFactories.STRING;
@@ -66,11 +72,27 @@ class OAuth2ClientManagementControllerTest {
 	private record Result(int status, String body) {
 	}
 
+	private final ListAppender<ILoggingEvent> log = new ListAppender<>();
+	private final Logger controllerLogger =
+			(Logger) LoggerFactory.getLogger(OAuth2ClientManagementController.class);
+
 	@BeforeEach
 	void setUp() {
 		when(passwordEncoder.encode(anyString())).thenAnswer(call -> "{encoded}" + call.getArgument(0));
 		mockMvc = MockMvcBuilders.standaloneSetup(
 				new OAuth2ClientManagementController(clients, jdbcTemplate, passwordEncoder)).build();
+		log.start();
+		controllerLogger.addAppender(log);
+	}
+
+	@AfterEach
+	void detachLog() {
+		controllerLogger.detachAppender(log);
+	}
+
+	/** What the controller logged, one entry per event. */
+	private List<String> logged() {
+		return log.list.stream().map(ILoggingEvent::getFormattedMessage).toList();
 	}
 
 	private Result perform(MockHttpServletRequestBuilder request, String json) throws Exception {
@@ -165,13 +187,44 @@ class OAuth2ClientManagementControllerTest {
 	}
 
 	@Test
-	@DisplayName("#332 review: a refused grant_type is quoted in the response (and the log) without its line breaks")
+	@DisplayName("#332 review: a refused grant_type is quoted in the response and the log without its line breaks")
 	void refusedGrantTypeIsNotEchoedRaw() throws Exception {
 		assertThat(create("""
 				{"client_name":"TP","grant_types":["x\\r\\nINFO forged"]}
 				""")).returns(400, Result::status)
 				.extracting(Result::body, STRING).contains("x??INFO forged").doesNotContain("\\r", "\\n");
+		assertThat(logged()).anyMatch(line -> line.contains("x??INFO forged")).noneMatch(OAuth2ClientManagementControllerTest::breaksLines);
 		verify(clients, never()).save(any());
+	}
+
+	@ParameterizedTest(name = "{0}")
+	@ValueSource(strings = {"POST", "PUT"})
+	@DisplayName("#332 review (round 2): a scope Spring refuses is quoted in the response and the log without its line breaks")
+	void refusedScopeIsNotEchoedRaw(String method) throws Exception {
+		String json = """
+				{"client_name":"TP","redirect_uris":["https://tp.example/cb"],"scopes":["x\\r\\nINFO forged"]}
+				""";
+		Result result = "POST".equals(method) ? create(json) : update(json);
+
+		assertThat(result).returns(400, Result::status)
+				.extracting(Result::body, STRING).contains("invalid_request").contains("x??INFO forged")
+				.doesNotContain("\\r", "\\n");
+		assertThat(logged()).anyMatch(line -> line.contains("x??INFO forged")).noneMatch(OAuth2ClientManagementControllerTest::breaksLines);
+		verify(clients, never()).save(any());
+	}
+
+	@Test
+	@DisplayName("#332 review (round 2): a client_name with line breaks is logged without them on create")
+	void clientNameIsLoggedWithoutLineBreaks() throws Exception {
+		assertThat(create("""
+				{"client_name":"TP\\r\\n2026-11-25 INFO admin granted FB_51","redirect_uris":["https://tp.example/cb"]}
+				""")).returns(201, Result::status);
+		assertThat(logged()).anyMatch(line -> line.contains("TP??2026-11-25 INFO admin granted FB_51"))
+				.noneMatch(OAuth2ClientManagementControllerTest::breaksLines);
+	}
+
+	private static boolean breaksLines(String line) {
+		return line.contains("\r") || line.contains("\n");
 	}
 
 	@Test
@@ -195,21 +248,22 @@ class OAuth2ClientManagementControllerTest {
 		verify(clients, never()).save(any());
 	}
 
-	@Test
-	@DisplayName("#332 review: an update of a client that does not exist is 404, whatever fields it names")
-	void updateOfAnUnknownClientIsNotFound() throws Exception {
-		assertThat(perform(put(CLIENTS + "/does-not-exist"), """
-				{"require_proof_key":true}
-				""")).returns(404, Result::status);
+	@ParameterizedTest(name = "{0}")
+	@ValueSource(strings = {"{\"require_proof_key\":true}", "{\"redirect_uris\":[\"ftp://tp.example/cb\"]}",
+			"{\"client_name\":\" \"}"})
+	@DisplayName("#332 review: an update of a client that does not exist is 404, whatever fields or values it has")
+	void updateOfAnUnknownClientIsNotFound(String json) throws Exception {
+		assertThat(perform(put(CLIENTS + "/does-not-exist"), json)).returns(404, Result::status);
 	}
 
 	@ParameterizedTest(name = "{0}")
-	@ValueSource(strings = {"javascript:alert(1)", "myapp://cb", "ftp://tp.example/cb"})
+	@ValueSource(strings = {"javascript:alert(1)", "myapp://cb", "ftp://tp.example/cb", ""})
 	@DisplayName("#332 review: an update cannot set a redirect URI that create would refuse")
 	void updateRefusesARedirectUriCreateWouldRefuse(String uri) throws Exception {
 		assertThat(update("""
 				{"redirect_uris":["https://tp.example/cb","%s"]}
-				""".formatted(uri))).returns(400, Result::status);
+				""".formatted(uri))).returns(400, Result::status)
+				.extracting(Result::body, STRING).contains("invalid_request").contains("redirect_uri");
 		verify(clients, never()).save(any());
 	}
 

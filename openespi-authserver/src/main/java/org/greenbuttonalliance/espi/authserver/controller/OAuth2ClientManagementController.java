@@ -279,11 +279,25 @@ public class OAuth2ClientManagementController {
 
     /** A request-supplied name as it may appear in an error message and the log: printable ASCII, at most 64 chars. */
     private static String printable(String name) {
-        if (name == null) {
+        return printable(name, 64);
+    }
+
+    private static String printable(String text, int maxLength) {
+        if (text == null) {
             return "null";
         }
-        String safe = name.replaceAll("[^\\x20-\\x7E]", "?");
-        return safe.length() > 64 ? safe.substring(0, 64) + "..." : safe;
+        String safe = text.replaceAll("[^\\x20-\\x7E]", "?");
+        return safe.length() > maxLength ? safe.substring(0, maxLength) + "..." : safe;
+    }
+
+    /**
+     * A validation failure's message as it may appear in the log and the 400 body (#332 review): printable ASCII,
+     * at most 500 characters. It may quote request values: this controller's own messages already pass them through
+     * {@link #printable(String)}, but Spring's {@code RegisteredClient.Builder} quotes a refused scope or redirect
+     * URI as it was sent.
+     */
+    static String safeMessage(IllegalArgumentException e) {
+        return printable(e.getMessage(), 500);
     }
 
     /**
@@ -293,7 +307,7 @@ public class OAuth2ClientManagementController {
      */
     @PostMapping
     public ResponseEntity<?> createClient(@Valid @RequestBody CreateClientRequest request) {
-        logger.info("Creating new client: {}", request.getClientName());
+        logger.info("Creating new client: {}", printable(request.getClientName()));
 
         try {
             // Validate ESPI compliance
@@ -381,7 +395,7 @@ public class OAuth2ClientManagementController {
             // Insert ESPI 4.0 compliance data
             insertEspi40ComplianceData(registeredClient, request);
 
-            logger.info("Successfully created client: {} with client_id: {}", request.getClientName(), clientId);
+            logger.info("Successfully created client: {} with client_id: {}", printable(request.getClientName()), clientId);
 
             // Build response
             CreateClientResponse response = new CreateClientResponse();
@@ -394,8 +408,9 @@ public class OAuth2ClientManagementController {
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
         } catch (IllegalArgumentException e) {
-            logger.warn("Client creation validation failed: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(new ErrorResponse("invalid_request", e.getMessage()));
+            String message = safeMessage(e);
+            logger.warn("Client creation validation failed: {}", message);
+            return ResponseEntity.badRequest().body(new ErrorResponse("invalid_request", message));
         } catch (Exception e) {
             logger.error("Client creation failed", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -518,8 +533,9 @@ public class OAuth2ClientManagementController {
             return ResponseEntity.ok(new SuccessResponse("Client updated successfully"));
 
         } catch (IllegalArgumentException e) {
-            logger.warn("Client update validation failed: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(new ErrorResponse("invalid_request", e.getMessage()));
+            String message = safeMessage(e);
+            logger.warn("Client update validation failed: {}", message);
+            return ResponseEntity.badRequest().body(new ErrorResponse("invalid_request", message));
         } catch (Exception e) {
             logger.error("Error updating client", e);
             return ResponseEntity.internalServerError()
@@ -667,7 +683,8 @@ public class OAuth2ClientManagementController {
             }
         }
 
-        // Validate redirect URIs for HTTPS in production
+        // Validate redirect URIs: http or https. Plain http is still accepted for any host, in every profile;
+        // refusing it outside local/dev (except loopback) is part of #298.
         if (request.getRedirectUris() != null) {
             for (String uri : request.getRedirectUris()) {
                 if (!isValidRedirectUri(uri)) {

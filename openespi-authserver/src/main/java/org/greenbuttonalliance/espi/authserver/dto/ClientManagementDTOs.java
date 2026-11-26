@@ -217,9 +217,10 @@ public class ClientManagementDTOs {
         @JsonProperty("client_name")
         private String clientName;
 
-        // The same check as CreateClientRequest (#332 review): an update cannot set a redirect URI create refuses
+        // Checked by the controller after the client is found (#332 review): an update cannot set a redirect URI
+        // create refuses. Not a @Pattern here, which would answer 400 before the 404 for an unknown client.
         @JsonProperty("redirect_uris")
-        private List<@Pattern(regexp = "^https?://.*", message = "Invalid redirect URI format") String> redirectUris;
+        private List<String> redirectUris;
 
         @JsonProperty("scopes")
         private List<String> scopes;
