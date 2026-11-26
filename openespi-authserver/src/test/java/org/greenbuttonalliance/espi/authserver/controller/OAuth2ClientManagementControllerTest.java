@@ -14,24 +14,32 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.Instant;
+import java.util.Arrays;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.InstanceOfAssertFactories.STRING;
+import static org.assertj.core.api.InstanceOfAssertFactories.collection;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -41,7 +49,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 
 /**
  * #332: the client-management API accepts only the authentication methods a client created through it can use,
- * gives a public client no secret, and refuses fields it does not have instead of dropping them.
+ * gives a public client no secret, and refuses fields it does not have, or values it would not apply, instead of
+ * dropping them.
  */
 @DisplayName("OAuth2ClientManagementController (#332)")
 class OAuth2ClientManagementControllerTest {
@@ -49,19 +58,34 @@ class OAuth2ClientManagementControllerTest {
 	private static final String CLIENTS = "/api/v1/oauth2/clients";
 
 	private final RegisteredClientRepository clients = mock(RegisteredClientRepository.class);
+	private final JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
 	private final PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
 	private MockMvc mockMvc;
+
+	/** A response's status and body. */
+	private record Result(int status, String body) {
+	}
 
 	@BeforeEach
 	void setUp() {
 		when(passwordEncoder.encode(anyString())).thenAnswer(call -> "{encoded}" + call.getArgument(0));
 		mockMvc = MockMvcBuilders.standaloneSetup(
-				new OAuth2ClientManagementController(clients, mock(JdbcTemplate.class), passwordEncoder)).build();
+				new OAuth2ClientManagementController(clients, jdbcTemplate, passwordEncoder)).build();
 	}
 
-	private MockHttpServletResponse create(String json) throws Exception {
-		return mockMvc.perform(post(CLIENTS).contentType(MediaType.APPLICATION_JSON).content(json))
+	private Result perform(MockHttpServletRequestBuilder request, String json) throws Exception {
+		MockHttpServletResponse response = mockMvc.perform(request.contentType(MediaType.APPLICATION_JSON).content(json))
 				.andReturn().getResponse();
+		return new Result(response.getStatus(), response.getContentAsString());
+	}
+
+	private Result create(String json) throws Exception {
+		return perform(post(CLIENTS), json);
+	}
+
+	private Result update(String json) throws Exception {
+		when(clients.findByClientId("tp")).thenReturn(client());
+		return perform(put(CLIENTS + "/tp"), json);
 	}
 
 	private RegisteredClient saved() {
@@ -73,34 +97,32 @@ class OAuth2ClientManagementControllerTest {
 	@Test
 	@DisplayName("a public client (authentication method none only) gets no secret and requires PKCE")
 	void publicClientGetsNoSecret() throws Exception {
-		MockHttpServletResponse response = create("""
+		assertThat(create("""
 				{"client_name":"Public TP","authentication_methods":["none"],
 				 "redirect_uris":["https://tp.example/cb"]}
-				""");
-
-		assertThat(response.getStatus()).isEqualTo(201);
-		assertThat(response.getContentAsString()).contains("\"client_id\"").doesNotContain("client_secret");
+				""")).returns(201, Result::status)
+				.extracting(Result::body, STRING).contains("\"client_id\"").doesNotContain("client_secret");
 		assertThat(saved()).satisfies(c -> assertThat(c.getClientSecret()).isNull())
 				.satisfies(c -> assertThat(c.getClientAuthenticationMethods())
 						.containsExactly(ClientAuthenticationMethod.NONE))
 				.extracting(RegisteredClient::getClientSettings).extracting(ClientSettings::isRequireProofKey)
 				.isEqualTo(true);
 		verify(passwordEncoder, never()).encode(anyString());
+		// token_endpoint_auth_method, the 7th value of espi_application_info's INSERT, records the public client's none
+		verify(jdbcTemplate).update(contains("INSERT INTO espi_application_info"), any(), any(), any(), any(), any(),
+				any(), eq("none"), any(), any(), any(), any(), any(), any());
 	}
 
 	@Test
 	@DisplayName("a confidential client gets a secret, returned once and stored encoded")
 	void confidentialClientGetsASecret() throws Exception {
-		MockHttpServletResponse response = create("""
+		assertThat(create("""
 				{"client_name":"Confidential TP","authentication_methods":["client_secret_post"],
 				 "redirect_uris":["https://tp.example/cb"]}
-				""");
-
-		assertThat(response.getStatus()).isEqualTo(201);
-		assertThat(response.getContentAsString()).contains("\"client_secret\"");
+				""")).returns(201, Result::status)
+				.extracting(Result::body, STRING).contains("\"client_secret\"");
 		assertThat(saved()).satisfies(c -> assertThat(c.getClientSecret()).startsWith("{encoded}"))
-				.extracting(RegisteredClient::getClientAuthenticationMethods).asInstanceOf(
-						org.assertj.core.api.InstanceOfAssertFactories.collection(ClientAuthenticationMethod.class))
+				.extracting(RegisteredClient::getClientAuthenticationMethods, collection(ClientAuthenticationMethod.class))
 				.containsExactly(ClientAuthenticationMethod.CLIENT_SECRET_POST);
 	}
 
@@ -109,69 +131,117 @@ class OAuth2ClientManagementControllerTest {
 			"private_key_jwt", "client_secret_jwt", ""})
 	@DisplayName("an authentication method a client created here cannot use is refused, and nothing is saved")
 	void unsupportedAuthenticationMethodIsRefused(String method) throws Exception {
-		MockHttpServletResponse response = create("""
+		assertThat(create("""
 				{"client_name":"TP","authentication_methods":["client_secret_basic","%s"]}
-				""".formatted(method));
-
-		assertThat(response.getStatus()).isEqualTo(400);
-		assertThat(response.getContentAsString()).contains("invalid_request").contains("authentication_methods");
+				""".formatted(method))).returns(400, Result::status)
+				.extracting(Result::body, STRING).contains("invalid_request").contains("authentication_methods");
 		verify(clients, never()).save(any());
 	}
 
 	@Test
 	@DisplayName("a public client cannot have the client_credentials grant: it has nothing to authenticate with")
 	void publicClientCannotUseClientCredentials() throws Exception {
-		MockHttpServletResponse response = create("""
+		assertThat(create("""
 				{"client_name":"TP","authentication_methods":["none"],"grant_types":["client_credentials"]}
-				""");
+				""")).returns(400, Result::status)
+				.extracting(Result::body, STRING).contains("client_credentials");
+		verify(clients, never()).save(any());
+	}
 
-		assertThat(response.getStatus()).isEqualTo(400);
-		assertThat(response.getContentAsString()).contains("client_credentials");
+	@ParameterizedTest(name = "{0}")
+	@CsvSource(delimiter = '|', value = {
+			"none, client_secret_basic        | client_secret_basic",
+			"client_secret_post, none         | client_secret_post",
+			"client_secret_post, client_secret_basic | client_secret_basic",
+			"none                             | none"})
+	@DisplayName("#332 review: the recorded token_endpoint_auth_method is the secret method when the client has one")
+	void recordedAuthenticationMethodPrefersTheSecretMethod(String methods, String expected) {
+		RegisteredClient.Builder builder = RegisteredClient.withId("id").clientId("c")
+				.authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE).redirectUri("https://tp.example/cb");
+		Arrays.stream(methods.split(",")).map(String::trim)
+				.forEach(m -> builder.clientAuthenticationMethod(new ClientAuthenticationMethod(m)));
+
+		assertThat(OAuth2ClientManagementController.recordedAuthenticationMethod(builder.build())).isEqualTo(expected);
+	}
+
+	@Test
+	@DisplayName("#332 review: a refused grant_type is quoted in the response (and the log) without its line breaks")
+	void refusedGrantTypeIsNotEchoedRaw() throws Exception {
+		assertThat(create("""
+				{"client_name":"TP","grant_types":["x\\r\\nINFO forged"]}
+				""")).returns(400, Result::status)
+				.extracting(Result::body, STRING).contains("x??INFO forged").doesNotContain("\\r", "\\n");
 		verify(clients, never()).save(any());
 	}
 
 	@Test
 	@DisplayName("a create request naming a field it does not have (the old spec's camelCase) is refused, not dropped")
 	void createWithUnknownFieldIsRefused() throws Exception {
-		MockHttpServletResponse response = create("""
+		assertThat(create("""
 				{"client_name":"TP","clientSettings":{"requireProofKey":true},
 				 "clientAuthenticationMethods":["client_secret_basic"]}
-				""");
-
-		assertThat(response.getStatus()).isEqualTo(400);
-		assertThat(response.getContentAsString()).contains("clientAuthenticationMethods").contains("clientSettings");
+				""")).returns(400, Result::status)
+				.extracting(Result::body, STRING).contains("clientAuthenticationMethods").contains("clientSettings");
 		verify(clients, never()).save(any());
 	}
 
 	@Test
 	@DisplayName("an update naming a field it does not apply (settings, authentication methods) is refused, not ignored")
 	void updateWithUnknownFieldIsRefused() throws Exception {
-		when(clients.findByClientId("tp")).thenReturn(client());
-
-		MockHttpServletResponse response = mockMvc.perform(put(CLIENTS + "/tp").contentType(MediaType.APPLICATION_JSON)
-				.content("""
-						{"client_name":"Renamed","authentication_methods":["none"],"require_proof_key":true}
-						""")).andReturn().getResponse();
-
-		assertThat(response.getStatus()).isEqualTo(400);
-		assertThat(response.getContentAsString()).contains("authentication_methods").contains("require_proof_key");
+		assertThat(update("""
+				{"client_name":"Renamed","authentication_methods":["none"],"require_proof_key":true}
+				""")).returns(400, Result::status)
+				.extracting(Result::body, STRING).contains("authentication_methods").contains("require_proof_key");
 		verify(clients, never()).save(any());
+	}
+
+	@Test
+	@DisplayName("#332 review: an update of a client that does not exist is 404, whatever fields it names")
+	void updateOfAnUnknownClientIsNotFound() throws Exception {
+		assertThat(perform(put(CLIENTS + "/does-not-exist"), """
+				{"require_proof_key":true}
+				""")).returns(404, Result::status);
+	}
+
+	@ParameterizedTest(name = "{0}")
+	@ValueSource(strings = {"javascript:alert(1)", "myapp://cb", "ftp://tp.example/cb"})
+	@DisplayName("#332 review: an update cannot set a redirect URI that create would refuse")
+	void updateRefusesARedirectUriCreateWouldRefuse(String uri) throws Exception {
+		assertThat(update("""
+				{"redirect_uris":["https://tp.example/cb","%s"]}
+				""".formatted(uri))).returns(400, Result::status);
+		verify(clients, never()).save(any());
+	}
+
+	@ParameterizedTest(name = "''{0}''")
+	@ValueSource(strings = {"", "   "})
+	@DisplayName("#332 review: an update with a blank client_name is refused, not answered 200 with no change")
+	void updateRefusesABlankName(String name) throws Exception {
+		assertThat(update("""
+				{"client_name":"%s"}
+				""".formatted(name))).returns(400, Result::status)
+				.extracting(Result::body, STRING).contains("client_name");
+		verify(clients, never()).save(any());
+	}
+
+	@Test
+	@DisplayName("#332 review: updated_by given alone is recorded")
+	void updatedByAloneIsRecorded() throws Exception {
+		assertThat(update("""
+				{"updated_by":"admin-7"}
+				""")).returns(200, Result::status);
+		verify(jdbcTemplate).update(eq("UPDATE oauth2_registered_client SET updated_by = ? WHERE client_id = ?"),
+				eq("admin-7"), eq("tp"));
 	}
 
 	@Test
 	@DisplayName("an update with only the fields it applies still succeeds")
 	void updateWithKnownFieldsSucceeds() throws Exception {
-		when(clients.findByClientId("tp")).thenReturn(client());
-
-		MockHttpServletResponse response = mockMvc.perform(put(CLIENTS + "/tp").contentType(MediaType.APPLICATION_JSON)
-				.content("""
-						{"client_name":"Renamed","redirect_uris":["https://tp.example/new-cb"]}
-						""")).andReturn().getResponse();
-
-		assertThat(response.getStatus()).isEqualTo(200);
+		assertThat(update("""
+				{"client_name":"Renamed","redirect_uris":["https://tp.example/new-cb"]}
+				""")).returns(200, Result::status);
 		assertThat(saved()).satisfies(c -> assertThat(c.getClientName()).isEqualTo("Renamed"))
-				.extracting(RegisteredClient::getRedirectUris).asInstanceOf(
-						org.assertj.core.api.InstanceOfAssertFactories.collection(String.class))
+				.extracting(RegisteredClient::getRedirectUris, collection(String.class))
 				.containsExactly("https://tp.example/new-cb");
 	}
 
@@ -179,7 +249,7 @@ class OAuth2ClientManagementControllerTest {
 		return RegisteredClient.withId("id-tp").clientId("tp").clientSecret("{noop}secret")
 				.clientIdIssuedAt(Instant.now())
 				.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-				.authorizationGrantType(org.springframework.security.oauth2.core.AuthorizationGrantType.AUTHORIZATION_CODE)
+				.authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
 				.redirectUri("https://tp.example/cb").scope("FB=4_5_15").build();
 	}
 }

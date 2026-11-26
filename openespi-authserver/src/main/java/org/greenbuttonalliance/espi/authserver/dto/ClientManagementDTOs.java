@@ -217,8 +217,9 @@ public class ClientManagementDTOs {
         @JsonProperty("client_name")
         private String clientName;
 
+        // The same check as CreateClientRequest (#332 review): an update cannot set a redirect URI create refuses
         @JsonProperty("redirect_uris")
-        private List<String> redirectUris;
+        private List<@Pattern(regexp = "^https?://.*", message = "Invalid redirect URI format") String> redirectUris;
 
         @JsonProperty("scopes")
         private List<String> scopes;

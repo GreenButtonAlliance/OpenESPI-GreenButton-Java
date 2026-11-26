@@ -279,6 +279,9 @@ public class OAuth2ClientManagementController {
 
     /** A request-supplied name as it may appear in an error message and the log: printable ASCII, at most 64 chars. */
     private static String printable(String name) {
+        if (name == null) {
+            return "null";
+        }
         String safe = name.replaceAll("[^\\x20-\\x7E]", "?");
         return safe.length() > 64 ? safe.substring(0, 64) + "..." : safe;
     }
@@ -461,17 +464,29 @@ public class OAuth2ClientManagementController {
         logger.info("Updating client: {}", clientId);
 
         try {
-            refuseUnknownFields(request);
-
             RegisteredClient existingClient = registeredClientRepository.findByClientId(clientId);
             if (existingClient == null) {
                 return ResponseEntity.notFound().build();
             }
 
+            // #332: refuse what this update would not apply, rather than answering 200 for it
+            refuseUnknownFields(request);
+            if (request.getClientName() != null && !StringUtils.hasText(request.getClientName())) {
+                throw new IllegalArgumentException("client_name must not be blank");
+            }
+            // #332 review: the same redirect URI check as create, so an update cannot set one create would refuse
+            if (request.getRedirectUris() != null) {
+                for (String uri : request.getRedirectUris()) {
+                    if (!isValidRedirectUri(uri)) {
+                        throw new IllegalArgumentException("Invalid redirect_uri: " + printable(uri));
+                    }
+                }
+            }
+
             // Build updated client
             RegisteredClient.Builder clientBuilder = RegisteredClient.from(existingClient);
 
-            if (StringUtils.hasText(request.getClientName())) {
+            if (request.getClientName() != null) {
                 clientBuilder.clientName(request.getClientName());
             }
 
@@ -492,9 +507,10 @@ public class OAuth2ClientManagementController {
             RegisteredClient updatedClient = clientBuilder.build();
             registeredClientRepository.save(updatedClient);
 
-            // Update ESPI 4.0 compliance data
+            // Update ESPI 4.0 compliance data and who updated the client (#332 review: also when updated_by is
+            // the only one given). Not written otherwise: the H2 schema has none of these columns (#145).
             if (request.getSecurityLevel() != null || request.getRateLimitPerMinute() != null ||
-                request.getMaxConcurrentSessions() != null) {
+                request.getMaxConcurrentSessions() != null || request.getUpdatedBy() != null) {
                 updateEspi40ComplianceData(clientId, request);
             }
 
@@ -635,18 +651,18 @@ public class OAuth2ClientManagementController {
         // Validate scopes are ESPI-compliant
         if (request.getScopes() != null) {
             for (String scope : request.getScopes()) {
-                if (!ESPI_SCOPES.contains(scope)) {
-                    logger.warn("Non-ESPI scope requested: {}", scope);
+                if (scope == null || !ESPI_SCOPES.contains(scope)) {
+                    logger.warn("Non-ESPI scope requested: {}", printable(scope));
                 }
             }
         }
 
-        // Validate grant types
+        // Validate grant types (#332 review: request values reach the log and the response only as printable())
         if (request.getGrantTypes() != null) {
             Set<String> allowedGrantTypes = Set.of("authorization_code", "client_credentials", "refresh_token");
             for (String grantType : request.getGrantTypes()) {
-                if (!allowedGrantTypes.contains(grantType)) {
-                    throw new IllegalArgumentException("Unsupported grant_type for ESPI: " + grantType);
+                if (grantType == null || !allowedGrantTypes.contains(grantType)) {
+                    throw new IllegalArgumentException("Unsupported grant_type for ESPI: " + printable(grantType));
                 }
             }
         }
@@ -655,10 +671,24 @@ public class OAuth2ClientManagementController {
         if (request.getRedirectUris() != null) {
             for (String uri : request.getRedirectUris()) {
                 if (!isValidRedirectUri(uri)) {
-                    throw new IllegalArgumentException("Invalid redirect_uri: " + uri);
+                    throw new IllegalArgumentException("Invalid redirect_uri: " + printable(uri));
                 }
             }
         }
+    }
+
+    /**
+     * The method recorded in {@code espi_application_info.token_endpoint_auth_method} (#332 review): the client's
+     * secret method when it has one (the first in name order if several), otherwise {@code none}. The methods are
+     * an unordered set, so taking whichever comes first could record {@code none} for a client that has a secret.
+     */
+    static String recordedAuthenticationMethod(RegisteredClient client) {
+        return client.getClientAuthenticationMethods().stream()
+                .map(ClientAuthenticationMethod::getValue)
+                .filter(method -> !ClientAuthenticationMethod.NONE.getValue().equals(method))
+                .sorted()
+                .findFirst()
+                .orElse(ClientAuthenticationMethod.NONE.getValue());
     }
 
     private boolean isValidRedirectUri(String uri) {
@@ -704,7 +734,7 @@ public class OAuth2ClientManagementController {
             client.getAuthorizationGrantTypes().stream()
                 .map(AuthorizationGrantType::getValue)
                 .collect(Collectors.joining(",")),
-            client.getClientAuthenticationMethods().iterator().next().getValue(),
+            recordedAuthenticationMethod(client),
             request.getApplicationType() != null ? request.getApplicationType() : "WEB",
             "4.0", // ESPI version
             request.getSecurityClassification() != null ? request.getSecurityClassification() : "internal",
@@ -752,16 +782,15 @@ public class OAuth2ClientManagementController {
             params.add(request.getMaxConcurrentSessions());
         }
 
-        if (!setParts.isEmpty()) {
-            setParts.add("updated_by = ?");
-            params.add(request.getUpdatedBy() != null ? request.getUpdatedBy() : "system");
-            params.add(clientId);
+        // Records who made the change (updated_by, or "system"); called only when one of these fields is given
+        setParts.add("updated_by = ?");
+        params.add(request.getUpdatedBy() != null ? request.getUpdatedBy() : "system");
+        params.add(clientId);
 
-            String sql = "UPDATE oauth2_registered_client SET " + 
-                        String.join(", ", setParts) + " WHERE client_id = ?";
-            
-            jdbcTemplate.update(sql, params.toArray());
-        }
+        String sql = "UPDATE oauth2_registered_client SET " +
+                    String.join(", ", setParts) + " WHERE client_id = ?";
+
+        jdbcTemplate.update(sql, params.toArray());
     }
 
     private ClientDetails mapToClientDetails(RegisteredClient client, 
