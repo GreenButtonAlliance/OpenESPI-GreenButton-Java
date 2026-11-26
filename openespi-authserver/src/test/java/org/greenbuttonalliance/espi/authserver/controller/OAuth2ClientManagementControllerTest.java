@@ -13,6 +13,8 @@ package org.greenbuttonalliance.espi.authserver.controller;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -24,6 +26,7 @@ import org.mockito.ArgumentCaptor;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
@@ -47,10 +50,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
@@ -63,6 +69,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 class OAuth2ClientManagementControllerTest {
 
 	private static final String CLIENTS = "/api/v1/oauth2/clients";
+
+	private static final Validator VALIDATOR = Validation.buildDefaultValidatorFactory().getValidator();
 
 	private final RegisteredClientRepository clients = mock(RegisteredClientRepository.class);
 	private final JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
@@ -81,7 +89,7 @@ class OAuth2ClientManagementControllerTest {
 	void setUp() {
 		when(passwordEncoder.encode(anyString())).thenAnswer(call -> "{encoded}" + call.getArgument(0));
 		mockMvc = MockMvcBuilders.standaloneSetup(
-				new OAuth2ClientManagementController(clients, jdbcTemplate, passwordEncoder)).build();
+				new OAuth2ClientManagementController(clients, jdbcTemplate, passwordEncoder, VALIDATOR)).build();
 		log.start();
 		controllerLogger.addAppender(log);
 	}
@@ -356,10 +364,115 @@ class OAuth2ClientManagementControllerTest {
 
 	@ParameterizedTest(name = "{0}")
 	@ValueSource(strings = {"{\"require_proof_key\":true}", "{\"redirect_uris\":[\"ftp://tp.example/cb\"]}",
-			"{\"client_name\":\" \"}"})
-	@DisplayName("#332 review: an update of a client that does not exist is 404, whatever fields or values it has")
+			"{\"client_name\":\" \"}", "{\"security_level\":\"bogus\"}", "{\"rate_limit_per_minute\":0}",
+			"{\"max_concurrent_sessions\":1001}", "{\"scopes\":[null]}"})
+	@DisplayName("#332 review, #344: an update of a client that does not exist is 404, whatever fields or values it has")
 	void updateOfAnUnknownClientIsNotFound(String json) throws Exception {
 		assertThat(perform(put(CLIENTS + "/does-not-exist"), json)).returns(404, Result::status);
+	}
+
+	@ParameterizedTest(name = "{0}")
+	@CsvSource(delimiter = '|', value = {
+			"{\"security_level\":\"bogus\"}|Security level must be standard, high, or maximum",
+			"{\"rate_limit_per_minute\":0}|Rate limit must be at least 1 request per minute",
+			"{\"max_concurrent_sessions\":1001}|Max concurrent sessions must not exceed 1000"})
+	@DisplayName("#344: an update of a known client still applies the field constraints, after the lookup")
+	void updateOfAKnownClientIsValidated(String json, String message) throws Exception {
+		assertThat(update(json)).returns(400, Result::status)
+				.extracting(Result::body, STRING).contains("invalid_request").contains(message);
+		verify(clients, never()).save(any());
+	}
+
+	@ParameterizedTest(name = "{0}")
+	@ValueSource(strings = {"[null]", "[\"\"]", "[\"  \"]", "[\"FB=4_5_15\",null]"})
+	@DisplayName("#344: a null or blank scope is refused on create and update, not saved as \"null\"")
+	void blankScopeIsRefused(String scopes) throws Exception {
+		assertThat(List.of(
+				create("""
+						{"client_name":"TP","redirect_uris":["https://tp.example/cb"],"scopes":%s}
+						""".formatted(scopes)),
+				update("{\"scopes\":%s}".formatted(scopes))))
+				.allSatisfy(result -> assertThat(result).returns(400, Result::status)
+						.extracting(Result::body, STRING).contains("scopes must not contain a null or blank value"));
+		verify(clients, never()).save(any());
+	}
+
+	@Test
+	@DisplayName("#344: a status change without a reason is applied, audited and answered 200")
+	void statusWithoutReasonIsAudited() throws Exception {
+		when(clients.findByClientId("tp")).thenReturn(client());
+
+		assertThat(perform(put(CLIENTS + "/tp/status"), "{\"status\":\"suspended\"}")).returns(200, Result::status);
+		verify(jdbcTemplate).update(contains("UPDATE oauth2_registered_client"), eq("suspended"), isNull(), isNull(),
+				eq("tp"));
+		verify(jdbcTemplate).update(contains("INSERT INTO oauth2_audit_log"), eq("client_status_update"), eq("tp"),
+				isNull(), eq(true), eq("{\"new_status\":\"suspended\"}"));
+	}
+
+	@ParameterizedTest(name = "{0}")
+	@ValueSource(strings = {"{\"status\":\"bogus\"}", "{\"status\":\"suspended\",\"lock_duration_minutes\":0}",
+			"{\"status\":\"suspended\",\"lockDuration\":5}", "{}"})
+	@DisplayName("#344: a status change of a client that does not exist is 404, whatever the body holds")
+	void statusOfAnUnknownClientIsNotFound(String json) throws Exception {
+		assertThat(perform(put(CLIENTS + "/does-not-exist/status"), json)).returns(404, Result::status);
+		verify(jdbcTemplate, never()).update(anyString(), any(Object[].class));
+	}
+
+	@ParameterizedTest(name = "{0}")
+	@CsvSource(delimiter = '|', value = {
+			"{\"status\":\"bogus\"}|Status must be active, suspended, or revoked",
+			"{}|Status is required",
+			"{\"status\":\"suspended\",\"lockDuration\":5}|Unknown field(s): lockDuration"})
+	@DisplayName("#344: a status change of a known client is validated after the lookup and changes nothing when refused")
+	void statusOfAKnownClientIsValidated(String json, String message) throws Exception {
+		when(clients.findByClientId("tp")).thenReturn(client());
+
+		assertThat(perform(put(CLIENTS + "/tp/status"), json)).returns(400, Result::status)
+				.extracting(Result::body, STRING).contains("invalid_request").contains(message);
+		verify(jdbcTemplate, never()).update(anyString(), any(Object[].class));
+	}
+
+	@Test
+	@DisplayName("#344: the list and its count use the same filters; the count has no ORDER BY or LIMIT")
+	void listCountsWithTheSameFilters() throws Exception {
+		when(jdbcTemplate.queryForObject(anyString(), eq(Long.class), any(Object[].class))).thenReturn(3L);
+
+		assertThat(perform(get(CLIENTS + "?status=active&sortBy=client_name&sortDirection=desc&page=1&size=2"), ""))
+				.returns(200, Result::status)
+				.extracting(Result::body, STRING).contains("\"total_elements\":3").contains("\"total_pages\":2");
+		ArgumentCaptor<String> countSql = ArgumentCaptor.forClass(String.class);
+		verify(jdbcTemplate).queryForObject(countSql.capture(), eq(Long.class), eq("active"));
+		assertThat(countSql.getValue()).startsWith("SELECT COUNT(*) FROM oauth2_registered_client c")
+				.contains("WHERE 1=1 AND c.client_status = ?").doesNotContain("ORDER BY", "LIMIT");
+		verify(jdbcTemplate).query(contains("ORDER BY c.client_name DESC LIMIT ? OFFSET ?"),
+				eq(new Object[] {"active", 2, 2L}), any(RowMapper.class));
+	}
+
+	@ParameterizedTest(name = "{0}")
+	@ValueSource(strings = {"sortBy=client_secret", "sortBy=CLIENT_ID", "sortBy=c.client_id", "sortDirection=up", "page=-1",
+			"size=0", "size=101"})
+	@DisplayName("#344: the list refuses a sort column, direction or page size outside its fixed values, before any query")
+	void listRefusesParametersOutsideItsFixedValues(String query) throws Exception {
+		assertThat(perform(get(CLIENTS + "?" + query), "")).returns(400, Result::status)
+				.extracting(Result::body, STRING).contains("invalid_request");
+		verifyNoInteractions(jdbcTemplate);
+	}
+
+	@ParameterizedTest(name = "{0}")
+	@ValueSource(strings = {"client_id", "client_name", "client_id_issued_at", "last_used_at"})
+	@DisplayName("#344: each allowed sort column reaches the ORDER BY as its fixed column")
+	void listSortsByAnAllowedColumn(String sortBy) throws Exception {
+		assertThat(perform(get(CLIENTS + "?sortBy=" + sortBy), "")).returns(200, Result::status);
+		verify(jdbcTemplate).query(contains("ORDER BY c." + sortBy + " ASC LIMIT ? OFFSET ?"), any(Object[].class),
+				any(RowMapper.class));
+	}
+
+	@Test
+	@DisplayName("#344: POST /bulk is gone")
+	void bulkIsGone() throws Exception {
+		assertThat(perform(post(CLIENTS + "/bulk"), "{\"operation\":\"delete\",\"client_ids\":[\"tp\"]}").status())
+				.isIn(404, 405);
+		verifyNoInteractions(jdbcTemplate);
 	}
 
 	@ParameterizedTest(name = "{0}")

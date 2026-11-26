@@ -242,51 +242,7 @@ methods and grant types cannot be changed here: a request naming them, or any ot
 }
 ```
 
-#### 6. Bulk Operations
-
-**Endpoint**: `POST /api/v1/oauth2/clients/bulk`
-
-**Description**: Perform bulk operations on multiple clients
-
-**Request Body**:
-```json
-{
-  "operation": "UPDATE_SETTINGS",
-  "clientIds": [
-    "client-001",
-    "client-002",
-    "client-003"
-  ],
-  "settings": {
-    "requireAuthorizationConsent": true,
-    "accessTokenTimeToLive": "PT2H"
-  }
-}
-```
-
-**Response Example**:
-```json
-{
-  "operation": "UPDATE_SETTINGS",
-  "totalRequested": 3,
-  "successCount": 3,
-  "failureCount": 0,
-  "results": [
-    {
-      "clientId": "client-001",
-      "status": "SUCCESS"
-    },
-    {
-      "clientId": "client-002",
-      "status": "SUCCESS"
-    },
-    {
-      "clientId": "client-003",
-      "status": "SUCCESS"
-    }
-  ]
-}
-```
+The earlier `POST /api/v1/oauth2/clients/bulk` was removed (#344).
 
 ## DataCustodian Integration API
 

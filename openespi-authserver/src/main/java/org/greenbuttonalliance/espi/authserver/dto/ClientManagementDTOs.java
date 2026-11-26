@@ -267,7 +267,7 @@ public class ClientManagementDTOs {
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public static class UpdateClientStatusRequest {
+    public static class UpdateClientStatusRequest extends RefusesUnknownFields {
         @NotBlank(message = "Status is required")
         @Pattern(regexp = "^(active|suspended|revoked)$", message = "Status must be active, suspended, or revoked")
         @JsonProperty("status")
@@ -298,33 +298,6 @@ public class ClientManagementDTOs {
 
         public String getUpdatedBy() { return updatedBy; }
         public void setUpdatedBy(String updatedBy) { this.updatedBy = updatedBy; }
-    }
-
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    public static class BulkOperationRequest {
-        @NotNull(message = "Client IDs are required")
-        @Size(min = 1, max = 100, message = "Must specify between 1 and 100 client IDs")
-        @JsonProperty("client_ids")
-        private List<@NotBlank String> clientIds;
-
-        @NotBlank(message = "Operation is required")
-        @Pattern(regexp = "^(suspend|activate|delete)$", message = "Operation must be suspend, activate, or delete")
-        @JsonProperty("operation")
-        private String operation;
-
-        @Size(max = 200, message = "Reason must not exceed 200 characters")
-        @JsonProperty("reason")
-        private String reason;
-
-        // Getters and setters
-        public List<String> getClientIds() { return clientIds; }
-        public void setClientIds(List<String> clientIds) { this.clientIds = clientIds; }
-
-        public String getOperation() { return operation; }
-        public void setOperation(String operation) { this.operation = operation; }
-
-        public String getReason() { return reason; }
-        public void setReason(String reason) { this.reason = reason; }
     }
 
     // Response DTOs
@@ -508,70 +481,6 @@ public class ClientManagementDTOs {
 
         public int getTotalPages() { return totalPages; }
         public void setTotalPages(int totalPages) { this.totalPages = totalPages; }
-    }
-
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    public static class BulkOperationResult {
-        @JsonProperty("client_id")
-        private String clientId;
-
-        @JsonProperty("success")
-        private boolean success;
-
-        @JsonProperty("message")
-        private String message;
-
-        public BulkOperationResult() {}
-
-        public BulkOperationResult(String clientId, boolean success, String message) {
-            this.clientId = clientId;
-            this.success = success;
-            this.message = message;
-        }
-
-        // Getters and setters
-        public String getClientId() { return clientId; }
-        public void setClientId(String clientId) { this.clientId = clientId; }
-
-        public boolean isSuccess() { return success; }
-        public void setSuccess(boolean success) { this.success = success; }
-
-        public String getMessage() { return message; }
-        public void setMessage(String message) { this.message = message; }
-    }
-
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    public static class BulkOperationResponse {
-        @JsonProperty("operation")
-        private String operation;
-
-        @JsonProperty("total_clients")
-        private int totalClients;
-
-        @JsonProperty("success_count")
-        private int successCount;
-
-        @JsonProperty("failure_count")
-        private int failureCount;
-
-        @JsonProperty("results")
-        private List<BulkOperationResult> results;
-
-        // Getters and setters
-        public String getOperation() { return operation; }
-        public void setOperation(String operation) { this.operation = operation; }
-
-        public int getTotalClients() { return totalClients; }
-        public void setTotalClients(int totalClients) { this.totalClients = totalClients; }
-
-        public int getSuccessCount() { return successCount; }
-        public void setSuccessCount(int successCount) { this.successCount = successCount; }
-
-        public int getFailureCount() { return failureCount; }
-        public void setFailureCount(int failureCount) { this.failureCount = failureCount; }
-
-        public List<BulkOperationResult> getResults() { return results; }
-        public void setResults(List<BulkOperationResult> results) { this.results = results; }
     }
 
     // Common response DTOs

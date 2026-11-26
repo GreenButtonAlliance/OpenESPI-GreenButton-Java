@@ -70,30 +70,42 @@ paths:
             default: 20
             minimum: 1
             maximum: 100
-        - name: sort
+        - name: sortBy
           in: query
-          description: Sort field
+          description: Sort field; any other value is 400 (#344)
           schema:
             type: string
-            enum: [clientName, clientId, createdAt]
-            default: clientName
-        - name: direction
+            enum: [client_id, client_name, client_id_issued_at, last_used_at]
+            default: client_id
+        - name: sortDirection
           in: query
-          description: Sort direction
+          description: Sort direction, either case; any other value is 400
           schema:
             type: string
-            enum: [ASC, DESC]
-            default: ASC
+            enum: [asc, desc]
+            default: asc
+        - name: status
+          in: query
+          description: Filter by client status
+          schema:
+            type: string
+            enum: [active, suspended, revoked]
+        - name: securityLevel
+          in: query
+          description: Filter by security level
+          schema:
+            type: string
+            enum: [standard, high, maximum]
+        - name: espiVersion
+          in: query
+          description: Filter by ESPI version
+          schema:
+            type: string
         - name: search
           in: query
           description: Search term for client name or ID
           schema:
             type: string
-        - name: espiCompliant
-          in: query
-          description: Filter by ESPI compliance
-          schema:
-            type: boolean
       responses:
         '200':
           description: Successful response
@@ -101,6 +113,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ClientListResponse'
+        '400':
+          description: A sort field, sort direction, page or size outside the values above (invalid_request)
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
