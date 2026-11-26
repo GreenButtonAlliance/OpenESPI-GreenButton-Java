@@ -59,6 +59,8 @@ public class DelegationStateService {
 	/**
 	 * As {@link #save(String, String, String, String, String)}, also naming the pending consent-page
 	 * authorization the delegation came from (#299), for {@link AuthorizeContinueController} to remove.
+	 * Records {@code redirectUri} as sent by the Third Party: see
+	 * {@link #save(String, String, String, String, String, String, ProofKey)}.
 	 */
 	public void save(String correlationId, String clientId, String redirectUri, String tpState,
 					 String requestedScope, String pendingAuthorizationId) {
