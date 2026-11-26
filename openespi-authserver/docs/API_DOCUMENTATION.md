@@ -162,67 +162,42 @@ Accept: application/json
 
 **Description**: Register a new OAuth2 client
 
-**Request Body**:
+**Request Body** (the fields are those of `CreateClientRequest` in `docs/openapi.yaml`; a request naming any
+other field is refused with 400 `invalid_request`):
 ```json
 {
-  "clientName": "Energy Management App",
-  "redirectUris": [
+  "client_name": "Energy Management App",
+  "redirect_uris": [
     "https://energyapp.example.com/oauth/callback"
   ],
   "scopes": [
-    "openid",
-    "profile",
-    "email",
     "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000"
   ],
-  "authorizationGrantTypes": [
+  "grant_types": [
     "authorization_code",
     "refresh_token"
   ],
-  "clientAuthenticationMethods": [
+  "authentication_methods": [
     "client_secret_basic"
   ],
-  "espiCompliant": true,
-  "securityLevel": "HIGH",
-  "clientSettings": {
-    "requireAuthorizationConsent": true,
-    "requireProofKey": true
-  },
-  "tokenSettings": {
-    "accessTokenTimeToLive": "PT1H",
-    "refreshTokenTimeToLive": "P30D",
-    "reuseRefreshTokens": false
-  }
+  "require_proof_key": false,
+  "require_authorization_consent": true,
+  "security_level": "high"
 }
 ```
 
-**Response Example**:
+`authentication_methods` takes `client_secret_basic` (the default), `client_secret_post` or `none`. A client whose
+only method is `none` is public: it gets no `client_secret`, always requires PKCE and cannot use
+`client_credentials`.
+
+**Response Example** (`client_secret` is returned only here, and is absent for a public client):
 ```json
 {
-  "clientId": "espi-energy-app-002",
-  "clientSecret": "ZGVmYXVsdC1zZWNyZXQtdmFsdWU",
-  "clientName": "Energy Management App",
-  "redirectUris": [
-    "https://energyapp.example.com/oauth/callback"
-  ],
-  "scopes": [
-    "openid",
-    "profile",
-    "email",
-    "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000"
-  ],
-  "authorizationGrantTypes": [
-    "authorization_code",
-    "refresh_token"
-  ],
-  "clientAuthenticationMethods": [
-    "client_secret_basic"
-  ],
-  "espiCompliant": true,
-  "securityLevel": "HIGH",
-  "certificationStatus": "PENDING",
-  "createdAt": "2024-01-16T15:30:00Z",
-  "updatedAt": "2024-01-16T15:30:00Z"
+  "client_id": "espi_client_1737041400000_5f3a9c21",
+  "client_secret": "ZGVmYXVsdC1zZWNyZXQtdmFsdWU",
+  "client_name": "Energy Management App",
+  "created_at": "2024-01-16T15:30:00Z",
+  "espi_version": "4.0"
 }
 ```
 
@@ -235,9 +210,19 @@ Accept: application/json
 **Path Parameters**:
 - `clientId`: The client identifier
 
-**Request Body**: Same as create, but all fields are optional
+**Request Body** (`UpdateClientRequest` in `docs/openapi.yaml`): any of `client_name`, `redirect_uris`, `scopes`,
+`security_level`, `rate_limit_per_minute`, `max_concurrent_sessions` and `updated_by`; each one given replaces
+the client's value. Client settings (`require_proof_key`, `require_authorization_consent`), authentication
+methods and grant types cannot be changed here: a request naming them, or any other field, is refused with
+400 `invalid_request`.
 
-**Response**: Updated client object (same format as GET)
+**Response**:
+```json
+{
+  "status": "success",
+  "message": "Client updated successfully"
+}
+```
 
 #### 5. Delete Client
 
@@ -764,7 +749,10 @@ token=eyJhbGciOiJSUzI1NiIs...&token_type_hint=access_token
 #### Client Authentication
 - **client_secret_basic**: HTTP Basic authentication
 - **client_secret_post**: Form parameters
-- **tls_client_auth**: Certificate-based (ESPI 4.0)
+- **none**: a public client, authenticated by its PKCE `code_verifier` only
+
+`tls_client_auth` (certificate-based) cannot be set through the Client Management API: it needs the client's
+certificate subject DN, which the API does not take (#332).
 
 ### ESPI 4.0 Security Features
 

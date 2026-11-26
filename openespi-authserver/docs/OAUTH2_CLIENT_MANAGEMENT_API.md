@@ -122,6 +122,11 @@ Create a new OAuth2 client with ESPI 4.0 compliance features.
 }
 ```
 
+`authentication_methods` takes `client_secret_basic` (the default), `client_secret_post` or `none`; any other value
+is refused with 400 `invalid_request`. A client whose only method is `none` is public: the response has no
+`client_secret`, the client always requires PKCE, and it cannot use `client_credentials`. A request naming a field
+not shown above is refused, not ignored (#332).
+
 ### 3. Get Client Details
 
 Retrieve detailed information about a specific client.
@@ -183,6 +188,10 @@ Update an existing client's configuration.
   "updated_by": "admin_user"
 }
 ```
+
+These are the only fields an update applies. Client settings (`require_proof_key`, `require_authorization_consent`),
+authentication methods and grant types cannot be changed here: a request naming them, or any other field, is
+refused with 400 `invalid_request` (#332).
 
 **Response:**
 ```json

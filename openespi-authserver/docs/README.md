@@ -109,14 +109,11 @@ graph TB
 
 ```json
 {
-  "clientName": "My Energy App",
-  "redirectUris": ["https://myapp.com/callback"],
+  "client_name": "My Energy App",
+  "redirect_uris": ["https://myapp.com/callback"],
   "scopes": [
-    "openid",
-    "profile", 
     "FB=4_5_15;IntervalDuration=3600;BlockDuration=monthly;HistoryLength=34128000"
-  ],
-  "espiCompliant": true
+  ]
 }
 ```
 

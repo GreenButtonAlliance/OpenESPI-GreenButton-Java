@@ -106,6 +106,17 @@ public class OAuth2ClientManagementController {
         "ThirdParty_Admin_Access"
     );
 
+    /**
+     * The client authentication methods a client created through this API can use at the token endpoint (#332).
+     * {@code tls_client_auth} needs the client's certificate subject DN in its settings, and
+     * {@code client_secret_jwt} / {@code private_key_jwt} a JWK Set, none of which this API sets; any other
+     * value is not a method at all.
+     */
+    static final Set<String> SUPPORTED_AUTHENTICATION_METHODS = Set.of(
+        ClientAuthenticationMethod.CLIENT_SECRET_BASIC.getValue(),
+        ClientAuthenticationMethod.CLIENT_SECRET_POST.getValue(),
+        ClientAuthenticationMethod.NONE.getValue());
+
     @Autowired
     public OAuth2ClientManagementController(
             RegisteredClientRepository registeredClientRepository,
@@ -248,6 +259,31 @@ public class OAuth2ClientManagementController {
     }
 
     /**
+     * Whether a new client is public only: its sole authentication method is {@code none} (#332). It gets no
+     * secret, since it could never use one. A client with {@code none} next to a secret method still gets one.
+     */
+    static boolean isPublicOnly(CreateClientRequest request) {
+        List<String> methods = request.getAuthenticationMethods();
+        return methods != null && !methods.isEmpty()
+                && methods.stream().allMatch(ClientAuthenticationMethod.NONE.getValue()::equals);
+    }
+
+    /** Refuse a request naming fields it does not have (#332), rather than silently dropping them. */
+    private static void refuseUnknownFields(RefusesUnknownFields request) {
+        if (!request.getUnknownFields().isEmpty()) {
+            throw new IllegalArgumentException("Unknown field(s): " + request.getUnknownFields().stream()
+                    .map(OAuth2ClientManagementController::printable)
+                    .collect(Collectors.joining(", ")));
+        }
+    }
+
+    /** A request-supplied name as it may appear in an error message and the log: printable ASCII, at most 64 chars. */
+    private static String printable(String name) {
+        String safe = name.replaceAll("[^\\x20-\\x7E]", "?");
+        return safe.length() > 64 ? safe.substring(0, 64) + "..." : safe;
+    }
+
+    /**
      * Create new OAuth2 client with ESPI 4.0 compliance
      * 
      * POST /api/v1/oauth2/clients
@@ -260,19 +296,21 @@ public class OAuth2ClientManagementController {
             // Validate ESPI compliance
             validateEspiCompliance(request);
 
-            // Generate client credentials
+            // Generate client credentials: no secret for a public client (#332)
             String clientId = generateClientId(request.getClientNamePrefix());
-            String clientSecret = generateClientSecret();
+            String clientSecret = isPublicOnly(request) ? null : generateClientSecret();
 
             // Build RegisteredClient
             RegisteredClient.Builder clientBuilder = RegisteredClient.withId(UUID.randomUUID().toString())
                     .clientId(clientId)
-                    .clientSecret(passwordEncoder.encode(clientSecret))
                     .clientName(request.getClientName())
                     .clientIdIssuedAt(Instant.now());
+            if (clientSecret != null) {
+                clientBuilder.clientSecret(passwordEncoder.encode(clientSecret));
+            }
 
             // Configure authentication methods
-            if (request.getAuthenticationMethods() != null) {
+            if (request.getAuthenticationMethods() != null && !request.getAuthenticationMethods().isEmpty()) {
                 for (String method : request.getAuthenticationMethods()) {
                     clientBuilder.clientAuthenticationMethod(new ClientAuthenticationMethod(method));
                 }
@@ -423,6 +461,8 @@ public class OAuth2ClientManagementController {
         logger.info("Updating client: {}", clientId);
 
         try {
+            refuseUnknownFields(request);
+
             RegisteredClient existingClient = registeredClientRepository.findByClientId(clientId);
             if (existingClient == null) {
                 return ResponseEntity.notFound().build();
@@ -461,6 +501,9 @@ public class OAuth2ClientManagementController {
             logger.info("Successfully updated client: {}", clientId);
             return ResponseEntity.ok(new SuccessResponse("Client updated successfully"));
 
+        } catch (IllegalArgumentException e) {
+            logger.warn("Client update validation failed: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(new ErrorResponse("invalid_request", e.getMessage()));
         } catch (Exception e) {
             logger.error("Error updating client", e);
             return ResponseEntity.internalServerError()
@@ -569,6 +612,26 @@ public class OAuth2ClientManagementController {
     // Helper methods
 
     private void validateEspiCompliance(CreateClientRequest request) {
+        refuseUnknownFields(request);
+
+        // #332: only the authentication methods a client created here can use
+        if (request.getAuthenticationMethods() != null) {
+            for (String method : request.getAuthenticationMethods()) {
+                if (method == null || !SUPPORTED_AUTHENTICATION_METHODS.contains(method)) {
+                    throw new IllegalArgumentException("Unsupported authentication_methods value: "
+                            + (method == null ? "null" : printable(method)) + " (supported: "
+                            + String.join(", ", new TreeSet<>(SUPPORTED_AUTHENTICATION_METHODS)) + ")");
+                }
+            }
+        }
+
+        // A public client has no credentials, so it cannot use client_credentials
+        if (isPublicOnly(request) && request.getGrantTypes() != null
+                && request.getGrantTypes().contains(AuthorizationGrantType.CLIENT_CREDENTIALS.getValue())) {
+            throw new IllegalArgumentException(
+                    "A public client (authentication method none only) cannot use the client_credentials grant");
+        }
+
         // Validate scopes are ESPI-compliant
         if (request.getScopes() != null) {
             for (String scope : request.getScopes()) {
