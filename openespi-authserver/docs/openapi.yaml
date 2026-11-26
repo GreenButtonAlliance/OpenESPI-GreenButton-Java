@@ -644,6 +644,7 @@ components:
           maxLength: 200
         client_name_prefix:
           type: string
+          nullable: true
           pattern: '^[A-Za-z0-9_-]{1,41}$'
           description: >-
             Prefix of the generated client_id: letters, digits, '_' and '-', short enough that the client_id
