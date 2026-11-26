@@ -114,7 +114,7 @@ Create a new OAuth2 client with ESPI 4.0 compliance features.
 **Response:**
 ```json
 {
-  "client_id": "gbconnect_1703505000_a1b2c3d4",
+  "client_id": "gbconnect_1703505000000_a1b2c3d4",
   "client_secret": "aB3fG9kL2mN5qR8tV1wX4yZ7",
   "client_name": "Green Button Connect My Data",
   "created_at": "2024-01-15T12:00:00Z",
@@ -127,6 +127,11 @@ is refused with 400 `invalid_request`. A client whose only method is `none` is p
 `client_secret`, the client always requires PKCE, and it cannot use `client_credentials`. A request naming a field
 not shown above is refused, not ignored (#332).
 
+The `client_id` is `client_name_prefix` (default `espi_client` when absent or null), `_`, the creation time in
+milliseconds (13 digits), `_` and 8 hex digits. ESPI's `client_id` has at most 64 characters, so the prefix may have
+1-41 letters, digits, `_` or `-`; any other prefix, including an empty or blank one, is refused with 400
+`invalid_request`.
+
 ### 3. Get Client Details
 
 Retrieve detailed information about a specific client.
@@ -137,7 +142,7 @@ Retrieve detailed information about a specific client.
 ```json
 {
   "id": "client-uuid-123",
-  "client_id": "gbconnect_1703505000_a1b2c3d4",
+  "client_id": "gbconnect_1703505000000_a1b2c3d4",
   "client_name": "Green Button Connect My Data",
   "authentication_methods": ["client_secret_basic"],
   "grant_types": ["authorization_code", "refresh_token"],

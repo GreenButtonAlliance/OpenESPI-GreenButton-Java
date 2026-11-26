@@ -290,8 +290,10 @@ public class OAuth2ClientManagementController {
         return safe.length() > maxLength ? safe.substring(0, maxLength) + "..." : safe;
     }
 
-    /** The longest validation message that is logged and returned, and how much of its start a longer one keeps. */
+    /** The longest validation message that is logged and returned. */
     static final int MAX_MESSAGE_LENGTH = 500;
+
+    /** How much of its start a longer validation message keeps; the rest of the room goes to its end. */
     private static final int MESSAGE_HEAD_LENGTH = 200;
 
     /**
@@ -314,17 +316,24 @@ public class OAuth2ClientManagementController {
         return safe.substring(0, MESSAGE_HEAD_LENGTH) + "..." + safe.substring(safe.length() - tailLength);
     }
 
+    /** The longest client_id: ESPI's ApplicationInformation.client_id is a String64 (#332 review). */
+    static final int CLIENT_ID_MAX_LENGTH = 64;
+
+    /** The length of what {@link #clientIdSuffix} adds to the prefix: "_", 13 digits of milliseconds, "_", 8 hex digits. */
+    static final int CLIENT_ID_SUFFIX_LENGTH = 23;
+
+    /** The longest client_name_prefix, so the client_id stays within {@value #CLIENT_ID_MAX_LENGTH}. */
+    static final int CLIENT_ID_PREFIX_MAX_LENGTH = CLIENT_ID_MAX_LENGTH - CLIENT_ID_SUFFIX_LENGTH;
+
     /**
      * What a client_name_prefix may contain (#332 review): it becomes part of the client_id, which is saved, returned
-     * and logged. {@link #generateClientId} adds {@value #CLIENT_ID_SUFFIX_MAX_LENGTH} characters ("_", 13 digits of
-     * milliseconds, "_", up to 8 hex digits), and ESPI's ApplicationInformation.client_id is a String64, so the
-     * prefix may have at most {@value #CLIENT_ID_PREFIX_MAX_LENGTH}.
+     * and logged, so only letters, digits, '_' and '-', at most {@value #CLIENT_ID_PREFIX_MAX_LENGTH} of them.
      */
-    static final int CLIENT_ID_MAX_LENGTH = 64;
-    static final int CLIENT_ID_SUFFIX_MAX_LENGTH = 23;
-    static final int CLIENT_ID_PREFIX_MAX_LENGTH = CLIENT_ID_MAX_LENGTH - CLIENT_ID_SUFFIX_MAX_LENGTH;
     static final java.util.regex.Pattern CLIENT_ID_PREFIX =
             java.util.regex.Pattern.compile("[A-Za-z0-9_-]{1," + CLIENT_ID_PREFIX_MAX_LENGTH + "}");
+
+    /** The prefix of a client_id when the request gives none. */
+    private static final String DEFAULT_CLIENT_ID_PREFIX = "espi_client";
 
     /**
      * Create new OAuth2 client with ESPI 4.0 compliance
@@ -672,7 +681,8 @@ public class OAuth2ClientManagementController {
     private void validateEspiCompliance(CreateClientRequest request) {
         refuseUnknownFields(request);
 
-        // #332 review (rounds 3-4): the prefix becomes part of the client_id; one that is given, even empty, must match
+        // #332 review (rounds 3-5): the prefix becomes part of the client_id. A prefix that is given, even empty or
+        // blank, must match; null means absent (as for every optional field here) and gets the default.
         String prefix = request.getClientNamePrefix();
         if (prefix != null && !CLIENT_ID_PREFIX.matcher(prefix).matches()) {
             throw new IllegalArgumentException("client_name_prefix must be 1-" + CLIENT_ID_PREFIX_MAX_LENGTH
@@ -755,9 +765,30 @@ public class OAuth2ClientManagementController {
     }
 
     private String generateClientId(String prefix) {
-        String basePrefix = StringUtils.hasText(prefix) ? prefix : "espi_client";
-        return basePrefix + "_" + System.currentTimeMillis() + "_" + 
-               Integer.toHexString(secureRandom.nextInt());
+        return clientId(prefix, System.currentTimeMillis(), secureRandom.nextInt());
+    }
+
+    /**
+     * A client_id: the prefix ({@value #DEFAULT_CLIENT_ID_PREFIX} when null) and {@link #clientIdSuffix}. The limits
+     * are enforced here as well as in the request validation (#332 review), so no caller can build a client_id with
+     * an unsafe prefix or longer than {@value #CLIENT_ID_MAX_LENGTH}.
+     */
+    static String clientId(String prefix, long millis, int random) {
+        String basePrefix = prefix != null ? prefix : DEFAULT_CLIENT_ID_PREFIX;
+        if (!CLIENT_ID_PREFIX.matcher(basePrefix).matches()) {
+            throw new IllegalStateException("client_id prefix not validated");
+        }
+        String clientId = basePrefix + clientIdSuffix(millis, random);
+        if (clientId.length() > CLIENT_ID_MAX_LENGTH) {
+            throw new IllegalStateException("client_id longer than " + CLIENT_ID_MAX_LENGTH + " characters");
+        }
+        return clientId;
+    }
+
+    /** "_", the milliseconds as 13 digits, "_", the random value as 8 hex digits: {@value #CLIENT_ID_SUFFIX_LENGTH} characters. */
+    static String clientIdSuffix(long millis, int random) {
+        // Locale.ROOT: a default locale could otherwise format the digits in another script
+        return String.format(java.util.Locale.ROOT, "_%013d_%08x", millis, random);
     }
 
     private String generateClientSecret() {

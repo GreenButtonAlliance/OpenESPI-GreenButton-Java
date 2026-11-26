@@ -646,8 +646,9 @@ components:
           type: string
           pattern: '^[A-Za-z0-9_-]{1,41}$'
           description: >-
-            Prefix of the generated client_id (default espi_client when absent); 1-41 letters, digits, '_' and '-'.
-            The server adds up to 23 characters, keeping the client_id within ESPI's 64.
+            Prefix of the generated client_id: letters, digits, '_' and '-', short enough that the client_id
+            (the prefix, '_', 13 digits of milliseconds, '_', 8 hex digits) stays within ESPI's 64 characters.
+            Absent or null gives the default espi_client; an empty or blank value is refused.
         client_description:
           type: string
           maxLength: 1000

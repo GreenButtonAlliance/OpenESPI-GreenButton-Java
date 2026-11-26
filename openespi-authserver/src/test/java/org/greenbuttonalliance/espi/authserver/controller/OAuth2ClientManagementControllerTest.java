@@ -40,6 +40,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.InstanceOfAssertFactories.STRING;
 import static org.assertj.core.api.InstanceOfAssertFactories.collection;
 import static org.mockito.ArgumentMatchers.any;
@@ -252,17 +253,44 @@ class OAuth2ClientManagementControllerTest {
 				{"client_name":"TP","client_name_prefix":"%s","redirect_uris":["https://tp.example/cb"]}
 				""".formatted(prefix))).returns(201, Result::status);
 		assertThat(saved().getClientId())
-				.matches(java.util.regex.Pattern.quote(prefix) + "_\\d{13}_[0-9a-f]{1,8}")
+				.matches(java.util.regex.Pattern.quote(prefix) + "_\\d{13}_[0-9a-f]{8}")
 				.hasSizeLessThanOrEqualTo(64);
 	}
 
 	@Test
-	@DisplayName("#332 review (round 4): the longest prefix plus the longest suffix is exactly ESPI's 64-character client_id")
-	void longestClientIdFitsEspi() {
-		assertThat(OAuth2ClientManagementController.CLIENT_ID_PREFIX_MAX_LENGTH
-				+ ("_" + "1764115200000" + "_" + Integer.toHexString(-1)).length())
-				.isEqualTo(OAuth2ClientManagementController.CLIENT_ID_MAX_LENGTH)
-				.isEqualTo(64);
+	@DisplayName("#332 review (round 5): an absent or null client_name_prefix gives the espi_client default")
+	void nullClientIdPrefixGetsTheDefault() throws Exception {
+		assertThat(create("""
+				{"client_name":"TP","client_name_prefix":null,"redirect_uris":["https://tp.example/cb"]}
+				""")).returns(201, Result::status);
+		assertThat(saved().getClientId()).matches("espi_client_\\d{13}_[0-9a-f]{8}");
+	}
+
+	@ParameterizedTest(name = "millis {0}, random {1}")
+	@CsvSource({"0, 0", "1764115200000, -1", "9999999999999, 2147483647", "1764115200000, 1"})
+	@DisplayName("#332 review (round 5): the client_id suffix is always CLIENT_ID_SUFFIX_LENGTH characters")
+	void clientIdSuffixHasAFixedLength(long millis, int random) {
+		assertThat(OAuth2ClientManagementController.clientIdSuffix(millis, random))
+				.matches("_\\d{13}_[0-9a-f]{8}")
+				.hasSize(OAuth2ClientManagementController.CLIENT_ID_SUFFIX_LENGTH);
+	}
+
+	@Test
+	@DisplayName("#332 review (round 5): the longest prefix gives a client_id of exactly 64; a longer or unsafe one is refused where the id is built")
+	void clientIdEnforcesItsLimits() {
+		String longest = "a".repeat(OAuth2ClientManagementController.CLIENT_ID_PREFIX_MAX_LENGTH);
+
+		assertThat(OAuth2ClientManagementController.clientId(longest, 1764115200000L, -1))
+				.hasSize(OAuth2ClientManagementController.CLIENT_ID_MAX_LENGTH)
+				.hasSize(64);
+		assertThatThrownBy(() -> OAuth2ClientManagementController.clientId(longest + "a", 1764115200000L, -1))
+				.isInstanceOf(IllegalStateException.class);
+		assertThatThrownBy(() -> OAuth2ClientManagementController.clientId(" ", 1764115200000L, -1))
+				.isInstanceOf(IllegalStateException.class);
+		// A 14-digit millisecond value (after the year 2286) would make the suffix one character longer
+		assertThatThrownBy(() -> OAuth2ClientManagementController.clientId(longest, 10000000000000L, -1))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessageContaining("64");
 	}
 
 	@Test
