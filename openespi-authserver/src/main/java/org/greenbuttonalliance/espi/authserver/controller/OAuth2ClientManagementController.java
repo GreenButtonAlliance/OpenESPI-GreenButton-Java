@@ -290,15 +290,27 @@ public class OAuth2ClientManagementController {
         return safe.length() > maxLength ? safe.substring(0, maxLength) + "..." : safe;
     }
 
+    /** A double-quoted value longer than 64 characters, in a validation message. */
+    private static final java.util.regex.Pattern LONG_QUOTED_VALUE =
+            java.util.regex.Pattern.compile("\"([^\"]{64})[^\"]+\"");
+
     /**
      * A validation failure's message as it may appear in the log and the 400 body (#332 review): printable ASCII,
-     * at most 500 characters. It may quote request values: this controller's own messages already pass them through
-     * {@link #printable(String)}, but Spring's {@code RegisteredClient.Builder} quotes a refused scope or redirect
-     * URI as it was sent.
+     * at most 500 characters, or "Invalid request" when the exception has none. It may quote request values: this
+     * controller's own messages already pass them through {@link #printable(String)}, but Spring's
+     * {@code RegisteredClient.Builder} quotes a refused scope or redirect URI as it was sent, before the reason. A
+     * quoted value is shortened to 64 characters first, so a long one cannot push the reason out of the message.
      */
     static String safeMessage(IllegalArgumentException e) {
-        return printable(e.getMessage(), 500);
+        if (e.getMessage() == null) {
+            return "Invalid request";
+        }
+        return printable(LONG_QUOTED_VALUE.matcher(e.getMessage()).replaceAll("\"$1...\""), 500);
     }
+
+    /** What a client_name_prefix may contain (#332 review): it becomes part of the client_id. */
+    private static final java.util.regex.Pattern CLIENT_ID_PREFIX =
+            java.util.regex.Pattern.compile("[A-Za-z0-9_-]{1,50}");
 
     /**
      * Create new OAuth2 client with ESPI 4.0 compliance
@@ -645,6 +657,13 @@ public class OAuth2ClientManagementController {
 
     private void validateEspiCompliance(CreateClientRequest request) {
         refuseUnknownFields(request);
+
+        // #332 review (round 3): the prefix becomes part of the client_id, which is saved, returned and logged
+        String prefix = request.getClientNamePrefix();
+        if (StringUtils.hasText(prefix) && !CLIENT_ID_PREFIX.matcher(prefix).matches()) {
+            throw new IllegalArgumentException("client_name_prefix must be 1-50 letters, digits, '_' or '-': "
+                    + printable(prefix));
+        }
 
         // #332: only the authentication methods a client created here can use
         if (request.getAuthenticationMethods() != null) {

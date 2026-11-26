@@ -209,8 +209,49 @@ class OAuth2ClientManagementControllerTest {
 		assertThat(result).returns(400, Result::status)
 				.extracting(Result::body, STRING).contains("invalid_request").contains("x??INFO forged")
 				.doesNotContain("\\r", "\\n");
-		assertThat(logged()).anyMatch(line -> line.contains("x??INFO forged")).noneMatch(OAuth2ClientManagementControllerTest::breaksLines);
+		// The handler's own line, not create's earlier non-ESPI scope warning (#332 review, round 3)
+		String handlerLine = "POST".equals(method) ? "Client creation validation failed:" : "Client update validation failed:";
+		assertThat(logged()).anyMatch(line -> line.startsWith(handlerLine) && line.contains("x??INFO forged"))
+				.noneMatch(OAuth2ClientManagementControllerTest::breaksLines);
 		verify(clients, never()).save(any());
+	}
+
+	@Test
+	@DisplayName("#332 review (round 3): a client_name_prefix outside letters, digits, '_' and '-' is refused")
+	void unsafeClientIdPrefixIsRefused() throws Exception {
+		assertThat(create("""
+				{"client_name":"TP","client_name_prefix":"tp\\r\\n2026-11-25 INFO admin granted FB_51",
+				 "redirect_uris":["https://tp.example/cb"]}
+				""")).returns(400, Result::status)
+				.extracting(Result::body, STRING).contains("invalid_request").contains("client_name_prefix")
+				.doesNotContain("\\r", "\\n");
+		assertThat(logged()).noneMatch(OAuth2ClientManagementControllerTest::breaksLines);
+		verify(clients, never()).save(any());
+	}
+
+	@Test
+	@DisplayName("a client_name_prefix of letters, digits, '_' and '-' starts the client_id")
+	void safeClientIdPrefixStartsTheClientId() throws Exception {
+		assertThat(create("""
+				{"client_name":"TP","client_name_prefix":"gb_Connect-2","redirect_uris":["https://tp.example/cb"]}
+				""")).returns(201, Result::status);
+		assertThat(saved().getClientId()).startsWith("gb_Connect-2_");
+	}
+
+	@Test
+	@DisplayName("#332 review (round 3): safeMessage keeps the reason after a long quoted value, and never says \"null\"")
+	void safeMessageKeepsTheReason() {
+		String longUri = "https://tp.example/" + "a".repeat(600) + "#frag";
+
+		assertThat(List.of(
+				OAuth2ClientManagementController.safeMessage(new IllegalArgumentException(
+						"redirect_uri \"" + longUri + "\" is not a valid redirect URI or contains fragment")),
+				OAuth2ClientManagementController.safeMessage(new IllegalArgumentException())))
+				.satisfiesExactly(
+						message -> assertThat(message).hasSizeLessThan(200)
+								.startsWith("redirect_uri \"https://tp.example/aaa")
+								.endsWith("...\" is not a valid redirect URI or contains fragment"),
+						message -> assertThat(message).isEqualTo("Invalid request"));
 	}
 
 	@Test
