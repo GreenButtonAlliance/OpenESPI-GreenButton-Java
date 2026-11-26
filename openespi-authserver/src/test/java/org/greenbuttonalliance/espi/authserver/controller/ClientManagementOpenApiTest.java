@@ -79,6 +79,14 @@ class ClientManagementOpenApiTest {
 	}
 
 	@Test
+	@DisplayName("#332 review (round 4): client_name_prefix has the server's pattern")
+	void clientNamePrefixPatternMatchesTheServer() throws Exception {
+		assertThat(child(spec(), "components", "schemas", "CreateClientRequest", "properties", "client_name_prefix")
+				.get("pattern"))
+				.isEqualTo("^" + OAuth2ClientManagementController.CLIENT_ID_PREFIX.pattern() + "$");
+	}
+
+	@Test
 	@DisplayName("POST answers 201 with CreateClientResponse and PUT 200 with SuccessResponse, as the server does")
 	void responsesMatchTheServer() throws Exception {
 		Map<String, Object> paths = child(spec(), "paths");

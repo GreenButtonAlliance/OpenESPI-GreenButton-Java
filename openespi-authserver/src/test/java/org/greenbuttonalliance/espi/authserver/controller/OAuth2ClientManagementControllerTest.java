@@ -225,32 +225,69 @@ class OAuth2ClientManagementControllerTest {
 				""")).returns(400, Result::status)
 				.extracting(Result::body, STRING).contains("invalid_request").contains("client_name_prefix")
 				.doesNotContain("\\r", "\\n");
-		assertThat(logged()).noneMatch(OAuth2ClientManagementControllerTest::breaksLines);
+		// The handler's own line, so the check fails if nothing is logged (#332 review, round 4)
+		assertThat(logged())
+				.anyMatch(line -> line.startsWith("Client creation validation failed:")
+						&& line.contains("tp??2026-11-25 INFO admin granted FB_51"))
+				.noneMatch(OAuth2ClientManagementControllerTest::breaksLines);
 		verify(clients, never()).save(any());
 	}
 
-	@Test
-	@DisplayName("a client_name_prefix of letters, digits, '_' and '-' starts the client_id")
-	void safeClientIdPrefixStartsTheClientId() throws Exception {
+	@ParameterizedTest(name = "\"{0}\"")
+	@ValueSource(strings = {"", " ", "\\t", "ab1234567890123456789012345678901234567890"})
+	@DisplayName("#332 review (round 4): an empty, blank or 42-character client_name_prefix is refused, not defaulted")
+	void emptyOrTooLongClientIdPrefixIsRefused(String prefix) throws Exception {
 		assertThat(create("""
-				{"client_name":"TP","client_name_prefix":"gb_Connect-2","redirect_uris":["https://tp.example/cb"]}
-				""")).returns(201, Result::status);
-		assertThat(saved().getClientId()).startsWith("gb_Connect-2_");
+				{"client_name":"TP","client_name_prefix":"%s","redirect_uris":["https://tp.example/cb"]}
+				""".formatted(prefix))).returns(400, Result::status)
+				.extracting(Result::body, STRING).contains("invalid_request").contains("client_name_prefix must be 1-41");
+		verify(clients, never()).save(any());
+	}
+
+	@ParameterizedTest(name = "{0}")
+	@ValueSource(strings = {"gb_Connect-2", "a1234567890123456789012345678901234567890"})
+	@DisplayName("#332 review (round 4): a client_name_prefix of 1-41 letters, digits, '_' and '-' starts a client_id of at most 64")
+	void safeClientIdPrefixStartsTheClientId(String prefix) throws Exception {
+		assertThat(create("""
+				{"client_name":"TP","client_name_prefix":"%s","redirect_uris":["https://tp.example/cb"]}
+				""".formatted(prefix))).returns(201, Result::status);
+		assertThat(saved().getClientId())
+				.matches(java.util.regex.Pattern.quote(prefix) + "_\\d{13}_[0-9a-f]{1,8}")
+				.hasSizeLessThanOrEqualTo(64);
 	}
 
 	@Test
-	@DisplayName("#332 review (round 3): safeMessage keeps the reason after a long quoted value, and never says \"null\"")
+	@DisplayName("#332 review (round 4): the longest prefix plus the longest suffix is exactly ESPI's 64-character client_id")
+	void longestClientIdFitsEspi() {
+		assertThat(OAuth2ClientManagementController.CLIENT_ID_PREFIX_MAX_LENGTH
+				+ ("_" + "1764115200000" + "_" + Integer.toHexString(-1)).length())
+				.isEqualTo(OAuth2ClientManagementController.CLIENT_ID_MAX_LENGTH)
+				.isEqualTo(64);
+	}
+
+	@Test
+	@DisplayName("#332 review (rounds 3-4): safeMessage keeps a long message's start and its reason, and never says \"null\" or \"\"")
 	void safeMessageKeepsTheReason() {
-		String longUri = "https://tp.example/" + "a".repeat(600) + "#frag";
+		// Quotes every 50 characters: Spring's message for a value that itself contains '"'
+		String quoted = "https://tp.example/" + "a\"".repeat(10) + ("b".repeat(49) + "\"").repeat(20) + "\r\n#frag";
+		String reason = "\" is not a valid redirect URI or contains fragment";
 
 		assertThat(List.of(
 				OAuth2ClientManagementController.safeMessage(new IllegalArgumentException(
-						"redirect_uri \"" + longUri + "\" is not a valid redirect URI or contains fragment")),
-				OAuth2ClientManagementController.safeMessage(new IllegalArgumentException())))
+						"redirect_uri \"" + quoted + reason)),
+				OAuth2ClientManagementController.safeMessage(new IllegalArgumentException("short \"value\" refused")),
+				OAuth2ClientManagementController.safeMessage(new IllegalArgumentException()),
+				OAuth2ClientManagementController.safeMessage(new IllegalArgumentException("")),
+				OAuth2ClientManagementController.safeMessage(new IllegalArgumentException(" \t"))))
 				.satisfiesExactly(
-						message -> assertThat(message).hasSizeLessThan(200)
-								.startsWith("redirect_uri \"https://tp.example/aaa")
-								.endsWith("...\" is not a valid redirect URI or contains fragment"),
+						message -> assertThat(message).hasSize(OAuth2ClientManagementController.MAX_MESSAGE_LENGTH)
+								.startsWith("redirect_uri \"https://tp.example/a\"")
+								.contains("...")
+								.endsWith("??#frag" + reason)
+								.doesNotContain("\r", "\n"),
+						message -> assertThat(message).isEqualTo("short \"value\" refused"),
+						message -> assertThat(message).isEqualTo("Invalid request"),
+						message -> assertThat(message).isEqualTo("Invalid request"),
 						message -> assertThat(message).isEqualTo("Invalid request"));
 	}
 

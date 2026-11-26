@@ -290,27 +290,41 @@ public class OAuth2ClientManagementController {
         return safe.length() > maxLength ? safe.substring(0, maxLength) + "..." : safe;
     }
 
-    /** A double-quoted value longer than 64 characters, in a validation message. */
-    private static final java.util.regex.Pattern LONG_QUOTED_VALUE =
-            java.util.regex.Pattern.compile("\"([^\"]{64})[^\"]+\"");
+    /** The longest validation message that is logged and returned, and how much of its start a longer one keeps. */
+    static final int MAX_MESSAGE_LENGTH = 500;
+    private static final int MESSAGE_HEAD_LENGTH = 200;
 
     /**
      * A validation failure's message as it may appear in the log and the 400 body (#332 review): printable ASCII,
-     * at most 500 characters, or "Invalid request" when the exception has none. It may quote request values: this
-     * controller's own messages already pass them through {@link #printable(String)}, but Spring's
-     * {@code RegisteredClient.Builder} quotes a refused scope or redirect URI as it was sent, before the reason. A
-     * quoted value is shortened to 64 characters first, so a long one cannot push the reason out of the message.
+     * at most {@value #MAX_MESSAGE_LENGTH} characters, or "Invalid request" when the exception has none. It may quote
+     * request values: this controller's own messages already pass them through {@link #printable(String)}, but
+     * Spring's {@code RegisteredClient.Builder} quotes a refused scope or redirect URI as it was sent, before the
+     * reason. A longer message keeps its start and its end, with "..." between, so the reason survives whatever the
+     * quoted value contains.
      */
     static String safeMessage(IllegalArgumentException e) {
-        if (e.getMessage() == null) {
+        if (!StringUtils.hasText(e.getMessage())) {
             return "Invalid request";
         }
-        return printable(LONG_QUOTED_VALUE.matcher(e.getMessage()).replaceAll("\"$1...\""), 500);
+        String safe = e.getMessage().replaceAll("[^\\x20-\\x7E]", "?");
+        if (safe.length() <= MAX_MESSAGE_LENGTH) {
+            return safe;
+        }
+        int tailLength = MAX_MESSAGE_LENGTH - MESSAGE_HEAD_LENGTH - "...".length();
+        return safe.substring(0, MESSAGE_HEAD_LENGTH) + "..." + safe.substring(safe.length() - tailLength);
     }
 
-    /** What a client_name_prefix may contain (#332 review): it becomes part of the client_id. */
-    private static final java.util.regex.Pattern CLIENT_ID_PREFIX =
-            java.util.regex.Pattern.compile("[A-Za-z0-9_-]{1,50}");
+    /**
+     * What a client_name_prefix may contain (#332 review): it becomes part of the client_id, which is saved, returned
+     * and logged. {@link #generateClientId} adds {@value #CLIENT_ID_SUFFIX_MAX_LENGTH} characters ("_", 13 digits of
+     * milliseconds, "_", up to 8 hex digits), and ESPI's ApplicationInformation.client_id is a String64, so the
+     * prefix may have at most {@value #CLIENT_ID_PREFIX_MAX_LENGTH}.
+     */
+    static final int CLIENT_ID_MAX_LENGTH = 64;
+    static final int CLIENT_ID_SUFFIX_MAX_LENGTH = 23;
+    static final int CLIENT_ID_PREFIX_MAX_LENGTH = CLIENT_ID_MAX_LENGTH - CLIENT_ID_SUFFIX_MAX_LENGTH;
+    static final java.util.regex.Pattern CLIENT_ID_PREFIX =
+            java.util.regex.Pattern.compile("[A-Za-z0-9_-]{1," + CLIENT_ID_PREFIX_MAX_LENGTH + "}");
 
     /**
      * Create new OAuth2 client with ESPI 4.0 compliance
@@ -658,11 +672,11 @@ public class OAuth2ClientManagementController {
     private void validateEspiCompliance(CreateClientRequest request) {
         refuseUnknownFields(request);
 
-        // #332 review (round 3): the prefix becomes part of the client_id, which is saved, returned and logged
+        // #332 review (rounds 3-4): the prefix becomes part of the client_id; one that is given, even empty, must match
         String prefix = request.getClientNamePrefix();
-        if (StringUtils.hasText(prefix) && !CLIENT_ID_PREFIX.matcher(prefix).matches()) {
-            throw new IllegalArgumentException("client_name_prefix must be 1-50 letters, digits, '_' or '-': "
-                    + printable(prefix));
+        if (prefix != null && !CLIENT_ID_PREFIX.matcher(prefix).matches()) {
+            throw new IllegalArgumentException("client_name_prefix must be 1-" + CLIENT_ID_PREFIX_MAX_LENGTH
+                    + " letters, digits, '_' or '-': \"" + printable(prefix) + "\"");
         }
 
         // #332: only the authentication methods a client created here can use
