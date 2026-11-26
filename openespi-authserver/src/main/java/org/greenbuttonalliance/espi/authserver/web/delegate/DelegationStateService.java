@@ -48,7 +48,8 @@ public class DelegationStateService {
 
 	/**
 	 * Save the original third-party request context so it can be retrieved when the customer
-	 * returns from DC via {@link #consume(String)}.
+	 * returns from DC via {@link #consume(String)}. Records {@code redirectUri} as sent by the Third Party: see
+	 * {@link #save(String, String, String, String, String, String, ProofKey)}.
 	 */
 	public void save(String correlationId, String clientId, String redirectUri, String tpState,
 					 String requestedScope) {
@@ -58,6 +59,8 @@ public class DelegationStateService {
 	/**
 	 * As {@link #save(String, String, String, String, String)}, also naming the pending consent-page
 	 * authorization the delegation came from (#299), for {@link AuthorizeContinueController} to remove.
+	 * Records {@code redirectUri} as sent by the Third Party: see
+	 * {@link #save(String, String, String, String, String, String, ProofKey)}.
 	 */
 	public void save(String correlationId, String clientId, String redirectUri, String tpState,
 					 String requestedScope, String pendingAuthorizationId) {
@@ -67,12 +70,27 @@ public class DelegationStateService {
 	/**
 	 * As {@link #save(String, String, String, String, String, String)}, also keeping the Third Party's PKCE
 	 * challenge (#274), or null when it sent none.
+	 * <p>
+	 * This and the shorter overloads record {@code redirectUri} as sent by the Third Party
+	 * ({@code redirectUriSent = true}), so the replay carries it. Production code saves through
+	 * {@link #save(String, String, String, String, String, String, ProofKey, boolean)}: a {@code redirectUri}
+	 * the AS filled in itself, when the Third Party left it out, saved through these would be replayed as if
+	 * sent and the token request would then fail (#335).
 	 */
 	public void save(String correlationId, String clientId, String redirectUri, String tpState,
 					 String requestedScope, String pendingAuthorizationId, ProofKey proofKey) {
+		save(correlationId, clientId, redirectUri, tpState, requestedScope, pendingAuthorizationId, proofKey, true);
+	}
+
+	/**
+	 * As {@link #save(String, String, String, String, String, String, ProofKey)}, also recording whether the Third
+	 * Party sent {@code redirect_uri} itself (#335), or left it out and {@code redirectUri} is its sole registered one.
+	 */
+	public void save(String correlationId, String clientId, String redirectUri, String tpState,
+					 String requestedScope, String pendingAuthorizationId, ProofKey proofKey, boolean redirectUriSent) {
 		// #331: never replace a pending delegation's entry (its client, redirect URI or PKCE challenge).
 		Entry previous = states.putIfAbsent(correlationId, new Entry(clientId, redirectUri, tpState, requestedScope,
-				pendingAuthorizationId, proofKey, Instant.now().plus(TTL)));
+				pendingAuthorizationId, proofKey, redirectUriSent, Instant.now().plus(TTL)));
 		if (previous != null) {
 			throw new IllegalStateException("delegation state already exists for correlation_id " + correlationId);
 		}
@@ -117,10 +135,14 @@ public class DelegationStateService {
 	 *                    consent-page redirect, when the delegation came from there (#299); otherwise null
 	 * @param proofKey    the Third Party's PKCE challenge from its original request (#274); null when it sent
 	 *                    none
+	 * @param redirectUriSent whether the Third Party sent {@code redirect_uri} in that request (#335). When it left
+	 *                    it out, {@code redirectUri} is its sole registered one: used for {@code access_denied}, but
+	 *                    left out of the replay, so the code is not bound to a {@code redirect_uri} that RFC 6749
+	 *                    4.1.3 would then require on the token request
 	 * @param expiresAt   when this entry should be considered stale
 	 */
 	public record Entry(String clientId, String redirectUri, String tpState, String requestedScope,
-						String pendingAuthorizationId, ProofKey proofKey, Instant expiresAt) {}
+						String pendingAuthorizationId, ProofKey proofKey, boolean redirectUriSent, Instant expiresAt) {}
 
 	/**
 	 * A Third Party's PKCE challenge (RFC 7636) from its original {@code /oauth2/authorize} request, replayed

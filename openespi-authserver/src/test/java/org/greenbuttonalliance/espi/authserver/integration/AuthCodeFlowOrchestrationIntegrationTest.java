@@ -529,6 +529,57 @@ class AuthCodeFlowOrchestrationIntegrationTest extends AbstractAuthserverIntegra
 		}
 	}
 
+	/**
+	 * RFC 6749 3.1.2.3 lets a client that registered one redirect URI leave {@code redirect_uri} out of the
+	 * authorization request, and 4.1.3 then lets it leave it out of the token request too (#335). The delegation
+	 * answers the Third Party at its registered URI, and the replay leaves {@code redirect_uri} out, so the code is
+	 * not bound to one the token request would have to repeat.
+	 */
+	@Test
+	@DisplayName("#335: a Third Party that leaves redirect_uri out of /oauth2/authorize and /oauth2/token gets a token")
+	void omittedRedirectUriGetsATokenWithoutIt() throws Exception {
+		String suffix = UUID.randomUUID().toString().substring(0, 8);
+		String clientId = "pr-335-tp-" + suffix;
+		String clientSecret = "pr-335-secret-" + suffix;
+		String tpState = "tp-state-335-" + suffix;
+		registerClient(clientId, clientSecret);
+		when(backchannelClient.provision(any())).thenReturn(new BackchannelResponse(UUID.randomUUID(),
+				UUID.randomUUID(), UUID.randomUUID(), "https://dc.example/Subscription/1",
+				"https://dc.example/Authorization/1", "https://dc.example/RetailCustomer/42/Customer/1"));
+
+		// 1) Outbound, without redirect_uri.
+		java.net.URI authorizeUri = org.springframework.web.util.UriComponentsBuilder.fromPath("/oauth2/authorize")
+				.queryParam("response_type", "code")
+				.queryParam("client_id", clientId)
+				.queryParam("scope", SCOPE)
+				.queryParam("state", tpState)
+				.encode()
+				.build()
+				.toUri();
+		String delegateUrl = mockMvc.perform(get(authorizeUri).accept(org.springframework.http.MediaType.TEXT_HTML))
+				.andExpect(status().is3xxRedirection())
+				.andReturn().getResponse().getHeader("Location");
+		String correlationId = delegateToTheDataCustodian(delegateUrl, null);
+
+		// 2) Return from the DC: the replay has no redirect_uri, and the code goes to the registered one.
+		MvcResult continueResult = mockMvc.perform(get("/oauth2/authorize/continue")
+						.param("handoff", allowHandoff(correlationId, SCOPE, UUID.randomUUID())))
+				.andExpect(status().is3xxRedirection())
+				.andReturn();
+		String replay = continueResult.getResponse().getHeader("Location");
+		assertThat(extractQueryParam(replay, "redirect_uri")).as("the replay leaves redirect_uri out").isNull();
+		String callback = followReplay(replay, (MockHttpSession) continueResult.getRequest().getSession(false));
+		assertThat(callback).startsWith(REDIRECT_URI + "?").contains("code=", "state=" + tpState);
+
+		// 3) The token request without redirect_uri gets a token.
+		mockMvc.perform(post("/oauth2/token")
+						.with(httpBasic(clientId, clientSecret))
+						.param("grant_type", "authorization_code")
+						.param("code", extractQueryParam(callback, "code")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.access_token").isNotEmpty());
+	}
+
 	@Test
 	@DisplayName("PKCE downgrade (#274, RFC 9700 4.8.2): a code_verifier for a code minted without a challenge is refused")
 	void codeVerifierWithoutChallengeIsRefused() throws Exception {

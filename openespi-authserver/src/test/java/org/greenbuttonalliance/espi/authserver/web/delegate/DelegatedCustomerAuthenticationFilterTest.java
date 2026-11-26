@@ -128,6 +128,24 @@ class DelegatedCustomerAuthenticationFilterTest {
 	}
 
 	@Test
+	@DisplayName("#335: a delegation whose Third Party left redirect_uri out is replayed without it, and only that is its replay")
+	void delegationWithoutRedirectUriMatchesOnlyAReplayWithoutIt() throws Exception {
+		GrantContext ctx = new GrantContext("cid", "tp", "reg-tp", "42",
+				new GrantContext.Replay(null, GrantContexts.STATE, CHALLENGE, "S256"),
+				42L, SCOPE, List.of(), Instant.now().plusSeconds(300));
+		grantContexts.put(session, ctx);
+		MockHttpServletRequest withRedirectUri = replay();
+		MockHttpServletRequest withoutRedirectUri = replay();
+		withoutRedirectUri.removeParameter("redirect_uri");
+
+		assertThat(during(withRedirectUri)).as("a redirect_uri the Third Party did not send")
+				.isEqualTo(new Seen(null, null));
+		// The refused request used the delegation up (single use), so it is put back for the real replay.
+		grantContexts.put(session, ctx);
+		assertThat(during(withoutRedirectUri).delegated()).isEqualTo(ctx);
+	}
+
+	@Test
 	@DisplayName("#305 review: the replay's parameters plus a request_uri are not the replay")
 	void requestUriIsNotTheReplay() throws Exception {
 		delegation(session);

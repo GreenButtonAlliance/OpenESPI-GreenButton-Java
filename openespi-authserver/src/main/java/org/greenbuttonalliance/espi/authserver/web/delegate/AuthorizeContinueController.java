@@ -150,12 +150,16 @@ public class AuthorizeContinueController {
 		// consent on the replay below only (a request with exactly these parameters), and
 		// GrantContextEnrichingAuthorizationService stamps it onto the OAuth2Authorization Spring AS creates there.
 		DelegationStateService.ProofKey proofKey = state.proofKey();
+		// #335: a TP that left redirect_uri out (RFC 6749 3.1.2.3, one registered URI) gets a replay without it, so
+		// Spring AS mints the code for its registered URI without binding it to a redirect_uri the token request
+		// would then have to repeat (RFC 6749 4.1.3).
+		String replayRedirectUri = state.redirectUriSent() ? state.redirectUri() : null;
 		grantContextSessionStore.put(request.getSession(true), new GrantContext(
 				payload.correlationId(),
 				client.getClientId(),
 				client.getId(),
 				payload.principal(),
-				new GrantContext.Replay(state.redirectUri(), state.tpState(),
+				new GrantContext.Replay(replayRedirectUri, state.tpState(),
 						proofKey != null ? proofKey.codeChallenge() : null,
 						proofKey != null ? proofKey.codeChallengeMethod() : null),
 				retailCustomerId,
@@ -169,7 +173,7 @@ public class AuthorizeContinueController {
 		UriComponentsBuilder replay = UriComponentsBuilder.fromPath(AUTHORIZE_PATH);
 		queryParam(replay, "response_type", "code");
 		queryParam(replay, "client_id", state.clientId());
-		queryParam(replay, "redirect_uri", state.redirectUri());
+		queryParam(replay, "redirect_uri", replayRedirectUri);
 		queryParam(replay, "scope", payload.approvedScope());
 		queryParam(replay, "state", state.tpState() != null ? state.tpState() : "");
 		queryParam(replay, GrantContextSessionStore.DELEGATION_PARAMETER, payload.correlationId());

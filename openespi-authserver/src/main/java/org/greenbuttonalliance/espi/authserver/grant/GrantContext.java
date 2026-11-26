@@ -77,6 +77,7 @@ public record GrantContext(
 	/**
 	 * The Third Party's {@code redirect_uri}, {@code state} and PKCE challenge, as replayed (#305 review): a request
 	 * naming the delegation with any other value is not its replay. Blank and missing values are the same.
+	 * {@code redirectUri} is null when the Third Party left it out (#335): the replay leaves it out too.
 	 */
 	public record Replay(String redirectUri, String state, String codeChallenge, String codeChallengeMethod)
 			implements Serializable {
