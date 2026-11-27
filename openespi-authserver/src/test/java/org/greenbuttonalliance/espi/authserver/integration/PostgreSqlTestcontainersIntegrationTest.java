@@ -213,6 +213,35 @@ class PostgreSqlTestcontainersIntegrationTest {
     class ClientRepositoryIntegrationTests {
 
         @Test
+        @DisplayName("#344 review: a client with consents, authorizations and ESPI info is deleted with all of them")
+        void deleteRemovesTheClientsDependentRows() {
+            // Given - each of these rows has a foreign key to the client with no cascade on PostgreSQL
+            RegisteredClient client = createEspiTestClient("test-delete-dependents", "Delete Dependents Client");
+            clientRepository.save(client);
+            jdbcTemplate.update("INSERT INTO espi_application_info (uuid, client_id, client_name) VALUES (?, ?, ?)",
+                    UUID.randomUUID().toString(), client.getClientId(), client.getClientName());
+            AuthorizationPurgeFixtures.insertAuthorization(jdbcTemplate, true, "test-delete-authz", client.getId(),
+                    "customer-344");
+            AuthorizationPurgeFixtures.insertConsent(jdbcTemplate, client.getId(), "customer-344");
+
+            // When
+            int deleted = registeredClientAdminDao.deleteById(client.getId());
+
+            // Then
+            assertThat(List.of(deleted,
+                    count("oauth2_registered_client", "id", client.getId()),
+                    count("oauth2_authorization", "registered_client_id", client.getId()),
+                    count("oauth2_authorization_consent", "registered_client_id", client.getId()),
+                    count("espi_application_info", "client_id", client.getClientId())))
+                    .containsExactly(1, 0, 0, 0, 0);
+        }
+
+        private int count(String table, String column, String value) {
+            return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM " + table + " WHERE " + column + " = ?",
+                    Integer.class, value);
+        }
+
+        @Test
         @DisplayName("Should save and retrieve ESPI client successfully")
         void shouldSaveAndRetrieveEspiClientSuccessfully() {
             // Given

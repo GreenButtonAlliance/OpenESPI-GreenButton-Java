@@ -22,6 +22,7 @@ package org.greenbuttonalliance.espi.authserver.repository;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -46,7 +47,20 @@ public class RegisteredClientAdminDao {
     private static final String FIND_ALL_CLIENT_IDS_SQL =
             "SELECT " + CLIENT_ID_COLUMN + " FROM oauth2_registered_client ORDER BY " + CLIENT_ID_COLUMN;
 
-    private static final String DELETE_BY_ID_SQL =
+    /**
+     * #344 review: the rows that refer to a client, deleted before it in this order. On PostgreSQL the
+     * consents and authorizations, and on MySQL and PostgreSQL the ESPI application info, have a foreign key
+     * to the client with no cascade, so the client's own row cannot go first. Deleting the authorizations
+     * also revokes every token issued to the client. The AS writes nothing to {@code oauth2_consent_details}
+     * or {@code oauth2_client_metrics}, and the certificate tables cascade.
+     */
+    static final List<String> DELETE_DEPENDENTS_SQL = List.of(
+            "DELETE FROM oauth2_authorization_consent WHERE registered_client_id = ?",
+            "DELETE FROM oauth2_authorization WHERE registered_client_id = ?",
+            "DELETE FROM espi_application_info WHERE client_id ="
+                    + " (SELECT c.client_id FROM oauth2_registered_client c WHERE c.id = ?)");
+
+    static final String DELETE_BY_ID_SQL =
             "DELETE FROM oauth2_registered_client WHERE " + ID_COLUMN + " = ?";
 
     private final JdbcTemplate jdbcTemplate;
@@ -68,9 +82,13 @@ public class RegisteredClientAdminDao {
 
     /**
      * Deletes a registered client by its primary-key {@code id} (not its
-     * OAuth2 {@code client_id}). Returns the number of rows deleted (0 or 1).
+     * OAuth2 {@code client_id}), with its consents, its authorizations (so its
+     * tokens no longer work) and its ESPI application info, in one transaction.
+     * Returns the number of client rows deleted (0 or 1).
      */
+    @Transactional
     public int deleteById(String id) {
+        DELETE_DEPENDENTS_SQL.forEach(sql -> jdbcTemplate.update(sql, id));
         return jdbcTemplate.update(DELETE_BY_ID_SQL, id);
     }
 }

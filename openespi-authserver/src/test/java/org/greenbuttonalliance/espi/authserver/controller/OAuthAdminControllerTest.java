@@ -330,7 +330,8 @@ class OAuthAdminControllerTest {
             mockMvc.perform(delete("/admin/oauth2/clients/error-client"))
                     .andExpect(status().isInternalServerError())
                     .andExpect(jsonPath("$.status").value("error"))
-                    .andExpect(jsonPath("$.message").value(containsString("Failed to delete client")));
+                    // #344 review: the exception's text is not returned
+                    .andExpect(jsonPath("$.message").value("Failed to delete client"));
         }
     }
 

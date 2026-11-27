@@ -403,10 +403,56 @@ class OAuth2ClientManagementControllerTest {
 		when(clients.findByClientId("tp")).thenReturn(client());
 
 		assertThat(perform(put(CLIENTS + "/tp/status"), "{\"status\":\"suspended\"}")).returns(200, Result::status);
-		verify(jdbcTemplate).update(contains("UPDATE oauth2_registered_client"), eq("suspended"), isNull(), isNull(),
-				eq("tp"));
+		// #344 review: with no updated_by and no signed-in principal, updated_by is "system", never NULL
+		verify(jdbcTemplate).update(contains("UPDATE oauth2_registered_client"), eq("suspended"), eq("system"),
+				isNull(), eq("tp"));
 		verify(jdbcTemplate).update(contains("INSERT INTO oauth2_audit_log"), eq("client_status_update"), eq("tp"),
 				isNull(), eq(true), eq("{\"new_status\":\"suspended\"}"));
+	}
+
+	@Test
+	@DisplayName("#344 review: a status change is audited under the signed-in administrator; updated_by is kept as data")
+	void statusIsAuditedUnderTheSignedInAdministrator() throws Exception {
+		when(clients.findByClientId("tp")).thenReturn(client());
+
+		assertThat(perform(put(CLIENTS + "/tp/status").principal(() -> "admin-1"), """
+				{"status":"suspended","lock_duration_minutes":5,"updated_by":"claimed"}
+				""")).returns(200, Result::status);
+		// the lock time is a java.sql.Timestamp, which every JDBC driver binds
+		verify(jdbcTemplate).update(contains("UPDATE oauth2_registered_client"), eq("suspended"), eq("claimed"),
+				any(java.sql.Timestamp.class), eq("tp"));
+		verify(jdbcTemplate).update(contains("INSERT INTO oauth2_audit_log"), eq("client_status_update"), eq("tp"),
+				eq("admin-1"), eq(true), eq("{\"new_status\":\"suspended\",\"updated_by\":\"claimed\"}"));
+	}
+
+	@Test
+	@DisplayName("#344 review: without updated_by, the client records the signed-in administrator")
+	void statusWithoutUpdatedByRecordsTheAdministrator() throws Exception {
+		when(clients.findByClientId("tp")).thenReturn(client());
+
+		assertThat(perform(put(CLIENTS + "/tp/status").principal(() -> "admin-1"), "{\"status\":\"active\"}"))
+				.returns(200, Result::status);
+		verify(jdbcTemplate).update(contains("UPDATE oauth2_registered_client"), eq("active"), eq("admin-1"),
+				isNull(), eq("tp"));
+	}
+
+	@ParameterizedTest(name = "{0}")
+	@ValueSource(strings = {"[null]", "[\"\"]", "[\"javascript:alert(1)\"]", "[\"https://tp.example/out\",\"myapp://out\"]"})
+	@DisplayName("#344 review: create refuses a post-logout redirect URI it would refuse as a redirect URI")
+	void createRefusesAnInvalidPostLogoutRedirectUri(String uris) throws Exception {
+		assertThat(create("""
+				{"client_name":"TP","redirect_uris":["https://tp.example/cb"],"post_logout_redirect_uris":%s}
+				""".formatted(uris))).returns(400, Result::status)
+				.extracting(Result::body, STRING).contains("invalid_request").contains("post_logout_redirect_uri");
+		verify(clients, never()).save(any());
+	}
+
+	@Test
+	@DisplayName("#344 review: '%', '_' and '!' in the search match only themselves")
+	void searchMatchesWildcardsLiterally() throws Exception {
+		assertThat(perform(get(CLIENTS).param("search", "a_b%c!"), "")).returns(200, Result::status);
+		verify(jdbcTemplate).query(contains("c.client_name LIKE ? ESCAPE '!' OR c.client_id LIKE ? ESCAPE '!'"),
+				eq(new Object[] {"%a!_b!%c!!%", "%a!_b!%c!!%", 20, 0L}), any(RowMapper.class));
 	}
 
 	@ParameterizedTest(name = "{0}")
@@ -444,7 +490,7 @@ class OAuth2ClientManagementControllerTest {
 		verify(jdbcTemplate).queryForObject(countSql.capture(), eq(Long.class), eq("active"));
 		assertThat(countSql.getValue()).startsWith("SELECT COUNT(*) FROM oauth2_registered_client c")
 				.contains("WHERE 1=1 AND c.client_status = ?").doesNotContain("ORDER BY", "LIMIT");
-		verify(jdbcTemplate).query(contains("ORDER BY c.client_name DESC LIMIT ? OFFSET ?"),
+		verify(jdbcTemplate).query(contains("ORDER BY c.client_name DESC, c.client_id LIMIT ? OFFSET ?"),
 				eq(new Object[] {"active", 2, 2L}), any(RowMapper.class));
 	}
 
@@ -459,12 +505,15 @@ class OAuth2ClientManagementControllerTest {
 	}
 
 	@ParameterizedTest(name = "{0}")
-	@ValueSource(strings = {"client_id", "client_name", "client_id_issued_at", "last_used_at"})
-	@DisplayName("#344: each allowed sort column reaches the ORDER BY as its fixed column")
-	void listSortsByAnAllowedColumn(String sortBy) throws Exception {
+	@CsvSource(delimiter = '|', value = {
+			"client_id|ORDER BY c.client_id ASC LIMIT",
+			"client_name|ORDER BY c.client_name ASC, c.client_id LIMIT",
+			"client_id_issued_at|ORDER BY c.client_id_issued_at ASC, c.client_id LIMIT",
+			"last_used_at|ORDER BY c.last_used_at ASC, c.client_id LIMIT"})
+	@DisplayName("#344: each allowed sort column reaches the ORDER BY as its fixed column, then client_id (#344 review)")
+	void listSortsByAnAllowedColumn(String sortBy, String orderBy) throws Exception {
 		assertThat(perform(get(CLIENTS + "?sortBy=" + sortBy), "")).returns(200, Result::status);
-		verify(jdbcTemplate).query(contains("ORDER BY c." + sortBy + " ASC LIMIT ? OFFSET ?"), any(Object[].class),
-				any(RowMapper.class));
+		verify(jdbcTemplate).query(contains(orderBy + " ? OFFSET ?"), any(Object[].class), any(RowMapper.class));
 	}
 
 	@Test

@@ -30,7 +30,7 @@ Retrieve a paginated list of OAuth2 clients with filtering and sorting capabilit
 - `status` (optional): Filter by client status - active/suspended/revoked
 - `securityLevel` (optional): Filter by security level - standard/high/maximum
 - `espiVersion` (optional): Filter by ESPI version
-- `search` (optional): Search in client name and client ID
+- `search` (optional): Text the client name or client ID contains; `%` and `_` match only themselves
 
 **Example Request:**
 ```http
@@ -232,7 +232,9 @@ Update a client's status (activate, suspend, revoke).
 
 `reason`, `lock_duration_minutes` and `updated_by` are optional. The status is stored, but the token, authorization
 and introspection endpoints do not check it yet, so a suspended client still gets tokens (#345). An unknown client
-is 404 whatever the body holds; the body is checked after the client is found (#344).
+is 404 whatever the body holds, as long as it is JSON of the right shape; the body's values are checked after the
+client is found (#344). The audit record names the signed-in administrator; `updated_by`, when given, is stored on
+the client and kept in the audit record's data, and without it the client records the administrator.
 
 The earlier `POST /api/v1/oauth2/clients/bulk` was removed (#344): change clients one at a time.
 

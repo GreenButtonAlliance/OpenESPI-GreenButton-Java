@@ -57,6 +57,8 @@ import java.util.stream.Collectors;
 @PreAuthorize("hasRole('ADMIN') or hasRole('DC_ADMIN')")
 public class OAuthAdminController {
 
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(OAuthAdminController.class);
+
     private final OAuth2AuthorizationService authorizationService;
     private final RegisteredClientRepository registeredClientRepository;
     private final RegisteredClientAdminDao registeredClientAdminDao;
@@ -187,9 +189,11 @@ public class OAuthAdminController {
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
+            // #344 review: the exception's text (SQL, constraint and column names) stays in the log.
+            logger.error("Failed to delete client", e);
             Map<String, String> error = new HashMap<>();
             error.put("status", "error");
-            error.put("message", "Failed to delete client: " + e.getMessage());
+            error.put("message", "Failed to delete client");
             return ResponseEntity.internalServerError().body(error);
         }
     }

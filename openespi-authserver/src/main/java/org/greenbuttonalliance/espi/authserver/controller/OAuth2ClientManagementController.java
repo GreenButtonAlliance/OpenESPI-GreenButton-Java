@@ -48,7 +48,9 @@ import jakarta.validation.Validator;
 import jakarta.validation.constraints.NotBlank;
 import tools.jackson.databind.ObjectMapper;
 
+import java.security.Principal;
 import java.security.SecureRandom;
+import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -201,9 +203,11 @@ public class OAuth2ClientManagementController {
             }
 
             if (StringUtils.hasText(search)) {
-                from.append(" AND (c.client_name LIKE ? OR c.client_id LIKE ?)");
-                params.add("%" + search + "%");
-                params.add("%" + search + "%");
+                // #344 review: '%' and '_' in the search are matched as themselves ('_' is in every client_id)
+                from.append(" AND (c.client_name LIKE ? ESCAPE '!' OR c.client_id LIKE ? ESCAPE '!')");
+                String pattern = "%" + escapeLike(search) + "%";
+                params.add(pattern);
+                params.add(pattern);
             }
 
             String sql = """
@@ -212,7 +216,10 @@ public class OAuth2ClientManagementController {
                        c.espi_version, c.security_level, c.client_status, c.rate_limit_per_minute,
                        c.max_concurrent_sessions, c.created_by, c.last_used_at, c.failure_count,
                        e.business_category, e.certification_status, e.service_territory
-                """ + from + " ORDER BY " + sortColumn + " " + direction + " LIMIT ? OFFSET ?";
+                """ + from + " ORDER BY " + sortColumn + " " + direction
+                    // #344 review: client_id is unique, so equal sort values keep one order from page to page
+                    + ("c.client_id".equals(sortColumn) ? "" : ", c.client_id")
+                    + " LIMIT ? OFFSET ?";
             List<Object> pageParams = new ArrayList<>(params);
             pageParams.add(size);
             pageParams.add((long) page * size);
@@ -559,7 +566,8 @@ public class OAuth2ClientManagementController {
     @PutMapping("/{clientId}")
     public ResponseEntity<?> updateClient(
             @PathVariable @NotBlank String clientId,
-            @RequestBody UpdateClientRequest request) {
+            @RequestBody UpdateClientRequest request,
+            Principal principal) {
 
         logger.info("Updating client: {}", clientId);
 
@@ -613,7 +621,7 @@ public class OAuth2ClientManagementController {
             // the only one given). Not written otherwise: the H2 schema has none of these columns (#145).
             if (request.getSecurityLevel() != null || request.getRateLimitPerMinute() != null ||
                 request.getMaxConcurrentSessions() != null || request.getUpdatedBy() != null) {
-                updateEspi40ComplianceData(clientId, request);
+                updateEspi40ComplianceData(clientId, request, principal);
             }
 
             logger.info("Successfully updated client: {}", clientId);
@@ -638,7 +646,8 @@ public class OAuth2ClientManagementController {
     @PutMapping("/{clientId}/status")
     public ResponseEntity<?> updateClientStatus(
             @PathVariable @NotBlank String clientId,
-            @RequestBody UpdateClientStatusRequest request) {
+            @RequestBody UpdateClientStatusRequest request,
+            Principal principal) {
 
         logger.info("Updating client status: {} to {}", clientId, printable(request.getStatus()));
 
@@ -657,20 +666,27 @@ public class OAuth2ClientManagementController {
                 WHERE client_id = ?
                 """;
 
-            Instant lockUntil = null;
+            // #344 review: a java.sql.Timestamp, which every JDBC driver binds (PostgreSQL's may refuse an Instant)
+            Timestamp lockUntil = null;
             if ("suspended".equals(request.getStatus()) && request.getLockDurationMinutes() != null) {
-                lockUntil = Instant.now().plus(Duration.ofMinutes(request.getLockDurationMinutes()));
+                lockUntil = Timestamp.from(Instant.now().plus(Duration.ofMinutes(request.getLockDurationMinutes())));
             }
 
-            jdbcTemplate.update(sql, request.getStatus(), request.getUpdatedBy(), lockUntil, clientId);
+            jdbcTemplate.update(sql, request.getStatus(), updatedBy(request.getUpdatedBy(), principal), lockUntil,
+                    clientId);
 
-            // Log audit event (#344: reason is optional, and Map.of refuses a null value)
+            // Log audit event (#344: reason is optional, and Map.of refuses a null value). #344 review: the audit
+            // names the signed-in administrator; a body's updated_by is only a claim, so it is kept as data.
             Map<String, Object> auditData = new LinkedHashMap<>();
             auditData.put("new_status", request.getStatus());
             if (request.getReason() != null) {
                 auditData.put("reason", request.getReason());
             }
-            logAuditEvent("client_status_update", clientId, request.getUpdatedBy(), true, auditData);
+            if (request.getUpdatedBy() != null) {
+                auditData.put("updated_by", request.getUpdatedBy());
+            }
+            logAuditEvent("client_status_update", clientId, principal == null ? null : principal.getName(), true,
+                    auditData);
 
             return ResponseEntity.ok(new SuccessResponse("Client status updated successfully"));
 
@@ -745,6 +761,14 @@ public class OAuth2ClientManagementController {
                 }
             }
         }
+        // #344 review: the same check for the post-logout redirect URIs, which were saved unchecked
+        if (request.getPostLogoutRedirectUris() != null) {
+            for (String uri : request.getPostLogoutRedirectUris()) {
+                if (!isValidRedirectUri(uri)) {
+                    throw new IllegalArgumentException("Invalid post_logout_redirect_uri: " + printable(uri));
+                }
+            }
+        }
     }
 
     /**
@@ -759,6 +783,26 @@ public class OAuth2ClientManagementController {
                 .sorted()
                 .findFirst()
                 .orElse(ClientAuthenticationMethod.NONE.getValue());
+    }
+
+    /**
+     * #344 review: the {@code updated_by} column's value: the request's {@code updated_by} when given, otherwise
+     * the signed-in administrator, otherwise {@code "system"}. Never null, so a change always records someone.
+     */
+    static String updatedBy(String given, Principal principal) {
+        if (given != null) {
+            return given;
+        }
+        return principal != null && StringUtils.hasText(principal.getName()) ? principal.getName() : "system";
+    }
+
+    /**
+     * #344 review: escapes a LIKE pattern's wildcards ({@code %}, {@code _}) and the escape character {@code !}
+     * itself, for a {@code LIKE ? ESCAPE '!'}. {@code !} rather than a backslash, because MySQL reads a backslash
+     * in the {@code ESCAPE} literal as a string escape, so one clause could not be written for every database.
+     */
+    static String escapeLike(String value) {
+        return value.replace("!", "!!").replace("%", "!%").replace("_", "!_");
     }
 
     private boolean isValidRedirectUri(String uri) {
@@ -854,7 +898,7 @@ public class OAuth2ClientManagementController {
         );
     }
 
-    private void updateEspi40ComplianceData(String clientId, UpdateClientRequest request) {
+    private void updateEspi40ComplianceData(String clientId, UpdateClientRequest request, Principal principal) {
         List<String> setParts = new ArrayList<>();
         List<Object> params = new ArrayList<>();
 
@@ -873,9 +917,9 @@ public class OAuth2ClientManagementController {
             params.add(request.getMaxConcurrentSessions());
         }
 
-        // Records who made the change (updated_by, or "system"); called only when one of these fields is given
+        // Records who made the change (see updatedBy); called only when one of these fields is given
         setParts.add("updated_by = ?");
-        params.add(request.getUpdatedBy() != null ? request.getUpdatedBy() : "system");
+        params.add(updatedBy(request.getUpdatedBy(), principal));
         params.add(clientId);
 
         String sql = "UPDATE oauth2_registered_client SET " +
