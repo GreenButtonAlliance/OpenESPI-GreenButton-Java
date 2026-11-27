@@ -294,17 +294,26 @@ class MySqlTestcontainersIntegrationTest {
             AuthorizationPurgeFixtures.insertAuthorization(jdbcTemplate, false, "test-delete-authz", client.getId(),
                     "customer-344");
             AuthorizationPurgeFixtures.insertConsent(jdbcTemplate, client.getId(), "customer-344");
+            // #344 review (round 2): MySQL's daily_metrics_calculation event writes metrics rows; both tables have
+            // foreign keys to the client
+            jdbcTemplate.update("INSERT INTO oauth2_client_metrics (client_id, metric_date) VALUES (?, CURRENT_DATE)",
+                    client.getClientId());
+            jdbcTemplate.update("INSERT INTO oauth2_consent_details"
+                    + " (consent_id, registered_client_id, principal_name, scopes_consented) VALUES (?, ?, ?, ?)",
+                    "consent-" + client.getId(), client.getId(), "customer-344", AuthorizationPurgeFixtures.SCOPES);
 
             // When
-            int deleted = registeredClientAdminDao.deleteById(client.getId());
+            RegisteredClientAdminDao.Deleted deleted = registeredClientAdminDao.deleteById(client.getId());
 
             // Then
-            assertThat(List.of(deleted,
+            assertThat(List.of(deleted.clients(), deleted.authorizations(),
                     count("oauth2_registered_client", "id", client.getId()),
                     count("oauth2_authorization", "registered_client_id", client.getId()),
                     count("oauth2_authorization_consent", "registered_client_id", client.getId()),
-                    count("espi_application_info", "client_id", client.getClientId())))
-                    .containsExactly(1, 0, 0, 0, 0);
+                    count("espi_application_info", "client_id", client.getClientId()),
+                    count("oauth2_client_metrics", "client_id", client.getClientId()),
+                    count("oauth2_consent_details", "registered_client_id", client.getId())))
+                    .containsExactly(1, 1, 0, 0, 0, 0, 0, 0);
         }
 
         private int count(String table, String column, String value) {

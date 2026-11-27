@@ -20,11 +20,16 @@
 
 package org.greenbuttonalliance.espi.authserver.repository;
 
+import org.springframework.jdbc.core.ConnectionCallback;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.ResultSet;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 /**
  * Admin-only operations on the {@code oauth2_registered_client} table that are
@@ -47,23 +52,44 @@ public class RegisteredClientAdminDao {
     private static final String FIND_ALL_CLIENT_IDS_SQL =
             "SELECT " + CLIENT_ID_COLUMN + " FROM oauth2_registered_client ORDER BY " + CLIENT_ID_COLUMN;
 
+    private static final String AUTHORIZATION_TABLE = "oauth2_authorization";
+
+    private static final String BY_CLIENT_ID =
+            " WHERE client_id = (SELECT c.client_id FROM oauth2_registered_client c WHERE c.id = ?)";
+
+    /** A table whose rows refer to a client, and the DELETE of one client's rows (one {@code ?}, its id). */
+    record Dependent(String table, String deleteSql) {
+    }
+
     /**
-     * #344 review: the rows that refer to a client, deleted before it in this order. On PostgreSQL the
-     * consents and authorizations, and on MySQL and PostgreSQL the ESPI application info, have a foreign key
-     * to the client with no cascade, so the client's own row cannot go first. Deleting the authorizations
-     * also revokes every token issued to the client. The AS writes nothing to {@code oauth2_consent_details}
-     * or {@code oauth2_client_metrics}, and the certificate tables cascade.
+     * #344 review: the tables whose rows refer to a client, deleted before it in this order. Each has a foreign
+     * key to the client with no cascade in at least one vendor schema, so the client's own row cannot go first:
+     * the consents and authorizations on PostgreSQL; the ESPI application info, consent details and metrics on
+     * MySQL and PostgreSQL. MySQL's {@code daily_metrics_calculation} event writes {@code oauth2_client_metrics}
+     * every day. Deleting the authorizations also revokes every token issued to the client. A table the
+     * database does not have (H2 has neither consent details nor metrics) is skipped. The certificate tables
+     * cascade.
      */
-    static final List<String> DELETE_DEPENDENTS_SQL = List.of(
-            "DELETE FROM oauth2_authorization_consent WHERE registered_client_id = ?",
-            "DELETE FROM oauth2_authorization WHERE registered_client_id = ?",
-            "DELETE FROM espi_application_info WHERE client_id ="
-                    + " (SELECT c.client_id FROM oauth2_registered_client c WHERE c.id = ?)");
+    static final List<Dependent> DEPENDENTS = List.of(
+            new Dependent("oauth2_client_metrics", "DELETE FROM oauth2_client_metrics" + BY_CLIENT_ID),
+            new Dependent("oauth2_consent_details",
+                    "DELETE FROM oauth2_consent_details WHERE registered_client_id = ?"),
+            new Dependent("oauth2_authorization_consent",
+                    "DELETE FROM oauth2_authorization_consent WHERE registered_client_id = ?"),
+            new Dependent(AUTHORIZATION_TABLE, "DELETE FROM oauth2_authorization WHERE registered_client_id = ?"),
+            new Dependent("espi_application_info", "DELETE FROM espi_application_info" + BY_CLIENT_ID));
 
     static final String DELETE_BY_ID_SQL =
             "DELETE FROM oauth2_registered_client WHERE " + ID_COLUMN + " = ?";
 
+    /** What {@link #deleteById} removed: the client rows (0 or 1) and the authorizations (its grants). */
+    public record Deleted(int clients, int authorizations) {
+    }
+
     private final JdbcTemplate jdbcTemplate;
+
+    /** The database's table names, lower case; read on first delete. */
+    private volatile Set<String> tables;
 
     public RegisteredClientAdminDao(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
@@ -82,13 +108,39 @@ public class RegisteredClientAdminDao {
 
     /**
      * Deletes a registered client by its primary-key {@code id} (not its
-     * OAuth2 {@code client_id}), with its consents, its authorizations (so its
-     * tokens no longer work) and its ESPI application info, in one transaction.
-     * Returns the number of client rows deleted (0 or 1).
+     * OAuth2 {@code client_id}), with the rows of {@link #DEPENDENTS} that refer
+     * to it (so its tokens no longer work), in one transaction.
      */
     @Transactional
-    public int deleteById(String id) {
-        DELETE_DEPENDENTS_SQL.forEach(sql -> jdbcTemplate.update(sql, id));
-        return jdbcTemplate.update(DELETE_BY_ID_SQL, id);
+    public Deleted deleteById(String id) {
+        Set<String> existing = tables();
+        int authorizations = 0;
+        for (Dependent dependent : DEPENDENTS) {
+            if (existing.contains(dependent.table())) {
+                int deleted = jdbcTemplate.update(dependent.deleteSql(), id);
+                if (AUTHORIZATION_TABLE.equals(dependent.table())) {
+                    authorizations = deleted;
+                }
+            }
+        }
+        return new Deleted(jdbcTemplate.update(DELETE_BY_ID_SQL, id), authorizations);
+    }
+
+    private Set<String> tables() {
+        Set<String> names = tables;
+        if (names == null) {
+            names = jdbcTemplate.execute((ConnectionCallback<Set<String>>) connection -> {
+                Set<String> found = new HashSet<>();
+                try (ResultSet rs = connection.getMetaData().getTables(connection.getCatalog(),
+                        connection.getSchema(), "%", new String[] {"TABLE"})) {
+                    while (rs.next()) {
+                        found.add(rs.getString("TABLE_NAME").toLowerCase(Locale.ROOT));
+                    }
+                }
+                return Set.copyOf(found);
+            });
+            tables = names;
+        }
+        return names;
     }
 }

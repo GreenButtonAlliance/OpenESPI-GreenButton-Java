@@ -41,6 +41,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.greenbuttonalliance.espi.authserver.dto.ClientManagementDTOs.*;
+import org.greenbuttonalliance.espi.authserver.repository.AuditLogDao;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Valid;
@@ -132,17 +133,20 @@ public class OAuth2ClientManagementController {
     static final int MAX_PAGE_SIZE = 100;
 
     private final Validator validator;
+    private final AuditLogDao auditLog;
 
     @Autowired
     public OAuth2ClientManagementController(
             RegisteredClientRepository registeredClientRepository,
             JdbcTemplate jdbcTemplate,
             PasswordEncoder passwordEncoder,
-            Validator validator) {
+            Validator validator,
+            AuditLogDao auditLog) {
         this.registeredClientRepository = registeredClientRepository;
         this.jdbcTemplate = jdbcTemplate;
         this.passwordEncoder = passwordEncoder;
         this.validator = validator;
+        this.auditLog = auditLog;
     }
 
     /**
@@ -682,10 +686,10 @@ public class OAuth2ClientManagementController {
             if (request.getReason() != null) {
                 auditData.put("reason", request.getReason());
             }
-            if (request.getUpdatedBy() != null) {
+            if (StringUtils.hasText(request.getUpdatedBy())) {
                 auditData.put("updated_by", request.getUpdatedBy());
             }
-            logAuditEvent("client_status_update", clientId, principal == null ? null : principal.getName(), true,
+            auditLog.record("client_status_update", clientId, principal == null ? null : principal.getName(), true,
                     auditData);
 
             return ResponseEntity.ok(new SuccessResponse("Client status updated successfully"));
@@ -786,11 +790,12 @@ public class OAuth2ClientManagementController {
     }
 
     /**
-     * #344 review: the {@code updated_by} column's value: the request's {@code updated_by} when given, otherwise
-     * the signed-in administrator, otherwise {@code "system"}. Never null, so a change always records someone.
+     * #344 review: the {@code updated_by} column's value: the request's {@code updated_by} when it has text,
+     * otherwise the signed-in administrator, otherwise {@code "system"}. Never null or blank, so a change always
+     * records someone.
      */
     static String updatedBy(String given, Principal principal) {
-        if (given != null) {
+        if (StringUtils.hasText(given)) {
             return given;
         }
         return principal != null && StringUtils.hasText(principal.getName()) ? principal.getName() : "system";
@@ -958,24 +963,6 @@ public class OAuth2ClientManagementController {
         }
 
         return details;
-    }
-
-    private void logAuditEvent(String eventType, String clientId, String principalName, 
-                              boolean success, Map<String, Object> additionalData) {
-        try {
-            String sql = """
-                INSERT INTO oauth2_audit_log 
-                (event_type, client_id, principal_name, success, additional_data)
-                VALUES (?, ?, ?, ?, ?)
-                """;
-            
-            String additionalDataJson = new ObjectMapper()
-                .writeValueAsString(additionalData);
-            
-            jdbcTemplate.update(sql, eventType, clientId, principalName, success, additionalDataJson);
-        } catch (Exception e) {
-            logger.error("Failed to log audit event", e);
-        }
     }
 
     // DTO Classes follow in the next message due to length limits

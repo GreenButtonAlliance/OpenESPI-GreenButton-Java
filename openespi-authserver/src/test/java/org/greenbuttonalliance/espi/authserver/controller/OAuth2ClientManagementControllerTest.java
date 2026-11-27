@@ -15,6 +15,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
+import org.greenbuttonalliance.espi.authserver.repository.AuditLogDao;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -89,7 +90,8 @@ class OAuth2ClientManagementControllerTest {
 	void setUp() {
 		when(passwordEncoder.encode(anyString())).thenAnswer(call -> "{encoded}" + call.getArgument(0));
 		mockMvc = MockMvcBuilders.standaloneSetup(
-				new OAuth2ClientManagementController(clients, jdbcTemplate, passwordEncoder, VALIDATOR)).build();
+				new OAuth2ClientManagementController(clients, jdbcTemplate, passwordEncoder, VALIDATOR,
+						new AuditLogDao(jdbcTemplate))).build();
 		log.start();
 		controllerLogger.addAppender(log);
 	}
@@ -434,6 +436,27 @@ class OAuth2ClientManagementControllerTest {
 				.returns(200, Result::status);
 		verify(jdbcTemplate).update(contains("UPDATE oauth2_registered_client"), eq("active"), eq("admin-1"),
 				isNull(), eq("tp"));
+	}
+
+	@ParameterizedTest(name = "''{0}''")
+	@ValueSource(strings = {"", "  "})
+	@DisplayName("#344 review: a blank updated_by is not stored; the client records the signed-in administrator")
+	void blankUpdatedByRecordsTheAdministrator(String updatedBy) throws Exception {
+		when(clients.findByClientId("tp")).thenReturn(client());
+
+		assertThat(List.of(
+				perform(put(CLIENTS + "/tp/status").principal(() -> "admin-1"),
+						"{\"status\":\"active\",\"updated_by\":\"%s\"}".formatted(updatedBy)),
+				perform(put(CLIENTS + "/tp").principal(() -> "admin-1"),
+						"{\"rate_limit_per_minute\":5,\"updated_by\":\"%s\"}".formatted(updatedBy))))
+				.extracting(Result::status).containsExactly(200, 200);
+		verify(jdbcTemplate).update(contains("UPDATE oauth2_registered_client"), eq("active"), eq("admin-1"),
+				isNull(), eq("tp"));
+		verify(jdbcTemplate).update(contains("INSERT INTO oauth2_audit_log"), eq("client_status_update"), eq("tp"),
+				eq("admin-1"), eq(true), eq("{\"new_status\":\"active\"}"));
+		verify(jdbcTemplate).update(
+				eq("UPDATE oauth2_registered_client SET rate_limit_per_minute = ?, updated_by = ? WHERE client_id = ?"),
+				eq(5), eq("admin-1"), eq("tp"));
 	}
 
 	@ParameterizedTest(name = "{0}")

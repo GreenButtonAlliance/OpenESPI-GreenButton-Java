@@ -239,7 +239,8 @@ public class AuthorizationPurgeService {
 		return sql;
 	}
 
-	static String jsonParameterFor(String databaseProductName) {
+	/** The {@code additional_data} parameter for the database (also used by {@code AuditLogDao}, #344 review). */
+	public static String jsonParameterFor(String databaseProductName) {
 		String product = databaseProductName == null ? "" : databaseProductName.toLowerCase(Locale.ROOT);
 		if (product.contains("postgres")) {
 			return "CAST(? AS JSONB)";

@@ -211,31 +211,8 @@ paths:
           $ref: '#/components/responses/NotFound'
         '422':
           $ref: '#/components/responses/ValidationError'
-    delete:
-      tags:
-        - OAuth2 Client Management
-      summary: Delete client
-      description: Remove an OAuth2 client (soft delete)
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: clientId
-          in: path
-          required: true
-          description: Client identifier
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Client deleted successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DeleteResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+    # No DELETE here (#344 review): a client is deleted with DELETE /admin/oauth2/clients/{clientId}
+    # (OAuthAdminController), permanently, revoking every token issued to it.
 
   # DataCustodian Integration API
   /api/v1/datacustodian/verify-user:
@@ -1228,17 +1205,6 @@ components:
           type: integer
         pageSize:
           type: integer
-
-    DeleteResponse:
-      type: object
-      properties:
-        message:
-          type: string
-        clientId:
-          type: string
-        deletedAt:
-          type: string
-          format: date-time
 
     ErrorResponse:
       type: object
