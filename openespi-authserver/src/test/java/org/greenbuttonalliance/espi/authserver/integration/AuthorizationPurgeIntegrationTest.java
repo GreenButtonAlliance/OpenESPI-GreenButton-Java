@@ -30,6 +30,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -281,7 +282,9 @@ class AuthorizationPurgeIntegrationTest extends AbstractAuthserverIntegrationTes
 
 		private final ApplicationContextRunner jobRunner = new ApplicationContextRunner()
 				.withUserConfiguration(AuthorizationPurgeConfig.class)
-				.withBean(JdbcTemplate.class, () -> mock(JdbcTemplate.class))
+				// #344 review: the service reads the database product when it is created, so it needs a real one
+				.withBean(JdbcTemplate.class, () -> new JdbcTemplate(
+						new DriverManagerDataSource("jdbc:h2:mem:purge-job;DB_CLOSE_DELAY=-1", "sa", "")))
 				.withBean(PlatformTransactionManager.class, () -> mock(PlatformTransactionManager.class));
 
 		@Test

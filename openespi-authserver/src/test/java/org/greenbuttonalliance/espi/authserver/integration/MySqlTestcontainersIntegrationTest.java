@@ -106,8 +106,8 @@ class MySqlTestcontainersIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        // Clean up any existing test data
-        jdbcTemplate.execute("DELETE FROM oauth2_authorization WHERE registered_client_id LIKE 'test-%'");
+        // Clean up any existing test data: since V11 (#344 review) the database deletes every row that
+        // refers to a client with it, so a failed run leaves nothing behind that blocks the next
         jdbcTemplate.execute("DELETE FROM oauth2_registered_client WHERE id LIKE 'test-%'");
     }
 
@@ -280,6 +280,45 @@ class MySqlTestcontainersIntegrationTest {
 
             // Then
             assertThat(retrieved).isNull();
+        }
+
+        @Test
+        @DisplayName("#344 review: a client with an authorization, a consent and ESPI info is deleted with all of them")
+        void deleteRemovesTheClientsDependentRows() {
+            // Given - rows in every table with a foreign key to the client, which cascade since V11
+            RegisteredClient client = createEspiTestClient("test-delete-dependents", "Delete Dependents Client");
+            clientRepository.save(client);
+            // MySQL's espi_application_info has no uuid column (#145)
+            jdbcTemplate.update("INSERT INTO espi_application_info (client_id, client_name) VALUES (?, ?)",
+                    client.getClientId(), client.getClientName());
+            AuthorizationPurgeFixtures.insertAuthorization(jdbcTemplate, false, "test-delete-authz", client.getId(),
+                    "customer-344");
+            AuthorizationPurgeFixtures.insertConsent(jdbcTemplate, client.getId(), "customer-344");
+            // #344 review (round 2): MySQL's daily_metrics_calculation event writes metrics rows; both tables have
+            // foreign keys to the client
+            jdbcTemplate.update("INSERT INTO oauth2_client_metrics (client_id, metric_date) VALUES (?, CURRENT_DATE)",
+                    client.getClientId());
+            jdbcTemplate.update("INSERT INTO oauth2_consent_details"
+                    + " (consent_id, registered_client_id, principal_name, scopes_consented) VALUES (?, ?, ?, ?)",
+                    "consent-" + client.getId(), client.getId(), "customer-344", AuthorizationPurgeFixtures.SCOPES);
+
+            // When
+            RegisteredClientAdminDao.Deleted deleted = registeredClientAdminDao.deleteById(client.getId());
+
+            // Then
+            assertThat(List.of(deleted.clients(), deleted.authorizations(),
+                    count("oauth2_registered_client", "id", client.getId()),
+                    count("oauth2_authorization", "registered_client_id", client.getId()),
+                    count("oauth2_authorization_consent", "registered_client_id", client.getId()),
+                    count("espi_application_info", "client_id", client.getClientId()),
+                    count("oauth2_client_metrics", "client_id", client.getClientId()),
+                    count("oauth2_consent_details", "registered_client_id", client.getId())))
+                    .containsExactly(1, 1, 0, 0, 0, 0, 0, 0);
+        }
+
+        private int count(String table, String column, String value) {
+            return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM " + table + " WHERE " + column + " = ?",
+                    Integer.class, value);
         }
 
         @Test

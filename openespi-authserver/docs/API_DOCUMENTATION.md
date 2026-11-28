@@ -226,9 +226,12 @@ methods and grant types cannot be changed here: a request naming them, or any ot
 
 #### 5. Delete Client
 
-**Endpoint**: `DELETE /api/v1/oauth2/clients/{clientId}`
+**Endpoint**: `DELETE /admin/oauth2/clients/{clientId}` (the client management API has no delete of its own)
 
-**Description**: Remove an OAuth2 client (soft delete)
+**Description**: Permanently deletes an OAuth2 client, with its consents, its authorizations (so every token
+issued to it stops working at once), its ESPI application information, consent details and metrics. It cannot be
+undone. The deletion is audited (`client_deleted`) with the signed-in administrator and the number of
+authorizations deleted. A client that does not exist, or was deleted meanwhile, is 404.
 
 **Path Parameters**:
 - `clientId`: The client identifier
@@ -236,57 +239,13 @@ methods and grant types cannot be changed here: a request naming them, or any ot
 **Response**:
 ```json
 {
-  "message": "Client successfully deleted",
+  "status": "deleted",
   "clientId": "espi-energy-app-002",
-  "deletedAt": "2024-01-16T16:00:00Z"
+  "message": "Client successfully deleted"
 }
 ```
 
-#### 6. Bulk Operations
-
-**Endpoint**: `POST /api/v1/oauth2/clients/bulk`
-
-**Description**: Perform bulk operations on multiple clients
-
-**Request Body**:
-```json
-{
-  "operation": "UPDATE_SETTINGS",
-  "clientIds": [
-    "client-001",
-    "client-002",
-    "client-003"
-  ],
-  "settings": {
-    "requireAuthorizationConsent": true,
-    "accessTokenTimeToLive": "PT2H"
-  }
-}
-```
-
-**Response Example**:
-```json
-{
-  "operation": "UPDATE_SETTINGS",
-  "totalRequested": 3,
-  "successCount": 3,
-  "failureCount": 0,
-  "results": [
-    {
-      "clientId": "client-001",
-      "status": "SUCCESS"
-    },
-    {
-      "clientId": "client-002",
-      "status": "SUCCESS"
-    },
-    {
-      "clientId": "client-003",
-      "status": "SUCCESS"
-    }
-  ]
-}
-```
+The earlier `POST /api/v1/oauth2/clients/bulk` was removed (#344).
 
 ## DataCustodian Integration API
 

@@ -41,15 +41,16 @@ import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.greenbuttonalliance.espi.authserver.dto.ClientManagementDTOs.*;
+import org.greenbuttonalliance.espi.authserver.repository.AuditLogDao;
 
+import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Valid;
+import jakarta.validation.Validator;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
-import tools.jackson.databind.ObjectMapper;
 
+import java.security.Principal;
 import java.security.SecureRandom;
+import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -59,22 +60,22 @@ import java.util.stream.Collectors;
 /**
  * OAuth2 Client Management Controller for ESPI 4.0
  * 
- * Provides comprehensive CRUD operations for OAuth2 client management with ESPI 4.0 compliance:
- * - RESTful client management (GET, POST, PUT, DELETE)
- * - Bulk operations for enterprise deployments
- * - NAESB ESPI 4.0 specific features
- * - Security level management and certificate handling
- * - Rate limiting and session management
- * 
+ * The administrators' API for creating, reading, updating and changing the status of registered clients, with the
+ * ESPI data the AS keeps about them ({@code espi_application_info} and the compliance columns). Kept and trimmed
+ * down by owner decision (#344): {@code OAuthAdminController} lists, reads and deletes clients, and Third Parties
+ * register themselves through RFC 7591 {@code /oauth2/register}.
+ *
  * Endpoints:
  * - GET /api/v1/oauth2/clients: List clients with pagination and filtering
  * - POST /api/v1/oauth2/clients: Create new client
  * - GET /api/v1/oauth2/clients/{clientId}: Get client details
  * - PUT /api/v1/oauth2/clients/{clientId}: Update client
- * - DELETE /api/v1/oauth2/clients/{clientId}: Delete client
- * - PUT /api/v1/oauth2/clients/{clientId}/status: Update client status
- * - POST /api/v1/oauth2/clients/bulk: Bulk operations
- * 
+ * - PUT /api/v1/oauth2/clients/{clientId}/status: Update client status. The status is stored but not yet
+ *   enforced at the token, authorization or introspection endpoints (#345).
+ *
+ * The update and status requests are validated after the client is found, so an unknown client is 404 whatever
+ * the body holds, as long as it is JSON of the right shape (#344).
+ *
  * @author Green Button Alliance
  * @version 1.0.0
  * @since Spring Boot 3.5
@@ -117,14 +118,34 @@ public class OAuth2ClientManagementController {
         ClientAuthenticationMethod.CLIENT_SECRET_POST.getValue(),
         ClientAuthenticationMethod.NONE.getValue());
 
+    /**
+     * The columns the client list may be sorted by (#344), by the name a request gives. The ORDER BY is built only
+     * from these values, never from request text.
+     */
+    static final Map<String, String> SORT_COLUMNS = Map.of(
+        "client_id", "c.client_id",
+        "client_name", "c.client_name",
+        "client_id_issued_at", "c.client_id_issued_at",
+        "last_used_at", "c.last_used_at");
+
+    /** The largest page of the client list. */
+    static final int MAX_PAGE_SIZE = 100;
+
+    private final Validator validator;
+    private final AuditLogDao auditLog;
+
     @Autowired
     public OAuth2ClientManagementController(
             RegisteredClientRepository registeredClientRepository,
             JdbcTemplate jdbcTemplate,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            Validator validator,
+            AuditLogDao auditLog) {
         this.registeredClientRepository = registeredClientRepository;
         this.jdbcTemplate = jdbcTemplate;
         this.passwordEncoder = passwordEncoder;
+        this.validator = validator;
+        this.auditLog = auditLog;
     }
 
     /**
@@ -133,7 +154,7 @@ public class OAuth2ClientManagementController {
      * GET /api/v1/oauth2/clients
      */
     @GetMapping
-    public ResponseEntity<PagedClientResponse> listClients(
+    public ResponseEntity<?> listClients(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "client_id") String sortBy,
@@ -142,59 +163,73 @@ public class OAuth2ClientManagementController {
             @RequestParam(required = false) String securityLevel,
             @RequestParam(required = false) String espiVersion,
             @RequestParam(required = false) String search) {
-        
-        logger.debug("Listing clients - page: {}, size: {}, status: {}, search: {}", 
-                    page, size, status, search);
+
+        logger.debug("Listing clients - page: {}, size: {}, status: {}, search: {}",
+                    page, size, printable(status), printable(search));
+
+        // #344: the sort column and direction come only from fixed values; the page is bounded
+        String sortColumn = SORT_COLUMNS.get(sortBy);
+        if (sortColumn == null) {
+            return badRequest("sortBy must be one of: " + String.join(", ", new TreeSet<>(SORT_COLUMNS.keySet())));
+        }
+        if (!"asc".equalsIgnoreCase(sortDirection) && !"desc".equalsIgnoreCase(sortDirection)) {
+            return badRequest("sortDirection must be asc or desc");
+        }
+        if (page < 0 || size < 1 || size > MAX_PAGE_SIZE) {
+            return badRequest("page must be at least 0 and size between 1 and " + MAX_PAGE_SIZE);
+        }
+        String direction = "desc".equalsIgnoreCase(sortDirection) ? "DESC" : "ASC";
 
         try {
-            // Build SQL query with filters
-            StringBuilder sql = new StringBuilder("""
+            // #344: one FROM ... WHERE for the page and its count, so the count no longer depends on a regex
+            StringBuilder from = new StringBuilder("""
+                 FROM oauth2_registered_client c
+                LEFT JOIN espi_application_info e ON c.client_id = e.client_id
+                WHERE 1=1""");
+
+            List<Object> params = new ArrayList<>();
+
+            // Add filters
+            if (StringUtils.hasText(status)) {
+                from.append(" AND c.client_status = ?");
+                params.add(status);
+            }
+
+            if (StringUtils.hasText(securityLevel)) {
+                from.append(" AND c.security_level = ?");
+                params.add(securityLevel);
+            }
+
+            if (StringUtils.hasText(espiVersion)) {
+                from.append(" AND c.espi_version = ?");
+                params.add(espiVersion);
+            }
+
+            if (StringUtils.hasText(search)) {
+                // #344 review: '%' and '_' in the search are matched as themselves ('_' is in every client_id)
+                from.append(" AND (c.client_name LIKE ? ESCAPE '!' OR c.client_id LIKE ? ESCAPE '!')");
+                String pattern = "%" + escapeLike(search) + "%";
+                params.add(pattern);
+                params.add(pattern);
+            }
+
+            String sql = """
                 SELECT c.id, c.client_id, c.client_name, c.client_authentication_methods,
                        c.authorization_grant_types, c.redirect_uris, c.scopes,
                        c.espi_version, c.security_level, c.client_status, c.rate_limit_per_minute,
                        c.max_concurrent_sessions, c.created_by, c.last_used_at, c.failure_count,
                        e.business_category, e.certification_status, e.service_territory
-                FROM oauth2_registered_client c
-                LEFT JOIN espi_application_info e ON c.client_id = e.client_id
-                WHERE 1=1
-                """);
-
-            List<Object> params = new ArrayList<>();
-            
-            // Add filters
-            if (StringUtils.hasText(status)) {
-                sql.append(" AND c.client_status = ?");
-                params.add(status);
-            }
-            
-            if (StringUtils.hasText(securityLevel)) {
-                sql.append(" AND c.security_level = ?");
-                params.add(securityLevel);
-            }
-            
-            if (StringUtils.hasText(espiVersion)) {
-                sql.append(" AND c.espi_version = ?");
-                params.add(espiVersion);
-            }
-            
-            if (StringUtils.hasText(search)) {
-                sql.append(" AND (c.client_name LIKE ? OR c.client_id LIKE ?)");
-                params.add("%" + search + "%");
-                params.add("%" + search + "%");
-            }
-
-            // Add sorting
-            String direction = "desc".equalsIgnoreCase(sortDirection) ? "DESC" : "ASC";
-            sql.append(" ORDER BY c.").append(sortBy).append(" ").append(direction);
-
-            // Add pagination
-            sql.append(" LIMIT ? OFFSET ?");
-            params.add(size);
-            params.add(page * size);
+                """ + from + " ORDER BY " + sortColumn + " " + direction
+                    // #344 review: client_id is unique, so equal sort values keep one order from page to page
+                    + ("c.client_id".equals(sortColumn) ? "" : ", c.client_id")
+                    + " LIMIT ? OFFSET ?";
+            List<Object> pageParams = new ArrayList<>(params);
+            pageParams.add(size);
+            pageParams.add((long) page * size);
 
             // Execute query
-            List<ClientDetails> clients = jdbcTemplate.query(sql.toString(),
-                params.toArray(),
+            List<ClientDetails> clients = jdbcTemplate.query(sql,
+                pageParams.toArray(),
                 (rs, rowNum) -> {
                     ClientDetails client = new ClientDetails();
                     client.setId(rs.getString("id"));
@@ -223,11 +258,7 @@ public class OAuth2ClientManagementController {
                 });
 
             // Get total count for pagination
-            String countSql = sql.toString()
-                .replaceFirst("SELECT.*FROM", "SELECT COUNT(*) FROM")
-                .replaceFirst("ORDER BY.*", "");
-            Long totalCount = jdbcTemplate.queryForObject(countSql, 
-                params.subList(0, params.size() - 2).toArray(), Long.class);
+            Long totalCount = jdbcTemplate.queryForObject("SELECT COUNT(*)" + from, Long.class, params.toArray());
 
             PagedClientResponse response = new PagedClientResponse();
             response.setClients(clients);
@@ -266,6 +297,35 @@ public class OAuth2ClientManagementController {
         List<String> methods = request.getAuthenticationMethods();
         return methods != null && !methods.isEmpty()
                 && methods.stream().allMatch(ClientAuthenticationMethod.NONE.getValue()::equals);
+    }
+
+    /** A 400 {@code invalid_request} with a message that quotes no request value. */
+    private static ResponseEntity<ErrorResponse> badRequest(String message) {
+        return ResponseEntity.badRequest().body(new ErrorResponse("invalid_request", message));
+    }
+
+    /**
+     * Apply the request's bean validation (#344): called after the client is found, so an unknown client is 404
+     * rather than 400. The messages are the constraints' own, sorted, and quote no request value.
+     */
+    private <T> void validate(T request) {
+        Set<ConstraintViolation<T>> violations = validator.validate(request);
+        if (!violations.isEmpty()) {
+            throw new IllegalArgumentException(violations.stream()
+                    .map(ConstraintViolation::getMessage)
+                    .sorted()
+                    .collect(Collectors.joining("; ")));
+        }
+    }
+
+    /**
+     * Refuse a null or blank scope (#344): Spring's {@code RegisteredClient.Builder} accepts null, and the
+     * repository would save it as the literal scope "null".
+     */
+    private static void refuseBlankScopes(List<String> scopes) {
+        if (scopes != null && scopes.stream().anyMatch(scope -> !StringUtils.hasText(scope))) {
+            throw new IllegalArgumentException("scopes must not contain a null or blank value");
+        }
     }
 
     /** Refuse a request naming fields it does not have (#332), rather than silently dropping them. */
@@ -509,8 +569,9 @@ public class OAuth2ClientManagementController {
     @PutMapping("/{clientId}")
     public ResponseEntity<?> updateClient(
             @PathVariable @NotBlank String clientId,
-            @Valid @RequestBody UpdateClientRequest request) {
-        
+            @RequestBody UpdateClientRequest request,
+            Principal principal) {
+
         logger.info("Updating client: {}", clientId);
 
         try {
@@ -521,6 +582,8 @@ public class OAuth2ClientManagementController {
 
             // #332: refuse what this update would not apply, rather than answering 200 for it
             refuseUnknownFields(request);
+            validate(request);
+            refuseBlankScopes(request.getScopes());
             if (request.getClientName() != null && !StringUtils.hasText(request.getClientName())) {
                 throw new IllegalArgumentException("client_name must not be blank");
             }
@@ -561,7 +624,7 @@ public class OAuth2ClientManagementController {
             // the only one given). Not written otherwise: the H2 schema has none of these columns (#145).
             if (request.getSecurityLevel() != null || request.getRateLimitPerMinute() != null ||
                 request.getMaxConcurrentSessions() != null || request.getUpdatedBy() != null) {
-                updateEspi40ComplianceData(clientId, request);
+                updateEspi40ComplianceData(clientId, request, principal);
             }
 
             logger.info("Successfully updated client: {}", clientId);
@@ -586,15 +649,18 @@ public class OAuth2ClientManagementController {
     @PutMapping("/{clientId}/status")
     public ResponseEntity<?> updateClientStatus(
             @PathVariable @NotBlank String clientId,
-            @Valid @RequestBody UpdateClientStatusRequest request) {
-        
-        logger.info("Updating client status: {} to {}", clientId, request.getStatus());
+            @RequestBody UpdateClientStatusRequest request,
+            Principal principal) {
+
+        logger.info("Updating client status: {} to {}", clientId, printable(request.getStatus()));
 
         try {
             RegisteredClient client = registeredClientRepository.findByClientId(clientId);
             if (client == null) {
                 return ResponseEntity.notFound().build();
             }
+            refuseUnknownFields(request);
+            validate(request);
 
             // Update status in database
             String sql = """
@@ -603,76 +669,41 @@ public class OAuth2ClientManagementController {
                 WHERE client_id = ?
                 """;
 
-            Instant lockUntil = null;
+            // #344 review: a java.sql.Timestamp, which every JDBC driver binds (PostgreSQL's may refuse an Instant)
+            Timestamp lockUntil = null;
             if ("suspended".equals(request.getStatus()) && request.getLockDurationMinutes() != null) {
-                lockUntil = Instant.now().plus(Duration.ofMinutes(request.getLockDurationMinutes()));
+                lockUntil = Timestamp.from(Instant.now().plus(Duration.ofMinutes(request.getLockDurationMinutes())));
             }
 
-            jdbcTemplate.update(sql, request.getStatus(), request.getUpdatedBy(), lockUntil, clientId);
+            // #344 review: a client deleted since the lookup is not found, and nothing is audited
+            if (jdbcTemplate.update(sql, request.getStatus(), updatedBy(request.getUpdatedBy(), principal),
+                    lockUntil, clientId) == 0) {
+                return ResponseEntity.notFound().build();
+            }
 
-            // Log audit event
-            logAuditEvent("client_status_update", clientId, request.getUpdatedBy(), true,
-                         Map.of("new_status", request.getStatus(), "reason", request.getReason()));
+            // Log audit event (#344: reason is optional, and Map.of refuses a null value). #344 review: the audit
+            // names the signed-in administrator; a body's updated_by is only a claim, so it is kept as data.
+            Map<String, Object> auditData = new LinkedHashMap<>();
+            auditData.put("new_status", request.getStatus());
+            if (request.getReason() != null) {
+                auditData.put("reason", request.getReason());
+            }
+            if (StringUtils.hasText(request.getUpdatedBy())) {
+                auditData.put("updated_by", request.getUpdatedBy());
+            }
+            auditLog.record("client_status_update", clientId, principal == null ? null : principal.getName(), true,
+                    auditData);
 
             return ResponseEntity.ok(new SuccessResponse("Client status updated successfully"));
 
+        } catch (IllegalArgumentException e) {
+            String message = safeMessage(e);
+            logger.warn("Client status validation failed: {}", message);
+            return badRequest(message);
         } catch (Exception e) {
             logger.error("Error updating client status", e);
             return ResponseEntity.internalServerError()
                     .body(new ErrorResponse("server_error", "Failed to update client status"));
-        }
-    }
-
-    /**
-     * Bulk operations for enterprise client management
-     * 
-     * POST /api/v1/oauth2/clients/bulk
-     */
-    @PostMapping("/bulk")
-    public ResponseEntity<?> bulkOperations(@Valid @RequestBody BulkOperationRequest request) {
-        logger.info("Performing bulk operation: {} on {} clients", 
-                   request.getOperation(), request.getClientIds().size());
-
-        try {
-            List<BulkOperationResult> results = new ArrayList<>();
-
-            for (String clientId : request.getClientIds()) {
-                try {
-                    switch (request.getOperation()) {
-                        case "suspend":
-                            suspendClient(clientId, request.getReason());
-                            results.add(new BulkOperationResult(clientId, true, "Client suspended"));
-                            break;
-                        case "activate":
-                            activateClient(clientId, request.getReason());
-                            results.add(new BulkOperationResult(clientId, true, "Client activated"));
-                            break;
-                        case "delete":
-                            deleteClient(clientId);
-                            results.add(new BulkOperationResult(clientId, true, "Client deleted"));
-                            break;
-                        default:
-                            results.add(new BulkOperationResult(clientId, false, "Unknown operation"));
-                    }
-                } catch (Exception e) {
-                    logger.error("Bulk operation failed for client: {}", clientId, e);
-                    results.add(new BulkOperationResult(clientId, false, e.getMessage()));
-                }
-            }
-
-            BulkOperationResponse response = new BulkOperationResponse();
-            response.setOperation(request.getOperation());
-            response.setTotalClients(request.getClientIds().size());
-            response.setSuccessCount((int) results.stream().filter(BulkOperationResult::isSuccess).count());
-            response.setFailureCount((int) results.stream().filter(r -> !r.isSuccess()).count());
-            response.setResults(results);
-
-            return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
-            logger.error("Bulk operation failed", e);
-            return ResponseEntity.internalServerError()
-                    .body(new ErrorResponse("server_error", "Bulk operation failed"));
         }
     }
 
@@ -707,10 +738,11 @@ public class OAuth2ClientManagementController {
                     "A public client (authentication method none only) cannot use the client_credentials grant");
         }
 
-        // Validate scopes are ESPI-compliant
+        // Validate scopes are ESPI-compliant: a null or blank one is refused (#344), any other non-ESPI one logged
+        refuseBlankScopes(request.getScopes());
         if (request.getScopes() != null) {
             for (String scope : request.getScopes()) {
-                if (scope == null || !ESPI_SCOPES.contains(scope)) {
+                if (!ESPI_SCOPES.contains(scope)) {
                     logger.warn("Non-ESPI scope requested: {}", printable(scope));
                 }
             }
@@ -735,6 +767,14 @@ public class OAuth2ClientManagementController {
                 }
             }
         }
+        // #344 review: the same check for the post-logout redirect URIs, which were saved unchecked
+        if (request.getPostLogoutRedirectUris() != null) {
+            for (String uri : request.getPostLogoutRedirectUris()) {
+                if (!isValidRedirectUri(uri)) {
+                    throw new IllegalArgumentException("Invalid post_logout_redirect_uri: " + printable(uri));
+                }
+            }
+        }
     }
 
     /**
@@ -749,6 +789,27 @@ public class OAuth2ClientManagementController {
                 .sorted()
                 .findFirst()
                 .orElse(ClientAuthenticationMethod.NONE.getValue());
+    }
+
+    /**
+     * #344 review: the {@code updated_by} column's value: the request's {@code updated_by} when it has text,
+     * otherwise the signed-in administrator, otherwise {@code "system"}. Never null or blank, so a change always
+     * records someone.
+     */
+    static String updatedBy(String given, Principal principal) {
+        if (StringUtils.hasText(given)) {
+            return given;
+        }
+        return principal != null && StringUtils.hasText(principal.getName()) ? principal.getName() : "system";
+    }
+
+    /**
+     * #344 review: escapes a LIKE pattern's wildcards ({@code %}, {@code _}) and the escape character {@code !}
+     * itself, for a {@code LIKE ? ESCAPE '!'}. {@code !} rather than a backslash, because MySQL reads a backslash
+     * in the {@code ESCAPE} literal as a string escape, so one clause could not be written for every database.
+     */
+    static String escapeLike(String value) {
+        return value.replace("!", "!!").replace("%", "!%").replace("_", "!_");
     }
 
     private boolean isValidRedirectUri(String uri) {
@@ -844,7 +905,7 @@ public class OAuth2ClientManagementController {
         );
     }
 
-    private void updateEspi40ComplianceData(String clientId, UpdateClientRequest request) {
+    private void updateEspi40ComplianceData(String clientId, UpdateClientRequest request, Principal principal) {
         List<String> setParts = new ArrayList<>();
         List<Object> params = new ArrayList<>();
 
@@ -863,9 +924,9 @@ public class OAuth2ClientManagementController {
             params.add(request.getMaxConcurrentSessions());
         }
 
-        // Records who made the change (updated_by, or "system"); called only when one of these fields is given
+        // Records who made the change (see updatedBy); called only when one of these fields is given
         setParts.add("updated_by = ?");
-        params.add(request.getUpdatedBy() != null ? request.getUpdatedBy() : "system");
+        params.add(updatedBy(request.getUpdatedBy(), principal));
         params.add(clientId);
 
         String sql = "UPDATE oauth2_registered_client SET " +
@@ -904,60 +965,6 @@ public class OAuth2ClientManagementController {
         }
 
         return details;
-    }
-
-    private void suspendClient(String clientId, String reason) {
-        String sql = """
-            UPDATE oauth2_registered_client 
-            SET client_status = 'suspended', updated_by = 'bulk_operation'
-            WHERE client_id = ?
-            """;
-        jdbcTemplate.update(sql, clientId);
-        logAuditEvent("client_suspended", clientId, "bulk_operation", true, Map.of("reason", reason));
-    }
-
-    private void activateClient(String clientId, String reason) {
-        String sql = """
-            UPDATE oauth2_registered_client 
-            SET client_status = 'active', locked_until = NULL, updated_by = 'bulk_operation'
-            WHERE client_id = ?
-            """;
-        jdbcTemplate.update(sql, clientId);
-        logAuditEvent("client_activated", clientId, "bulk_operation", true, Map.of("reason", reason));
-    }
-
-    private void deleteClient(String clientId) {
-        // First check if client exists
-        RegisteredClient client = registeredClientRepository.findByClientId(clientId);
-        if (client == null) {
-            throw new IllegalArgumentException("Client not found: " + clientId);
-        }
-
-        // Delete from ESPI application info first (foreign key constraint)
-        jdbcTemplate.update("DELETE FROM espi_application_info WHERE client_id = ?", clientId);
-        
-        // Delete the main client record
-        jdbcTemplate.update("DELETE FROM oauth2_registered_client WHERE client_id = ?", clientId);
-        
-        logAuditEvent("client_deleted", clientId, "bulk_operation", true, Map.of());
-    }
-
-    private void logAuditEvent(String eventType, String clientId, String principalName, 
-                              boolean success, Map<String, Object> additionalData) {
-        try {
-            String sql = """
-                INSERT INTO oauth2_audit_log 
-                (event_type, client_id, principal_name, success, additional_data)
-                VALUES (?, ?, ?, ?, ?)
-                """;
-            
-            String additionalDataJson = new ObjectMapper()
-                .writeValueAsString(additionalData);
-            
-            jdbcTemplate.update(sql, eventType, clientId, principalName, success, additionalDataJson);
-        } catch (Exception e) {
-            logger.error("Failed to log audit event", e);
-        }
     }
 
     // DTO Classes follow in the next message due to length limits

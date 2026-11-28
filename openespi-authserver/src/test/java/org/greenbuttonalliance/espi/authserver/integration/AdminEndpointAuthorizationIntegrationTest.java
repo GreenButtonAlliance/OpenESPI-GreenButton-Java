@@ -332,12 +332,26 @@ class AdminEndpointAuthorizationIntegrationTest extends AbstractAuthserverIntegr
 	@Test
 	@DisplayName("ADMIN delete actually removes the client (the rule gates a real effect)")
 	void adminDeleteRemovesClient() throws Exception {
+		String victimId = registeredClientRepository.findByClientId(victimClientId).getId();
+		AuthorizationPurgeFixtures.insertAuthorization(jdbcTemplate, false, "ghsa-authz-" + victimId, victimId,
+				"customer-344");
+
 		mockMvc.perform(delete("/admin/oauth2/clients/" + victimClientId).with(csrf())
 						.with(adminWithBothFactors("ghsa-admin", "ROLE_ADMIN")))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.status").value("deleted"));
 
 		assertThat(registeredClientRepository.findByClientId(victimClientId)).isNull();
+		// #344 review: the authorization went with the client (V11), and the delete is audited on MySQL
+		assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM oauth2_authorization WHERE registered_client_id = ?",
+				Integer.class, victimId)).isZero();
+		assertThat(jdbcTemplate.queryForList("SELECT principal_name, success,"
+						+ " JSON_UNQUOTE(JSON_EXTRACT(additional_data, '$.authorizations_deleted')) AS authorizations"
+						+ " FROM oauth2_audit_log WHERE event_type = 'client_deleted' AND client_id = ?", victimClientId))
+				.singleElement()
+				.satisfies(row -> assertThat(row).containsEntry("principal_name", "ghsa-admin")
+						.containsEntry("authorizations", "1")
+						.hasEntrySatisfying("success", success -> assertThat(success).isIn(true, 1)));
 	}
 
 	@Test

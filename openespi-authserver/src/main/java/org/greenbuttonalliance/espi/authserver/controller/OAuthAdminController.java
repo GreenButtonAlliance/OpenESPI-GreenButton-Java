@@ -27,9 +27,11 @@ import org.springframework.security.oauth2.server.authorization.OAuth2Authorizat
 import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
+import org.greenbuttonalliance.espi.authserver.repository.AuditLogDao;
 import org.greenbuttonalliance.espi.authserver.repository.RegisteredClientAdminDao;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -57,17 +59,22 @@ import java.util.stream.Collectors;
 @PreAuthorize("hasRole('ADMIN') or hasRole('DC_ADMIN')")
 public class OAuthAdminController {
 
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(OAuthAdminController.class);
+
     private final OAuth2AuthorizationService authorizationService;
     private final RegisteredClientRepository registeredClientRepository;
     private final RegisteredClientAdminDao registeredClientAdminDao;
+    private final AuditLogDao auditLog;
 
     public OAuthAdminController(
             OAuth2AuthorizationService authorizationService,
             RegisteredClientRepository registeredClientRepository,
-            RegisteredClientAdminDao registeredClientAdminDao) {
+            RegisteredClientAdminDao registeredClientAdminDao,
+            AuditLogDao auditLog) {
         this.authorizationService = authorizationService;
         this.registeredClientRepository = registeredClientRepository;
         this.registeredClientAdminDao = registeredClientAdminDao;
+        this.auditLog = auditLog;
     }
 
     /**
@@ -125,9 +132,11 @@ public class OAuthAdminController {
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
+            // #344 review: the exception's text (SQL, constraint names, internal ids) stays in the log
+            logger.error("Failed to revoke token", e);
             Map<String, String> error = new HashMap<>();
             error.put("status", "error");
-            error.put("message", "Failed to revoke token: " + e.getMessage());
+            error.put("message", "Failed to revoke token");
             return ResponseEntity.internalServerError().body(error);
         }
     }
@@ -170,14 +179,21 @@ public class OAuthAdminController {
      * Delete a registered client
      */
     @DeleteMapping("/clients/{clientId}")
-    public ResponseEntity<Map<String, String>> deleteClient(@PathVariable String clientId) {
+    public ResponseEntity<Map<String, String>> deleteClient(@PathVariable String clientId, Principal principal) {
         try {
             RegisteredClient client = registeredClientRepository.findByClientId(clientId);
             if (client == null) {
                 return ResponseEntity.notFound().build();
             }
 
-            registeredClientAdminDao.deleteById(client.getId());
+            RegisteredClientAdminDao.Deleted deleted = registeredClientAdminDao.deleteById(client.getId());
+            // #344 review: deleted meanwhile (by another administrator) is not a success of this request
+            if (deleted.clients() == 0) {
+                return ResponseEntity.notFound().build();
+            }
+            // #344 review: a delete revokes every grant the client holds, so it is audited with who did it
+            auditLog.record("client_deleted", clientId, principal == null ? null : principal.getName(), true,
+                    Map.of("authorizations_deleted", deleted.authorizations()));
 
             Map<String, String> response = new HashMap<>();
             response.put("status", "deleted");
@@ -187,9 +203,11 @@ public class OAuthAdminController {
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
+            // #344 review: the exception's text (SQL, constraint and column names) stays in the log.
+            logger.error("Failed to delete client", e);
             Map<String, String> error = new HashMap<>();
             error.put("status", "error");
-            error.put("message", "Failed to delete client: " + e.getMessage());
+            error.put("message", "Failed to delete client");
             return ResponseEntity.internalServerError().body(error);
         }
     }

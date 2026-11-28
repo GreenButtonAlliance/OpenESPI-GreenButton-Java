@@ -20,6 +20,7 @@
 
 package org.greenbuttonalliance.espi.authserver.controller;
 
+import org.greenbuttonalliance.espi.authserver.repository.AuditLogDao;
 import org.greenbuttonalliance.espi.authserver.repository.RegisteredClientAdminDao;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -79,6 +80,9 @@ class OAuthAdminControllerTest {
     @Mock
     private RegisteredClientAdminDao registeredClientAdminDao;
 
+    @Mock
+    private AuditLogDao auditLog;
+
     private OAuthAdminController controller;
     private MockMvc mockMvc;
     private ObjectMapper objectMapper;
@@ -86,7 +90,7 @@ class OAuthAdminControllerTest {
     @BeforeEach
     void setUp() {
         controller = new OAuthAdminController(
-                authorizationService, registeredClientRepository, registeredClientAdminDao);
+                authorizationService, registeredClientRepository, registeredClientAdminDao, auditLog);
         mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
         objectMapper = new ObjectMapper();
     }
@@ -190,7 +194,8 @@ class OAuthAdminControllerTest {
             mockMvc.perform(delete("/admin/oauth2/tokens/error-token"))
                     .andExpect(status().isInternalServerError())
                     .andExpect(jsonPath("$.status").value("error"))
-                    .andExpect(jsonPath("$.message").value(containsString("Failed to revoke token")));
+                    // #344 review: the exception's text is not returned
+                    .andExpect(jsonPath("$.message").value("Failed to revoke token"));
         }
 
         @Test
@@ -289,9 +294,11 @@ class OAuthAdminControllerTest {
             // Given
             RegisteredClient client = createTestRegisteredClient("test-client", "Test Client");
             when(registeredClientRepository.findByClientId("test-client")).thenReturn(client);
+            when(registeredClientAdminDao.deleteById(client.getId()))
+                    .thenReturn(new RegisteredClientAdminDao.Deleted(1, 3));
 
             // When & Then
-            mockMvc.perform(delete("/admin/oauth2/clients/test-client"))
+            mockMvc.perform(delete("/admin/oauth2/clients/test-client").principal(() -> "admin-1"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.status").value("deleted"))
                     .andExpect(jsonPath("$.clientId").value("test-client"))
@@ -299,6 +306,23 @@ class OAuthAdminControllerTest {
 
             verify(registeredClientRepository).findByClientId("test-client");
             verify(registeredClientAdminDao).deleteById(client.getId());
+            // #344 review: audited with the administrator and the number of grants revoked
+            verify(auditLog).record("client_deleted", "test-client", "admin-1", true,
+                    java.util.Map.of("authorizations_deleted", 3));
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        @DisplayName("#344 review: a client deleted meanwhile by another request is 404, and not audited")
+        void clientDeletedMeanwhileIsNotFound() throws Exception {
+            RegisteredClient client = createTestRegisteredClient("gone-client", "Gone Client");
+            when(registeredClientRepository.findByClientId("gone-client")).thenReturn(client);
+            when(registeredClientAdminDao.deleteById(client.getId()))
+                    .thenReturn(new RegisteredClientAdminDao.Deleted(0, 0));
+
+            mockMvc.perform(delete("/admin/oauth2/clients/gone-client"))
+                    .andExpect(status().isNotFound());
+            verifyNoInteractions(auditLog);
         }
 
         @Test
@@ -330,7 +354,8 @@ class OAuthAdminControllerTest {
             mockMvc.perform(delete("/admin/oauth2/clients/error-client"))
                     .andExpect(status().isInternalServerError())
                     .andExpect(jsonPath("$.status").value("error"))
-                    .andExpect(jsonPath("$.message").value(containsString("Failed to delete client")));
+                    // #344 review: the exception's text is not returned
+                    .andExpect(jsonPath("$.message").value("Failed to delete client"));
         }
     }
 

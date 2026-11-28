@@ -87,6 +87,23 @@ class ClientManagementOpenApiTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
+	@DisplayName("#344: the list's sortBy enum is exactly the server's sort columns, and its size maximum the server's")
+	void listParametersMatchTheServer() throws Exception {
+		List<Map<String, Object>> parameters = (List<Map<String, Object>>)
+				child(spec(), "paths", "/api/v1/oauth2/clients", "get").get("parameters");
+		Map<String, Map<String, Object>> schemas = new java.util.HashMap<>();
+		parameters.forEach(parameter -> schemas.put((String) parameter.get("name"),
+				(Map<String, Object>) parameter.get("schema")));
+
+		assertThat(schemas).hasEntrySatisfying("sortBy", schema -> assertThat(schema.get("enum"))
+						.asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.list(String.class))
+						.containsExactlyInAnyOrderElementsOf(OAuth2ClientManagementController.SORT_COLUMNS.keySet()))
+				.hasEntrySatisfying("size", schema -> assertThat(schema.get("maximum"))
+						.isEqualTo(OAuth2ClientManagementController.MAX_PAGE_SIZE));
+	}
+
+	@Test
 	@DisplayName("POST answers 201 with CreateClientResponse and PUT 200 with SuccessResponse, as the server does")
 	void responsesMatchTheServer() throws Exception {
 		Map<String, Object> paths = child(spec(), "paths");

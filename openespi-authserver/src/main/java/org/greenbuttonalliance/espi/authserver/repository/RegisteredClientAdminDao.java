@@ -22,6 +22,7 @@ package org.greenbuttonalliance.espi.authserver.repository;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -46,8 +47,19 @@ public class RegisteredClientAdminDao {
     private static final String FIND_ALL_CLIENT_IDS_SQL =
             "SELECT " + CLIENT_ID_COLUMN + " FROM oauth2_registered_client ORDER BY " + CLIENT_ID_COLUMN;
 
-    private static final String DELETE_BY_ID_SQL =
+    static final String LOCK_BY_ID_SQL =
+            "SELECT " + ID_COLUMN + " FROM oauth2_registered_client WHERE " + ID_COLUMN + " = ? FOR UPDATE";
+
+    /** Locks the client's authorizations; PostgreSQL refuses FOR UPDATE with COUNT(*), so the ids are counted. */
+    static final String LOCK_AUTHORIZATIONS_SQL =
+            "SELECT id FROM oauth2_authorization WHERE registered_client_id = ? FOR UPDATE";
+
+    static final String DELETE_BY_ID_SQL =
             "DELETE FROM oauth2_registered_client WHERE " + ID_COLUMN + " = ?";
+
+    /** What {@link #deleteById} removed: the client rows (0 or 1) and the authorizations (its grants). */
+    public record Deleted(int clients, int authorizations) {
+    }
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -67,10 +79,18 @@ public class RegisteredClientAdminDao {
     }
 
     /**
-     * Deletes a registered client by its primary-key {@code id} (not its
-     * OAuth2 {@code client_id}). Returns the number of rows deleted (0 or 1).
+     * Deletes a registered client by its primary-key {@code id} (not its OAuth2 {@code client_id}). The
+     * database deletes every row that refers to it (V11 {@code cascade_client_deletes}, #344 review): its
+     * authorizations, so its tokens no longer work, its consents and ESPI application info, and on MySQL and
+     * PostgreSQL its consent details and metrics. The authorizations are counted first, in the same
+     * transaction, for the audit record. The client row is locked first, so a new authorization's
+     * foreign-key check waits for this delete, and then its authorizations, so the purge cannot delete one
+     * in between: the count is what the cascade removes (#344 review).
      */
-    public int deleteById(String id) {
-        return jdbcTemplate.update(DELETE_BY_ID_SQL, id);
+    @Transactional
+    public Deleted deleteById(String id) {
+        jdbcTemplate.queryForList(LOCK_BY_ID_SQL, String.class, id);
+        int authorizations = jdbcTemplate.queryForList(LOCK_AUTHORIZATIONS_SQL, String.class, id).size();
+        return new Deleted(jdbcTemplate.update(DELETE_BY_ID_SQL, id), authorizations);
     }
 }

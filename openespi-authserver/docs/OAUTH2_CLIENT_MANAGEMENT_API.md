@@ -25,12 +25,12 @@ Retrieve a paginated list of OAuth2 clients with filtering and sorting capabilit
 **Parameters:**
 - `page` (optional): Page number (default: 0)
 - `size` (optional): Page size (default: 20, max: 100)
-- `sortBy` (optional): Sort field (default: client_id)
-- `sortDirection` (optional): Sort direction - asc/desc (default: asc)
+- `sortBy` (optional): Sort field - client_id, client_name, client_id_issued_at or last_used_at (default: client_id); any other value is 400
+- `sortDirection` (optional): Sort direction - asc/desc (default: asc); any other value is 400
 - `status` (optional): Filter by client status - active/suspended/revoked
 - `securityLevel` (optional): Filter by security level - standard/high/maximum
 - `espiVersion` (optional): Filter by ESPI version
-- `search` (optional): Search in client name and client ID
+- `search` (optional): Text the client name or client ID contains; `%` and `_` match only themselves
 
 **Example Request:**
 ```http
@@ -230,56 +230,13 @@ Update a client's status (activate, suspend, revoke).
 }
 ```
 
-### 6. Bulk Operations
+`reason`, `lock_duration_minutes` and `updated_by` are optional. The status is stored, but the token, authorization
+and introspection endpoints do not check it yet, so a suspended client still gets tokens (#345). An unknown client
+is 404 whatever the body holds, as long as it is JSON of the right shape; the body's values are checked after the
+client is found (#344). The audit record names the signed-in administrator; `updated_by`, when given, is stored on
+the client and kept in the audit record's data, and without it the client records the administrator.
 
-Perform operations on multiple clients simultaneously.
-
-**Endpoint:** `POST /api/v1/oauth2/clients/bulk`
-
-**Request Body:**
-```json
-{
-  "client_ids": [
-    "client_1",
-    "client_2",
-    "client_3"
-  ],
-  "operation": "suspend",
-  "reason": "Maintenance window"
-}
-```
-
-**Supported Operations:**
-- `suspend`: Suspend clients
-- `activate`: Activate clients
-- `delete`: Delete clients (use with caution)
-
-**Response:**
-```json
-{
-  "operation": "suspend",
-  "total_clients": 3,
-  "success_count": 3,
-  "failure_count": 0,
-  "results": [
-    {
-      "client_id": "client_1",
-      "success": true,
-      "message": "Client suspended"
-    },
-    {
-      "client_id": "client_2",
-      "success": true,
-      "message": "Client suspended"
-    },
-    {
-      "client_id": "client_3",
-      "success": true,
-      "message": "Client suspended"
-    }
-  ]
-}
-```
+The earlier `POST /api/v1/oauth2/clients/bulk` was removed (#344): change clients one at a time.
 
 ## ESPI 4.0 Compliance Features
 
@@ -361,12 +318,7 @@ Concurrent session limits:
 - Per-client metrics, such as success rates and response times, are planned with Micrometer and the audit log (#322); the earlier metrics endpoint was removed in #234
 - Set up alerts for security violations
 
-### 4. Bulk Operations
-- Use bulk operations for efficiency
-- Test operations on a small subset first
-- Monitor results carefully
-
-### 5. ESPI Compliance
+### 4. ESPI Compliance
 - Use ESPI-compliant scopes
 - Set appropriate security levels
 - Maintain proper certification status

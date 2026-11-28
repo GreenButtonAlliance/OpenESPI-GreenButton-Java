@@ -20,6 +20,7 @@
 
 package org.greenbuttonalliance.espi.authserver.integration;
 
+import org.greenbuttonalliance.espi.authserver.repository.AuditLogDao;
 import org.greenbuttonalliance.espi.authserver.repository.RegisteredClientAdminDao;
 import org.springframework.security.oauth2.server.authorization.client.JdbcRegisteredClientRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -109,15 +110,17 @@ class PostgreSqlTestcontainersIntegrationTest {
     @Autowired
     private RegisteredClientAdminDao registeredClientAdminDao;
 
+    @Autowired
+    private AuditLogDao auditLogDao;
+
     @BeforeEach
     void setUp() {
         // Clean up the clients these tests create (ids "test-..."). The V3 seed client
         // test-development-client shares the prefix and has metrics and consent rows, so it is kept (#152).
         String createdByTests = "SELECT id FROM oauth2_registered_client"
                 + " WHERE id LIKE 'test-%' AND id <> 'test-development-client'";
-        jdbcTemplate.execute("DELETE FROM oauth2_authorization WHERE registered_client_id IN (" + createdByTests + ")");
-        jdbcTemplate.execute("DELETE FROM espi_application_info WHERE client_id IN"
-                + " (SELECT client_id FROM oauth2_registered_client WHERE id IN (" + createdByTests + "))");
+        // Since V11 (#344 review) the database deletes every row that refers to a client with it, so a
+        // failed run leaves nothing behind that blocks the next.
         jdbcTemplate.execute("DELETE FROM oauth2_registered_client WHERE id IN (" + createdByTests + ")");
     }
 
@@ -211,6 +214,60 @@ class PostgreSqlTestcontainersIntegrationTest {
     @DisplayName("Client Repository Integration Tests")
     @Transactional
     class ClientRepositoryIntegrationTests {
+
+        @Test
+        @DisplayName("#344 review: a client with consents, authorizations and ESPI info is deleted with all of them")
+        void deleteRemovesTheClientsDependentRows() {
+            // Given - rows in every table with a foreign key to the client, which cascade since V11
+            RegisteredClient client = createEspiTestClient("test-delete-dependents", "Delete Dependents Client");
+            clientRepository.save(client);
+            jdbcTemplate.update("INSERT INTO espi_application_info (uuid, client_id, client_name) VALUES (?, ?, ?)",
+                    UUID.randomUUID().toString(), client.getClientId(), client.getClientName());
+            AuthorizationPurgeFixtures.insertAuthorization(jdbcTemplate, true, "test-delete-authz", client.getId(),
+                    "customer-344");
+            AuthorizationPurgeFixtures.insertConsent(jdbcTemplate, client.getId(), "customer-344");
+            insertMetricsAndConsentDetails(client);
+
+            // When
+            RegisteredClientAdminDao.Deleted deleted = registeredClientAdminDao.deleteById(client.getId());
+
+            // Then
+            assertThat(List.of(deleted.clients(), deleted.authorizations(),
+                    count("oauth2_registered_client", "id", client.getId()),
+                    count("oauth2_authorization", "registered_client_id", client.getId()),
+                    count("oauth2_authorization_consent", "registered_client_id", client.getId()),
+                    count("espi_application_info", "client_id", client.getClientId()),
+                    count("oauth2_client_metrics", "client_id", client.getClientId()),
+                    count("oauth2_consent_details", "registered_client_id", client.getId())))
+                    .containsExactly(1, 1, 0, 0, 0, 0, 0, 0);
+        }
+
+        /** #344 review (round 2): metrics and consent details also have foreign keys to the client. */
+        private void insertMetricsAndConsentDetails(RegisteredClient client) {
+            jdbcTemplate.update("INSERT INTO oauth2_client_metrics (client_id, metric_date) VALUES (?, CURRENT_DATE)",
+                    client.getClientId());
+            jdbcTemplate.update("INSERT INTO oauth2_consent_details"
+                    + " (consent_id, registered_client_id, principal_name, scopes_consented) VALUES (?, ?, ?, ?)",
+                    "consent-" + client.getId(), client.getId(), "customer-344", AuthorizationPurgeFixtures.SCOPES);
+        }
+
+        @Test
+        @DisplayName("#344 review (round 2): an administrator's audit event is written to the JSONB column")
+        void auditEventIsWrittenOnPostgreSql() {
+            String clientId = "test-audit-" + UUID.randomUUID();
+
+            auditLogDao.record("client_status_update", clientId, "admin-1", true, java.util.Map.of("new_status",
+                    "suspended"));
+
+            assertThat(jdbcTemplate.queryForObject("SELECT additional_data ->> 'new_status' FROM oauth2_audit_log"
+                    + " WHERE client_id = ? AND principal_name = 'admin-1'", String.class, clientId))
+                    .isEqualTo("suspended");
+        }
+
+        private int count(String table, String column, String value) {
+            return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM " + table + " WHERE " + column + " = ?",
+                    Integer.class, value);
+        }
 
         @Test
         @DisplayName("Should save and retrieve ESPI client successfully")
