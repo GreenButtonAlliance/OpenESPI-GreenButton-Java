@@ -106,8 +106,8 @@ class MySqlTestcontainersIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        // Clean up any existing test data
-        jdbcTemplate.execute("DELETE FROM oauth2_authorization WHERE registered_client_id LIKE 'test-%'");
+        // Clean up any existing test data: since V11 (#344 review) the database deletes every row that
+        // refers to a client with it, so a failed run leaves nothing behind that blocks the next
         jdbcTemplate.execute("DELETE FROM oauth2_registered_client WHERE id LIKE 'test-%'");
     }
 
@@ -285,7 +285,7 @@ class MySqlTestcontainersIntegrationTest {
         @Test
         @DisplayName("#344 review: a client with an authorization, a consent and ESPI info is deleted with all of them")
         void deleteRemovesTheClientsDependentRows() {
-            // Given - espi_application_info has a foreign key to the client with no cascade on MySQL
+            // Given - rows in every table with a foreign key to the client, which cascade since V11
             RegisteredClient client = createEspiTestClient("test-delete-dependents", "Delete Dependents Client");
             clientRepository.save(client);
             // MySQL's espi_application_info has no uuid column (#145)

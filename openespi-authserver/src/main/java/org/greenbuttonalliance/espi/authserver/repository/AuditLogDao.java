@@ -13,12 +13,11 @@ package org.greenbuttonalliance.espi.authserver.repository;
 import org.greenbuttonalliance.espi.authserver.service.AuthorizationPurgeService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.support.JdbcUtils;
 import org.springframework.stereotype.Repository;
 import tools.jackson.databind.ObjectMapper;
 
-import java.sql.DatabaseMetaData;
 import java.util.Map;
 import java.util.Objects;
 
@@ -38,11 +37,25 @@ public class AuditLogDao {
 
     private final JdbcTemplate jdbcTemplate;
 
-    /** Resolved from the database product name on first use. */
-    private volatile String insertSql;
+    private final String insertSql;
 
+    /**
+     * Reads the database product once, here, so the AS does not start if it cannot: a lookup that failed later
+     * and fell back to a plain parameter would make PostgreSQL refuse every audit row until restart.
+     *
+     * @throws IllegalStateException if the database product cannot be read
+     */
+    @Autowired
     public AuditLogDao(JdbcTemplate jdbcTemplate) {
+        this(jdbcTemplate, AuthorizationPurgeService.jsonParameterFor(jdbcTemplate));
+    }
+
+    /** For a known {@code additional_data} parameter, as {@link AuthorizationPurgeService#jsonParameterFor} gives. */
+    public AuditLogDao(JdbcTemplate jdbcTemplate, String jsonParameter) {
         this.jdbcTemplate = Objects.requireNonNull(jdbcTemplate, "jdbcTemplate");
+        this.insertSql = "INSERT INTO oauth2_audit_log (event_type, client_id, principal_name, success,"
+                + " additional_data) VALUES (?, ?, ?, ?, " + Objects.requireNonNull(jsonParameter, "jsonParameter")
+                + ")";
     }
 
     /**
@@ -53,33 +66,10 @@ public class AuditLogDao {
     public void record(String eventType, String clientId, String principalName, boolean success,
             Map<String, ?> additionalData) {
         try {
-            jdbcTemplate.update(insertSql(), eventType, clientId, principalName, success,
+            jdbcTemplate.update(insertSql, eventType, clientId, principalName, success,
                     JSON.writeValueAsString(additionalData));
         } catch (Exception e) {
             logger.error("Failed to log audit event {}", eventType, e);
-        }
-    }
-
-    private String insertSql() {
-        String sql = insertSql;
-        if (sql == null) {
-            sql = "INSERT INTO oauth2_audit_log (event_type, client_id, principal_name, success, additional_data)"
-                    + " VALUES (?, ?, ?, ?, " + AuthorizationPurgeService.jsonParameterFor(databaseProductName())
-                    + ")";
-            insertSql = sql;
-        }
-        return sql;
-    }
-
-    private String databaseProductName() {
-        try {
-            return JdbcUtils.extractDatabaseMetaData(
-                    Objects.requireNonNull(jdbcTemplate.getDataSource(), "dataSource"),
-                    DatabaseMetaData::getDatabaseProductName);
-        } catch (Exception e) {
-            logger.warn("Could not determine the database product for the audit insert; "
-                    + "binding additional_data as a plain parameter", e);
-            return "";
         }
     }
 }

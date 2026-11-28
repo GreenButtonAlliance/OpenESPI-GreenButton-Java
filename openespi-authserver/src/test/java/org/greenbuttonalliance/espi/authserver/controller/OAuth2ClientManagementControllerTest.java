@@ -89,9 +89,11 @@ class OAuth2ClientManagementControllerTest {
 	@BeforeEach
 	void setUp() {
 		when(passwordEncoder.encode(anyString())).thenAnswer(call -> "{encoded}" + call.getArgument(0));
+		// a client found by the lookup is still there when it is updated, unless a test says otherwise
+		when(jdbcTemplate.update(contains("UPDATE oauth2_registered_client"), any(Object[].class))).thenReturn(1);
 		mockMvc = MockMvcBuilders.standaloneSetup(
 				new OAuth2ClientManagementController(clients, jdbcTemplate, passwordEncoder, VALIDATOR,
-						new AuditLogDao(jdbcTemplate))).build();
+						new AuditLogDao(jdbcTemplate, "?"))).build();
 		log.start();
 		controllerLogger.addAppender(log);
 	}
@@ -436,6 +438,16 @@ class OAuth2ClientManagementControllerTest {
 				.returns(200, Result::status);
 		verify(jdbcTemplate).update(contains("UPDATE oauth2_registered_client"), eq("active"), eq("admin-1"),
 				isNull(), eq("tp"));
+	}
+
+	@Test
+	@DisplayName("#344 review: a status change of a client deleted since the lookup is 404 and not audited")
+	void statusOfAClientDeletedMeanwhileIsNotFound() throws Exception {
+		when(clients.findByClientId("tp")).thenReturn(client());
+		when(jdbcTemplate.update(contains("UPDATE oauth2_registered_client"), any(Object[].class))).thenReturn(0);
+
+		assertThat(perform(put(CLIENTS + "/tp/status"), "{\"status\":\"suspended\"}")).returns(404, Result::status);
+		verify(jdbcTemplate, never()).update(contains("INSERT INTO oauth2_audit_log"), any(Object[].class));
 	}
 
 	@ParameterizedTest(name = "''{0}''")

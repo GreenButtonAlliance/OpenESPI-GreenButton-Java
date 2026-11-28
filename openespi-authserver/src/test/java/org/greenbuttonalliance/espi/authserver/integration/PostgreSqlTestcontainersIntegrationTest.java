@@ -119,9 +119,8 @@ class PostgreSqlTestcontainersIntegrationTest {
         // test-development-client shares the prefix and has metrics and consent rows, so it is kept (#152).
         String createdByTests = "SELECT id FROM oauth2_registered_client"
                 + " WHERE id LIKE 'test-%' AND id <> 'test-development-client'";
-        jdbcTemplate.execute("DELETE FROM oauth2_authorization WHERE registered_client_id IN (" + createdByTests + ")");
-        jdbcTemplate.execute("DELETE FROM espi_application_info WHERE client_id IN"
-                + " (SELECT client_id FROM oauth2_registered_client WHERE id IN (" + createdByTests + "))");
+        // Since V11 (#344 review) the database deletes every row that refers to a client with it, so a
+        // failed run leaves nothing behind that blocks the next.
         jdbcTemplate.execute("DELETE FROM oauth2_registered_client WHERE id IN (" + createdByTests + ")");
     }
 
@@ -219,7 +218,7 @@ class PostgreSqlTestcontainersIntegrationTest {
         @Test
         @DisplayName("#344 review: a client with consents, authorizations and ESPI info is deleted with all of them")
         void deleteRemovesTheClientsDependentRows() {
-            // Given - each of these rows has a foreign key to the client with no cascade on PostgreSQL
+            // Given - rows in every table with a foreign key to the client, which cascade since V11
             RegisteredClient client = createEspiTestClient("test-delete-dependents", "Delete Dependents Client");
             clientRepository.save(client);
             jdbcTemplate.update("INSERT INTO espi_application_info (uuid, client_id, client_name) VALUES (?, ?, ?)",

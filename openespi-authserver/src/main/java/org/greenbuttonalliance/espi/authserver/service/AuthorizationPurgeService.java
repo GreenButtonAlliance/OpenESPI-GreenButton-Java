@@ -112,15 +112,20 @@ public class AuthorizationPurgeService {
 	private final Clock clock;
 	private final ObjectMapper objectMapper = new ObjectMapper();
 
-	/** Resolved lazily from the database product name on first use. */
-	private volatile String insertAuditSql;
+	/** The audit INSERT, for the database in use: resolved once, when the service is created (#344 review). */
+	private final String insertAuditSql;
 
+	/**
+	 * @throws IllegalStateException if the database product cannot be read, so the AS does not start with an
+	 *         audit INSERT the database may refuse on every purge
+	 */
 	public AuthorizationPurgeService(JdbcTemplate jdbcTemplate, TransactionTemplate transactionTemplate,
 			AuthorizationPurgeProperties properties, Clock clock) {
 		this.jdbcTemplate = Objects.requireNonNull(jdbcTemplate, "jdbcTemplate");
 		this.transactionTemplate = Objects.requireNonNull(transactionTemplate, "transactionTemplate");
 		this.properties = Objects.requireNonNull(properties, "properties");
 		this.clock = Objects.requireNonNull(clock, "clock");
+		this.insertAuditSql = insertAuditSql(jsonParameterFor(jdbcTemplate));
 	}
 
 	/**
@@ -167,7 +172,7 @@ public class AuthorizationPurgeService {
 
 		Object[] deleteArgs = new Object[TOKEN_COLUMN_PREFIXES.size() + 1];
 		fillCutoffs(deleteArgs, 1, cutoff);
-		String auditSql = insertAuditSql();
+		String auditSql = insertAuditSql;
 		Timestamp eventTimestamp = Timestamp.from(now);
 
 		int deleted = 0;
@@ -227,16 +232,27 @@ public class AuthorizationPurgeService {
 	 * a varchar into JSONB without a cast, and H2 would store a plain string as a JSON <em>string
 	 * value</em> unless told the text is already JSON ({@code FORMAT JSON}).
 	 */
-	private String insertAuditSql() {
-		String sql = insertAuditSql;
-		if (sql == null) {
-			String jsonParameter = jsonParameterFor(databaseProductName());
-			sql = "INSERT INTO oauth2_audit_log (event_type, client_id, principal_name, success, grant_type,"
-					+ " scopes_granted, event_timestamp, additional_data) VALUES (?, ?, ?, ?, ?, ?, ?, "
-					+ jsonParameter + ")";
-			insertAuditSql = sql;
+	private static String insertAuditSql(String jsonParameter) {
+		return "INSERT INTO oauth2_audit_log (event_type, client_id, principal_name, success, grant_type,"
+				+ " scopes_granted, event_timestamp, additional_data) VALUES (?, ?, ?, ?, ?, ?, ?, "
+				+ jsonParameter + ")";
+	}
+
+	/**
+	 * The {@code additional_data} parameter for the database {@code jdbcTemplate} uses (also used by
+	 * {@code AuditLogDao}). Read once, when the caller is created: a lookup that failed and fell back to a plain
+	 * parameter would make PostgreSQL refuse every later audit row until restart (#344 review).
+	 *
+	 * @throws IllegalStateException if the database product cannot be read
+	 */
+	public static String jsonParameterFor(JdbcTemplate jdbcTemplate) {
+		try {
+			return jsonParameterFor(JdbcUtils.extractDatabaseMetaData(
+					Objects.requireNonNull(jdbcTemplate.getDataSource(), "dataSource"),
+					DatabaseMetaData::getDatabaseProductName));
+		} catch (Exception e) {
+			throw new IllegalStateException("Could not determine the database product for the audit INSERT", e);
 		}
-		return sql;
 	}
 
 	/** The {@code additional_data} parameter for the database (also used by {@code AuditLogDao}, #344 review). */
@@ -249,18 +265,6 @@ public class AuthorizationPurgeService {
 			return "? FORMAT JSON";
 		}
 		return "?";
-	}
-
-	private String databaseProductName() {
-		try {
-			return JdbcUtils.extractDatabaseMetaData(
-					Objects.requireNonNull(jdbcTemplate.getDataSource(), "dataSource"),
-					DatabaseMetaData::getDatabaseProductName);
-		} catch (Exception e) {
-			logger.warn("Could not determine database product for the authorization purge audit insert; "
-					+ "binding additional_data as a plain parameter", e);
-			return "";
-		}
 	}
 
 	/**

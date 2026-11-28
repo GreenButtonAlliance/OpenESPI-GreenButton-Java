@@ -47,7 +47,6 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Valid;
 import jakarta.validation.Validator;
 import jakarta.validation.constraints.NotBlank;
-import tools.jackson.databind.ObjectMapper;
 
 import java.security.Principal;
 import java.security.SecureRandom;
@@ -676,8 +675,11 @@ public class OAuth2ClientManagementController {
                 lockUntil = Timestamp.from(Instant.now().plus(Duration.ofMinutes(request.getLockDurationMinutes())));
             }
 
-            jdbcTemplate.update(sql, request.getStatus(), updatedBy(request.getUpdatedBy(), principal), lockUntil,
-                    clientId);
+            // #344 review: a client deleted since the lookup is not found, and nothing is audited
+            if (jdbcTemplate.update(sql, request.getStatus(), updatedBy(request.getUpdatedBy(), principal),
+                    lockUntil, clientId) == 0) {
+                return ResponseEntity.notFound().build();
+            }
 
             // Log audit event (#344: reason is optional, and Map.of refuses a null value). #344 review: the audit
             // names the signed-in administrator; a body's updated_by is only a claim, so it is kept as data.
