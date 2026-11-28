@@ -47,8 +47,12 @@ public class RegisteredClientAdminDao {
     private static final String FIND_ALL_CLIENT_IDS_SQL =
             "SELECT " + CLIENT_ID_COLUMN + " FROM oauth2_registered_client ORDER BY " + CLIENT_ID_COLUMN;
 
-    static final String COUNT_AUTHORIZATIONS_SQL =
-            "SELECT COUNT(*) FROM oauth2_authorization WHERE registered_client_id = ?";
+    static final String LOCK_BY_ID_SQL =
+            "SELECT " + ID_COLUMN + " FROM oauth2_registered_client WHERE " + ID_COLUMN + " = ? FOR UPDATE";
+
+    /** Locks the client's authorizations; PostgreSQL refuses FOR UPDATE with COUNT(*), so the ids are counted. */
+    static final String LOCK_AUTHORIZATIONS_SQL =
+            "SELECT id FROM oauth2_authorization WHERE registered_client_id = ? FOR UPDATE";
 
     static final String DELETE_BY_ID_SQL =
             "DELETE FROM oauth2_registered_client WHERE " + ID_COLUMN + " = ?";
@@ -79,12 +83,14 @@ public class RegisteredClientAdminDao {
      * database deletes every row that refers to it (V11 {@code cascade_client_deletes}, #344 review): its
      * authorizations, so its tokens no longer work, its consents and ESPI application info, and on MySQL and
      * PostgreSQL its consent details and metrics. The authorizations are counted first, in the same
-     * transaction, for the audit record.
+     * transaction, for the audit record. The client row is locked first, so a new authorization's
+     * foreign-key check waits for this delete, and then its authorizations, so the purge cannot delete one
+     * in between: the count is what the cascade removes (#344 review).
      */
     @Transactional
     public Deleted deleteById(String id) {
-        Integer authorizations = jdbcTemplate.queryForObject(COUNT_AUTHORIZATIONS_SQL, Integer.class, id);
-        return new Deleted(jdbcTemplate.update(DELETE_BY_ID_SQL, id),
-                authorizations == null ? 0 : authorizations);
+        jdbcTemplate.queryForList(LOCK_BY_ID_SQL, String.class, id);
+        int authorizations = jdbcTemplate.queryForList(LOCK_AUTHORIZATIONS_SQL, String.class, id).size();
+        return new Deleted(jdbcTemplate.update(DELETE_BY_ID_SQL, id), authorizations);
     }
 }

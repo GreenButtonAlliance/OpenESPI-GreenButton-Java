@@ -5,7 +5,9 @@
 -- cascading keys as MySQL and PostgreSQL (H2 has no consent details or metrics tables, #145). Rows
 -- that already refer to no client are deleted first, or the keys could not be added: Spring
 -- Authorization Server cannot load such an authorization (its client is gone), so no token in one
--- still works. oauth2_audit_log has no foreign key and keeps its rows: they are history.
+-- still works. These deletions are deliberately not audited: the rows were already unusable, and H2
+-- is the test and local profile only. oauth2_audit_log has no foreign key and keeps its rows: they
+-- are history.
 
 DELETE FROM oauth2_authorization
 WHERE registered_client_id NOT IN (SELECT id FROM oauth2_registered_client);

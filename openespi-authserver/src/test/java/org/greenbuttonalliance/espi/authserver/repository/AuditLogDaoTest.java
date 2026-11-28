@@ -10,6 +10,7 @@
 
 package org.greenbuttonalliance.espi.authserver.repository;
 
+import org.greenbuttonalliance.espi.authserver.config.AuthorizationPurgeProperties;
 import org.greenbuttonalliance.espi.authserver.service.AuthorizationPurgeService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,11 +18,14 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
+import java.time.Clock;
+import java.time.Duration;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -67,8 +71,10 @@ class AuditLogDaoTest {
 
 		assertThatThrownBy(() -> new AuditLogDao(jdbcTemplate)).isInstanceOf(IllegalStateException.class)
 				.hasMessageContaining("database product");
-		assertThatThrownBy(() -> AuthorizationPurgeService.jsonParameterFor(jdbcTemplate))
-				.isInstanceOf(IllegalStateException.class);
+		assertThatThrownBy(() -> new AuthorizationPurgeService(jdbcTemplate, mock(TransactionTemplate.class),
+				new AuthorizationPurgeProperties(true, Duration.ofHours(1), Duration.ofMinutes(5), Duration.ofDays(7),
+						500, Duration.ofDays(395)), Clock.systemUTC()))
+				.isInstanceOf(IllegalStateException.class).hasMessageContaining("database product");
 	}
 
 	@ParameterizedTest(name = "{0}")

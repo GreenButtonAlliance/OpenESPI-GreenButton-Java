@@ -6,6 +6,9 @@
 -- its authorizations (so its tokens no longer work), consents, ESPI application info, consent details
 -- and metrics. The certificate tables (V6) already cascade. oauth2_audit_log has no foreign key and
 -- keeps its rows: they are history.
+--
+-- Each key is re-checked against every row while its tables are locked: on a database with many
+-- authorizations, run this migration in a maintenance window.
 
 ALTER TABLE oauth2_authorization DROP CONSTRAINT fk_oauth2_authorization_registered_client_id;
 ALTER TABLE oauth2_authorization

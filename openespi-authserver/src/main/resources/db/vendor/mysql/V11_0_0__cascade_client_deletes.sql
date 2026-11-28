@@ -9,7 +9,12 @@
 -- client's tokens could outlive it. They get one that cascades, as on PostgreSQL. Rows that already
 -- refer to no client are deleted first, or the new keys could not be added: Spring Authorization
 -- Server cannot load such an authorization (its client is gone), so no token in one still works.
+-- These deletions are deliberately not audited: the rows were already unusable, and no deployment
+-- holds any yet (#298 comes first).
 -- oauth2_audit_log has no foreign key and keeps its rows: they are history.
+--
+-- Adding a foreign key rebuilds oauth2_authorization and blocks writes to it meanwhile: on a database
+-- with many authorizations, run this migration in a maintenance window.
 
 DELETE FROM oauth2_authorization
 WHERE registered_client_id NOT IN (SELECT id FROM oauth2_registered_client);
